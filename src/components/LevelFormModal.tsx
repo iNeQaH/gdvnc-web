@@ -62,7 +62,8 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
   }, [isOpen, initialData]);
 
   useEffect(() => {
-    if (!isOpen || initialData) return;
+    if (!isOpen) return;
+    // if (initialData && seq > 1) return; // Allow fetching once even in edit mode
     const id = form.gdLevelId.trim();
     if (!id || !/^\d+$/.test(id)) return;
 

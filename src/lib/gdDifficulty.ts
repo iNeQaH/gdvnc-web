@@ -54,7 +54,7 @@ export function getDifficultyFaceUrl(val: number): string {
 
 export function getRatingIconUrl(ratingType: string | null | undefined): string | null {
   if (!ratingType || ratingType === 'NONE') return null;
-  return `/difficulties/${ratingType.toLowerCase()}.png`;
+  return `/difficulties/${ratingType}.png`;
 }
 
 const DIFFICULTY_NAME_TO_FACE: Record<string, number> = {
