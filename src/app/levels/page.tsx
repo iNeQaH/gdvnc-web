@@ -63,7 +63,7 @@ export default function LevelsListPage() {
   const handleDeleteLevel = (id: string, name: string) => {
     if (!currentUser) return;
     showConfirm(
-      'B?n c� ch?c ch?n mu?n xo� level "' + name + '"? H�nh d?ng n�y s? xo� vinh vi?n to�n b? k? l?c li�n quan!',
+      'Bạn có chắc chắn muốn xoá level "' + name + '"? Hành động này sẽ xoá vĩnh viễn toàn bộ kỷ lục liên quan!',
       async () => {
         try {
           const res = await fetch('/api/admin/levels?id=' + id + '&userId=' + currentUser.id, {
@@ -71,13 +71,13 @@ export default function LevelsListPage() {
           });
           const data = await res.json();
           if (data.success) {
-            showToast('�� xo� level th�nh c�ng!', 'success');
+        showToast('Đã xoá level thành công!', 'success');
             fetchLevels();
           } else {
-            showToast(data.error || 'L?i khi xo� level.', 'error');
+        showToast(data.error || 'Lỗi khi xoá level.', 'error');
           }
         } catch (e) {
-          showToast('L?i k?t n?i m�y ch?.', 'error');
+        showToast('Lỗi kết nối máy chủ.', 'error');
         }
       }
     );
@@ -257,7 +257,7 @@ export default function LevelsListPage() {
                 borderColor: 'var(--border-ui)',
                 color: 'var(--text-title)',
               }}
-              title="Chuy?n ch? d? xem Lu?i / Danh s�ch"
+              title="Chuyển chế độ xem Lưới / Danh sách"
             >
               {viewMode === 'list' ? <LayoutGrid className="w-4 h-4" /> : <List className="w-4 h-4" />}
             </button>
@@ -282,7 +282,7 @@ export default function LevelsListPage() {
               }}
               className="text-xs font-bold underline cursor-pointer text-sky-500"
             >
-              �Đặt lại tất cả bộ lọc
+              Đặt lại tất cả bộ lọc
             </button>
           </div>
         ) : (
@@ -361,7 +361,7 @@ export default function LevelsListPage() {
                           handleDeleteLevel(lvl.id, lvl.name);
                         }}
                         className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 ui-dim hover:text-red-500 cursor-pointer"
-                        title="Xo� Level"
+                        title="Xoá Level"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -438,7 +438,7 @@ export default function LevelsListPage() {
                     <button
                       onClick={() => handleDeleteLevel(lvl.id, lvl.name)}
                       className="p-1.5 rounded text-white hover:text-red-400 cursor-pointer"
-                      title="Xo� Level"
+                      title="Xoá Level"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>

@@ -838,7 +838,7 @@ export default function ProfilePage() {
           }}
         >
           <Hammer className="w-3.5 h-3.5 fill-current" />
-          Creator ({data.createdLevels?.length || 0})
+          Tác phẩm ({data.createdLevels?.length || 0})
         </button>
       </div>
 

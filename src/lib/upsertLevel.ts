@@ -138,7 +138,7 @@ export async function upsertLevelFromForm(input: {
     if (!affectedLevelIds.includes(upsertedLevel.id)) {
       affectedLevelIds.push(upsertedLevel.id);
     }
-  });
+  }, { maxWait: 15000, timeout: 30000 });
 
   if (affectedLevelIds.length > 0) {
     triggerBackgroundPpRecalc(affectedLevelIds, pMode);

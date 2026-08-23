@@ -60,7 +60,7 @@ export async function DELETE(req: Request) {
           }
         }
       }
-    });
+    }, { maxWait: 15000, timeout: 30000 });
 
     // We must recalculate users who had records on the deleted level OR shifted levels
     triggerBackgroundPpRecalc([id, ...affectedLevelIds], mode);

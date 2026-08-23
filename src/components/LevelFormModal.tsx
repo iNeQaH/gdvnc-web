@@ -205,13 +205,13 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
                   value={form.gdLevelId}
                   onChange={e => setForm({...form, gdLevelId: e.target.value})}
                   className="w-full ui-input px-3 py-2 rounded-xl text-xs font-bold focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
-                  placeholder="e.g. 10565740"
+                  placeholder="VD: 10565740"
                   readOnly={!!initialData}
                 />
               </div>
 
               <div className="flex items-center justify-between p-2 rounded-xl border ui-subtle">
-                <label className="text-[11px] font-bold uppercase ui-title">Level VN (Vietnam)</label>
+                <label className="text-[11px] font-bold uppercase ui-title">Level của người Việt (Vietnam)</label>
                 <input 
                   type="checkbox"
                   checked={form.isVN}
@@ -224,13 +224,13 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase ui-dim">Placement (Top)</label>
+              <label className="text-[11px] font-bold uppercase ui-dim">Vị trí (Top)</label>
               <input 
                 type="number" 
                 value={form.placement}
                 onChange={e => setForm({...form, placement: e.target.value})}
                 className="w-full ui-input px-3 py-2 rounded-xl text-xs font-bold"
-                placeholder="Unranked"
+                placeholder="Không xếp hạng"
               />
             </div>
             
@@ -241,13 +241,13 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
                 value={form.minPercent}
                 onChange={e => setForm({...form, minPercent: e.target.value})}
                 className="w-full ui-input px-3 py-2 rounded-xl text-xs font-bold"
-                placeholder="e.g. 100"
+                placeholder="VD: 100"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[11px] font-bold uppercase ui-dim">Video Showcase URL</label>
+            <label className="text-[11px] font-bold uppercase ui-dim">Link Video Showcase</label>
             <input 
               type="text" 
               value={form.videoUrl}
@@ -258,7 +258,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[11px] font-bold uppercase ui-dim">List Type</label>
+            <label className="text-[11px] font-bold uppercase ui-dim">Loại danh sách</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => setForm({...form, mode: 'CLASSIC'})}

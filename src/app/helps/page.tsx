@@ -74,7 +74,7 @@ export default function HelpsPage() {
       <div className="ui-card p-6 rounded-2xl shadow-xl max-w-2xl mx-auto">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold uppercase ui-dim mb-2">Tiêu đề (Title)</label>
+            <label className="block text-xs font-bold uppercase ui-dim mb-2">Tiêu đề</label>
             <input
               type="text"
               value={title}
@@ -87,7 +87,7 @@ export default function HelpsPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase ui-dim mb-2">Mô tả chi tiết (Description)</label>
+            <label className="block text-xs font-bold uppercase ui-dim mb-2">Mô tả chi tiết</label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}

@@ -20,20 +20,20 @@ function interpolate(template: string, vars?: Vars): string {
 }
 
 const LanguageContext = createContext<LanguageContextType>({
-  language: 'en',
+  language: 'vi',
   setLanguage: () => {},
   t: (key) => en[key] || key,
 });
 
 export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
-  const [language, setLanguageState] = useState<Language>('en');
+  const [language, setLanguageState] = useState<Language>('vi');
 
   useEffect(() => {
     const saved = localStorage.getItem('gdvnc_language') as Language;
     if (saved === 'vi' || saved === 'en') {
       setLanguageState(saved);
     } else {
-      setLanguageState('en');
+      setLanguageState('vi');
     }
   }, []);
 
