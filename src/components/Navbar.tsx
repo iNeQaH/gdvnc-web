@@ -1,0 +1,134 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Trophy, Flame, Send, Dices, ShieldCheck, User as UserIcon, LogOut } from 'lucide-react';
+import { ThemeSwitcher } from './ThemeSwitcher';
+import { useLanguage } from './LanguageContext';
+
+export const Navbar = () => {
+  const pathname = usePathname();
+  const { t } = useLanguage();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('gdvnc_user');
+    if (userStr) {
+      try {
+        setCurrentUser(JSON.parse(userStr));
+      } catch (e) {
+        localStorage.removeItem('gdvnc_user');
+      }
+    }
+  }, [pathname]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('gdvnc_user');
+    setCurrentUser(null);
+    window.location.href = '/';
+  };
+
+  const navLinks = [
+    { href: '/', label: t('nav.leaderboard'), icon: Trophy },
+    { href: '/levels', label: t('nav.demonlist'), icon: Flame },
+    { href: '/submit', label: t('nav.submit'), icon: Send },
+    { href: '/roulette', label: t('nav.roulette'), icon: Dices },
+    ...(currentUser?.role === 'ADMIN' ? [{ href: '/admin', label: t('nav.admin'), icon: ShieldCheck }] : []),
+  ];
+
+  return (
+    <header
+      className="sticky top-0 z-50 border-b backdrop-blur-md transition-colors"
+      style={{
+        backgroundColor: 'var(--bg-card)',
+        borderColor: 'var(--border-ui)',
+      }}
+    >
+      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+        {/* Brand Logo */}
+        <Link href="/" className="flex items-center gap-2.5 shrink-0">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 3 21 21 21 3 3 3"/><polygon points="3 21 21 21 3 21 3 21"/></svg>
+          </div>
+          <div>
+            <span className="font-extrabold text-base tracking-tight ui-title">
+              GDVNC<span style={{ color: 'var(--accent)' }}>Hub</span>
+            </span>
+          </div>
+        </Link>
+
+        {/* Navigation items */}
+        <nav className="hidden md:flex items-center gap-1">
+          {navLinks.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors"
+                style={{
+                  backgroundColor: isActive ? 'var(--accent-bg)' : 'transparent',
+                  color: isActive ? 'var(--accent-text)' : 'var(--text-body)',
+                }}
+              >
+                <Icon className="w-4 h-4" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Right side tools */}
+        <div className="flex items-center gap-3">
+          <ThemeSwitcher />
+
+          {currentUser ? (
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/profile/${currentUser.username}`}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold"
+                style={{
+                  backgroundColor: 'var(--bg-subtle)',
+                  borderColor: 'var(--border-ui)',
+                  color: 'var(--text-title)',
+                }}
+              >
+                <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-[color:var(--accent-fg)] font-bold" style={{ backgroundColor: 'var(--accent)' }}>
+                  {currentUser.username[0]}
+                </div>
+                <span>{currentUser.username}</span>
+                {currentUser.role === 'ADMIN' && (
+                  <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
+                    Admin
+                  </span>
+                )}
+              </Link>
+              <button
+                onClick={handleLogout}
+                title={t('nav.logout')}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs"
+              style={{
+                backgroundColor: 'var(--accent)',
+                color: 'var(--accent-fg)',
+              }}
+            >
+              <UserIcon className="w-3.5 h-3.5" />
+              {t('auth.login')}
+            </Link>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+};
+

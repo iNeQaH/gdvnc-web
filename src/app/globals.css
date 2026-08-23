@@ -1,0 +1,243 @@
+@import "tailwindcss";
+
+:root {
+  /* Common variables */
+  --badge-green-bg: #dcfce7;
+  --badge-green-text: #15803d;
+  --badge-red-bg: #fee2e2;
+  --badge-red-text: #b91c1c;
+}
+
+.dark {
+  --badge-green-bg: #064e3b;
+  --badge-green-text: #6ee7b7;
+  --badge-red-bg: #7f1d1d;
+  --badge-red-text: #fca5a5;
+}
+
+/* 1. SKY THEME (Default) */
+:root, [data-theme="sky"] {
+  --bg-page: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-subtle: #f8fafc;
+  --border-ui: #cbd5e1;
+  --border-subtle: #e2e8f0;
+  
+  --text-title: #0f172a;
+  --text-body: #334155;
+  --text-dim: #64748b;
+
+  --accent: #0284c7;
+  --accent-hover: #0369a1;
+  --accent-bg: #e0f2fe;
+  --accent-text: #0369a1;
+  --accent-fg: #ffffff;
+}
+.dark[data-theme="sky"], .dark {
+  --bg-page: #0b1120;
+  --bg-card: #1e293b;
+  --bg-subtle: #162032;
+  --border-ui: #334155;
+  --border-subtle: #1e293b;
+  
+  --text-title: #f8fafc;
+  --text-body: #cbd5e1;
+  --text-dim: #94a3b8;
+
+  --accent: #38bdf8;
+  --accent-hover: #0ea5e9;
+  --accent-bg: #0369a1;
+  --accent-text: #e0f2fe;
+  --accent-fg: #ffffff;
+}
+
+/* 2. MINT THEME */
+[data-theme="mint"] {
+  --bg-page: #f0fdf4;
+  --bg-card: #ffffff;
+  --bg-subtle: #f4fdf8;
+  --border-ui: #bbf7d0;
+  --border-subtle: #dcfce7;
+  
+  --text-title: #14532d;
+  --text-body: #166534;
+  --text-dim: #15803d;
+
+  --accent: #16a34a;
+  --accent-hover: #15803d;
+  --accent-bg: #dcfce7;
+  --accent-text: #166534;
+  --accent-fg: #ffffff;
+}
+.dark[data-theme="mint"] {
+  --bg-page: #020a05;
+  --bg-card: #051a0d;
+  --bg-subtle: #04140a;
+  --border-ui: #064e3b;
+  --border-subtle: #064e3b;
+  
+  --text-title: #f0fdf4;
+  --text-body: #bbf7d0;
+  --text-dim: #86efac;
+
+  --accent: #4ade80;
+  --accent-hover: #22c55e;
+  --accent-bg: #166534;
+  --accent-text: #bbf7d0;
+  --accent-fg: #ffffff;
+}
+
+/* 3. PEACH THEME */
+[data-theme="peach"] {
+  --bg-page: #fef7ee;
+  --bg-card: #ffffff;
+  --bg-subtle: #fff8f0;
+  --border-ui: #fed7aa;
+  --border-subtle: #ffedd5;
+  
+  --text-title: #292524;
+  --text-body: #44403c;
+  --text-dim: #78716c;
+
+  --accent: #ea580c;
+  --accent-hover: #c2410c;
+  --accent-bg: #ffedd5;
+  --accent-text: #c2410c;
+  --accent-fg: #ffffff;
+}
+.dark[data-theme="peach"] {
+  --bg-page: #0f0502;
+  --bg-card: #1a0a05;
+  --bg-subtle: #140804;
+  --border-ui: #431407;
+  --border-subtle: #431407;
+  
+  --text-title: #fff7ed;
+  --text-body: #ffedd5;
+  --text-dim: #fed7aa;
+
+  --accent: #fb923c;
+  --accent-hover: #f97316;
+  --accent-bg: #9a3412;
+  --accent-text: #ffedd5;
+  --accent-fg: #ffffff;
+}
+
+/* 4. LAVENDER THEME */
+[data-theme="lavender"] {
+  --bg-page: #f5f3ff;
+  --bg-card: #ffffff;
+  --bg-subtle: #faf5ff;
+  --border-ui: #ddd6fe;
+  --border-subtle: #ede9fe;
+  
+  --text-title: #1e1b4b;
+  --text-body: #312e81;
+  --text-dim: #6b7280;
+
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
+  --accent-bg: #ede9fe;
+  --accent-text: #6d28d9;
+  --accent-fg: #ffffff;
+}
+.dark[data-theme="lavender"] {
+  --bg-page: #0b0417;
+  --bg-card: #14082e;
+  --bg-subtle: #0f0624;
+  --border-ui: #3b0764;
+  --border-subtle: #3b0764;
+  
+  --text-title: #f5f3ff;
+  --text-body: #ede9fe;
+  --text-dim: #ddd6fe;
+
+  --accent: #a78bfa;
+  --accent-hover: #8b5cf6;
+  --accent-bg: #5b21b6;
+  --accent-text: #ede9fe;
+  --accent-fg: #ffffff;
+}
+
+/* 5. MONO THEME */
+[data-theme="mono"] {
+  --bg-page: #ffffff;
+  --bg-card: #ffffff;
+  --bg-subtle: #f4f4f5;
+  --border-ui: #e4e4e7;
+  --border-subtle: #f4f4f5;
+  
+  --text-title: #000000;
+  --text-body: #27272a;
+  --text-dim: #52525b;
+
+  --accent: #000000;
+  --accent-hover: #27272a;
+  --accent-bg: #e4e4e7;
+  --accent-text: #000000;
+  --accent-fg: #ffffff;
+}
+.dark[data-theme="mono"] {
+  --bg-page: #000000;
+  --bg-card: #000000;
+  --bg-subtle: #09090b;
+  --border-ui: #27272a;
+  --border-subtle: #18181b;
+  
+  --text-title: #ffffff;
+  --text-body: #d4d4d8;
+  --text-dim: #a1a1aa;
+
+  --accent: #ffffff;
+  --accent-hover: #e4e4e7;
+  --accent-bg: #27272a;
+  --accent-text: #ffffff;
+  --accent-fg: #000000;
+}
+
+body {
+  background-color: var(--bg-page);
+  color: var(--text-body);
+  font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  min-height: 100vh;
+}
+
+/* Component base styles using variables */
+.ui-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-ui);
+  border-radius: 1rem;
+}
+
+.ui-subtle {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+}
+
+.ui-title {
+  color: var(--text-title);
+}
+
+.ui-dim {
+  color: var(--text-dim);
+}
+
+.ui-border {
+  border-color: var(--border-ui);
+}
+
+.ui-input {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-ui);
+  color: var(--text-title);
+}
+
+/* Hide number input arrows (spin buttons) */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}

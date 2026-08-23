@@ -1,0 +1,268 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MODERATOR
+  USER
+}
+
+enum LevelMode {
+  CLASSIC
+  PLATFORMER
+}
+
+enum RecordStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id            String    @id @default(uuid())
+  username      String    @unique
+  email         String?   @unique
+  passwordHash  String?
+  role          Role      @default(USER)
+  avatarUrl     String?   @db.LongText
+  coverUrl      String?   @db.LongText
+  bio           String?   @db.Text
+  discordTag    String?
+  gdUsername    String?
+  country       String?   @default("Vietnam")
+  supporterUntil DateTime?
+
+  // Points and rankings
+  classicPp     Float     @default(0)
+  platformerPp  Float     @default(0)
+  creatorPoints Float     @default(0)
+  spPoints      Int       @default(0)
+
+  // Relationships
+  records         Record[]        @relation("UserRecords")
+  createdLevels   Level[]         @relation("LevelCreator")
+  reviewedRecords Record[]        @relation("RecordReviewer")
+  notifications   Notification[]
+  userBadges      UserBadge[]
+  creatorWorks    CreatorWork[]   @relation("CreatorWorks")
+  reviewedWorks   CreatorWork[]   @relation("WorkReviewer")
+  levelSubmissions LevelSubmission[] @relation("LevelSubmissions")
+  reviewedLevelSubs LevelSubmission[] @relation("LevelSubReviewer")
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([classicPp(sort: Desc)])
+  @@index([platformerPp(sort: Desc)])
+  @@index([creatorPoints(sort: Desc)])
+  @@index([role])
+  helpRequests    HelpRequest[]
+}
+
+model Level {
+  id            String     @id @default(uuid())
+  gdLevelId     Int        @unique
+  name          String
+
+  mode          LevelMode  @default(CLASSIC)
+  difficulty    String     // Still keeping this for fallback text if needed
+  difficultyFace Int       @default(0) // 0-14 scale
+  ratingType    String     @default("NONE") // NONE, FEATURE, EPIC, LEGENDARY, MYTHIC
+  isVN          Boolean    @default(false)
+  placement     Int?       // 1, 2, 3...
+  basePp        Float
+  minPercent    Int        @default(100) // Qualifying %
+  
+  creatorName   String?
+  creatorId     String?
+  creator       User?      @relation("LevelCreator", fields: [creatorId], references: [id])
+  
+  verifierName  String?
+  youtubeId     String?    // Video ID (e.g. dQw4w9WgXcQ)
+  description   String?    @db.Text
+
+  records       Record[]
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([placement])
+  @@index([mode])
+}
+
+model Record {
+  id            String       @id @default(uuid())
+  userId        String
+  levelId       String
+  
+  // Specific metrics
+  progress      Int?         // 0-100 (Classic)
+  timeMs        Int?         // Platformer time in milliseconds
+  
+  videoUrl      String       // Primary video proof link
+  rawProofUrl   String?      // Raw uncut footage link
+  hz            Int?         // 60, 144, 240, 360...
+  fps           Int?         // 60, 120, 240, 360...
+  device        String?      // PC, Mobile
+  comment       String?      @db.Text
+  
+  status        RecordStatus @default(PENDING)
+  rejectReason  String?      @db.Text
+  prioritySp    Int          @default(0)
+  
+  // Relations
+  user          User         @relation("UserRecords", fields: [userId], references: [id], onDelete: Cascade)
+  level         Level        @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  
+  reviewerId    String?
+  reviewer      User?        @relation("RecordReviewer", fields: [reviewerId], references: [id])
+
+  submittedAt   DateTime     @default(now())
+  reviewedAt    DateTime?
+
+  @@index([status])
+  @@index([userId])
+  @@index([levelId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Otp {
+  id        String   @id @default(uuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model BadgeCategory {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?  @db.Text
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  badges      Badge[]
+}
+
+model Badge {
+  id          String      @id @default(uuid())
+  name        String
+  description String?     @db.Text
+  icon        String      // 'star', 'flame', etc.
+  color       String      
+  bgColor     String?     
+  borderColor String?     
+  glowColor   String?     
+  tier        String?     
+  minPoints   Float?      
+  pointsType  String?     
+  category    String?     @default("PLAYER")
+  sortOrder   Int         @default(0)
+  categoryId  String?
+  badgeCategory BadgeCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  users       UserBadge[]
+
+  @@index([sortOrder])
+  @@index([categoryId])
+}
+
+model UserBadge {
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  badge      Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  badgeId    String
+  assignedAt DateTime @default(now())
+  assignedBy String?
+  
+  @@unique([userId, badgeId])
+}
+
+model CreatorWork {
+  id           String       @id @default(uuid())
+  user         User         @relation("CreatorWorks", fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  username     String
+  gdLevelId    Int?
+  levelName    String?
+  imageUrl     String?      @db.LongText
+  videoUrl     String?
+  description  String?      @db.Text
+  status       RecordStatus @default(PENDING)
+  badgeGranted String?
+  cpGranted    Float        @default(0)
+  rejectReason String?      @db.Text
+  prioritySp   Int          @default(0)
+  
+  reviewerId   String?
+  reviewer     User?        @relation("WorkReviewer", fields: [reviewerId], references: [id])
+  
+  submittedAt  DateTime     @default(now())
+  reviewedAt   DateTime?
+
+  @@index([status])
+  @@index([userId])
+}
+
+model LevelSubmission {
+  id             String       @id @default(uuid())
+  userId         String
+  user           User         @relation("LevelSubmissions", fields: [userId], references: [id], onDelete: Cascade)
+  gdLevelId      Int
+  videoUrl       String?
+  minPercent     Int          @default(100)
+  placement      Int?
+  mode           LevelMode    @default(CLASSIC)
+  isVN           Boolean      @default(false)
+  difficultyFace Int          @default(0)
+  ratingType     String       @default("NONE")
+  status         RecordStatus @default(PENDING)
+  rejectReason   String?      @db.Text
+  prioritySp     Int          @default(0)
+  reviewerId     String?
+  reviewer       User?        @relation("LevelSubReviewer", fields: [reviewerId], references: [id])
+  submittedAt    DateTime     @default(now())
+  reviewedAt     DateTime?
+
+  @@index([status])
+  @@index([userId])
+}
+
+model HelpRequest {
+  id        String   @id @default(cuid())
+  userId    String?
+  title     String
+  content   String   @db.Text
+  status    String   @default("PENDING") // PENDING, RESOLVED
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+
+model Image {
+  id        String   @id @default(cuid())
+  dataUrl   String   @db.LongText
+  createdAt DateTime @default(now())
+}
