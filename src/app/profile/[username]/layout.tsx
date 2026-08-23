@@ -1,4 +1,4 @@
-import { Metadata } from 'next';
+﻿import { Metadata } from 'next';
 import prisma from '@/lib/prisma';
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
@@ -16,8 +16,37 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
     };
   }
 
+  const classicRecords = await prisma.record.findMany({
+    where: { userId: user.id, isApproved: true, mode: 'CLASSIC' },
+    include: { level: true }
+  });
+
+  const platRecords = await prisma.record.findMany({
+    where: { userId: user.id, isApproved: true, mode: 'PLATFORMER' },
+    include: { level: true }
+  });
+
+  const hardestClassic = classicRecords
+    .filter(r => r.level.placement !== null)
+    .sort((a, b) => a.level.placement! - b.level.placement!)[0];
+
+  const hardestPlat = platRecords
+    .filter(r => r.level.placement !== null)
+    .sort((a, b) => a.level.placement! - b.level.placement!)[0];
+
   const title = `${user.username} - GDVNC Player Profile`;
-  const desc = `⭓ Classic: ${Math.floor(user.classicPp)} PP | 🎸 Plat: ${Math.floor(user.platformerPp)} PP | 🫩 CP: ${user.creatorPoints}\n🌍 Country: ${user.country || 'Vietnam'}`;
+  
+  let descLines = [];
+  descLines.push(`Classic Pt: ${Math.floor(user.classicPp)} | Platformer Pt: ${Math.floor(user.platformerPp)} | Creator Pt: ${user.creatorPoints}`);
+  
+  if (hardestClassic) {
+    descLines.push(`Classic Hardest: ${hardestClassic.level.name}`);
+  }
+  if (hardestPlat) {
+    descLines.push(`Platformer Hardest: ${hardestPlat.level.name}`);
+  }
+
+  const desc = descLines.join('\n');
 
   return {
     title,
