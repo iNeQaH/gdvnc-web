@@ -8,12 +8,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   try {
     const { id } = await params;
     const body = await req.json();
+    let parsedSortOrder: number | undefined = undefined;
+    if (body.sortOrder !== undefined && body.sortOrder !== null && body.sortOrder !== '') {
+      const val = parseInt(body.sortOrder, 10);
+      if (!isNaN(val)) parsedSortOrder = val;
+    }
+
     const category = await prisma.badgeCategory.update({
       where: { id },
       data: {
         name: body.name !== undefined ? body.name : undefined,
         description: body.description !== undefined ? body.description : undefined,
-        sortOrder: body.sortOrder !== undefined ? parseInt(body.sortOrder, 10) : undefined,
+        sortOrder: parsedSortOrder,
       },
     });
     return NextResponse.json({ success: true, category });

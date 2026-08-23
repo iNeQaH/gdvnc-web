@@ -39,6 +39,12 @@ export async function POST(req: Request) {
     if (!name) return NextResponse.json({ error: 'Tên huy hiệu là bắt buộc.' }, { status: 400 });
 
     const last = await prisma.badge.findFirst({ orderBy: { sortOrder: 'desc' } });
+    let parsedSortOrder = (last?.sortOrder || 0) + 1;
+    if (sortOrder !== undefined && sortOrder !== null && sortOrder !== '') {
+      const val = parseInt(sortOrder, 10);
+      if (!isNaN(val)) parsedSortOrder = val;
+    }
+
     const badge = await prisma.badge.create({
       data: {
         name,
@@ -47,7 +53,7 @@ export async function POST(req: Request) {
         color: color || '#FFD700',
         glowColor: glow ? color || '#FFD700' : null,
         categoryId: categoryId || null,
-        sortOrder: sortOrder !== undefined ? parseInt(sortOrder, 10) : (last?.sortOrder || 0) + 1,
+        sortOrder: parsedSortOrder,
       },
       include: { badgeCategory: true },
     });

@@ -33,6 +33,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ success: true, badges });
     }
 
+    let parsedSortOrder: number | undefined = undefined;
+    if (body.sortOrder !== undefined && body.sortOrder !== null && body.sortOrder !== '') {
+      const val = parseInt(body.sortOrder, 10);
+      if (!isNaN(val)) parsedSortOrder = val;
+    }
+
     const badge = await prisma.badge.update({
       where: { id },
       data: {
@@ -42,7 +48,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         color: body.color !== undefined ? body.color : undefined,
         glowColor: body.glow !== undefined ? (body.glow ? body.color : null) : undefined,
         categoryId: body.categoryId !== undefined ? (body.categoryId || null) : undefined,
-        sortOrder: body.sortOrder !== undefined ? parseInt(body.sortOrder, 10) : undefined,
+        sortOrder: parsedSortOrder,
       },
       include: { badgeCategory: true },
     });
