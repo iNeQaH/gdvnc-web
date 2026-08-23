@@ -1,12 +1,19 @@
 ﻿import { Metadata } from 'next';
 import prisma from '@/lib/prisma';
+import { RecordStatus, LevelMode } from '@prisma/client';
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username } = await params;
   const decodedUsername = decodeURIComponent(username);
   
   const user = await prisma.user.findUnique({
-    where: { username: decodedUsername }
+    where: { username: decodedUsername },
+    include: {
+      records: {
+        where: { status: RecordStatus.APPROVED },
+        include: { level: true }
+      }
+    }
   });
 
   if (!user) {
@@ -16,15 +23,8 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
     };
   }
 
-  const classicRecords = await prisma.record.findMany({
-    where: { userId: user.id, isApproved: true, mode: 'CLASSIC' },
-    include: { level: true }
-  });
-
-  const platRecords = await prisma.record.findMany({
-    where: { userId: user.id, isApproved: true, mode: 'PLATFORMER' },
-    include: { level: true }
-  });
+  const classicRecords = user.records.filter(r => r.level.mode === LevelMode.CLASSIC);
+  const platRecords = user.records.filter(r => r.level.mode === LevelMode.PLATFORMER);
 
   const hardestClassic = classicRecords
     .filter(r => r.level.placement !== null)
