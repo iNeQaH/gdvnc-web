@@ -10,7 +10,12 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "GDVNC - GDVNC Leaderboard & Levels List",
-  description: "Official performance points (Pt) ranking system, Classic & Platformer Levels List and player profiles for GDVNC.",
+  description: "Geometry Dash Việt Nam",
+  openGraph: {
+    title: "GDVNC - GDVNC Leaderboard & Levels List",
+    description: "Geometry Dash Việt Nam",
+    type: "website",
+  },
   icons: {
     icon: "/favicon.svg",
   },

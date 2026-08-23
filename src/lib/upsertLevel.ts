@@ -102,15 +102,21 @@ export async function upsertLevelFromForm(input: {
       select: { id: true, placement: true, basePp: true },
     });
 
+    const updatesToRun = [];
     for (const lvl of allRankedLevels) {
       const correctPp = calculateBasePp(lvl.placement!);
       if (Math.abs(correctPp - lvl.basePp) > 0.01) {
         affectedLevelIds.push(lvl.id);
-        await tx.level.update({
-          where: { id: lvl.id },
-          data: { basePp: correctPp },
-        });
+        updatesToRun.push({ id: lvl.id, correctPp });
       }
+    }
+    // Run updates in chunks of 50 to avoid TiDB serverless timeouts
+    for (let i = 0; i < updatesToRun.length; i += 50) {
+      const chunk = updatesToRun.slice(i, i + 50);
+      await Promise.all(chunk.map(u => tx.level.update({
+        where: { id: u.id },
+        data: { basePp: u.correctPp }
+      })));
     }
 
     const finalPp = targetPlacement ? calculateBasePp(targetPlacement) : 0;
