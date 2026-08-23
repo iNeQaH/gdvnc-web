@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
-  ShieldCheck, 
+  ShieldCheck, Trash2, 
   Check, 
   X, 
   Play, 

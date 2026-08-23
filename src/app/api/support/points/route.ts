@@ -21,6 +21,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Không tìm thấy tài khoản.' }, { status: 404 });
     }
 
+    const isSuperAdmin = user.role === 'ADMIN' || user.username === 'iNeQaH';
     // 1. EARN POINTS VIA AD
     if (action === 'EARN_AD') {
       const updatedUser = await prisma.user.update({
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
 
     // 2. REDEEM 1 MONTH SUPPORTER (1000 SP)
     if (action === 'REDEEM_MONTH') {
-      const isSuperAdmin = user.role === 'ADMIN' || user.username === 'iNeQaH';
+      
       if (!isSuperAdmin && user.spPoints < 1000) {
         return NextResponse.json({ success: false, error: 'Bạn không đủ 1,000 Điểm SP để đổi gói.' }, { status: 400 });
       }

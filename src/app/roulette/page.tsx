@@ -126,7 +126,7 @@ export default function RoulettePage() {
               <div className="flex items-center justify-center gap-2 animate-in zoom-in-95 duration-100">
                 <div className="relative flex items-center justify-center w-10 h-10 shrink-0">
                   {getRatingIconUrl(currentDisplay.ratingType) && (
-                    <img src={getRatingIconUrl(currentDisplay.ratingType)} alt="" className="absolute inset-0 w-full h-full object-contain drop-shadow-md" />
+                    <img src={getRatingIconUrl(currentDisplay.ratingType) || undefined} alt="" className="absolute inset-0 w-full h-full object-contain drop-shadow-md" />
                   )}
                   <img src={getDifficultyFaceUrl(currentDisplay.difficultyFace ?? 10)} alt="" className="relative w-10 h-10 object-contain z-10 drop-shadow-md" />
                 </div>

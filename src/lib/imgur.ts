@@ -8,7 +8,7 @@ export async function uploadToImgur(dataUrl: string): Promise<string> {
 
   const response = await fetch('https://api.imgur.com/3/image', {
     method: 'POST',
-    headers: { Authorization: Client-ID  },
+    headers: { Authorization: 'Client-ID ' + clientId },
     body: formData,
   });
 
