@@ -1,1 +1,0 @@
-const fs = require('fs'); let content = fs.readFileSync('src/app/admin/page.tsx', 'utf8'); content = content.replace(/Trash(?!2)/g, 'Trash, Trash2'); fs.writeFileSync('src/app/admin/page.tsx', content);

@@ -1,1 +1,0 @@
-const fs = require('fs'); let content = fs.readFileSync('src/lib/imgur.ts', 'utf8'); content = content.replace(/clientId\\r?\\n    body/, 'clientId },\\n    body'); fs.writeFileSync('src/lib/imgur.ts', content);
