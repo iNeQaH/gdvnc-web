@@ -32,32 +32,68 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
   const [saving, setSaving] = useState(false);
   const [fetchingLevel, setFetchingLevel] = useState(false);
   const fetchSeq = useRef(0);
+  const skipNextFetchRef = useRef(false);
 
-  useEffect(() => {
-    if (isOpen) {
-      if (initialData) {
-        setForm({
-          gdLevelId: initialData.gdLevelId?.toString() || '',
-          videoUrl: initialData.videoUrl || (initialData.youtubeId ? `https://youtube.com/watch?v=${initialData.youtubeId}` : ''),
-          minPercent: initialData.minPercent?.toString() || '100',
-          placement: initialData.placement?.toString() || '',
-          mode: initialData.mode || 'CLASSIC',
-          isVN: initialData.isVN || false,
-          difficultyFace: initialData.difficultyFace ?? 10,
-          ratingType: initialData.ratingType || 'NONE'
-        });
-      } else {
-        setForm({
-          gdLevelId: '',
-          videoUrl: '',
-          minPercent: '100',
-          placement: '',
-          mode: 'CLASSIC',
-          isVN: false,
-          difficultyFace: 10,
-          ratingType: 'NONE'
+  const fetchGdLevel = async (id: string) => {
+    if (!id || !/^\d+$/.test(id)) return;
+    const seq = ++fetchSeq.current;
+    setFetchingLevel(true);
+    try {
+      const res = await fetch(`/api/gd/level/${id}`);
+      const data = await res.json();
+      if (seq !== fetchSeq.current) return;
+      if (data.success && data.level) {
+        setForm((prev) => {
+          if (prev.gdLevelId.trim() !== id) return prev;
+          return {
+            ...prev,
+            difficultyFace: data.level.difficultyFace ?? prev.difficultyFace,
+            ratingType: data.level.ratingType || prev.ratingType,
+            mode: data.level.isPlatformer ? 'PLATFORMER' : 'CLASSIC',
+          };
         });
       }
+    } catch {
+      // Keep manual values if GD lookup fails
+    } finally {
+      if (seq === fetchSeq.current) setFetchingLevel(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      fetchSeq.current++;
+      setFetchingLevel(false);
+      return;
+    }
+
+    if (initialData) {
+      const gdId = initialData.gdLevelId?.toString() || '';
+      setForm({
+        gdLevelId: gdId,
+        videoUrl: initialData.videoUrl || (initialData.youtubeId ? `https://youtube.com/watch?v=${initialData.youtubeId}` : ''),
+        minPercent: initialData.minPercent?.toString() || '100',
+        placement: initialData.placement?.toString() || '',
+        mode: initialData.mode || 'CLASSIC',
+        isVN: initialData.isVN || false,
+        difficultyFace: initialData.difficultyFace ?? 10,
+        ratingType: initialData.ratingType || 'NONE',
+      });
+      if (gdId && /^\d+$/.test(gdId)) {
+        skipNextFetchRef.current = true;
+        void fetchGdLevel(gdId);
+      }
+    } else {
+      setForm({
+        gdLevelId: '',
+        videoUrl: '',
+        minPercent: '100',
+        placement: '',
+        mode: 'CLASSIC',
+        isVN: false,
+        difficultyFace: 10,
+        ratingType: 'NONE',
+      });
     }
   }, [isOpen, initialData]);
 
@@ -65,36 +101,17 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
     if (!isOpen) return;
     const id = form.gdLevelId.trim();
     if (!id || !/^\d+$/.test(id)) return;
-    // Editing: do not overwrite difficulty/rating unless the ID actually changed
-    if (initialData && String(initialData.gdLevelId) === id) return;
+    if (skipNextFetchRef.current) {
+      skipNextFetchRef.current = false;
+      return;
+    }
 
-    const seq = ++fetchSeq.current;
-    const timer = setTimeout(async () => {
-      setFetchingLevel(true);
-      try {
-        const res = await fetch(`/api/gd/level/${id}`);
-        const data = await res.json();
-        if (seq !== fetchSeq.current) return;
-        if (data.success && data.level) {
-          setForm((prev) => {
-            if (prev.gdLevelId !== id) return prev;
-            return {
-              ...prev,
-              difficultyFace: data.level.difficultyFace ?? prev.difficultyFace,
-              ratingType: data.level.ratingType || prev.ratingType,
-              mode: data.level.isPlatformer ? 'PLATFORMER' : 'CLASSIC',
-            };
-          });
-        }
-      } catch (e) {
-        // Keep manual values if GD lookup fails
-      } finally {
-        if (seq === fetchSeq.current) setFetchingLevel(false);
-      }
-    }, 500);
+    const timer = setTimeout(() => {
+      void fetchGdLevel(id);
+    }, 400);
 
     return () => clearTimeout(timer);
-  }, [form.gdLevelId, isOpen, initialData]);
+  }, [form.gdLevelId, isOpen]);
 
   if (!isOpen) return null;
 
@@ -181,6 +198,11 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
                 onClick={cycleRating}
                 title="Click để đổi Rating (Feature, Epic...)"
               >
+                {fetchingLevel && (
+                  <div className="absolute inset-0 z-20 flex items-center justify-center rounded-full bg-black/40">
+                    <Loader2 className="w-6 h-6 animate-spin text-white" />
+                  </div>
+                )}
                 {form.ratingType !== 'NONE' && getRatingIcon() && (
                   <img src={getRatingIcon() as string} className="absolute inset-0 w-full h-full object-contain" alt={form.ratingType} />
                 )}

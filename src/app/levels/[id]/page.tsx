@@ -23,36 +23,45 @@ export default async function DemonDetailPage({ params }: { params: Promise<{ id
   if (!level) return notFound();
 
   const neighborSelect = { id: true, name: true, placement: true };
-  const [prevLevel, nextLevel] = await Promise.all([
+  const modeFilter = { mode: level.mode, placement: { not: null } };
+
+  const [prevLevel, nextLevel, firstLevel, lastLevel] = await Promise.all([
     level.placement != null
       ? prisma.level.findFirst({
           where: { mode: level.mode, placement: { lt: level.placement } },
           orderBy: { placement: 'desc' },
           select: neighborSelect,
         })
-      : prisma.level.findFirst({
-          where: { mode: level.mode, placement: null, createdAt: { lt: level.createdAt } },
-          orderBy: { createdAt: 'desc' },
-          select: neighborSelect,
-        }),
+      : null,
     level.placement != null
       ? prisma.level.findFirst({
           where: { mode: level.mode, placement: { gt: level.placement } },
           orderBy: { placement: 'asc' },
           select: neighborSelect,
         })
-      : prisma.level.findFirst({
-          where: { mode: level.mode, placement: null, createdAt: { gt: level.createdAt } },
-          orderBy: { createdAt: 'asc' },
-          select: neighborSelect,
-        }),
+      : null,
+    prisma.level.findFirst({
+      where: modeFilter,
+      orderBy: { placement: 'asc' },
+      select: neighborSelect,
+    }),
+    prisma.level.findFirst({
+      where: modeFilter,
+      orderBy: { placement: 'desc' },
+      select: neighborSelect,
+    }),
   ]);
+
+  const isFirst = !prevLevel;
+  const isLast = !nextLevel;
 
   return (
     <DemonDetailView
       level={JSON.parse(JSON.stringify(level))}
       prevLevel={prevLevel}
       nextLevel={nextLevel}
+      firstLevel={isFirst ? null : firstLevel}
+      lastLevel={isLast ? null : lastLevel}
     />
   );
 }

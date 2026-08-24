@@ -9,12 +9,13 @@ interface FloatingNavProps {
   totalPages?: number;
   onPageChange?: (page: number) => void;
   onJumpToRank?: (rank: number) => void;
+  alwaysVisible?: boolean;
 }
 
-export default function FloatingNav({ currentPage = 1, totalPages = 1, onPageChange, onJumpToRank }: FloatingNavProps) {
+export default function FloatingNav({ currentPage = 1, totalPages = 1, onPageChange, onJumpToRank, alwaysVisible = false }: FloatingNavProps) {
   const { t } = useLanguage();
   const [inputPage, setInputPage] = useState(currentPage.toString());
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(alwaysVisible);
   const atTopRef = useRef(true);
 
   useEffect(() => {
@@ -22,13 +23,18 @@ export default function FloatingNav({ currentPage = 1, totalPages = 1, onPageCha
   }, [currentPage]);
 
   useEffect(() => {
+    if (alwaysVisible) {
+      setIsVisible(true);
+      return;
+    }
     const handleScroll = () => {
       atTopRef.current = window.scrollY < 100;
       setIsVisible(window.scrollY > 200);
     };
+    handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [alwaysVisible]);
 
   const handleScrollToggle = () => {
     if (atTopRef.current) {

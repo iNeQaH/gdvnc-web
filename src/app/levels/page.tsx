@@ -524,6 +524,7 @@ export default function LevelsListPage() {
         )}
 
         <FloatingNav 
+          alwaysVisible
           currentPage={currentPage} 
           totalPages={totalPages} 
           onPageChange={setCurrentPage} 

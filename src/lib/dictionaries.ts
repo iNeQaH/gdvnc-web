@@ -153,8 +153,8 @@ export const en = {
 
   // Supporter
   'support.title': 'Support GDVNC',
-  'support.desc': 'Support GDVNC. This is a donation page only and does not grant any in-site benefits.',
-  'support.no_perks': 'Donations do not unlock perks, badges, priority review, or any other benefits.',
+  'support.desc': 'Cám ơn nhìu nha!!',
+  'support.no_perks': 'Tysm <3',
   'support.sp_points': 'SP Points Balance',
   'support.ad_title': 'Watch Ad for Free SP',
   'support.ad_disabled': 'Ad reward system is currently in maintenance / coming soon.',
@@ -598,8 +598,8 @@ export const vi: Record<DictKey, string> = {
   'submit.level_ok': 'Đã gửi level. Chờ Admin xét duyệt.',
 
   'support.title': 'Ủng Hộ Web!',
-  'support.desc': 'Ủng hộ GDVNC. Đây chỉ là trang thanh toán, không đi kèm bất kỳ quyền lợi nào trên web.',
-  'support.no_perks': 'Ủng hộ không mở khóa huy hiệu, ưu tiên duyệt, hay bất kỳ quyền lợi nào khác.',
+  'support.desc': 'Cám ơn nhìu nha!!',
+  'support.no_perks': 'Tysm <3',
   'support.sp_points': 'Số dư SP',
   'support.ad_title': 'Xem Quảng Cáo Nhận Điểm SP',
   'support.ad_disabled': 'Tính năng xem quảng cáo nhận điểm đang tạm thời được bảo trì / sắp ra mắt.',
