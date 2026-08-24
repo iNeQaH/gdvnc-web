@@ -97,3 +97,48 @@ export async function sendOtpEmail(to: string, code: string, locale: 'vi' | 'en'
     throw mapSendError(error, locale);
   }
 }
+
+export async function sendResetPasswordEmail(to: string, code: string, locale: 'vi' | 'en' = 'vi') {
+  if (!isMailConfigured()) {
+    throw new Error(
+      locale === 'en'
+        ? 'Email sending is not configured. Set SMTP_USER and SMTP_PASS in .env'
+        : 'Hệ thống gửi email chưa được cấu hình. Hãy điền SMTP_USER và SMTP_PASS trong file .env'
+    );
+  }
+
+  const user = env('SMTP_USER');
+  const transporter = createTransporter();
+  const from = env('SMTP_FROM') || `"GDVNC" <${user}>`;
+  const isEn = locale === 'en';
+
+  const subject = isEn ? 'GDVNC password reset code' : 'Mã đặt lại mật khẩu GDVNC';
+  const heading = isEn ? 'Reset your GDVNC password' : 'Đặt lại mật khẩu GDVNC';
+  const intro = isEn ? 'Your password reset code is:' : 'Mã đặt lại mật khẩu của bạn là:';
+  const expire = isEn
+    ? 'This code is valid for 10 minutes. If you did not request a reset, please ignore this email.'
+    : 'Mã này có hiệu lực trong 10 phút. Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.';
+
+  try {
+    await transporter.sendMail({
+      from,
+      to,
+      subject,
+      text: `${intro} ${code}\n\n${expire}`,
+      html: `
+        <div style="font-family: Arial, Helvetica, sans-serif; padding: 24px; color: #1e293b; background: #f8fafc;">
+          <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 28px; border: 1px solid #e2e8f0;">
+            <h2 style="margin: 0 0 12px; color: #0284c7;">${heading}</h2>
+            <p style="margin: 0 0 16px; font-size: 14px;">${intro}</p>
+            <div style="font-size: 28px; font-weight: 800; letter-spacing: 8px; background: #f0f9ff; color: #0369a1; padding: 14px 20px; border-radius: 12px; text-align: center;">
+              ${code}
+            </div>
+            <p style="margin: 18px 0 0; font-size: 12px; color: #64748b;">${expire}</p>
+          </div>
+        </div>
+      `,
+    });
+  } catch (error: any) {
+    throw mapSendError(error, locale);
+  }
+}

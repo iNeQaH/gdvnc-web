@@ -1,25 +1,7 @@
 import prisma from '@/lib/prisma';
 import { LevelMode, RecordStatus } from '@prisma/client';
-import { calculateBasePp, calculateTotalPp } from '@/lib/ScoringEngine';
-
-async function recalculateUserPp(userId: string, mode: LevelMode) {
-  const records = await prisma.record.findMany({
-    where: {
-      userId,
-      status: RecordStatus.APPROVED,
-      level: { mode },
-    },
-    include: { level: true },
-  });
-  const basePps = records.map((r) => r.level.basePp);
-  const totalPp = calculateTotalPp(basePps);
-
-  if (mode === LevelMode.CLASSIC) {
-    await prisma.user.update({ where: { id: userId }, data: { classicPp: totalPp } });
-  } else {
-    await prisma.user.update({ where: { id: userId }, data: { platformerPp: totalPp } });
-  }
-}
+import { calculateBasePp } from '@/lib/ScoringEngine';
+import { recalculateUserPp as recalcUserPp } from '@/lib/recordUtils';
 
 export async function triggerBackgroundPpRecalc(levelIds: string[], mode: LevelMode) {
   const records = await prisma.record.findMany({
@@ -27,7 +9,7 @@ export async function triggerBackgroundPpRecalc(levelIds: string[], mode: LevelM
     select: { userId: true },
     distinct: ['userId'],
   });
-  Promise.all(records.map((r) => recalculateUserPp(r.userId, mode))).catch(console.error);
+  Promise.all(records.map((r) => recalcUserPp(r.userId))).catch(console.error);
 }
 
 function extractYoutubeId(videoUrl?: string | null): string | null {

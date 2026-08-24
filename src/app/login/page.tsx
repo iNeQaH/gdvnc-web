@@ -9,7 +9,7 @@ import SmartCaptcha from '@/components/SmartCaptcha';
 export default function AuthPage() {
   const router = useRouter();
   const { t, language } = useLanguage();
-  const [tab, setTab] = useState<'login' | 'register'>('login');
+  const [tab, setTab] = useState<'login' | 'register' | 'reset'>('login');
 
   // Login state
   const [loginIdentifier, setLoginIdentifier] = useState('');
@@ -23,6 +23,13 @@ export default function AuthPage() {
   const [regPassword, setRegPassword] = useState('');
   const [regGdUsername, setRegGdUsername] = useState('');
   const [regDiscord, setRegDiscord] = useState('');
+
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetOtp, setResetOtp] = useState('');
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetCooldown, setResetCooldown] = useState(0);
+  const [sendingResetOtp, setSendingResetOtp] = useState(false);
+  const [resetOtpSentMsg, setResetOtpSentMsg] = useState<string | null>(null);
 
   // Anti-bot Security Challenge
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
@@ -43,6 +50,87 @@ export default function AuthPage() {
       return () => clearTimeout(timer);
     }
   }, [otpCooldown]);
+
+  useEffect(() => {
+    if (resetCooldown > 0) {
+      const timer = setTimeout(() => setResetCooldown(resetCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resetCooldown]);
+
+  const handleSendResetOtp = async () => {
+    setError('');
+    setResetOtpSentMsg(null);
+
+    if (!resetEmail || !resetEmail.includes('@') || !resetEmail.includes('.')) {
+      setError(t('auth.email_invalid'));
+      return;
+    }
+
+    if (!captchaToken) {
+      setError(t('auth.captcha_wrong' as any) || 'Vui lòng xác thực chống bot');
+      return;
+    }
+
+    setSendingResetOtp(true);
+    try {
+      const res = await fetch('/api/auth/send-reset-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetEmail, locale: language, captchaToken }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.error || t('auth.otp_send_fail'));
+        return;
+      }
+      setResetCooldown(60);
+      setResetOtpSentMsg(data.message);
+    } catch {
+      setError(t('auth.otp_send_error'));
+    } finally {
+      setSendingResetOtp(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!resetOtp) {
+      setError(t('auth.otp_required'));
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: resetEmail,
+          otp: resetOtp,
+          password: resetPassword,
+          locale: language,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.error || t('auth.login_fail'));
+        return;
+      }
+      setSuccessMsg(t('auth.reset_ok'));
+      setTimeout(() => {
+        setTab('login');
+        setSuccessMsg('');
+        setResetEmail('');
+        setResetOtp('');
+        setResetPassword('');
+      }, 1500);
+    } catch {
+      setError(t('common.server_error'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSendOtp = async () => {
     setError('');
@@ -283,6 +371,14 @@ export default function AuthPage() {
                 />
                 <span className="ui-dim font-medium">{t('auth.remember')}</span>
               </label>
+              <button
+                type="button"
+                onClick={() => { setTab('reset'); setError(''); setSuccessMsg(''); }}
+                className="font-semibold hover:underline cursor-pointer"
+                style={{ color: 'var(--accent)' }}
+              >
+                {t('auth.forgot_password')}
+              </button>
             </div>
 
             <button
@@ -296,6 +392,108 @@ export default function AuthPage() {
             >
               {loading ? t('auth.logging_in') : t('auth.login')}
               <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </form>
+        ) : tab === 'reset' ? (
+          <form onSubmit={handleResetPassword} className="space-y-3.5">
+            <p className="text-xs ui-dim leading-relaxed">{t('auth.reset_desc')}</p>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold ui-title">{t('auth.email')} *</label>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  required
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="yourname@gmail.com"
+                  className="flex-1 px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  style={{
+                    backgroundColor: 'var(--bg-subtle)',
+                    borderColor: 'var(--border-ui)',
+                    color: 'var(--text-title)',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleSendResetOtp}
+                  disabled={sendingResetOtp || resetCooldown > 0 || !resetEmail || !captchaToken}
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1 shrink-0 disabled:opacity-50 cursor-pointer"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                >
+                  <Send className="w-3 h-3" />
+                  {sendingResetOtp ? t('auth.sending') : resetCooldown > 0 ? `${resetCooldown}s` : t('auth.reset_send_otp')}
+                </button>
+              </div>
+              {resetOtpSentMsg && (
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 pt-0.5 font-medium">
+                  {resetOtpSentMsg}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold ui-title flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-sky-500" />
+                {t('auth.antibot')} *
+              </label>
+              <SmartCaptcha onVerify={(token) => setCaptchaToken(token)} />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold ui-title">{t('auth.otp')} *</label>
+              <input
+                type="text"
+                required
+                maxLength={6}
+                value={resetOtp}
+                onChange={(e) => setResetOtp(e.target.value)}
+                placeholder={t('auth.otp_ph')}
+                className="w-full px-3 py-2 rounded-xl text-xs border font-mono tracking-widest focus:outline-none focus:ring-1 focus:ring-sky-500"
+                style={{
+                  backgroundColor: 'var(--bg-subtle)',
+                  borderColor: 'var(--border-ui)',
+                  color: 'var(--text-title)',
+                }}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold ui-title">{t('auth.new_password')} *</label>
+              <input
+                type="password"
+                required
+                value={resetPassword}
+                onChange={(e) => setResetPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-1 focus:ring-sky-500"
+                style={{
+                  backgroundColor: 'var(--bg-subtle)',
+                  borderColor: 'var(--border-ui)',
+                  color: 'var(--text-title)',
+                }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full mt-3 py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              style={{
+                backgroundColor: 'var(--accent)',
+                color: 'var(--accent-fg)',
+              }}
+            >
+              {loading ? t('auth.logging_in') : t('auth.reset_submit')}
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setTab('login'); setError(''); }}
+              className="w-full text-xs font-semibold ui-dim hover:opacity-100 cursor-pointer"
+            >
+              {t('auth.back_to_login')}
             </button>
           </form>
         ) : (

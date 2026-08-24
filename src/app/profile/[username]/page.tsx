@@ -359,6 +359,10 @@ export default function ProfilePage() {
 
   const hardest = data.hardestClassic;
   const breakdown = data.classicBreakdown;
+  const classicRecords = data.classicRecords || breakdown?.items || [];
+  const ppByRecordId = new Map<string, any>(
+    (breakdown?.items || []).map((item: any) => [item.recordId, item])
+  );
 
   return (
     <div className="space-y-6">
@@ -679,7 +683,7 @@ export default function ProfilePage() {
               <div className="text-xl font-black mt-0.5" style={{ color: 'var(--accent)' }}>
                 {data.classicPp.toFixed(2)}
               </div>
-              <div className="text-[10px] ui-dim">{t("profile.demons_passed", { n: breakdown?.items?.length || 0 })}</div>
+              <div className="text-[10px] ui-dim">{t("profile.demons_passed", { n: classicRecords.length })}</div>
             </div>
 
             <div className="ui-subtle p-3 rounded-xl">
@@ -816,7 +820,7 @@ export default function ProfilePage() {
           }}
         >
           <Star className="w-3.5 h-3.5 fill-current" />
-          Classic ({breakdown?.items?.length || 0})
+          Classic ({classicRecords.length})
         </button>
         <button
           onClick={() => setActiveTab('platformer')}
@@ -851,6 +855,7 @@ export default function ProfilePage() {
                 <tr className="border-b text-[10px] font-bold uppercase ui-dim" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
                   <th className="px-4 py-2.5 w-10 text-center">#</th>
                   <th className="px-4 py-2.5">{t("profile.col_level")}</th>
+                  <th className="px-4 py-2.5 text-center">{t("profile.col_progress")}</th>
                   <th className="px-4 py-2.5 text-right">Base Points</th>
                   <th className="px-4 py-2.5 text-center">{t("profile.col_weight")}</th>
                   <th className="px-4 py-2.5 text-right">{t("profile.col_pp")}</th>
@@ -858,23 +863,38 @@ export default function ProfilePage() {
                 </tr>
               </thead>
               <tbody className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
-                {breakdown?.items?.map((item: any, idx: number) => (
+                {classicRecords.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center ui-dim italic">
+                      {t('profile.no_records')}
+                    </td>
+                  </tr>
+                ) : classicRecords.map((item: any, idx: number) => {
+                  const pp = ppByRecordId.get(item.recordId);
+                  return (
                   <tr key={item.recordId || item.id || `breakdown-${idx}`} className="hover:opacity-90">
-                    <td className="px-4 py-2.5 text-center font-bold ui-dim">{item.rankInProfile}</td>
+                    <td className="px-4 py-2.5 text-center font-bold ui-dim">{pp?.rankInProfile ?? idx + 1}</td>
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-1.5">
                         <span className="px-1 py-0.2 rounded text-[9px] font-bold ui-subtle">#{item.placement}</span>
-                        <span className="font-bold ui-title">{item.levelName}</span>
+                        <span className="font-bold ui-title">{item.name || item.levelName}</span>
                       </div>
+                    </td>
+                    <td className="px-4 py-2.5 text-center font-semibold ui-title">
+                      {item.progress != null ? `${item.progress}%` : '—'}
                     </td>
                     <td className="px-4 py-2.5 text-right ui-dim">{item.basePp.toFixed(2)}</td>
                     <td className="px-4 py-2.5 text-center">
-                      <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
-                        {item.weightPercent}%
-                      </span>
+                      {pp ? (
+                        <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
+                          {pp.weightPercent}%
+                        </span>
+                      ) : (
+                        <span className="text-[10px] ui-dim">—</span>
+                      )}
                     </td>
-                    <td className="px-4 py-2.5 text-right font-black" style={{ color: 'var(--accent)' }}>
-                      {item.weightedPp.toFixed(2)}
+                    <td className="px-4 py-2.5 text-right font-black" style={{ color: pp ? 'var(--accent)' : 'var(--text-dim)' }}>
+                      {pp ? pp.weightedPp.toFixed(2) : '—'}
                     </td>
                     <td className="px-4 py-2.5 text-center">
                       <div className="flex items-center justify-center gap-2">
@@ -883,7 +903,7 @@ export default function ProfilePage() {
                         </a>
                         {currentUser?.role === 'ADMIN' && (
                           <button
-                            onClick={() => handleDeleteRecord(item.recordId, item.levelName)}
+                            onClick={() => handleDeleteRecord(item.recordId, item.name || item.levelName)}
                             className="p-1 rounded hover:bg-red-500/20 text-red-500 transition-colors"
                             title="Xóa kỷ lục"
                           >
@@ -893,7 +913,7 @@ export default function ProfilePage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                );})}
               </tbody>
             </table>
           </div>

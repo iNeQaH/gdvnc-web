@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { RecordStatus, LevelMode } from '@prisma/client';
 import { getWeightedPpBreakdown } from '@/lib/ScoringEngine';
+import {
+  dedupeRecordsByLevel,
+  isQualifyingClassicRecord,
+  isQualifyingPlatformerRecord,
+} from '@/lib/recordUtils';
 
 export async function GET(req: Request, { params }: { params: Promise<{ username: string }> }) {
   try {
@@ -35,13 +40,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       return NextResponse.json({ error: 'Không tìm thấy người chơi.' }, { status: 404 });
     }
 
-    // Classic records breakdown
-    const classicCompletions = user.records
-      .filter((r) => r.level.mode === LevelMode.CLASSIC && (r.progress || 0) >= 100)
+    const dedupedRecords = dedupeRecordsByLevel(user.records);
+
+    const classicRecords = dedupedRecords
+      .filter((r) => r.level.mode === LevelMode.CLASSIC)
       .map((r) => ({
         name: r.level.name,
         placement: r.level.placement || 999,
         basePp: r.level.basePp,
+        progress: r.progress,
+        qualifiesForPp: isQualifyingClassicRecord(r, r.level),
         recordId: r.id,
         videoUrl: r.videoUrl,
         hz: r.hz,
@@ -49,11 +57,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         submittedAt: r.submittedAt,
       }));
 
-    const classicBreakdown = getWeightedPpBreakdown(classicCompletions);
+    const classicForPp = classicRecords.filter((r) => r.qualifiesForPp);
+    const classicBreakdown = getWeightedPpBreakdown(classicForPp);
 
-    // Platformer records
-    const platformerCompletions = user.records
-      .filter((r) => r.level.mode === LevelMode.PLATFORMER && r.timeMs !== null)
+    const platformerCompletions = dedupedRecords
+      .filter((r) => r.level.mode === LevelMode.PLATFORMER && isQualifyingPlatformerRecord(r))
       .map((r) => ({
         name: r.level.name,
         placement: r.level.placement || 999,
@@ -66,10 +74,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         submittedAt: r.submittedAt,
       }));
 
-    // Find Hardest Demon (lowest placement number)
     let hardestClassic = null;
-    if (classicCompletions.length > 0) {
-      hardestClassic = [...classicCompletions].sort((a, b) => a.placement - b.placement)[0];
+    if (classicForPp.length > 0) {
+      hardestClassic = [...classicForPp].sort((a, b) => a.placement - b.placement)[0];
     }
 
     // Calculate National Ranks
@@ -109,10 +116,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         creatorRank,
         hardestClassic,
         classicBreakdown,
+        classicRecords,
         platformerCompletions,
         createdLevels: user.createdLevels,
         creatorWorks: user.creatorWorks,
-        totalRecordsCount: user.records.length,
+        totalRecordsCount: dedupedRecords.length,
         badges: user.userBadges
           .slice()
           .sort((a: any, b: any) => (a.badge.sortOrder ?? 0) - (b.badge.sortOrder ?? 0))

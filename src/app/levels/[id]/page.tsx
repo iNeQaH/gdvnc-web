@@ -2,6 +2,7 @@ import React from 'react';
 import { notFound } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import DemonDetailView from '@/components/DemonDetailView';
+import { dedupeRecordsByUser } from '@/lib/recordUtils';
 
 export default async function DemonDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,6 +22,19 @@ export default async function DemonDetailPage({ params }: { params: Promise<{ id
   });
 
   if (!level) return notFound();
+
+  const victors = dedupeRecordsByUser(
+    level.records.map((r) => ({ ...r, level: { mode: level.mode, minPercent: level.minPercent, basePp: level.basePp, placement: level.placement, name: level.name } }))
+  ).sort((a, b) => {
+    if (level.mode === 'PLATFORMER') {
+      return (a.timeMs ?? Infinity) - (b.timeMs ?? Infinity);
+    }
+    const progDiff = (b.progress ?? 0) - (a.progress ?? 0);
+    if (progDiff !== 0) return progDiff;
+    return a.submittedAt.getTime() - b.submittedAt.getTime();
+  });
+
+  const levelWithVictors = { ...level, records: victors };
 
   const neighborSelect = { id: true, name: true, placement: true };
   const modeFilter = { mode: level.mode, placement: { not: null } };
@@ -57,7 +71,7 @@ export default async function DemonDetailPage({ params }: { params: Promise<{ id
 
   return (
     <DemonDetailView
-      level={JSON.parse(JSON.stringify(level))}
+      level={JSON.parse(JSON.stringify(levelWithVictors))}
       prevLevel={prevLevel}
       nextLevel={nextLevel}
       firstLevel={isFirst ? null : firstLevel}

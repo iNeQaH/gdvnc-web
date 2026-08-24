@@ -1,8 +1,8 @@
 import { requireAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { RecordStatus, LevelMode } from '@prisma/client';
-import { calculateTotalPp } from '@/lib/ScoringEngine';
+import { RecordStatus } from '@prisma/client';
+import { consolidateBeforeApprove, recalculateUserPp } from '@/lib/recordUtils';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
@@ -24,6 +24,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: 'Không tìm thấy kỷ lục.' }, { status: 404 });
     }
 
+    if (action === 'APPROVE') {
+      const consolidation = await consolidateBeforeApprove(id);
+      if (!consolidation.ok) {
+        return NextResponse.json({ error: consolidation.reason }, { status: 400 });
+      }
+    }
+
     const newStatus = action === 'APPROVE' ? RecordStatus.APPROVED : RecordStatus.REJECTED;
 
     const updatedRecord = await prisma.record.update({
@@ -36,33 +43,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       },
     });
 
-    // If approved, trigger auto recalculation of player's Points
     if (action === 'APPROVE') {
-      const userRecords = await prisma.record.findMany({
-        where: {
-          userId: record.userId,
-          status: RecordStatus.APPROVED,
-        },
-        include: { level: true },
-      });
+      await recalculateUserPp(record.userId);
 
-      const classicBasePps = userRecords
-        .filter((r) => r.level.mode === LevelMode.CLASSIC && (r.progress || 0) >= 100)
-        .map((r) => r.level.basePp);
-
-      const platformerBasePps = userRecords
-        .filter((r) => r.level.mode === LevelMode.PLATFORMER && r.timeMs !== null)
-        .map((r) => r.level.basePp);
-
-      const classicPp = calculateTotalPp(classicBasePps);
-      const platformerPp = calculateTotalPp(platformerBasePps);
-
-      await prisma.user.update({
-        where: { id: record.userId },
-        data: { classicPp, platformerPp },
-      });
-
-      // Send approval notification
       await prisma.notification.create({
         data: {
           userId: record.userId,
@@ -70,8 +53,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           message: `Kỷ lục hoàn thành màn chơi "${record.level.name}" của bạn đã được Admin phê duyệt và cập nhật điểm Points vào Bảng Xếp Hạng!`,
         },
       });
-    } else if (action === 'REJECT') {
-      // Send rejection notification
+    } else {
       await prisma.notification.create({
         data: {
           userId: record.userId,
@@ -95,33 +77,9 @@ export async function DELETE(req: Request, context: any) {
     const { id } = params;
     const record = await prisma.record.findUnique({ where: { id } });
     if (!record) return NextResponse.json({ error: 'Không tìm thấy kỷ lục.' }, { status: 404 });
-    
+
     await prisma.record.delete({ where: { id } });
-    
-    // Recalculate Points
-    const userRecords = await prisma.record.findMany({
-      where: {
-        userId: record.userId,
-        status: RecordStatus.APPROVED,
-      },
-      include: { level: true },
-    });
-
-    const classicBasePps = userRecords
-      .filter((r: any) => r.level.mode === LevelMode.CLASSIC && (r.progress || 0) >= 100)
-      .map((r: any) => r.level.basePp);
-
-    const platformerBasePps = userRecords
-      .filter((r: any) => r.level.mode === LevelMode.PLATFORMER)
-      .map((r: any) => r.level.basePp);
-
-    const classicPp = calculateTotalPp(classicBasePps);
-    const platformerPp = calculateTotalPp(platformerBasePps);
-
-    await prisma.user.update({
-      where: { id: record.userId },
-      data: { classicPp, platformerPp },
-    });
+    await recalculateUserPp(record.userId);
 
     return NextResponse.json({ success: true, message: 'Đã xóa kỷ lục và cập nhật Points.' });
   } catch (error: any) {
