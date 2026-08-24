@@ -13,7 +13,6 @@ import {
   Search, 
   UserCheck,
   SlidersHorizontal,
-  Sparkles,
   Crown,
   User as UserIcon,
   CheckCircle2,
@@ -619,11 +618,6 @@ export default function AdminPage() {
                     </div>
 
                     <div className="flex items-center gap-1.5 text-xs">
-                      {rec.prioritySp > 0 && (
-                        <span className="px-2 py-0.5 rounded font-black text-xs bg-amber-500/20 text-amber-500 border border-amber-500/30 flex items-center gap-1">
-                          <Sparkles className="w-3 h-3" /> +{rec.prioritySp} SP Ưu Tiên
-                        </span>
-                      )}
                       {rec.progress && (
                         <span className="px-2 py-0.5 rounded font-black text-xs" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
                           {rec.progress}%
@@ -749,12 +743,6 @@ export default function AdminPage() {
                         </div>
                       </div>
                     </div>
-
-                    {work.prioritySp > 0 && (
-                      <span className="px-2 py-0.5 rounded font-black text-xs bg-amber-500/20 text-amber-500 border border-amber-500/30 flex items-center gap-1 shrink-0">
-                        <Sparkles className="w-3 h-3" /> +{work.prioritySp} SP Ưu Tiên
-                      </span>
-                    )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
@@ -899,12 +887,6 @@ export default function AdminPage() {
                         </div>
                       </div>
                     </div>
-
-                    {sub.prioritySp > 0 && (
-                      <span className="px-2 py-0.5 rounded font-black text-xs bg-amber-500/20 text-amber-500 border border-amber-500/30 flex items-center gap-1 shrink-0">
-                        <Sparkles className="w-3 h-3" /> +{sub.prioritySp} SP Ưu Tiên
-                      </span>
-                    )}
                   </div>
                   {sub.videoUrl && (
                     <a href={sub.videoUrl} target="_blank" rel="noreferrer" className="text-xs font-semibold truncate hover:underline block" style={{ color: 'var(--accent)' }}>

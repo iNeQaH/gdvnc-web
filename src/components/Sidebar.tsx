@@ -7,7 +7,6 @@ import {
   Star, 
   Flame, 
   Send, 
-  Dices, 
   ShieldCheck, 
   User as UserIcon, 
   LogOut, 
@@ -17,7 +16,6 @@ import {
   Globe,
   ZoomIn,
   Mail,
-  Coins
 } from 'lucide-react';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { useLanguage } from './LanguageContext';
@@ -30,7 +28,6 @@ export const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isInboxOpen, setIsInboxOpen] = useState(false);
-  const [spBalance, setSpBalance] = useState(0);
 
   const loadUserFromStorage = () => {
     const userStr = localStorage.getItem('gdvnc_user');
@@ -38,24 +35,10 @@ export const Sidebar = () => {
       try {
         const u = JSON.parse(userStr);
         setCurrentUser(u);
-        setSpBalance(u.spPoints || 0);
         fetch(`/api/notifications?userId=${u.id}`)
           .then((res) => res.json())
           .then((data) => {
             if (data.success) setUnreadCount(data.unreadCount || 0);
-          })
-          .catch(() => {});
-        fetch('/api/support/points', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'GET_BALANCE', userId: u.id }),
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.success) {
-              setSpBalance(data.spPoints);
-              localStorage.setItem('gdvnc_user', JSON.stringify({ ...u, spPoints: data.spPoints }));
-            }
           })
           .catch(() => {});
       } catch (e) {
@@ -64,7 +47,6 @@ export const Sidebar = () => {
     } else {
       setCurrentUser(null);
       setUnreadCount(0);
-      setSpBalance(0);
     }
   };
 
@@ -114,7 +96,6 @@ export const Sidebar = () => {
     { href: '/', label: t('nav.leaderboard'), icon: Star },
     { href: '/levels', label: t('nav.demonlist'), icon: Flame },
     { href: '/submit', label: t('nav.submit'), icon: Send },
-    { href: '/roulette', label: t('nav.roulette'), icon: Dices },
     { href: '/support', label: t('nav.supporter'), icon: Heart, highlight: false, isPink: true },
     { href: '/helps', label: 'Hỗ trợ / Helps', icon: Send},
     ...(currentUser?.role === 'ADMIN' ? [{ href: '/admin', label: t('nav.admin'), icon: ShieldCheck }] : []),
@@ -142,15 +123,6 @@ export const Sidebar = () => {
         <div className="flex items-center gap-1.5">
           {currentUser && (
             <>
-              <Link
-                href="/support"
-                className="flex items-center gap-1 px-2 py-1.5 rounded-xl border text-[11px] font-black"
-                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--accent)' }}
-                title="SP Points"
-              >
-                <Coins className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                {currentUser?.role === 'ADMIN' || currentUser?.username === 'iNeQaH' ? '∞' : spBalance.toLocaleString()}
-              </Link>
               <button
                 onClick={() => setIsInboxOpen(true)}
                 className="p-2 rounded-xl border ui-dim hover:opacity-100 transition-colors relative"
@@ -310,18 +282,9 @@ export const Sidebar = () => {
 
           {currentUser && (
             <div className="flex items-center gap-2 px-1">
-              <Link
-                href="/support"
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-black hover:opacity-90"
-                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--accent)' }}
-                title="SP Points"
-              >
-                <Coins className="w-4 h-4 text-amber-500 fill-amber-500" />
-                {currentUser?.role === 'ADMIN' || currentUser?.username === 'iNeQaH' ? '∞' : spBalance.toLocaleString()} <span className="text-[10px] font-bold text-amber-500">SP</span>
-              </Link>
               <button
                 onClick={() => setIsInboxOpen(true)}
-                className="p-2 rounded-xl border relative cursor-pointer hover:opacity-90"
+                className="flex-1 p-2 rounded-xl border relative cursor-pointer hover:opacity-90 flex items-center justify-center"
                 style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                 title="Inbox"
               >

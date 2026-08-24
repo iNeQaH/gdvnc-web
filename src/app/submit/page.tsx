@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send, CheckCircle, AlertCircle, Search, Gamepad2, Hammer, Image as ImageIcon, Video, X, Layers, Sparkles } from 'lucide-react';
+import { Send, CheckCircle, AlertCircle, Search, Gamepad2, Hammer, Image as ImageIcon, Video, X, Layers } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import LevelFormModal from '@/components/LevelFormModal';
 
@@ -16,8 +16,6 @@ function SubmitForm() {
   // Tabs
   const [tab, setTab] = useState<'PLAYER' | 'CREATOR' | 'LEVEL'>('PLAYER');
 
-  // SP Priority
-  const [prioritySp, setPrioritySp] = useState<number>(0);
 
   // Player state
   const [gdLevelIdStr, setGdLevelIdStr] = useState('');
@@ -119,7 +117,6 @@ function SubmitForm() {
       let payload: any = {
         type: tab,
         userId: currentUser.id,
-        prioritySp: prioritySp,
       };
 
       if (tab === 'PLAYER') {
@@ -267,61 +264,13 @@ function SubmitForm() {
         </div>
       ) : tab === 'LEVEL' ? (
         <div className="space-y-4">
-          <div className="p-4 rounded-2xl border space-y-3 ui-card" style={{ borderColor: 'var(--border-ui)' }}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-                <span className="text-xs font-bold ui-title">Ưu Tiên Duyệt Nhanh Bằng Điểm SP (Tùy chọn)</span>
-              </div>
-              <span className="text-[11px] font-semibold ui-dim">
-                Số dư: <strong className="text-amber-500 font-bold">{currentUser?.role === 'ADMIN' || currentUser?.username === 'iNeQaH' ? '∞' : (currentUser?.spPoints || 0)} SP</strong>
-              </span>
-            </div>
-            <p className="text-[11px] ui-dim leading-relaxed">
-              Sử dụng điểm SP để nhận ưu tiên duyệt. Điểm SP sử dụng càng nhiều thì yêu cầu càng được tự động đẩy lên vị trí cao nhất trong danh sách chờ của Admin & Moderator.
-            </p>
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              {[0, 50, 100, 200, 500].map((amt) => (
-                <button
-                  key={amt}
-                  type="button"
-                  onClick={() => setPrioritySp(amt)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                    prioritySp === amt
-                      ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
-                      : 'ui-subtle hover:bg-black/5 dark:hover:bg-white/5 opacity-80'
-                  }`}
-                  style={prioritySp !== amt ? { borderColor: 'var(--border-ui)' } : {}}
-                >
-                  {amt === 0 ? 'Mặc định (0 SP)' : `+${amt} SP`}
-                </button>
-              ))}
-              <div className="flex items-center gap-1.5 sm:ml-auto">
-                <span className="text-xs font-bold ui-dim">Tự nhập:</span>
-                <input
-                  type="number"
-                  min={0}
-                  value={prioritySp}
-                  onChange={(e) => setPrioritySp(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                  className="w-20 px-2 py-1 rounded-xl text-xs ui-input text-center font-bold"
-                />
-                <span className="text-xs font-bold ui-dim">SP</span>
-              </div>
-            </div>
-            {prioritySp > (currentUser?.spPoints || 0) && !(currentUser?.role === 'ADMIN' || currentUser?.username === 'iNeQaH') && (
-              <p className="text-[10px] text-red-500 font-bold">
-                ⚠️ Số dư SP của bạn không đủ ({currentUser?.role === 'ADMIN' || currentUser?.username === 'iNeQaH' ? '∞' : (currentUser?.spPoints || 0)} SP). Yêu cầu sẽ bị từ chối nếu không đủ điểm.
-              </p>
-            )}
-          </div>
-
           <LevelFormModal
             isOpen
             embedded
             onClose={() => {}}
             onSaved={() => setSuccess(true)}
             submitUrl="/api/submit"
-            extraPayload={{ type: 'LEVEL', userId: currentUser.id, prioritySp }}
+            extraPayload={{ type: 'LEVEL', userId: currentUser.id }}
             title={t('submit.tab_level')}
           />
         </div>
@@ -582,55 +531,6 @@ function SubmitForm() {
               </div>
             </div>
           )}
-
-          {/* SP Priority Boost Card */}
-          <div className="p-4 rounded-2xl border space-y-3 ui-card" style={{ borderColor: 'var(--border-ui)' }}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-                <span className="text-xs font-bold ui-title">Ưu Tiên Duyệt Nhanh Bằng Điểm SP (Tùy chọn)</span>
-              </div>
-              <span className="text-[11px] font-semibold ui-dim">
-                Số dư: <strong className="text-amber-500 font-bold">{currentUser?.role === 'ADMIN' || currentUser?.username === 'iNeQaH' ? '∞' : (currentUser?.spPoints || 0)} SP</strong>
-              </span>
-            </div>
-            <p className="text-[11px] ui-dim leading-relaxed">
-              Sử dụng điểm SP để nhận ưu tiên duyệt. Điểm SP sử dụng càng nhiều thì yêu cầu càng được tự động đẩy lên vị trí cao nhất trong danh sách chờ của Admin & Moderator.
-            </p>
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              {[0, 50, 100, 200, 500].map((amt) => (
-                <button
-                  key={amt}
-                  type="button"
-                  onClick={() => setPrioritySp(amt)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                    prioritySp === amt
-                      ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
-                      : 'ui-subtle hover:bg-black/5 dark:hover:bg-white/5 opacity-80'
-                  }`}
-                  style={prioritySp !== amt ? { borderColor: 'var(--border-ui)' } : {}}
-                >
-                  {amt === 0 ? 'Mặc định (0 SP)' : `+${amt} SP`}
-                </button>
-              ))}
-              <div className="flex items-center gap-1.5 sm:ml-auto">
-                <span className="text-xs font-bold ui-dim">Tự nhập:</span>
-                <input
-                  type="number"
-                  min={0}
-                  value={prioritySp}
-                  onChange={(e) => setPrioritySp(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                  className="w-20 px-2 py-1 rounded-xl text-xs ui-input text-center font-bold"
-                />
-                <span className="text-xs font-bold ui-dim">SP</span>
-              </div>
-            </div>
-            {prioritySp > (currentUser?.spPoints || 0) && !(currentUser?.role === 'ADMIN' || currentUser?.username === 'iNeQaH') && (
-              <p className="text-[10px] text-red-500 font-bold">
-                ⚠️ Số dư SP của bạn không đủ ({currentUser?.role === 'ADMIN' || currentUser?.username === 'iNeQaH' ? '∞' : (currentUser?.spPoints || 0)} SP). Yêu cầu sẽ bị từ chối nếu không đủ điểm.
-              </p>
-            )}
-          </div>
 
           <button
             type="submit"

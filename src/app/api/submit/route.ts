@@ -16,20 +16,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     }
 
-    // Check user & SP balance
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    const isSuperAdmin = user && (user.role === 'ADMIN' || user.username === 'iNeQaH');
     if (!user) return NextResponse.json({ error: 'Không tìm thấy tài khoản người dùng.' }, { status: 404 });
-
-    const prioritySp = Math.max(0, parseInt(String(data.prioritySp || 0), 10) || 0);
-    if (prioritySp > 0) {
-      
-      if (!isSuperAdmin && user.spPoints < prioritySp) {
-        return NextResponse.json({ 
-          error: `Số dư SP của bạn không đủ để dùng ưu tiên (Cần ${prioritySp} SP, hiện có ${user.spPoints} SP).` 
-        }, { status: 400 });
-      }
-    }
 
     if (type === 'PLAYER') {
       const { gdLevelId, levelName, creatorName, isPlatformer, progress, timeMs, videoUrl, rawProofUrl, hz, fps, device, comment } = data;
@@ -71,25 +59,9 @@ export async function POST(req: Request) {
           device: device || 'PC',
           comment: comment || null,
           status: RecordStatus.PENDING,
-          prioritySp: prioritySp,
+          prioritySp: 0,
         },
       });
-
-      if (prioritySp > 0) {
-        if (!isSuperAdmin) {
-          await prisma.user.update({
-            where: { id: userId },
-            data: { spPoints: { decrement: prioritySp } },
-          });
-        }
-        await prisma.notification.create({
-          data: {
-            userId,
-            title: 'Sử dụng SP Ưu Tiên Record',
-            message: `Bạn đã sử dụng ${prioritySp} SP để ưu tiên duyệt kỷ lục màn chơi "${level.name}". Yêu cầu của bạn đã được đẩy lên hàng đầu danh sách chờ!`,
-          },
-        });
-      }
 
       return NextResponse.json({ success: true, record });
     } else if (type === 'CREATOR') {
@@ -109,25 +81,9 @@ export async function POST(req: Request) {
           imageUrl: imageUrl || null,
           description: description || null,
           status: RecordStatus.PENDING,
-          prioritySp: prioritySp,
+          prioritySp: 0,
         }
       });
-
-      if (prioritySp > 0) {
-        if (!isSuperAdmin) {
-          await prisma.user.update({
-            where: { id: userId },
-            data: { spPoints: { decrement: prioritySp } },
-          });
-        }
-        await prisma.notification.create({
-          data: {
-            userId,
-            title: 'Sử dụng SP Ưu Tiên Tác Phẩm',
-            message: `Bạn đã sử dụng ${prioritySp} SP để ưu tiên duyệt tác phẩm "${levelName}". Yêu cầu của bạn đã được đẩy lên hàng đầu danh sách chờ!`,
-          },
-        });
-      }
 
       return NextResponse.json({ success: true, work });
     } else if (type === 'LEVEL') {
@@ -148,25 +104,9 @@ export async function POST(req: Request) {
           difficultyFace: difficultyFace !== undefined ? parseInt(String(difficultyFace), 10) : 10,
           ratingType: ratingType || 'NONE',
           status: RecordStatus.PENDING,
-          prioritySp: prioritySp,
+          prioritySp: 0,
         },
       });
-
-      if (prioritySp > 0) {
-        if (!isSuperAdmin) {
-          await prisma.user.update({
-            where: { id: userId },
-            data: { spPoints: { decrement: prioritySp } },
-          });
-        }
-        await prisma.notification.create({
-          data: {
-            userId,
-            title: 'Sử dụng SP Ưu Tiên Level',
-            message: `Bạn đã sử dụng ${prioritySp} SP để ưu tiên duyệt Level ID: ${gdLevelId}. Yêu cầu của bạn đã được đẩy lên hàng đầu danh sách chờ!`,
-          },
-        });
-      }
 
       return NextResponse.json({ success: true, submission });
     }

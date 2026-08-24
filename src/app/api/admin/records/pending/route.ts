@@ -13,10 +13,7 @@ export async function GET() {
         user: true,
         level: true,
       },
-      orderBy: [
-        { prioritySp: 'desc' },
-        { submittedAt: 'asc' }
-      ],
+      orderBy: { submittedAt: 'asc' },
     });
 
     return NextResponse.json({ success: true, records: pending });

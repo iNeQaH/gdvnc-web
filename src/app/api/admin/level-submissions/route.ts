@@ -12,10 +12,7 @@ export async function GET() {
       include: {
         user: { select: { id: true, username: true, avatarUrl: true } },
       },
-      orderBy: [
-        { prioritySp: 'desc' },
-        { submittedAt: 'asc' }
-      ],
+      orderBy: { submittedAt: 'asc' },
     });
     return NextResponse.json({ success: true, submissions });
   } catch (error: any) {

@@ -14,10 +14,7 @@ export async function GET() {
           select: { username: true, id: true }
         }
       },
-      orderBy: [
-        { prioritySp: 'desc' },
-        { submittedAt: 'asc' }
-      ]
+      orderBy: { submittedAt: 'asc' }
     });
     return NextResponse.json({ success: true, works });
   } catch (error: any) {

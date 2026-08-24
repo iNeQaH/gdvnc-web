@@ -2,18 +2,71 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle, Video, Clock } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Video, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 
-export default function DemonDetailView({ level }: { level: any }) {
+export default function DemonDetailView({
+  level,
+  prevLevel,
+  nextLevel,
+}: {
+  level: any;
+  prevLevel?: { id: string; name: string; placement: number | null } | null;
+  nextLevel?: { id: string; name: string; placement: number | null } | null;
+}) {
   const { t } = useLanguage();
 
   return (
     <div className="max-w-4xl mx-auto pb-24 space-y-6">
-      <Link href="/levels" className="inline-flex items-center gap-1.5 text-xs font-bold ui-dim hover:opacity-100 transition-opacity">
-        <ArrowLeft className="w-4 h-4" />
-        {t('levelslist.back')}
-      </Link>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <Link href="/levels" className="inline-flex items-center gap-1.5 text-xs font-bold ui-dim hover:opacity-100 transition-opacity">
+          <ArrowLeft className="w-4 h-4" />
+          {t('levelslist.back')}
+        </Link>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {prevLevel ? (
+            <Link
+              href={`/levels/${prevLevel.id}`}
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border hover:opacity-90"
+              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span className="truncate max-w-[140px]">
+                {prevLevel.placement ? `#${prevLevel.placement}` : ''} {prevLevel.name}
+              </span>
+            </Link>
+          ) : (
+            <span
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border opacity-40"
+              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)', color: 'var(--text-dim)' }}
+            >
+              <ChevronLeft className="w-4 h-4" />
+              {t('levelslist.prev')}
+            </span>
+          )}
+          {nextLevel ? (
+            <Link
+              href={`/levels/${nextLevel.id}`}
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold"
+              style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-fg)' }}
+            >
+              <span className="truncate max-w-[140px]">
+                {nextLevel.placement ? `#${nextLevel.placement}` : ''} {nextLevel.name}
+              </span>
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          ) : (
+            <span
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold opacity-40"
+              style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-fg)' }}
+            >
+              {t('levelslist.next')}
+              <ChevronRight className="w-4 h-4" />
+            </span>
+          )}
+        </div>
+      </div>
 
       <div className="relative rounded-3xl overflow-hidden shadow-xl aspect-video bg-black flex items-center justify-center">
         {level.youtubeId ? (

@@ -63,9 +63,10 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
 
   useEffect(() => {
     if (!isOpen) return;
-    // if (initialData && seq > 1) return; // Allow fetching once even in edit mode
     const id = form.gdLevelId.trim();
     if (!id || !/^\d+$/.test(id)) return;
+    // Editing: do not overwrite difficulty/rating unless the ID actually changed
+    if (initialData && String(initialData.gdLevelId) === id) return;
 
     const seq = ++fetchSeq.current;
     const timer = setTimeout(async () => {
@@ -125,7 +126,11 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
       const res = await fetch(submitUrl || '/api/admin/levels', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...(extraPayload || {}), ...form })
+        body: JSON.stringify({
+          ...(extraPayload || {}),
+          ...form,
+          ...(initialData?.id ? { id: initialData.id } : {}),
+        })
       });
       const data = await res.json();
       if (data.success) {
@@ -207,7 +212,6 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
                   onChange={e => setForm({...form, gdLevelId: e.target.value})}
                   className="w-full ui-input px-3 py-2 rounded-xl text-xs font-bold focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                   placeholder="VD: 10565740"
-                  readOnly={!!initialData}
                 />
               </div>
 
