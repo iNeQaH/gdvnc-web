@@ -1,5 +1,5 @@
 ﻿import { Metadata } from 'next';
-import { getProfileEmbedData, buildProfileEmbedDescription, getSiteBaseUrl } from '@/lib/profileEmbed';
+import { getProfileEmbedData, buildProfileEmbedDescription, getSiteBaseUrl, toAbsoluteUrl } from '@/lib/profileEmbed';
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username } = await params;
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
   const title = `${data.username} - GDVNC Player Profile`;
   const desc = buildProfileEmbedDescription(data);
   const base = getSiteBaseUrl();
-  const ogImage = `${base}/profile/${encodeURIComponent(data.username)}/opengraph-image`;
+  const avatar = toAbsoluteUrl(data.avatarUrl);
 
   return {
     title,
@@ -25,13 +25,13 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
       description: desc,
       type: 'profile',
       url: `${base}/profile/${encodeURIComponent(data.username)}`,
-      images: [{ url: ogImage, width: 1200, height: 630, alt: title }],
+      images: avatar ? [avatar] : [],
     },
     twitter: {
-      card: 'summary_large_image',
+      card: 'summary',
       title,
       description: desc,
-      images: [ogImage],
+      images: avatar ? [avatar] : [],
     },
   };
 }

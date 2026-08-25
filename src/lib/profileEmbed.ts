@@ -18,6 +18,7 @@ export function getSiteBaseUrl() {
 
 export function toAbsoluteUrl(url?: string | null) {
   if (!url) return null;
+  if (url.startsWith('data:')) return null;
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   const base = getSiteBaseUrl();
   return `${base}${url.startsWith('/') ? url : `/${url}`}`;
@@ -26,58 +27,6 @@ export function toAbsoluteUrl(url?: string | null) {
 export function estimateDataUrlBytes(dataUrl: string) {
   const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
   return Math.ceil(base64.length * 3 / 4);
-}
-
-function dataUrlToBuffer(dataUrl: string): Buffer | null {
-  const comma = dataUrl.indexOf(',');
-  if (comma < 0) return null;
-  try {
-    return Buffer.from(dataUrl.slice(comma + 1), 'base64');
-  } catch {
-    return null;
-  }
-}
-
-async function getStoredImageDataUrl(url?: string | null): Promise<string | null> {
-  if (!url) return null;
-  if (url.startsWith('data:image')) return url;
-
-  const match = url.match(/\/api\/images\/([^/?#]+)/);
-  if (match) {
-    const image = await (prisma as any).image.findUnique({ where: { id: match[1] } });
-    return image?.dataUrl || null;
-  }
-
-  return null;
-}
-
-/**
- * Satori/OG cannot fetch same-origin /api/images URLs reliably, and does not
- * support GIF. Load from DB and convert to a static PNG data URL.
- */
-export async function loadOgCompatibleImage(
-  url: string | null | undefined,
-  kind: 'avatar' | 'cover'
-): Promise<string | null> {
-  const dataUrl = await getStoredImageDataUrl(url);
-  if (!dataUrl) return null;
-
-  const input = dataUrlToBuffer(dataUrl);
-  if (!input) return dataUrl.startsWith('data:image/gif') ? null : dataUrl;
-
-  try {
-    const sharp = (await import('sharp')).default;
-    const resized =
-      kind === 'cover'
-        ? sharp(input, { animated: false, pages: 1 }).resize(1200, 280, { fit: 'cover' })
-        : sharp(input, { animated: false, pages: 1 }).resize(296, 296, { fit: 'cover' });
-
-    const png = await resized.png({ compressionLevel: 8 }).toBuffer();
-    return `data:image/png;base64,${png.toString('base64')}`;
-  } catch {
-    if (/data:image\/gif/i.test(dataUrl)) return null;
-    return dataUrl;
-  }
 }
 
 export interface ProfileEmbedData {
