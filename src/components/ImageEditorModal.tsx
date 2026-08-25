@@ -42,6 +42,10 @@ export default function ImageEditorModal({
   const [offsetY, setOffsetY] = useState<number>(0);
   const [blurAmount, setBlurAmount] = useState<number>(0);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isGifSource, setIsGifSource] = useState<boolean>(false);
+  const [fileError, setFileError] = useState<string>('');
+
+  const maxBytes = type === 'avatar' ? 10 * 1024 * 1024 : 20 * 1024 * 1024;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -57,6 +61,8 @@ export default function ImageEditorModal({
       setOffsetX(0);
       setOffsetY(0);
       setBlurAmount(0);
+      setIsGifSource(false);
+      setFileError('');
     }
   }, [isOpen, currentImage]);
 
@@ -140,11 +146,23 @@ export default function ImageEditorModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setFileError('');
+    if (file.size > maxBytes) {
+      setFileError(
+        type === 'avatar'
+          ? t('editor.max_avatar', { mb: '10' })
+          : t('editor.max_cover', { mb: '20' })
+      );
+      return;
+    }
+
+    const isGif = file.type === 'image/gif';
+    setIsGifSource(isGif);
+
     const reader = new FileReader();
     reader.onload = (event) => {
       if (event.target?.result) {
         setImageSrc(event.target.result as string);
-        // reset transformations on new image
         setScale(1);
         setRotation(0);
         setSkewX(0);
@@ -168,17 +186,23 @@ export default function ImageEditorModal({
   };
 
     const handleSave = async () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!imageSrc) return;
 
     setIsSaving(true);
     try {
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
-      
+      let dataUrl: string;
+      if (isGifSource && imageSrc.startsWith('data:image/gif')) {
+        dataUrl = imageSrc;
+      } else {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+      }
+
       const res = await fetch('/api/images', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dataUrl }),
+        body: JSON.stringify({ dataUrl, kind: type }),
       });
 
       if (!res.ok) {
@@ -250,10 +274,18 @@ export default function ImageEditorModal({
                 <Upload className="w-6 h-6" />
               </div>
               <div className="font-bold text-xs ui-title">{t('editor.select_file')}</div>
-              <div className="text-[11px] ui-dim">{t('editor.formats')}</div>
+              <div className="text-[11px] ui-dim">
+                {type === 'avatar' ? t('editor.formats_avatar') : t('editor.formats_cover')}
+              </div>
+              {fileError && <div className="text-[11px] text-red-500 font-medium">{fileError}</div>}
             </div>
           ) : (
-            <div className="space-y-3">
+              <div className="space-y-3">
+              {isGifSource && (
+                <p className="text-[11px] font-medium text-amber-500 text-center">
+                  {t('editor.gif_notice')}
+                </p>
+              )}
               {/* Canvas Preview Container */}
               <div className="flex items-center justify-center p-2 rounded-2xl bg-black/10 dark:bg-black/40 overflow-hidden">
                 <canvas

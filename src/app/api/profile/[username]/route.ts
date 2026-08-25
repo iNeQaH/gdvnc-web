@@ -75,8 +75,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       }));
 
     let hardestClassic = null;
+    let hardestPlatformer = null;
     if (classicForPp.length > 0) {
       hardestClassic = [...classicForPp].sort((a, b) => a.placement - b.placement)[0];
+    }
+    if (platformerCompletions.length > 0) {
+      hardestPlatformer = [...platformerCompletions].sort((a, b) => a.placement - b.placement)[0];
     }
 
     // Calculate National Ranks
@@ -115,6 +119,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         platformerRank,
         creatorRank,
         hardestClassic,
+        hardestPlatformer,
         classicBreakdown,
         classicRecords,
         platformerCompletions,

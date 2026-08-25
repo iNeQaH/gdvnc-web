@@ -1,52 +1,21 @@
 ﻿import { Metadata } from 'next';
-import prisma from '@/lib/prisma';
-import { RecordStatus, LevelMode } from '@prisma/client';
+import { getProfileEmbedData, buildProfileEmbedDescription, getSiteBaseUrl } from '@/lib/profileEmbed';
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username } = await params;
-  const decodedUsername = decodeURIComponent(username);
-  
-  const user = await prisma.user.findUnique({
-    where: { username: decodedUsername },
-    include: {
-      records: {
-        where: { status: RecordStatus.APPROVED },
-        include: { level: true }
-      }
-    }
-  });
+  const data = await getProfileEmbedData(username);
 
-  if (!user) {
+  if (!data) {
     return {
       title: 'Not Found | GDVNC',
       description: 'Player profile not found.',
     };
   }
 
-  const classicRecords = user.records.filter(r => r.level.mode === LevelMode.CLASSIC);
-  const platRecords = user.records.filter(r => r.level.mode === LevelMode.PLATFORMER);
-
-  const hardestClassic = classicRecords
-    .filter(r => r.level.placement !== null)
-    .sort((a, b) => a.level.placement! - b.level.placement!)[0];
-
-  const hardestPlat = platRecords
-    .filter(r => r.level.placement !== null)
-    .sort((a, b) => a.level.placement! - b.level.placement!)[0];
-
-  const title = `${user.username} - GDVNC Player Profile`;
-  
-  let descLines = [];
-  descLines.push(`Classic Pt: ${Math.floor(user.classicPp)} | Platformer Pt: ${Math.floor(user.platformerPp)} | Creator Pt: ${user.creatorPoints}`);
-  
-  if (hardestClassic) {
-    descLines.push(`Classic Hardest: ${hardestClassic.level.name}`);
-  }
-  if (hardestPlat) {
-    descLines.push(`Platformer Hardest: ${hardestPlat.level.name}`);
-  }
-
-  const desc = descLines.join('\n');
+  const title = `${data.username} - GDVNC Player Profile`;
+  const desc = buildProfileEmbedDescription(data);
+  const base = getSiteBaseUrl();
+  const ogImage = `${base}/profile/${encodeURIComponent(data.username)}/opengraph-image`;
 
   return {
     title,
@@ -55,14 +24,15 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
       title,
       description: desc,
       type: 'profile',
-      images: user.avatarUrl ? [user.avatarUrl] : [],
+      url: `${base}/profile/${encodeURIComponent(data.username)}`,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: title }],
     },
     twitter: {
-      card: 'summary',
+      card: 'summary_large_image',
       title,
       description: desc,
-      images: user.avatarUrl ? [user.avatarUrl] : [],
-    }
+      images: [ogImage],
+    },
   };
 }
 

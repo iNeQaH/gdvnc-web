@@ -86,24 +86,47 @@ function SubmitForm() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-    
+
     setImageError('');
+    const MAX_TOTAL = 20 * 1024 * 1024;
+    const estimateBase64Size = (b64: string) => {
+      const base64 = b64.includes(',') ? b64.split(',')[1] : b64;
+      return Math.ceil(base64.length * 3 / 4);
+    };
+
+    const currentTotal = workImagesBase64.reduce((sum, img) => sum + estimateBase64Size(img), 0);
+    const incomingTotal = files.reduce((sum, file) => sum + file.size, 0);
+    if (currentTotal + incomingTotal > MAX_TOTAL) {
+      setImageError('Tổng dung lượng ảnh minh họa tối đa là 20MB.');
+      e.target.value = '';
+      return;
+    }
+
+    let loaded = 0;
     const newImages: string[] = [];
-    
-    files.forEach(file => {
-      if (file.size > 20 * 1024 * 1024) {
-        setImageError('Kích thước ảnh tối đa là 20MB mỗi ảnh.');
-        return;
-      }
+
+    files.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (ev) => {
-        newImages.push(ev.target?.result as string);
-        if (newImages.length === files.length) {
-          setWorkImagesBase64(prev => [...prev, ...newImages]);
+        const result = ev.target?.result as string;
+        if (result) newImages.push(result);
+        loaded += 1;
+        if (loaded === files.length) {
+          setWorkImagesBase64((prev) => {
+            const combined = [...prev, ...newImages];
+            const total = combined.reduce((sum, img) => sum + estimateBase64Size(img), 0);
+            if (total > MAX_TOTAL) {
+              setImageError('Tổng dung lượng ảnh minh họa tối đa là 20MB.');
+              return prev;
+            }
+            return combined;
+          });
         }
       };
       reader.readAsDataURL(file);
     });
+
+    e.target.value = '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -481,7 +504,7 @@ function SubmitForm() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold ui-title">Ảnh Minh Họa (Tối đa 20MB, Tùy chọn)</label>
+                <label className="text-xs font-bold ui-title">Ảnh Minh Họa (Tổng tối đa 20MB, Tùy chọn)</label>
                 <div className="relative border-2 border-dashed rounded-xl p-6 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-center group" style={{ borderColor: 'var(--border-ui)' }}>
                   <input
                     type="file"
@@ -493,7 +516,7 @@ function SubmitForm() {
                   <div className="flex flex-col items-center gap-2 pointer-events-none">
                     <ImageIcon className="w-8 h-8 text-[var(--accent)] group-hover:scale-110 transition-transform" />
                     <span className="text-sm font-bold ui-title">Nhấn để chọn nhiều ảnh</span>
-                    <span className="text-[10px] ui-dim">Có thể tải lên nhiều ảnh (Max 20MB mỗi ảnh)</span>
+                    <span className="text-[10px] ui-dim">Có thể tải nhiều ảnh — tổng dung lượng tối đa 20MB</span>
                   </div>
                 </div>
                 {imageError && <p className="text-[10px] text-red-500 pt-1">{imageError}</p>}
