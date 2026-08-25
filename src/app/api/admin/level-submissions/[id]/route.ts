@@ -23,6 +23,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: 'Không tìm thấy yêu cầu thêm level.' }, { status: 404 });
     }
 
+    if (submission.status !== RecordStatus.PENDING) {
+      return NextResponse.json({ error: 'Submit này đã được xử lý.' }, { status: 400 });
+    }
+
     if (action === 'REJECT') {
       const updated = await prisma.levelSubmission.update({
         where: { id },

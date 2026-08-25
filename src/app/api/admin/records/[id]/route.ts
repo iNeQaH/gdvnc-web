@@ -24,6 +24,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: 'Không tìm thấy kỷ lục.' }, { status: 404 });
     }
 
+    if (record.status !== RecordStatus.PENDING) {
+      return NextResponse.json({ error: 'Submit này đã được xử lý.' }, { status: 400 });
+    }
+
     if (action === 'APPROVE') {
       const consolidation = await consolidateBeforeApprove(id);
       if (!consolidation.ok) {

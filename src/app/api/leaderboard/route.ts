@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { RecordStatus, LevelMode } from '@prisma/client';
+import { pickDecoAndLayoutBadges } from '@/lib/creatorPoints';
 
 export async function GET(req: Request) {
   try {
@@ -23,9 +24,28 @@ export async function GET(req: Request) {
           createdLevels: {
             select: { name: true, difficulty: true },
           },
+          userBadges: {
+            include: {
+              badge: { include: { badgeCategory: true } },
+            },
+          },
         },
       });
-      return NextResponse.json({ success: true, leaderboard: creators });
+      return NextResponse.json({
+        success: true,
+        leaderboard: creators.map((creator) => {
+          const { userBadges, ...rest } = creator;
+          return {
+            ...rest,
+            qualityBadges: pickDecoAndLayoutBadges(
+              userBadges.map((ub) => ({
+                ...ub.badge,
+                badgeCategory: ub.badge.badgeCategory,
+              }))
+            ),
+          };
+        }),
+      });
     }
 
     if (mode === 'PLATFORMER') {

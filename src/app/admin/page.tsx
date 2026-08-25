@@ -52,6 +52,66 @@ const IconRender = ({ icon, className }: { icon: string, className?: string }) =
 
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
+import { type DictKey } from '@/lib/dictionaries';
+
+type QueueStatus = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED';
+type QueueCounts = { pending: number; approved: number; rejected: number };
+
+function QueueStatusFilters({
+  value,
+  counts,
+  onChange,
+  t,
+}: {
+  value: QueueStatus;
+  counts: QueueCounts;
+  onChange: (status: QueueStatus) => void;
+  t: (key: DictKey) => string;
+}) {
+  const all = counts.pending + counts.approved + counts.rejected;
+  const items: Array<[QueueStatus, DictKey, number]> = [
+    ['ALL', 'admin.filter_all', all],
+    ['PENDING', 'admin.filter_pending', counts.pending],
+    ['APPROVED', 'admin.filter_approved', counts.approved],
+    ['REJECTED', 'admin.filter_rejected', counts.rejected],
+  ];
+  return (
+    <div className="flex items-center gap-1 p-0.5 rounded-xl border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+      {items.map(([status, label, count]) => (
+        <button
+          key={status}
+          onClick={() => onChange(status)}
+          className="px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-all"
+          style={{
+            backgroundColor: value === status ? 'var(--bg-card)' : 'transparent',
+            color: value === status ? 'var(--accent)' : 'var(--text-dim)',
+          }}
+        >
+          {t(label)} ({count})
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ReviewStatusBadge({ status, t }: { status: string; t: (key: DictKey) => string }) {
+  const isApproved = status === 'APPROVED';
+  const isRejected = status === 'REJECTED';
+  return (
+    <span
+      className="px-2 py-0.5 rounded font-black text-[10px] uppercase"
+      style={
+        isApproved
+          ? { backgroundColor: 'var(--badge-green-bg)', color: 'var(--badge-green-text)' }
+          : isRejected
+            ? { backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }
+            : { backgroundColor: 'var(--bg-subtle)', color: 'var(--text-dim)' }
+      }
+    >
+      {isApproved ? t('admin.status_approved') : isRejected ? t('admin.status_rejected') : t('admin.status_pending')}
+    </span>
+  );
+}
 
 import LevelFormModal from '@/components/LevelFormModal';
 import { formatCp, getDecoBadgeCp, getLayoutBadgeCp, isDecoBadgeName, isLayoutBadgeName } from '@/lib/creatorPoints';
@@ -74,12 +134,16 @@ export default function AdminPage() {
 
   // Record moderation state
   const [pendingRecords, setPendingRecords] = useState<any[]>([]);
+  const [recordFilter, setRecordFilter] = useState<QueueStatus>('ALL');
+  const [recordCounts, setRecordCounts] = useState<QueueCounts>({ pending: 0, approved: 0, rejected: 0 });
   const [loadingRecords, setLoadingRecords] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState<{ [key: string]: string }>({});
 
   // Works moderation state
   const [pendingWorks, setPendingWorks] = useState<any[]>([]);
+  const [workFilter, setWorkFilter] = useState<QueueStatus>('ALL');
+  const [workCounts, setWorkCounts] = useState<QueueCounts>({ pending: 0, approved: 0, rejected: 0 });
   const [loadingWorks, setLoadingWorks] = useState(true);
   const [workReviewData, setWorkReviewData] = useState<Record<string, { decoBadgeId?: string, layoutBadgeId?: string, cpAwarded?: string, rejectReason?: string }>>({});
 
@@ -100,6 +164,8 @@ export default function AdminPage() {
   const [isBadgeEditModalOpen, setIsBadgeEditModalOpen] = useState(false);
   const [draggedBadgeId, setDraggedBadgeId] = useState<string | null>(null);
   const [pendingLevelSubs, setPendingLevelSubs] = useState<any[]>([]);
+  const [levelSubFilter, setLevelSubFilter] = useState<QueueStatus>('ALL');
+  const [levelSubCounts, setLevelSubCounts] = useState<QueueCounts>({ pending: 0, approved: 0, rejected: 0 });
   const [loadingLevelSubs, setLoadingLevelSubs] = useState(true);
 
   // User management state
@@ -122,20 +188,23 @@ export default function AdminPage() {
         setCurrentUser(u);
       } catch (e) {}
     }
-    fetchPendingRecords();
+    fetchPendingRecords('ALL');
     fetchUsers('');
-    fetchWorks();
+    fetchWorks('ALL');
     fetchBadges();
     fetchBadgeCategories();
-    fetchLevelSubs();
+    fetchLevelSubs('ALL');
   }, []);
 
-  const fetchWorks = async () => {
+  const fetchWorks = async (status: QueueStatus = workFilter) => {
     setLoadingWorks(true);
     try {
-      const res = await fetch('/api/admin/works');
+      const res = await fetch(`/api/admin/works?status=${status}`);
       const data = await res.json();
-      if (data.success) setPendingWorks(data.works || []);
+      if (data.success) {
+        setPendingWorks(data.works || []);
+        if (data.counts) setWorkCounts(data.counts);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -164,12 +233,15 @@ export default function AdminPage() {
     } catch (e) {}
   };
 
-  const fetchLevelSubs = async () => {
+  const fetchLevelSubs = async (status: QueueStatus = levelSubFilter) => {
     setLoadingLevelSubs(true);
     try {
-      const res = await fetch('/api/admin/level-submissions');
+      const res = await fetch(`/api/admin/level-submissions?status=${status}`);
       const data = await res.json();
-      if (data.success) setPendingLevelSubs(data.submissions || []);
+      if (data.success) {
+        setPendingLevelSubs(data.submissions || []);
+        if (data.counts) setLevelSubCounts(data.counts);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -184,13 +256,14 @@ export default function AdminPage() {
     .filter((b) => isLayoutBadgeName(b.name))
     .sort((a, b) => (getLayoutBadgeCp(a.name) || 0) - (getLayoutBadgeCp(b.name) || 0));
 
-  const fetchPendingRecords = async () => {
+  const fetchPendingRecords = async (status: QueueStatus = recordFilter) => {
     setLoadingRecords(true);
     try {
-      const res = await fetch('/api/admin/records/pending');
+      const res = await fetch(`/api/admin/records/pending?status=${status}`);
       const data = await res.json();
       if (data.success) {
         setPendingRecords(data.records || []);
+        if (data.counts) setRecordCounts(data.counts);
       }
     } catch (e) {
       console.error(e);
@@ -229,7 +302,24 @@ export default function AdminPage() {
 
       const data = await res.json();
       if (data.success) {
-        setPendingRecords((prev) => prev.filter((r) => r.id !== recordId));
+        const nextStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+        setPendingRecords((prev) =>
+          prev.map((r) =>
+            r.id === recordId
+              ? {
+                  ...r,
+                  status: nextStatus,
+                  rejectReason: action === 'REJECT' ? rejectReason[recordId] || t('admin.default_reject') : r.rejectReason,
+                  reviewedAt: new Date().toISOString(),
+                }
+              : r
+          )
+        );
+        setRecordCounts((c) => ({
+          pending: Math.max(0, c.pending - 1),
+          approved: c.approved + (action === 'APPROVE' ? 1 : 0),
+          rejected: c.rejected + (action === 'REJECT' ? 1 : 0),
+        }));
       } else {
         showToast(data.error || t('admin.action_fail'), 'error');
       }
@@ -257,7 +347,24 @@ export default function AdminPage() {
       });
       const resData = await res.json();
       if (resData.success) {
-        setPendingWorks(prev => prev.filter(w => w.id !== workId));
+        const nextStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+        setPendingWorks((prev) =>
+          prev.map((w) =>
+            w.id === workId
+              ? {
+                  ...w,
+                  ...(resData.work || {}),
+                  status: nextStatus,
+                  rejectReason: action === 'REJECT' ? data.rejectReason || 'Không đạt quy chuẩn Creator' : w.rejectReason,
+                }
+              : w
+          )
+        );
+        setWorkCounts((c) => ({
+          pending: Math.max(0, c.pending - 1),
+          approved: c.approved + (action === 'APPROVE' ? 1 : 0),
+          rejected: c.rejected + (action === 'REJECT' ? 1 : 0),
+        }));
         showToast(action === 'APPROVE' ? 'Đã duyệt Work!' : 'Đã từ chối Work', action === 'REJECT' ? 'error' : 'success');
       } else {
         showToast(resData.error || 'Lỗi duyệt Work', 'error');
@@ -401,7 +508,24 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setPendingLevelSubs((prev) => prev.filter((s) => s.id !== id));
+        const nextStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+        setPendingLevelSubs((prev) =>
+          prev.map((s) =>
+            s.id === id
+              ? {
+                  ...s,
+                  ...(data.submission || {}),
+                  status: nextStatus,
+                  rejectReason: action === 'REJECT' ? rejectReason[id] || t('admin.default_reject') : s.rejectReason,
+                }
+              : s
+          )
+        );
+        setLevelSubCounts((c) => ({
+          pending: Math.max(0, c.pending - 1),
+          approved: c.approved + (action === 'APPROVE' ? 1 : 0),
+          rejected: c.rejected + (action === 'REJECT' ? 1 : 0),
+        }));
         showToast(action === 'APPROVE' ? t('admin.level_sub_ok') : t('admin.level_sub_reject'), action === 'REJECT' ? 'error' : 'success');
       } else {
         showToast(data.error || t('admin.action_fail'), 'error');
@@ -512,7 +636,7 @@ export default function AdminPage() {
             }}
           >
             <Shield className="w-3.5 h-3.5" />
-            Records ({pendingRecords.length})
+            Records ({recordCounts.pending})
           </button>
           <button
             onClick={() => setTab('works')}
@@ -578,14 +702,25 @@ export default function AdminPage() {
       {/* Tab 1: Record Moderation Queue */}
       {tab === 'records' && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs font-bold ui-title">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold ui-title">
             <span>{t('admin.queue_title', { n: pendingRecords.length })}</span>
-            <button
-              onClick={fetchPendingRecords}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold ui-dim hover:opacity-100 cursor-pointer"
-            >
-              <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
-            </button>
+            <div className="flex items-center gap-2">
+              <QueueStatusFilters
+                value={recordFilter}
+                counts={recordCounts}
+                onChange={(status) => {
+                  setRecordFilter(status);
+                  fetchPendingRecords(status);
+                }}
+                t={t}
+              />
+              <button
+                onClick={() => fetchPendingRecords(recordFilter)}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold ui-dim hover:opacity-100 cursor-pointer"
+              >
+                <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
+              </button>
+            </div>
           </div>
 
           {loadingRecords ? (
@@ -604,13 +739,17 @@ export default function AdminPage() {
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
-                        {rec.user.username[0]}
-                      </div>
+                      <Link href={`/profile/${rec.user.username}`} className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs overflow-hidden shrink-0" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
+                        {rec.user.avatarUrl ? (
+                          <img src={rec.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          rec.user.username[0]
+                        )}
+                      </Link>
                       <div>
-                        <div className="font-bold ui-title text-xs">
+                        <Link href={`/profile/${rec.user.username}`} className="font-bold ui-title text-xs hover:underline" style={{ color: 'var(--accent)' }}>
                           {rec.user.username}
-                        </div>
+                        </Link>
                         <div className="text-[11px] ui-dim">
                           {t('admin.level_label', { name: rec.level.name, placement: rec.level.placement || '-', mode: rec.level.mode })}
                         </div>
@@ -618,6 +757,7 @@ export default function AdminPage() {
                     </div>
 
                     <div className="flex items-center gap-1.5 text-xs">
+                      <ReviewStatusBadge status={rec.status} t={t} />
                       {rec.progress && (
                         <span className="px-2 py-0.5 rounded font-black text-xs" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
                           {rec.progress}%
@@ -671,6 +811,13 @@ export default function AdminPage() {
                     </div>
                   )}
 
+                  {rec.status === 'REJECTED' && rec.rejectReason && (
+                    <div className="p-2.5 rounded-xl text-[11px]" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
+                      <span className="font-semibold">{t('admin.reject')}:</span> {rec.rejectReason}
+                    </div>
+                  )}
+
+                  {rec.status === 'PENDING' && (
                   <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
                     <input
                       type="text"
@@ -700,6 +847,7 @@ export default function AdminPage() {
                       </button>
                     </div>
                   </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -709,21 +857,33 @@ export default function AdminPage() {
 
       {tab === 'works' && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs font-bold ui-title">
-            <span>Duyệt Tác Phẩm Creator ({pendingWorks.length})</span>
-            <button
-              onClick={fetchWorks}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold ui-dim hover:opacity-100 cursor-pointer"
-            >
-              <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
-            </button>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold ui-title">
+            <span>{t('admin.works_queue', { n: pendingWorks.length })}</span>
+            <div className="flex items-center gap-2">
+              <QueueStatusFilters
+                value={workFilter}
+                counts={workCounts}
+                onChange={(status) => {
+                  setWorkFilter(status);
+                  fetchWorks(status);
+                }}
+                t={t}
+              />
+              <button
+                onClick={() => fetchWorks(workFilter)}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold ui-dim hover:opacity-100 cursor-pointer"
+              >
+                <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
+              </button>
+            </div>
           </div>
 
           {loadingWorks ? (
             <div className="p-8 text-center ui-dim text-xs">{t('admin.loading')}</div>
           ) : pendingWorks.length === 0 ? (
             <div className="ui-card p-8 text-center space-y-1">
-              <div className="font-bold ui-title text-xs">Không có tác phẩm chờ duyệt</div>
+              <div className="font-bold ui-title text-xs">{t('admin.queue_empty')}</div>
+              <div className="text-[11px] ui-dim">{t('admin.works_empty')}</div>
             </div>
           ) : (
             <div className="space-y-3">
@@ -731,18 +891,23 @@ export default function AdminPage() {
                 <div key={work.id} className="ui-card p-4 sm:p-5 space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
-                        {work.user.username[0]}
-                      </div>
+                      <Link href={`/profile/${work.user.username}`} className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs overflow-hidden shrink-0" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
+                        {work.user.avatarUrl ? (
+                          <img src={work.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          work.user.username[0]
+                        )}
+                      </Link>
                       <div>
-                        <div className="font-bold ui-title text-xs">
+                        <Link href={`/profile/${work.user.username}`} className="font-bold ui-title text-xs hover:underline" style={{ color: 'var(--accent)' }}>
                           {work.user.username}
-                        </div>
+                        </Link>
                         <div className="text-[11px] ui-dim">
                           Tác phẩm: {work.levelName} {work.gdLevelId ? `(ID: ${work.gdLevelId})` : ''}
                         </div>
                       </div>
                     </div>
+                    <ReviewStatusBadge status={work.status} t={t} />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
@@ -770,6 +935,20 @@ export default function AdminPage() {
                     </div>
                   )}
 
+                  {work.status === 'REJECTED' && work.rejectReason && (
+                    <div className="p-2.5 rounded-xl text-[11px]" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
+                      <span className="font-semibold">{t('admin.reject')}:</span> {work.rejectReason}
+                    </div>
+                  )}
+
+                  {work.status === 'APPROVED' && (work.badgeGranted || work.cpGranted) && (
+                    <div className="p-2.5 rounded-xl text-[11px] ui-subtle ui-dim">
+                      {work.badgeGranted ? <span>Badge: {work.badgeGranted}</span> : null}
+                      {work.cpGranted ? <span>{work.badgeGranted ? ' · ' : ''}CP: {work.cpGranted}</span> : null}
+                    </div>
+                  )}
+
+                  {work.status === 'PENDING' && (
                   <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
                     <div className="flex flex-col gap-2 flex-1">
                       <div className="flex items-center gap-2">
@@ -838,6 +1017,7 @@ export default function AdminPage() {
                       </button>
                     </div>
                   </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -855,14 +1035,25 @@ export default function AdminPage() {
 
         {tab === 'levelSubs' && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs font-bold ui-title">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold ui-title">
             <span>{t('admin.level_sub_queue', { n: pendingLevelSubs.length })}</span>
-            <button
-              onClick={fetchLevelSubs}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold ui-dim hover:opacity-100 cursor-pointer"
-            >
-              <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
-            </button>
+            <div className="flex items-center gap-2">
+              <QueueStatusFilters
+                value={levelSubFilter}
+                counts={levelSubCounts}
+                onChange={(status) => {
+                  setLevelSubFilter(status);
+                  fetchLevelSubs(status);
+                }}
+                t={t}
+              />
+              <button
+                onClick={() => fetchLevelSubs(levelSubFilter)}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold ui-dim hover:opacity-100 cursor-pointer"
+              >
+                <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
+              </button>
+            </div>
           </div>
           {loadingLevelSubs ? (
             <div className="p-8 text-center ui-dim text-xs">{t('admin.loading')}</div>
@@ -877,22 +1068,35 @@ export default function AdminPage() {
                 <div key={sub.id} className="ui-card p-4 sm:p-5 space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
-                        {sub.user?.username?.[0] || 'L'}
-                      </div>
+                      <Link href={`/profile/${sub.user?.username}`} className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs overflow-hidden shrink-0" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
+                        {sub.user?.avatarUrl ? (
+                          <img src={sub.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          sub.user?.username?.[0] || 'L'
+                        )}
+                      </Link>
                       <div>
-                        <div className="font-bold ui-title text-xs">{sub.user?.username}</div>
+                        <Link href={`/profile/${sub.user?.username}`} className="font-bold ui-title text-xs hover:underline" style={{ color: 'var(--accent)' }}>
+                          {sub.user?.username}
+                        </Link>
                         <div className="text-[11px] ui-dim">
                           GD ID {sub.gdLevelId} · {sub.mode} {sub.placement ? `· #${sub.placement}` : '· Unranked'} {sub.isVN ? '· VN' : ''}
                         </div>
                       </div>
                     </div>
+                    <ReviewStatusBadge status={sub.status} t={t} />
                   </div>
                   {sub.videoUrl && (
                     <a href={sub.videoUrl} target="_blank" rel="noreferrer" className="text-xs font-semibold truncate hover:underline block" style={{ color: 'var(--accent)' }}>
                       {sub.videoUrl}
                     </a>
                   )}
+                  {sub.status === 'REJECTED' && sub.rejectReason && (
+                    <div className="p-2.5 rounded-xl text-[11px]" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
+                      <span className="font-semibold">{t('admin.reject')}:</span> {sub.rejectReason}
+                    </div>
+                  )}
+                  {sub.status === 'PENDING' && (
                   <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       placeholder={t('admin.reject_ph')}
@@ -920,6 +1124,7 @@ export default function AdminPage() {
                       </button>
                     </div>
                   </div>
+                  )}
                 </div>
               ))}
             </div>

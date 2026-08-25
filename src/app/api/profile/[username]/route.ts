@@ -57,6 +57,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         submittedAt: r.submittedAt,
       }));
 
+    classicRecords.sort((a, b) => a.placement - b.placement || b.basePp - a.basePp);
+
     const classicForPp = classicRecords.filter((r) => r.qualifiesForPp);
     const classicBreakdown = getWeightedPpBreakdown(classicForPp);
 
@@ -72,7 +74,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         hz: r.hz,
         device: r.device,
         submittedAt: r.submittedAt,
-      }));
+      }))
+      .sort((a, b) => a.placement - b.placement || b.basePp - a.basePp);
 
     let hardestClassic = null;
     let hardestPlatformer = null;

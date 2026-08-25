@@ -118,19 +118,33 @@ export async function consolidateBeforeApprove(recordId: string): Promise<
     },
   });
 
-  for (const old of siblings.filter((s) => s.status === RecordStatus.APPROVED)) {
+    for (const old of siblings.filter((s) => s.status === RecordStatus.APPROVED)) {
     if (!isRecordBetter(record, old, record.level.mode)) {
       return {
         ok: false,
         reason: 'Người chơi đã có kỷ lục tốt hơn hoặc bằng được phê duyệt trước đó.',
       };
     }
-    await prisma.record.delete({ where: { id: old.id } });
+    await prisma.record.update({
+      where: { id: old.id },
+      data: {
+        status: RecordStatus.REJECTED,
+        rejectReason: 'Thay thế bởi kỷ lục tốt hơn.',
+        reviewedAt: new Date(),
+      },
+    });
   }
 
   const pendingIds = siblings.filter((s) => s.status === RecordStatus.PENDING).map((s) => s.id);
   if (pendingIds.length > 0) {
-    await prisma.record.deleteMany({ where: { id: { in: pendingIds } } });
+    await prisma.record.updateMany({
+      where: { id: { in: pendingIds } },
+      data: {
+        status: RecordStatus.REJECTED,
+        rejectReason: 'Đã duyệt kỷ lục khác cho màn chơi này.',
+        reviewedAt: new Date(),
+      },
+    });
   }
 
   return { ok: true };

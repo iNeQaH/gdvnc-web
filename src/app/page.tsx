@@ -3,10 +3,17 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Star, Moon, Wrench, Search, ChevronRight, CheckCircle2, User } from 'lucide-react';
+import * as AllLucideIcons from 'lucide-react';
+import { CUSTOM_ICONS } from '@/components/CustomIcons';
 import { useLanguage } from '@/components/LanguageContext';
 import { formatCp } from '@/lib/creatorPoints';
 
 import FloatingNav from '@/components/FloatingNav';
+
+const IconRender = ({ icon, className }: { icon: string; className?: string }) => {
+  const Comp = (CUSTOM_ICONS as any)[icon] || (AllLucideIcons as any)[icon] || AllLucideIcons.Star;
+  return <Comp className={className} />;
+};
 
 export default function HomePage() {
   const { t } = useLanguage();
@@ -287,9 +294,26 @@ export default function HomePage() {
                       {mode === 'CREATOR' ? (
                         <>
                           <td className="px-5 py-3.5">
-                            <span className="font-medium ui-title">
-                              {player.creatorPoints >= 200 ? 'Epic Architect' : player.creatorPoints >= 50 ? 'Featured Creator' : 'Creator'}
-                            </span>
+                            {player.qualityBadges?.deco || player.qualityBadges?.layout ? (
+                              <div className="flex items-center gap-1.5">
+                                {[player.qualityBadges.deco, player.qualityBadges.layout].filter(Boolean).map((badge: any) => (
+                                  <span
+                                    key={badge.id}
+                                    title={badge.name}
+                                    className="w-7 h-7 flex items-center justify-center rounded-full shadow-sm"
+                                    style={{
+                                      backgroundColor: badge.color || 'var(--accent)',
+                                      color: '#fff',
+                                      boxShadow: badge.glowColor ? `0 0 8px ${badge.color}` : 'none',
+                                    }}
+                                  >
+                                    <IconRender icon={badge.icon || 'Star'} className="w-3.5 h-3.5" />
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-[11px] ui-dim italic">{t('leaderboard.no_quality')}</span>
+                            )}
                           </td>
                           <td className="px-5 py-3.5 text-right font-black text-sm" style={{ color: 'var(--accent)' }}>
                             {formatCp(player.creatorPoints)} <span className="text-[10px] font-normal ui-dim">CP</span>
