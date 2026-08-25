@@ -10,8 +10,9 @@ export function getSiteBaseUrl() {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
   }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
+  const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL?.replace(/^https?:\/\//, '');
+  if (productionHost) {
+    return `https://${productionHost}`;
   }
   return 'https://gdvnc-web.vercel.app';
 }
@@ -19,9 +20,28 @@ export function getSiteBaseUrl() {
 export function toAbsoluteUrl(url?: string | null) {
   if (!url) return null;
   if (url.startsWith('data:')) return null;
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname.endsWith('.vercel.app') && parsed.hostname !== 'gdvnc-web.vercel.app') {
+        return `${getSiteBaseUrl()}${parsed.pathname}${parsed.search}`;
+      }
+    } catch {
+      return url;
+    }
+    return url;
+  }
   const base = getSiteBaseUrl();
   return `${base}${url.startsWith('/') ? url : `/${url}`}`;
+}
+
+export function profileEmbedImageUrl(avatarUrl: string | null | undefined, username: string) {
+  const abs = toAbsoluteUrl(avatarUrl);
+  if (abs) return abs;
+  if (avatarUrl) {
+    return `${getSiteBaseUrl()}/api/avatars/${encodeURIComponent(username)}`;
+  }
+  return null;
 }
 
 export function estimateDataUrlBytes(dataUrl: string) {

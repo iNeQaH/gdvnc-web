@@ -9,6 +9,7 @@ import { Sidebar } from "@/components/Sidebar";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://gdvnc-web.vercel.app"),
   title: "GDVNC - GDVNC Leaderboard & Levels List",
   description: "Geometry Dash Việt Nam",
   openGraph: {
