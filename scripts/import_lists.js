@@ -11,9 +11,11 @@ const prisma = new PrismaClient(
 const WIPE = process.argv.includes('--wipe');
 const ONLY_PEMON = process.argv.includes('--pemonlist');
 const RESTORE_ONLY = process.argv.includes('--restore-backup');
+const SYNC_REQUIREMENT = process.argv.includes('--sync-requirement');
 const MAX_PP = 2500;
 const MIN_PP = 10;
 const LIST_SIZE = 150;
+const MIN_PROGRESS_SCORE_RATIO = 0.1;
 const BACKUP_PATH = path.join(os.tmpdir(), 'gdvnc-records-backup.json');
 
 function calculateBasePp(placement) {
@@ -29,6 +31,16 @@ function calculateTotalPp(basePps) {
   let total = 0;
   for (let i = 0; i < sorted.length; i++) total += sorted[i] * Math.pow(0.95, i);
   return Number(total.toFixed(2));
+}
+
+function awardedPpForProgress(progress, minPercent, basePp) {
+  const p = progress ?? 0;
+  const req = Math.min(100, Math.max(1, minPercent || 100));
+  if (p < req) return 0;
+  if (p >= 100 || req >= 100) return Number(basePp.toFixed(2));
+  const t = (p - req) / (100 - req);
+  const ratio = MIN_PROGRESS_SCORE_RATIO + (1 - MIN_PROGRESS_SCORE_RATIO) * t;
+  return Number((basePp * ratio).toFixed(2));
 }
 
 function extractYoutubeId(url) {
@@ -148,7 +160,8 @@ async function recalculateUsers(userIds) {
     const deduped = [...byLevel.values()];
     const classicBasePps = deduped
       .filter((r) => r.level.mode === 'CLASSIC' && (r.progress ?? 0) >= r.level.minPercent)
-      .map((r) => r.level.basePp);
+      .map((r) => awardedPpForProgress(r.progress, r.level.minPercent, r.level.basePp))
+      .filter((pp) => pp > 0);
     const platformerBasePps = deduped
       .filter((r) => r.level.mode === 'PLATFORMER' && r.timeMs != null)
       .map((r) => r.level.basePp);
@@ -190,6 +203,7 @@ async function importPointercrate() {
       youtubeId: extractYoutubeId(demon.video),
       placement,
       basePp: calculateBasePp(placement),
+      minPercent: Number.isFinite(demon.requirement) ? demon.requirement : 100,
       mode: 'CLASSIC',
       difficulty: 'Extreme Demon',
     });
@@ -277,7 +291,20 @@ async function importPemonlist(classicIds) {
 
 async function main() {
   try {
-    if (RESTORE_ONLY) {
+    if (SYNC_REQUIREMENT) {
+      await importPointercrate();
+      const users = await prisma.user.findMany({
+        where: { OR: [{ classicPp: { gt: 0 } }, { records: { some: {} } }] },
+        select: { id: true },
+      });
+      await recalculateUsers(users.map((u) => u.id));
+      const sample = await prisma.level.findMany({
+        where: { mode: 'CLASSIC', placement: { lte: 3 } },
+        orderBy: { placement: 'asc' },
+        select: { placement: true, name: true, minPercent: true, basePp: true },
+      });
+      console.log('sample', sample);
+    } else if (RESTORE_ONLY) {
       if (!fs.existsSync(BACKUP_PATH)) {
         throw new Error('No backup at ' + BACKUP_PATH);
       }

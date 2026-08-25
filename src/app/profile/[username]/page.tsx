@@ -883,7 +883,11 @@ export default function ProfilePage() {
                     <td className="px-4 py-2.5 text-center font-semibold ui-title">
                       {item.progress != null ? `${item.progress}%` : '—'}
                     </td>
-                    <td className="px-4 py-2.5 text-right ui-dim">{item.basePp.toFixed(2)}</td>
+                    <td className="px-4 py-2.5 text-right ui-dim">
+                      {item.awardedPp != null && item.progress != null && item.progress < 100
+                        ? `${Number(item.awardedPp).toFixed(2)} / ${item.basePp.toFixed(2)}`
+                        : item.basePp.toFixed(2)}
+                    </td>
                     <td className="px-4 py-2.5 text-center">
                       {pp ? (
                         <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>

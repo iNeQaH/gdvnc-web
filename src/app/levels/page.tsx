@@ -335,6 +335,11 @@ export default function LevelsListPage() {
                       <span className="text-[11px] font-semibold text-[var(--accent)]">
                         {lvl.basePp ? lvl.basePp.toFixed(1) + ' pts' : ''}
                       </span>
+                      {lvl.minPercent && lvl.minPercent < 100 && (
+                        <span className="text-[10px] font-bold ui-dim">
+                          {t('levelslist.min_percent_val', { n: lvl.minPercent })}
+                        </span>
+                      )}
                       <span className="text-[11px] font-bold flex items-center gap-1 ui-dim">
                         <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
                         {lvl.records?.length || 0}

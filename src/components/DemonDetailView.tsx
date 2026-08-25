@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, CheckCircle, Video, Clock } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import LevelNeighborNav from '@/components/LevelNeighborNav';
+import { awardedPpForProgress } from '@/lib/ScoringEngine';
 
 export default function DemonDetailView({
   level,
@@ -55,7 +56,13 @@ export default function DemonDetailView({
                 {level.difficulty}
               </span>
               <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-red-500/80 text-white backdrop-blur-md shadow-lg">
-                {level.basePp} {t('leaderboard.points')}
+                {level.minPercent && level.minPercent < 100
+                  ? t('levelslist.points_range', {
+                      min: awardedPpForProgress(level.minPercent, level.minPercent, level.basePp).toFixed(2),
+                      req: level.minPercent,
+                      max: Number(level.basePp).toFixed(2),
+                    })
+                  : `${level.basePp} ${t('leaderboard.points')}`}
               </span>
             </div>
             <h1 className="text-4xl sm:text-6xl font-black text-white drop-shadow-2xl tracking-tight">

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { RecordStatus, LevelMode } from '@prisma/client';
-import { getWeightedPpBreakdown } from '@/lib/ScoringEngine';
+import { awardedPpForProgress, getWeightedPpBreakdown } from '@/lib/ScoringEngine';
 import {
   dedupeRecordsByLevel,
   isQualifyingClassicRecord,
@@ -48,7 +48,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         name: r.level.name,
         placement: r.level.placement || 999,
         basePp: r.level.basePp,
+        minPercent: r.level.minPercent,
         progress: r.progress,
+        awardedPp: awardedPpForProgress(r.progress, r.level.minPercent, r.level.basePp),
         qualifiesForPp: isQualifyingClassicRecord(r, r.level),
         recordId: r.id,
         videoUrl: r.videoUrl,

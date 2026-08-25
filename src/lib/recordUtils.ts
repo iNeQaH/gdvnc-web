@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { LevelMode, RecordStatus } from '@prisma/client';
-import { calculateTotalPp } from '@/lib/ScoringEngine';
+import { awardedPpForProgress, calculateTotalPp } from '@/lib/ScoringEngine';
 
 type RecordLike = {
   progress: number | null;
@@ -81,7 +81,8 @@ export async function recalculateUserPp(userId: string) {
 
   const classicBasePps = deduped
     .filter((r) => r.level.mode === LevelMode.CLASSIC && isQualifyingClassicRecord(r, r.level))
-    .map((r) => r.level.basePp);
+    .map((r) => awardedPpForProgress(r.progress, r.level.minPercent, r.level.basePp))
+    .filter((pp) => pp > 0);
 
   const platformerBasePps = deduped
     .filter((r) => r.level.mode === LevelMode.PLATFORMER && isQualifyingPlatformerRecord(r))

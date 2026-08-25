@@ -7,6 +7,26 @@
 export const MAX_PP = 2500;   // Base PP for Top 1 Extreme Demon
 export const MIN_PP = 10;     // Base PP for lowest rated Demon (#150)
 export const LIST_SIZE = 150; // Main list size
+/** Pointercrate: reaching the requirement awards 10% of the level's points. */
+export const MIN_PROGRESS_SCORE_RATIO = 0.1;
+
+/**
+ * Awards points for a classic record by progress.
+ * At minPercent: 10% of basePp. At 100%: full basePp. Linear in between.
+ */
+export function awardedPpForProgress(
+  progress: number | null | undefined,
+  minPercent: number | null | undefined,
+  basePp: number
+): number {
+  const p = progress ?? 0;
+  const req = Math.min(100, Math.max(1, minPercent || 100));
+  if (p < req) return 0;
+  if (p >= 100 || req >= 100) return Number(basePp.toFixed(2));
+  const t = (p - req) / (100 - req);
+  const ratio = MIN_PROGRESS_SCORE_RATIO + (1 - MIN_PROGRESS_SCORE_RATIO) * t;
+  return Number((basePp * ratio).toFixed(2));
+}
 
 /**
  * Calculates the Base PP for a level based on its placement on the list.
@@ -54,14 +74,18 @@ export function getWeightedPpBreakdown(levels: any[]): {
   totalPp: number;
   items: any[];
 } {
-  const sorted = [...levels].sort((a, b) => b.basePp - a.basePp);
+  const awardedOf = (lvl: any) =>
+    typeof lvl.awardedPp === 'number' ? lvl.awardedPp : lvl.basePp;
+  const sorted = [...levels].sort((a, b) => awardedOf(b) - awardedOf(a));
   let totalPp = 0;
   const items = sorted.map((lvl, index) => {
     const weight = Math.pow(0.95, index);
-    const weightedPp = Number((lvl.basePp * weight).toFixed(2));
+    const awardedPp = awardedOf(lvl);
+    const weightedPp = Number((awardedPp * weight).toFixed(2));
     totalPp += weightedPp;
     return {
       ...lvl,
+      awardedPp,
       levelName: lvl.name,
       weightPercent: Number((weight * 100).toFixed(1)),
       weightedPp,
