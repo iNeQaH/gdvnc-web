@@ -281,11 +281,6 @@ export default function ImageEditorModal({
             </div>
           ) : (
               <div className="space-y-3">
-              {isGifSource && (
-                <p className="text-[11px] font-medium text-amber-500 text-center">
-                  {t('editor.gif_notice')}
-                </p>
-              )}
               {/* Canvas Preview Container */}
               <div className="flex items-center justify-center p-2 rounded-2xl bg-black/10 dark:bg-black/40 overflow-hidden">
                 <canvas

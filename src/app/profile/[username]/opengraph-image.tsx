@@ -1,11 +1,12 @@
 import { ImageResponse } from 'next/og';
 import { Role } from '@prisma/client';
-import { getProfileEmbedData } from '@/lib/profileEmbed';
+import { getProfileEmbedData, loadOgCompatibleImage } from '@/lib/profileEmbed';
 
 export const runtime = 'nodejs';
 export const alt = 'GDVNC Player Profile';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
+export const revalidate = 60;
 
 const ROLE_MARKS: Partial<Record<Role, { label: string; bg: string; fg: string }>> = {
   ADMIN: { label: '♛', bg: '#fecaca', fg: '#b91c1c' },
@@ -21,9 +22,9 @@ export default async function Image({ params }: { params: Promise<{ username: st
       (
         <div
           style={{
+            display: 'flex',
             width: '100%',
             height: '100%',
-            display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             background: '#0f172a',
@@ -39,34 +40,35 @@ export default async function Image({ params }: { params: Promise<{ username: st
     );
   }
 
+  const [coverSrc, avatarSrc] = await Promise.all([
+    loadOgCompatibleImage(data.coverUrl, 'cover'),
+    loadOgCompatibleImage(data.avatarUrl, 'avatar'),
+  ]);
+
   const isSupporter = Boolean(data.supporterUntil && new Date(data.supporterUntil) > new Date());
-  const coverSrc = data.coverUrl;
-  const avatarSrc = data.avatarUrl;
 
   return new ImageResponse(
     (
       <div
         style={{
-          width: '100%',
-          height: '100%',
           display: 'flex',
           flexDirection: 'column',
+          width: '100%',
+          height: '100%',
           background: '#0b1220',
           color: '#f8fafc',
           fontFamily: 'system-ui, sans-serif',
-          position: 'relative',
         }}
       >
         <div
           style={{
-            width: '100%',
+            display: 'flex',
+            width: 1200,
             height: 280,
             position: 'relative',
-            display: 'flex',
             background: coverSrc
-              ? undefined
+              ? '#0f172a'
               : 'linear-gradient(135deg, #1e293b 0%, #0f172a 55%, #312e81 100%)',
-            overflow: 'hidden',
           }}
         >
           {coverSrc ? (
@@ -76,20 +78,25 @@ export default async function Image({ params }: { params: Promise<{ username: st
               alt=""
               width={1200}
               height={280}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              style={{ width: 1200, height: 280, objectFit: 'cover' }}
             />
           ) : null}
           <div
             style={{
+              display: 'flex',
               position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(to bottom, rgba(0,0,0,0.05), rgba(11,18,32,0.92))',
+              top: 0,
+              left: 0,
+              width: 1200,
+              height: 280,
+              background: 'linear-gradient(to bottom, rgba(0,0,0,0.08), rgba(11,18,32,0.88))',
             }}
           />
         </div>
 
         <div
           style={{
+            display: 'flex',
             position: 'absolute',
             left: 56,
             top: 190,
@@ -99,10 +106,8 @@ export default async function Image({ params }: { params: Promise<{ username: st
             border: '6px solid #0b1220',
             overflow: 'hidden',
             background: '#1e293b',
-            display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 12px 40px rgba(0,0,0,0.45)',
           }}
         >
           {avatarSrc ? (
@@ -112,10 +117,21 @@ export default async function Image({ params }: { params: Promise<{ username: st
               alt=""
               width={148}
               height={148}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              style={{ width: 148, height: 148, objectFit: 'cover' }}
             />
           ) : (
-            <div style={{ fontSize: 64, fontWeight: 800, color: '#64748b' }}>
+            <div
+              style={{
+                display: 'flex',
+                width: 148,
+                height: 148,
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 64,
+                fontWeight: 800,
+                color: '#64748b',
+              }}
+            >
               {data.username[0]?.toUpperCase() || '?'}
             </div>
           )}
@@ -123,25 +139,27 @@ export default async function Image({ params }: { params: Promise<{ username: st
 
         <div
           style={{
-            flex: 1,
             display: 'flex',
             flexDirection: 'column',
+            flex: 1,
             padding: '24px 56px 40px 230px',
             gap: 16,
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ fontSize: 52, fontWeight: 900, letterSpacing: -1 }}>{data.username}</div>
+            <div style={{ display: 'flex', fontSize: 52, fontWeight: 900, letterSpacing: -1 }}>
+              {data.username}
+            </div>
 
             {data.showBadgeRow ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 {data.role !== Role.USER && ROLE_MARKS[data.role] ? (
                   <div
                     style={{
+                      display: 'flex',
                       width: 40,
                       height: 40,
                       borderRadius: 999,
-                      display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       background: ROLE_MARKS[data.role]!.bg,
@@ -156,10 +174,10 @@ export default async function Image({ params }: { params: Promise<{ username: st
                 {isSupporter ? (
                   <div
                     style={{
+                      display: 'flex',
                       width: 40,
                       height: 40,
                       borderRadius: 999,
-                      display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       background: '#fce7f3',
@@ -175,10 +193,10 @@ export default async function Image({ params }: { params: Promise<{ username: st
                   <div
                     key={`badge-${i}`}
                     style={{
+                      display: 'flex',
                       width: 40,
                       height: 40,
                       borderRadius: 999,
-                      display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       background: badge.color,
@@ -196,12 +214,12 @@ export default async function Image({ params }: { params: Promise<{ username: st
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
             {data.pointLines.map((line) => (
-              <div key={line} style={{ fontSize: 28, fontWeight: 700, color: '#e2e8f0' }}>
+              <div key={line} style={{ display: 'flex', fontSize: 28, fontWeight: 700, color: '#e2e8f0' }}>
                 {line}
               </div>
             ))}
             {data.hardestLines.map((line) => (
-              <div key={line} style={{ fontSize: 22, fontWeight: 600, color: '#94a3b8' }}>
+              <div key={line} style={{ display: 'flex', fontSize: 22, fontWeight: 600, color: '#94a3b8' }}>
                 {line}
               </div>
             ))}
@@ -210,6 +228,7 @@ export default async function Image({ params }: { params: Promise<{ username: st
 
         <div
           style={{
+            display: 'flex',
             position: 'absolute',
             right: 40,
             bottom: 28,
