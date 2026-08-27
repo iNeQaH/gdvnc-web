@@ -3,9 +3,10 @@ import { pageMetadata } from '@/lib/pageMeta';
 
 export const metadata = pageMetadata(
   'GDVNC Helps',
-  'Yêu cầu hỗ trợ, đề xuất, báo lỗi,...'
+  'Yêu cầu hỗ trợ, đề xuất, báo lỗi,...',
+  '/helps'
 );
 
 export default function HelpsLayout({ children }: { children: ReactNode }) {
-  return children;
+  return <>{children}</>;
 }
