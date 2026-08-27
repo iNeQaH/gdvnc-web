@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Check, Loader2, Tag } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { useToast } from './GlobalToast';
-import { getDifficultyFaceUrl, getRatingIconUrl } from '@/lib/gdDifficulty';
+import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
 import ColorToggle from './ColorToggle';
 
 interface LevelFormModalProps {
@@ -134,10 +134,6 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
     setForm({ ...form, ratingType: sequence[(idx + 1) % sequence.length] });
   };
 
-  const getRatingIcon = () => getRatingIconUrl(form.ratingType);
-
-  const getFaceIcon = () => getDifficultyFaceUrl(form.difficultyFace);
-
   const handleSave = async () => {
     if (!form.gdLevelId) {
       showToast(t('admin.need_level_id'), 'error');
@@ -209,10 +205,11 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
                     <Loader2 className="w-6 h-6 animate-spin text-white" />
                   </div>
                 )}
-                {form.ratingType !== 'NONE' && getRatingIcon() && (
-                  <img src={getRatingIcon() as string} className="absolute inset-0 w-full h-full object-contain" alt={form.ratingType} />
-                )}
-                <img src={getFaceIcon()} className="absolute inset-0 w-full h-full object-contain z-10" alt="Difficulty" />
+                <DifficultyRatingIcon
+                  difficultyFace={form.difficultyFace}
+                  ratingType={form.ratingType}
+                  className="h-full w-full"
+                />
               </div>
               
               <div className="flex items-center gap-2 bg-[var(--bg-subtle)] border border-[var(--border-ui)] rounded-lg p-1">

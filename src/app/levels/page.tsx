@@ -12,8 +12,9 @@ import LevelFormModal from '@/components/LevelFormModal';
 import LevelFiltersModal from '@/components/LevelFiltersModal';
 import FloatingNav from '@/components/FloatingNav';
 import { useToast } from '@/components/GlobalToast';
-import { getDifficultyFaceUrl, getRatingIconUrl, matchesDifficultyFilter } from '@/lib/gdDifficulty';
+import { matchesDifficultyFilter } from '@/lib/gdDifficulty';
 import { levelPath } from '@/lib/levelUrl';
+import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
 
 export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main' | 'challenge' }) {
   const { t } = useLanguage();
@@ -297,9 +298,6 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
         ) : (
           paginatedData.map((lvl) => {
             const placement = lvl.placement ? '#' + lvl.placement : '-';
-            const ratingIcon = getRatingIconUrl(lvl.ratingType);
-            const faceIcon = getDifficultyFaceUrl(lvl.difficultyFace ?? 10);
-
             if (viewMode === 'list') {
               return (
                 <div
@@ -316,10 +314,11 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
                       <img src={getThumbnail(lvl)} alt="" className="w-full h-full object-cover" />
                     </div>
 
-                    <div className="flex items-center gap-1 shrink-0">
-                      <img src={faceIcon} alt="" className="w-6 h-6 object-contain" />
-                      {ratingIcon && <img src={ratingIcon} alt="" className="w-6 h-6 object-contain" />}
-                    </div>
+                    <DifficultyRatingIcon
+                      difficultyFace={lvl.difficultyFace}
+                      ratingType={lvl.ratingType}
+                      className="w-6 h-6"
+                    />
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -425,14 +424,11 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      <div className="flex items-center justify-center w-6 h-6">
-                        <img src={faceIcon} alt="" className="w-6 h-6 object-contain drop-shadow-md" />
-                      </div>
-                      {ratingIcon && (
-                        <div className="flex items-center justify-center w-6 h-6">
-                          <img src={ratingIcon} alt="" className="w-6 h-6 object-contain drop-shadow-md" />
-                        </div>
-                      )}
+                      <DifficultyRatingIcon
+                        difficultyFace={lvl.difficultyFace}
+                        ratingType={lvl.ratingType}
+                        className="w-6 h-6 drop-shadow-md"
+                      />
                       <span className="text-xs font-bold flex items-center gap-1 opacity-90 bg-black/50 backdrop-blur-sm px-2 py-0.5 rounded-md border border-white/10">
                         <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
                         {lvl.records?.length || 0}
