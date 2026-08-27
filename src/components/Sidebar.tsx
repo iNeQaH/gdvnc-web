@@ -181,7 +181,7 @@ export const Sidebar = () => {
                 <div className="font-extrabold text-base tracking-tight ui-title leading-tight">
                   GD<span style={{ color: 'var(--accent)' }}>VN</span>
                 </div>
-                <div className="text-[10px] ui-dim font-medium">GDVNC</div>
+                <div className="text-[10px] ui-dim font-medium">Geometry Dash Vietnam</div>
               </div>
             </Link>
 
