@@ -4,7 +4,6 @@ import bcrypt from 'bcryptjs';
 import { signToken, setAuthCookie } from '@/lib/auth';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
-import { purgeExpiredUserEmails } from '@/lib/purgeExpiredEmails';
 
 export async function POST(req: Request) {
   try {
@@ -55,8 +54,6 @@ export async function POST(req: Request) {
     if (!isMatch) {
       return NextResponse.json({ error: en ? 'Incorrect username / email or password.' : 'Tên người dùng / Email hoặc mật khẩu không chính xác.' }, { status: 401 });
     }
-
-    await purgeExpiredUserEmails();
 
     // Return safe user object
     const safeUser = {

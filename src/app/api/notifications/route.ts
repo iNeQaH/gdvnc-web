@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
+import { notificationRetentionCutoff, purgeExpiredNotifications } from '@/lib/purgeExpiredNotifications';
 
 export async function GET() {
   let auth;
@@ -11,14 +12,17 @@ export async function GET() {
   }
 
   try {
+    await purgeExpiredNotifications(auth.userId);
+
+    const cutoff = notificationRetentionCutoff();
     const notifications = await prisma.notification.findMany({
-      where: { userId: auth.userId },
+      where: { userId: auth.userId, createdAt: { gt: cutoff } },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
 
     const unreadCount = await prisma.notification.count({
-      where: { userId: auth.userId, isRead: false },
+      where: { userId: auth.userId, isRead: false, createdAt: { gt: cutoff } },
     });
 
     return NextResponse.json({

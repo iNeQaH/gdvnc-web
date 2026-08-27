@@ -6,7 +6,6 @@ import { consumeCaptchaToken, isHoneypotFilled } from '@/lib/captcha';
 import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
-import { purgeExpiredUserEmails } from '@/lib/purgeExpiredEmails';
 
 export async function POST(req: Request) {
   try {
@@ -16,8 +15,6 @@ export async function POST(req: Request) {
 
     const limited = rateLimit(`reset-otp:${getClientIp(req)}`, 3, 60 * 60_000);
     if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
-
-    await purgeExpiredUserEmails();
 
     const ip = getClientIp(req);
     const { email, locale, captchaToken, website } = await req.json();

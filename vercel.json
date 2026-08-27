@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/cron/purge-emails",
+      "path": "/api/cron/purge-notifications",
       "schedule": "0 3 * * *"
     }
   ]
