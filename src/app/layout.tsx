@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -31,36 +32,30 @@ export const metadata: Metadata = {
   },
 };
 
+const THEME_BOOT = `(function(){try{var t=localStorage.getItem('gdvnc_theme');document.documentElement.setAttribute('data-theme',t&&['sky','mint','peach','lavender','mono','sakura'].indexOf(t)>=0?t:'sky');var m=localStorage.getItem('gdvnc_mode');var dark=m==='dark'||(m!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',!!dark);}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('gdvnc_theme');document.documentElement.setAttribute('data-theme',t&&['sky','mint','peach','lavender','mono','sakura'].indexOf(t)>=0?t:'sky');var m=localStorage.getItem('gdvnc_mode');var dark=m==='dark'||(m!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(dark)document.documentElement.classList.add('dark');}catch(e){}})();`,
-          }}
-        />
-      </head>
-      <body className={`${inter.className} antialiased min-h-screen flex flex-col transition-colors duration-200`}>
+    <html lang="vi" suppressHydrationWarning>
+      <body className={`${inter.className} antialiased min-h-screen flex flex-col`}>
+        <Script id="gdvnc-theme" strategy="beforeInteractive">
+          {THEME_BOOT}
+        </Script>
         <ThemeProvider>
           <LanguageProvider>
             <ToastProvider>
               <div className="min-h-screen flex flex-col md:flex-row">
-                {/* Sidebar Navigation */}
                 <Sidebar />
 
-                {/* Main Content Area */}
                 <div className="flex-1 flex flex-col min-w-0 md:pl-64">
                   <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 py-6 sm:py-8">
                     {children}
                   </main>
 
-                  {/* Minimal Clean Footer */}
                   <footer className="border-t py-4 text-center text-xs tracking-widest font-black ui-dim" style={{ borderColor: 'var(--border-subtle)' }}>
                     GDVNC
                   </footer>
