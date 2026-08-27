@@ -5,6 +5,8 @@ import { useLanguage } from '@/components/LanguageContext';
 import { LifeBuoy, Send } from 'lucide-react';
 import { useEffect } from 'react';
 
+const DISCORD_URL = 'https://discord.gg/AsvCSqP8gb';
+
 export default function HelpsPage() {
   const { t } = useLanguage();
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -24,11 +26,11 @@ export default function HelpsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) {
-      setError('Bạn cần đăng nhập để gửi yêu cầu hỗ trợ.');
+      setError(t('helps.need_login'));
       return;
     }
     if (!title.trim() || !content.trim()) {
-      setError('Vui lòng điền đầy đủ tiêu đề và nội dung.');
+      setError(t('helps.fill_all'));
       return;
     }
 
@@ -44,18 +46,20 @@ export default function HelpsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccess('Đã gửi yêu cầu hỗ trợ thành công. Chúng tôi sẽ phản hồi sớm nhất có thể.');
+        setSuccess(t('helps.ok'));
         setTitle('');
         setContent('');
       } else {
-        setError(data.error || 'Có lỗi xảy ra.');
+        setError(data.error || t('helps.error'));
       }
-    } catch (err: any) {
-      setError('Lỗi kết nối tới máy chủ.');
+    } catch {
+      setError(t('helps.network'));
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const descParts = t('helps.desc', { url: DISCORD_URL }).split(DISCORD_URL);
 
   return (
     <div className="w-full max-w-4xl mx-auto p-4 md:p-6 space-y-6 pt-24 animate-in fade-in slide-in-from-bottom-4">
@@ -64,9 +68,11 @@ export default function HelpsPage() {
           <LifeBuoy className="w-6 h-6" />
         </div>
         <div>
-          <h1 className="text-2xl font-black drop-shadow-md">Hỗ trợ / Helps</h1>
+          <h1 className="text-2xl font-black drop-shadow-md">{t('helps.title')}</h1>
           <p className="text-sm font-semibold opacity-80 max-w-xl">
-            Gửi yêu cầu hỗ trợ hoặc báo lỗi web. Discord: <a href="https://discord.gg/AsvCSqP8gb" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">https://discord.gg/AsvCSqP8gb</a>
+            {descParts[0]}
+            <a href={DISCORD_URL} target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">{DISCORD_URL}</a>
+            {descParts[1] || ''}
           </p>
         </div>
       </div>
@@ -74,12 +80,12 @@ export default function HelpsPage() {
       <div className="ui-card p-6 rounded-2xl shadow-xl max-w-2xl mx-auto">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold uppercase ui-dim mb-2">Tiêu đề</label>
+            <label className="block text-xs font-bold uppercase ui-dim mb-2">{t('helps.field_title')}</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="VD: Báo lỗi tính năng..."
+              placeholder={t('helps.title_ph')}
               disabled={!currentUser || isSubmitting}
               className="w-full px-4 py-3 rounded-xl border text-sm font-bold focus:outline-none focus:ring-2 focus:ring-sky-500/50"
               style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
@@ -87,11 +93,11 @@ export default function HelpsPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase ui-dim mb-2">Mô tả chi tiết</label>
+            <label className="block text-xs font-bold uppercase ui-dim mb-2">{t('helps.field_content')}</label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Mô tả rõ vấn đề bạn đang gặp phải..."
+              placeholder={t('helps.content_ph')}
               disabled={!currentUser || isSubmitting}
               rows={6}
               className="w-full px-4 py-3 rounded-xl border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-sky-500/50 resize-y"
@@ -108,13 +114,13 @@ export default function HelpsPage() {
             className="w-full py-3 rounded-xl text-sm font-black transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
             style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-fg)' }}
           >
-            {isSubmitting ? 'Đang gửi...' : 'Gửi yêu cầu'}
+            {isSubmitting ? t('helps.submitting') : t('helps.submit')}
             <Send className="w-4 h-4" />
           </button>
           
           {!currentUser && (
             <p className="text-center text-xs text-red-400 font-bold mt-2">
-              Bạn cần đăng nhập để gửi biểu mẫu này.
+              {t('helps.need_login')}
             </p>
           )}
         </form>

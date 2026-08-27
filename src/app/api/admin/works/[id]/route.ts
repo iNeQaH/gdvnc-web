@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { RecordStatus } from '@prisma/client';
 import { recalculateCreatorPoints } from '@/lib/creatorPoints';
+import { extractYoutubeId, upsertLevelFromForm } from '@/lib/upsertLevel';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
@@ -46,6 +47,29 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       });
       
       return NextResponse.json({ success: true, work: updated });
+    }
+
+    // APPROVE — add the level once (GD fetch only if it is not already on the list)
+    if (work.gdLevelId) {
+      const existingLevel = await prisma.level.findUnique({
+        where: { gdLevelId: work.gdLevelId },
+        select: { id: true, youtubeId: true },
+      });
+      if (existingLevel) {
+        const youtubeId = extractYoutubeId(work.videoUrl);
+        if (youtubeId && youtubeId !== existingLevel.youtubeId) {
+          await prisma.level.update({
+            where: { id: existingLevel.id },
+            data: { youtubeId },
+          });
+        }
+      } else {
+        await upsertLevelFromForm({
+          gdLevelId: work.gdLevelId,
+          videoUrl: work.videoUrl || '',
+          placement: null,
+        });
+      }
     }
 
     // APPROVE — badgeId may be a comma-separated string (deco + layout)

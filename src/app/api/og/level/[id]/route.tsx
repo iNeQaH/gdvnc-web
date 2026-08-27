@@ -26,6 +26,8 @@ export async function GET(
   const faceSrc = `${base}${getDifficultyFaceUrl(level.difficultyFace ?? 0)}`;
   const ratingSrc = getRatingIconUrl(level.ratingType);
 
+  const iconSize = 220;
+
   return new ImageResponse(
     (
       <div
@@ -35,21 +37,21 @@ export async function GET(
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          gap: 24,
           background: '#0b1120',
-          position: 'relative',
         }}
       >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={faceSrc} width={iconSize} height={iconSize} style={{ objectFit: 'contain' }} />
         {ratingSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={`${base}${ratingSrc}`}
-            width={360}
-            height={360}
-            style={{ position: 'absolute', objectFit: 'contain' }}
+            width={iconSize}
+            height={iconSize}
+            style={{ objectFit: 'contain' }}
           />
         ) : null}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={faceSrc} width={280} height={280} style={{ objectFit: 'contain' }} />
       </div>
     ),
     { width: 512, height: 512 }

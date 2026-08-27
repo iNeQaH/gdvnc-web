@@ -15,13 +15,13 @@ export async function getLevelEmbedData(level: {
   records: any[];
 }) {
   const victors = victorCountForLevel(level);
-  const parts = [
-    `Creator: ${level.creatorName || 'Unknown'}`,
-    `GD ID: ${level.gdLevelId}`,
-  ];
-  if (level.placement != null) parts.push(`Top #${level.placement}`);
-  parts.push(`Victors: ${victors}`);
-  if (level.ratingType && level.ratingType !== 'NONE') parts.push(level.ratingType);
+  const line1 = `Creator: ${level.creatorName || 'Unknown'} · ID: ${level.gdLevelId}`;
+  const line2Parts: string[] = [];
+  if (level.placement != null) line2Parts.push(`Top #${level.placement}`);
+  line2Parts.push(`Victors: ${victors}`);
+  if (level.ratingType && level.ratingType !== 'NONE') line2Parts.push(level.ratingType);
+
+  const description = line2Parts.length > 0 ? `${line1}\n${line2Parts.join(' · ')}` : line1;
 
   const base = getSiteBaseUrl();
   const face = `${base}${getDifficultyFaceUrl(level.difficultyFace ?? 0)}`;
@@ -29,7 +29,7 @@ export async function getLevelEmbedData(level: {
 
   return {
     title: level.name,
-    description: parts.join(' · '),
+    description,
     url: `${base}/levels/${level.gdLevelId}`,
     image: `${base}/api/og/level/${level.gdLevelId}`,
     faceUrl: face,

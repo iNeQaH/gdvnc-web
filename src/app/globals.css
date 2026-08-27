@@ -238,6 +238,11 @@ body {
   min-height: 100vh;
 }
 
+select,
+option {
+  font-family: inherit;
+}
+
 /* Component base styles using variables */
 .ui-card {
   background-color: var(--bg-card);

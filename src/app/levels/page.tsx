@@ -29,8 +29,8 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
   const pageSize = 20;
 
   // Filters
-  const [filterModes, setFilterModes] = useState<string[]>([]);
-  const [filterTiers, setFilterTiers] = useState<string[]>([]);
+  const [filterModes, setFilterModes] = useState<string[]>(listKind === 'challenge' ? [] : ['CLASSIC']);
+  const [filterTiers, setFilterTiers] = useState<string[]>(listKind === 'challenge' ? [] : ['MAIN']);
   const [filterFaces, setFilterFaces] = useState<number[]>([]);
   const [filterVN, setFilterVN] = useState(false);
   const isChallengeList = listKind === 'challenge';
@@ -123,7 +123,14 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
     }
 
     return true;
-  });
+  })
+    .slice()
+    .sort((a, b) => {
+      if (a.placement == null && b.placement == null) return 0;
+      if (a.placement == null) return 1;
+      if (b.placement == null) return -1;
+      return a.placement - b.placement;
+    });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginatedData = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -277,8 +284,8 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
             <button
               onClick={() => {
                 setSearch('');
-                setFilterModes([]);
-                setFilterTiers([]);
+                setFilterModes(isChallengeList ? [] : ['CLASSIC']);
+                setFilterTiers(isChallengeList ? [] : ['MAIN']);
                 setFilterFaces([]);
                 setFilterVN(false);
               }}
@@ -309,9 +316,9 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
                       <img src={getThumbnail(lvl)} alt="" className="w-full h-full object-cover" />
                     </div>
 
-                    <div className="relative flex items-center justify-center shrink-0 w-6 h-6">
-                      {ratingIcon && <img src={ratingIcon} alt="" className="absolute inset-0 w-full h-full object-contain" />}
-                      <img src={faceIcon} alt="" className="relative w-6 h-6 object-contain z-10" />
+                    <div className="flex items-center gap-1 shrink-0">
+                      <img src={faceIcon} alt="" className="w-6 h-6 object-contain" />
+                      {ratingIcon && <img src={ratingIcon} alt="" className="w-6 h-6 object-contain" />}
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -417,11 +424,15 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex items-center justify-center w-6 h-6">
-                        {ratingIcon && <img src={ratingIcon} alt="" className="absolute inset-0 w-full h-full object-contain drop-shadow-md" />}
-                        <img src={faceIcon} alt="" className="relative w-6 h-6 object-contain z-10 drop-shadow-md" />
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex items-center justify-center w-6 h-6">
+                        <img src={faceIcon} alt="" className="w-6 h-6 object-contain drop-shadow-md" />
                       </div>
+                      {ratingIcon && (
+                        <div className="flex items-center justify-center w-6 h-6">
+                          <img src={ratingIcon} alt="" className="w-6 h-6 object-contain drop-shadow-md" />
+                        </div>
+                      )}
                       <span className="text-xs font-bold flex items-center gap-1 opacity-90 bg-black/50 backdrop-blur-sm px-2 py-0.5 rounded-md border border-white/10">
                         <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
                         {lvl.records?.length || 0}

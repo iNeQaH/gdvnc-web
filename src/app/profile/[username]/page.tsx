@@ -11,6 +11,7 @@ import BadgePickerModal from '@/components/BadgePickerModal';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import { formatCp } from '@/lib/creatorPoints';
+import { levelPath } from '@/lib/levelUrl';
 
 const IconRender = ({ icon, className }: { icon: string, className?: string }) => {
   const Comp = (CUSTOM_ICONS as any)[icon] || (AllLucideIcons as any)[icon] || AllLucideIcons.Star;
@@ -452,7 +453,7 @@ export default function ProfilePage() {
                     </span>
                   )}
                   {data.supporterUntil && new Date(data.supporterUntil) > new Date() && (
-                    <span title="Supporter" className="w-6 h-6 flex items-center justify-center rounded-full shadow-sm" style={{ backgroundColor: 'rgba(2ec, 72, 153, 0.15)', color: '#ec4899' }}>
+                    <span title="Supporter" className="w-6 h-6 flex items-center justify-center rounded-full shadow-sm" style={{ backgroundColor: 'rgba(236, 72, 153, 0.15)', color: '#ec4899' }}>
                       <Heart className="w-3.5 h-3.5 fill-pink-500" />
                     </span>
                   )}
@@ -876,8 +877,18 @@ export default function ProfilePage() {
                     <td className="px-4 py-2.5 text-center font-bold ui-dim">{pp?.rankInProfile ?? idx + 1}</td>
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-1.5">
-                        <span className="px-1 py-0.2 rounded text-[9px] font-bold ui-subtle">#{item.placement}</span>
-                        <span className="font-bold ui-title">{item.name || item.levelName}</span>
+                        {item.placement != null ? (
+                          <span className="px-1 py-0.2 rounded text-[9px] font-bold ui-subtle">#{item.placement}</span>
+                        ) : (
+                          <span className="px-1 py-0.2 rounded text-[9px] font-bold ui-subtle">-</span>
+                        )}
+                        {item.gdLevelId ? (
+                          <Link href={levelPath({ gdLevelId: item.gdLevelId })} className="font-bold ui-title hover:underline" style={{ color: 'var(--accent)' }}>
+                            {item.name || item.levelName}
+                          </Link>
+                        ) : (
+                          <span className="font-bold ui-title">{item.name || item.levelName}</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-2.5 text-center font-semibold ui-title">
@@ -940,7 +951,13 @@ export default function ProfilePage() {
                 {data.platformerCompletions?.map((rec: any, idx: number) => (
                   <tr key={rec.recordId || rec.id || `plat-${idx}`} className="hover:opacity-90">
                     <td className="px-4 py-2.5">
-                      <span className="font-bold ui-title">{rec.name}</span>
+                      {rec.gdLevelId ? (
+                        <Link href={levelPath({ gdLevelId: rec.gdLevelId })} className="font-bold ui-title hover:underline" style={{ color: 'var(--accent)' }}>
+                          {rec.name}
+                        </Link>
+                      ) : (
+                        <span className="font-bold ui-title">{rec.name}</span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 text-center font-mono font-bold" style={{ color: 'var(--badge-green-text)' }}>
                       {(rec.timeMs / 1000).toFixed(3)}s
@@ -986,7 +1003,13 @@ export default function ProfilePage() {
                 {data.createdLevels?.map((level: any, idx: number) => (
                   <tr key={level.id || `created-${idx}`} className="hover:opacity-90">
                     <td className="px-4 py-2.5">
-                      <span className="font-bold ui-title">{level.name}</span>
+                      {level.gdLevelId ? (
+                        <Link href={levelPath(level)} className="font-bold ui-title hover:underline" style={{ color: 'var(--accent)' }}>
+                          {level.name}
+                        </Link>
+                      ) : (
+                        <span className="font-bold ui-title">{level.name}</span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 text-center ui-dim">
                       {level.basePp.toFixed(2)}

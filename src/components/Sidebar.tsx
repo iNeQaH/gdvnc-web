@@ -99,7 +99,7 @@ export const Sidebar = () => {
     { href: '/challenges', label: t('nav.challenges'), icon: Goal },
     { href: '/submit', label: t('nav.submit'), icon: Send },
     { href: '/support', label: t('nav.supporter'), icon: Heart, highlight: false, isPink: true },
-    { href: '/helps', label: 'Hỗ trợ / Helps', icon: Send},
+    { href: '/helps', label: t('nav.helps'), icon: Send},
     ...(currentUser?.role === 'ADMIN' ? [{ href: '/admin', label: t('nav.admin'), icon: ShieldCheck }] : []),
   ];
 

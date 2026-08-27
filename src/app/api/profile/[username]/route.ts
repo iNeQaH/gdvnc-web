@@ -46,7 +46,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       .filter((r) => r.level.mode === LevelMode.CLASSIC)
       .map((r) => ({
         name: r.level.name,
-        placement: r.level.placement || 999,
+        gdLevelId: r.level.gdLevelId,
+        placement: r.level.placement,
         basePp: r.level.basePp,
         minPercent: r.level.minPercent,
         progress: r.progress,
@@ -59,7 +60,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         submittedAt: r.submittedAt,
       }));
 
-    classicRecords.sort((a, b) => a.placement - b.placement || b.basePp - a.basePp);
+    classicRecords.sort((a, b) => {
+      const pa = a.placement ?? Number.POSITIVE_INFINITY;
+      const pb = b.placement ?? Number.POSITIVE_INFINITY;
+      return pa - pb || b.basePp - a.basePp;
+    });
 
     const classicForPp = classicRecords.filter((r) => r.qualifiesForPp);
     const classicBreakdown = getWeightedPpBreakdown(classicForPp);
@@ -68,7 +73,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       .filter((r) => r.level.mode === LevelMode.PLATFORMER && isQualifyingPlatformerRecord(r))
       .map((r) => ({
         name: r.level.name,
-        placement: r.level.placement || 999,
+        gdLevelId: r.level.gdLevelId,
+        placement: r.level.placement,
         basePp: r.level.basePp,
         timeMs: r.timeMs,
         recordId: r.id,
@@ -77,15 +83,23 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         device: r.device,
         submittedAt: r.submittedAt,
       }))
-      .sort((a, b) => a.placement - b.placement || b.basePp - a.basePp);
+      .sort((a, b) => {
+        const pa = a.placement ?? Number.POSITIVE_INFINITY;
+        const pb = b.placement ?? Number.POSITIVE_INFINITY;
+        return pa - pb || b.basePp - a.basePp;
+      });
 
     let hardestClassic = null;
     let hardestPlatformer = null;
     if (classicForPp.length > 0) {
-      hardestClassic = [...classicForPp].sort((a, b) => a.placement - b.placement)[0];
+      hardestClassic = [...classicForPp].sort(
+        (a, b) => (a.placement ?? Number.POSITIVE_INFINITY) - (b.placement ?? Number.POSITIVE_INFINITY)
+      )[0];
     }
     if (platformerCompletions.length > 0) {
-      hardestPlatformer = [...platformerCompletions].sort((a, b) => a.placement - b.placement)[0];
+      hardestPlatformer = [...platformerCompletions].sort(
+        (a, b) => (a.placement ?? Number.POSITIVE_INFINITY) - (b.placement ?? Number.POSITIVE_INFINITY)
+      )[0];
     }
 
     // Calculate National Ranks

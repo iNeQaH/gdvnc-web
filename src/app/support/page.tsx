@@ -4,9 +4,17 @@ import React, { useState } from 'react';
 import { Heart, ShieldCheck, Check } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 
+const BANK_NAME = 'VietinBank';
+const BANK_ACCOUNT = '100879164042';
+const BANK_OWNER = 'NGUYEN QUANG HIEP';
+const BANK_CODE = 'ICB';
+
 export default function SupportPage() {
   const { t } = useLanguage();
   const [selectedPlan, setSelectedPlan] = useState<number>(1);
+  const [showTransfer, setShowTransfer] = useState(false);
+  const transferContent = `GDVNC ${selectedPlan}T`;
+  const qrSrc = `https://img.vietqr.io/image/${BANK_CODE}-${BANK_ACCOUNT}-compact2.png?accountName=${encodeURIComponent(BANK_OWNER)}&addInfo=${encodeURIComponent(transferContent)}`;
 
   const plans = [
     { months: 1, name: t('support.plan_1m'), price: '20.000đ' },
@@ -92,24 +100,42 @@ export default function SupportPage() {
           </p>
         </div>
 
-        <div className="p-4 rounded-2xl ui-subtle space-y-2 text-xs w-full">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-1.5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-            <span className="ui-dim w-40 shrink-0">{t('support.payment_bank')}</span>
-            <strong className="ui-title font-mono">-</strong>
+        <button
+          type="button"
+          onClick={() => setShowTransfer(true)}
+          className="w-full py-3 rounded-2xl text-sm font-black transition-all"
+          style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-fg)' }}
+        >
+          {t('support.transfer_btn')}
+        </button>
+
+        {showTransfer && (
+          <div className="flex flex-col sm:flex-row gap-5">
+            <img
+              src={qrSrc}
+              alt="VietQR VietinBank"
+              className="w-44 h-44 rounded-2xl object-contain bg-white shrink-0 mx-auto sm:mx-0"
+            />
+            <div className="p-4 rounded-2xl ui-subtle space-y-2 text-xs w-full">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-1.5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+                <span className="ui-dim w-40 shrink-0">{t('support.payment_bank')}</span>
+                <strong className="ui-title font-mono">{BANK_NAME}</strong>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-1.5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+                <span className="ui-dim w-40 shrink-0">{t('support.payment_acc')}</span>
+                <strong className="ui-title font-mono">{BANK_ACCOUNT}</strong>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-1.5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+                <span className="ui-dim w-40 shrink-0">{t('support.payment_owner')}</span>
+                <strong className="ui-title font-mono">{BANK_OWNER}</strong>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-1.5">
+                <span className="ui-dim w-40 shrink-0">{t('support.payment_content')}</span>
+                <strong className="ui-title font-mono">{transferContent}</strong>
+              </div>
+            </div>
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-1.5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-            <span className="ui-dim w-40 shrink-0">{t('support.payment_acc')}</span>
-            <strong className="ui-title font-mono">-</strong>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-1.5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-            <span className="ui-dim w-40 shrink-0">{t('support.payment_owner')}</span>
-            <strong className="ui-title font-mono">-</strong>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-1.5">
-            <span className="ui-dim w-40 shrink-0">{t('support.payment_status')}</span>
-            <strong className="text-amber-500 font-semibold">{t('support.payment_status_val')}</strong>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

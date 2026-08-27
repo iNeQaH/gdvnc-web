@@ -950,8 +950,8 @@ export default function AdminPage() {
                         <select
                           value={workReviewData[work.id]?.decoBadgeId || ''}
                           onChange={(e) => setWorkReviewData({ ...workReviewData, [work.id]: { ...workReviewData[work.id], decoBadgeId: e.target.value } })}
-                          className="flex-1 px-2 py-1.5 rounded-xl text-xs border focus:outline-none"
-                          style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                          className="flex-1 px-2 py-1.5 rounded-xl text-xs border focus:outline-none font-sans"
+                          style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)', fontFamily: 'inherit' }}
                         >
                           <option value="">-- Deco Badge --</option>
                           {decoBadges.map(b => (
@@ -963,8 +963,8 @@ export default function AdminPage() {
                         <select
                           value={workReviewData[work.id]?.layoutBadgeId || ''}
                           onChange={(e) => setWorkReviewData({ ...workReviewData, [work.id]: { ...workReviewData[work.id], layoutBadgeId: e.target.value } })}
-                          className="flex-1 px-2 py-1.5 rounded-xl text-xs border focus:outline-none"
-                          style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                          className="flex-1 px-2 py-1.5 rounded-xl text-xs border focus:outline-none font-sans"
+                          style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)', fontFamily: 'inherit' }}
                         >
                           <option value="">-- Layout Badge --</option>
                           {layoutBadges.map(b => (

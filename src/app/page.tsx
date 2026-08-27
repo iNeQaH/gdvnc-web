@@ -295,7 +295,7 @@ export default function HomePage() {
                                 </span>
                               )}
                               {player.supporterUntil && new Date(player.supporterUntil) > new Date() && (
-                                <span className="px-1.5 py-0.2 text-[9px] font-extrabold uppercase rounded" style={{ backgroundColor: 'var(--badge-green-bg)', color: 'var(--badge-green-text)' }}>
+                                <span className="px-1.5 py-0.2 text-[9px] font-extrabold uppercase rounded" style={{ backgroundColor: 'rgba(236, 72, 153, 0.15)', color: '#ec4899' }}>
                                   Supporter
                                 </span>
                               )}

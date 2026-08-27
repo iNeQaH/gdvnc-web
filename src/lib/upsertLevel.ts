@@ -12,7 +12,7 @@ export async function triggerBackgroundPpRecalc(levelIds: string[], mode: LevelM
   Promise.all(records.map((r) => recalcUserPp(r.userId))).catch(console.error);
 }
 
-function extractYoutubeId(videoUrl?: string | null): string | null {
+export function extractYoutubeId(videoUrl?: string | null): string | null {
   if (!videoUrl) return null;
   const ytMatch = String(videoUrl).match(
     /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/

@@ -10,12 +10,17 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://gdvnc-web.vercel.app"),
-  title: "GDVNC - GDVNC Leaderboard & Levels List",
-  description: "Geometry Dash Việt Nam",
+  title: "Geometry Dash Vietnam Community",
+  description: "Trang web chính thức của cộng đồng GDVN",
   openGraph: {
-    title: "GDVNC - GDVNC Leaderboard & Levels List",
-    description: "Geometry Dash Việt Nam",
+    title: "Geometry Dash Vietnam Community",
+    description: "Trang web chính thức của cộng đồng GDVN",
     type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Geometry Dash Vietnam Community",
+    description: "Trang web chính thức của cộng đồng GDVN",
   },
   icons: {
     icon: "/favicon.svg",

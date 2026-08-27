@@ -44,7 +44,7 @@ export default function FloatingNav({
       }
       setIsVisible(true);
       if (idleTimer.current) clearTimeout(idleTimer.current);
-      idleTimer.current = setTimeout(() => setIsVisible(false), 1000);
+      idleTimer.current = setTimeout(() => setIsVisible(false), 3000);
     };
 
     const handleScroll = () => {
@@ -122,6 +122,15 @@ export default function FloatingNav({
         isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
       }`}
       style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+      onMouseEnter={() => {
+        if (idleTimer.current) clearTimeout(idleTimer.current);
+        setIsVisible(true);
+      }}
+      onMouseLeave={() => {
+        if (alwaysVisible) return;
+        if (idleTimer.current) clearTimeout(idleTimer.current);
+        idleTimer.current = setTimeout(() => setIsVisible(false), 3000);
+      }}
     >
       <button
         onClick={handleScrollToggle}
