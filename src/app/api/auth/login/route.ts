@@ -25,8 +25,8 @@ export async function POST(req: Request) {
     const user = await prisma.user.findFirst({
       where: {
         OR: [
-          { username: loginInput },
-          { email: loginInput.toLowerCase() },
+          { username: { equals: loginInput, mode: 'insensitive' } },
+          { email: { equals: loginInput.toLowerCase(), mode: 'insensitive' } },
         ],
       },
       select: {
@@ -36,6 +36,7 @@ export async function POST(req: Request) {
         avatarUrl: true,
         discordTag: true,
         gdUsername: true,
+        gdVerified: true,
         classicPp: true,
         platformerPp: true,
         creatorPoints: true,
@@ -62,6 +63,7 @@ export async function POST(req: Request) {
       avatarUrl: user.avatarUrl,
       discordTag: user.discordTag,
       gdUsername: user.gdUsername,
+      gdVerified: user.gdVerified,
       classicPp: user.classicPp,
       platformerPp: user.platformerPp,
       creatorPoints: user.creatorPoints,

@@ -9,7 +9,7 @@ export async function triggerBackgroundPpRecalc(levelIds: string[], mode: LevelM
     select: { userId: true },
     distinct: ['userId'],
   });
-  Promise.all(records.map((r) => recalcUserPp(r.userId))).catch(console.error);
+  Promise.all(records.filter((r) => r.userId).map((r) => recalcUserPp(r.userId!))).catch(console.error);
 }
 
 export function extractYoutubeId(videoUrl?: string | null): string | null {

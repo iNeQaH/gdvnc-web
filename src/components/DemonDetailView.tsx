@@ -139,16 +139,28 @@ export default function DemonDetailView({
                             #{idx + 1}
                           </td>
                           <td className="px-5 py-3 font-bold ui-title">
-                            <Link href={`/profile/${rec.user.username}`} className="hover:underline flex items-center gap-2">
-                              {rec.user.avatarUrl ? (
-                                <img src={rec.user.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
-                              ) : (
-                                <div className="w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px]">
-                                  {rec.user.username[0]}
+                            {rec.user ? (
+                              <Link href={`/profile/${rec.user.username}`} className="hover:underline flex items-center gap-2">
+                                {rec.user.avatarUrl ? (
+                                  <img src={rec.user.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
+                                ) : (
+                                  <div className="w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px]">
+                                    {rec.user.username[0]}
+                                  </div>
+                                )}
+                                {rec.user.username}
+                              </Link>
+                            ) : (
+                              <span className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center text-[10px] ui-dim">
+                                  {(rec.legacyPlayerName || '?')[0]}
                                 </div>
-                              )}
-                              {rec.user.username}
-                            </Link>
+                                <span>{rec.legacyPlayerName || t('levelslist.legacy_player')}</span>
+                                <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-dim)' }}>
+                                  {t('levelslist.unclaimed')}
+                                </span>
+                              </span>
+                            )}
                           </td>
                           <td className="px-5 py-3 text-right font-semibold ui-dim">
                             {level.mode === 'PLATFORMER' ? (

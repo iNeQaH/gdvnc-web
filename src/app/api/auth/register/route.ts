@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [
-          { username: cleanUsername },
+          { username: { equals: cleanUsername, mode: 'insensitive' } },
           { email: cleanEmail },
         ],
       },
@@ -85,6 +85,7 @@ export async function POST(req: Request) {
         passwordHash,
         role: Role.USER,
         gdUsername: gdUsername?.trim() || null,
+        gdVerified: false,
         discordTag: discordTag?.trim() || null,
         country: en ? 'Vietnam' : 'Việt Nam',
       },
@@ -97,6 +98,7 @@ export async function POST(req: Request) {
       avatarUrl: newUser.avatarUrl,
       discordTag: newUser.discordTag,
       gdUsername: newUser.gdUsername,
+      gdVerified: newUser.gdVerified,
       classicPp: newUser.classicPp,
       platformerPp: newUser.platformerPp,
       creatorPoints: newUser.creatorPoints,

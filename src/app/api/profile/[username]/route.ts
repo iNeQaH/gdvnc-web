@@ -26,6 +26,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         supporterUntil: true,
         discordTag: true,
         gdUsername: true,
+        gdVerified: true,
         country: true,
         classicPp: true,
         platformerPp: true,
@@ -166,6 +167,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         supporterUntil: user.supporterUntil,
         discordTag: user.discordTag,
         gdUsername: user.gdUsername,
+        gdVerified: user.gdVerified,
         country: user.country,
         classicPp: user.classicPp,
         platformerPp: user.platformerPp,
@@ -199,9 +201,22 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
     const body = await req.json();
 
     const isSelf = auth.username === username;
-    const isAdmin = auth.role === 'ADMIN';
+    const isAdmin = auth.role === 'ADMIN' || auth.role === 'MODERATOR';
     if (!isSelf && !isAdmin) {
       return NextResponse.json({ error: 'Không có quyền sửa profile này' }, { status: 403 });
+    }
+
+    const current = await prisma.user.findUnique({
+      where: { username },
+      select: { gdVerified: true, gdUsername: true },
+    });
+    if (!current) {
+      return NextResponse.json({ error: 'Không tìm thấy người chơi.' }, { status: 404 });
+    }
+
+    let nextGdUsername: string | undefined = body.gdUsername !== undefined ? clipText(body.gdUsername, 80) : undefined;
+    if (nextGdUsername !== undefined && current.gdVerified && !isAdmin) {
+      nextGdUsername = current.gdUsername ?? undefined;
     }
 
     const updated = await prisma.user.update({
@@ -211,7 +226,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         avatarUrl: body.avatarUrl !== undefined ? clipText(body.avatarUrl, 400) : undefined,
         coverUrl: body.coverUrl !== undefined ? clipText(body.coverUrl, 400) : undefined,
         country: body.country !== undefined ? clipText(body.country, 80) : undefined,
-        gdUsername: body.gdUsername !== undefined ? clipText(body.gdUsername, 80) : undefined,
+        gdUsername: nextGdUsername,
         discordTag: body.discordTag !== undefined ? clipText(body.discordTag, 80) : undefined,
       },
       select: {
@@ -220,6 +235,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         coverUrl: true,
         country: true,
         gdUsername: true,
+        gdVerified: true,
         discordTag: true,
       }
     });

@@ -278,6 +278,24 @@ export default function AdminPage() {
     }
   };
 
+  const verifyUser = async (userId: string, username: string) => {
+    setActionLoading(userId);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/verify`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.error || t('admin.verify_fail'), 'error');
+        return;
+      }
+      showToast(t('admin.verify_ok', { name: username, n: data.claimed || 0 }), 'success');
+      fetchUsers(userQuery);
+    } catch {
+      showToast(t('admin.verify_fail'), 'error');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleReview = async (recordId: string, action: 'APPROVE' | 'REJECT') => {
     setActionLoading(recordId);
     try {
@@ -730,17 +748,30 @@ export default function AdminPage() {
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
                     <div className="flex items-center gap-2.5">
-                      <Link href={`/profile/${rec.user.username}`} className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs overflow-hidden shrink-0" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
-                        {rec.user.avatarUrl ? (
-                          <img src={rec.user.avatarUrl} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          rec.user.username[0]
-                        )}
-                      </Link>
-                      <div>
-                        <Link href={`/profile/${rec.user.username}`} className="font-bold ui-title text-xs hover:underline" style={{ color: 'var(--accent)' }}>
-                          {rec.user.username}
+                      {rec.user ? (
+                        <Link href={`/profile/${rec.user.username}`} className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs overflow-hidden shrink-0" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
+                          {rec.user.avatarUrl ? (
+                            <img src={rec.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            rec.user.username[0]
+                          )}
                         </Link>
+                      ) : (
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0" style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-dim)' }}>
+                          {(rec.legacyPlayerName || '?')[0]}
+                        </div>
+                      )}
+                      <div>
+                        {rec.user ? (
+                          <Link href={`/profile/${rec.user.username}`} className="font-bold ui-title text-xs hover:underline" style={{ color: 'var(--accent)' }}>
+                            {rec.user.username}
+                          </Link>
+                        ) : (
+                          <div className="font-bold ui-title text-xs">
+                            {rec.legacyPlayerName || t('levelslist.legacy_player')}
+                            <span className="ml-1.5 text-[9px] font-bold uppercase ui-dim">{t('levelslist.unclaimed')}</span>
+                          </div>
+                        )}
                         <div className="text-[11px] ui-dim">
                           {t('admin.level_label', { name: rec.level.name, placement: rec.level.placement || '-', mode: rec.level.mode })}
                         </div>
@@ -1543,7 +1574,7 @@ export default function AdminPage() {
                     <Link
                       href={`/profile/${user.username}`}
                       key={user.id} 
-                      className={`ui-card flex items-center justify-between p-3 cursor-pointer group ${userViewMode === 'grid' ? 'flex-col gap-3 text-center' : 'flex-row gap-4 hover:border-[var(--accent)] hover:shadow-md transition-all'}`}
+                      className={`ui-card flex items-center justify-between p-3 group ${userViewMode === 'grid' ? 'flex-col gap-3 text-center' : 'flex-row gap-4 hover:border-[var(--accent)] hover:shadow-md transition-all'}`}
                     >
                       {/* Left Side: Avatar and Name */}
                       <div className={`flex ${userViewMode === 'grid' ? 'flex-col items-center' : 'flex-row items-center'} gap-3 min-w-0`}>
@@ -1595,6 +1626,30 @@ export default function AdminPage() {
                         <span className="text-xs font-semibold ui-dim">
                           {user.classicPp.toFixed(1)} Pts
                         </span>
+                        {user.gdUsername && (
+                          <span className="text-[10px] ui-dim truncate max-w-[140px]">
+                            {t('admin.gd_name', { name: user.gdUsername })}
+                          </span>
+                        )}
+                        {user.gdVerified ? (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase text-emerald-600 bg-emerald-500/10">
+                            <ShieldCheck className="w-3 h-3" /> {t('admin.verified')}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              verifyUser(user.id, user.username);
+                            }}
+                            disabled={actionLoading === user.id}
+                            className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded text-[10px] font-extrabold border cursor-pointer disabled:opacity-50"
+                            style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}
+                          >
+                            <UserCheck className="w-3 h-3" /> {t('admin.verify_gd')}
+                          </button>
+                        )}
                         {isTargetSuper && (
                           <div className={`inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/10 text-amber-500 ${userViewMode === 'grid' ? 'w-full mt-2' : ''}`}>
                             <Crown className="w-3 h-3" /> Protected

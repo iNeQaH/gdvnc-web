@@ -629,6 +629,7 @@ export default function AuthPage() {
                     color: 'var(--text-title)',
                   }}
                 />
+                <p className="text-[10px] ui-dim leading-snug">{t('auth.gd_verify_hint')}</p>
               </div>
 
               <div className="space-y-1">

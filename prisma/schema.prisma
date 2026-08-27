@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -30,11 +31,12 @@ model User {
   email         String?   @unique
   passwordHash  String?
   role          Role      @default(USER)
-  avatarUrl     String?   @db.LongText
-  coverUrl      String?   @db.LongText
+  avatarUrl     String?   @db.Text
+  coverUrl      String?   @db.Text
   bio           String?   @db.Text
   discordTag    String?
   gdUsername    String?
+  gdVerified    Boolean   @default(false)
   country       String?   @default("Vietnam")
   supporterUntil DateTime?
 
@@ -62,6 +64,7 @@ model User {
   @@index([platformerPp(sort: Desc)])
   @@index([creatorPoints(sort: Desc)])
   @@index([role])
+  @@index([gdUsername])
   helpRequests    HelpRequest[]
 }
 
@@ -100,7 +103,8 @@ model Level {
 
 model Record {
   id            String       @id @default(uuid())
-  userId        String
+  userId        String?
+  legacyPlayerName String?
   levelId       String
   
   // Specific metrics
@@ -119,7 +123,7 @@ model Record {
   prioritySp    Int          @default(0)
   
   // Relations
-  user          User         @relation("UserRecords", fields: [userId], references: [id], onDelete: Cascade)
+  user          User?        @relation("UserRecords", fields: [userId], references: [id], onDelete: SetNull)
   level         Level        @relation(fields: [levelId], references: [id], onDelete: Cascade)
   
   reviewerId    String?
@@ -131,6 +135,7 @@ model Record {
   @@index([status])
   @@index([userId])
   @@index([levelId])
+  @@index([legacyPlayerName])
 }
 
 model Notification {
@@ -208,7 +213,7 @@ model CreatorWork {
   username     String
   gdLevelId    Int?
   levelName    String?
-  imageUrl     String?      @db.LongText
+  imageUrl     String?      @db.Text
   videoUrl     String?
   description  String?      @db.Text
   status       RecordStatus @default(PENDING)
@@ -266,6 +271,6 @@ model HelpRequest {
 
 model Image {
   id        String   @id @default(cuid())
-  dataUrl   String   @db.LongText
+  dataUrl   String   @db.Text
   createdAt DateTime @default(now())
 }

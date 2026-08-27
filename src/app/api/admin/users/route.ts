@@ -12,9 +12,10 @@ export async function GET(req: Request) {
     const users = await prisma.user.findMany({
       where: query
         ? {
-            username: {
-              contains: query,
-            },
+            OR: [
+              { username: { contains: query, mode: 'insensitive' } },
+              { gdUsername: { contains: query, mode: 'insensitive' } },
+            ],
           }
         : undefined,
       select: {
@@ -27,6 +28,8 @@ export async function GET(req: Request) {
         platformerPp: true,
         creatorPoints: true,
         createdAt: true,
+        gdUsername: true,
+        gdVerified: true,
       },
       orderBy: { createdAt: 'desc' },
       take: 50,

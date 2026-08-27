@@ -10,7 +10,8 @@ type RecordLike = {
 
 type RecordWithLevel = RecordLike & {
   id: string;
-  userId: string;
+  userId: string | null;
+  legacyPlayerName?: string | null;
   levelId: string;
   videoUrl: string;
   hz?: number | null;
@@ -104,15 +105,17 @@ export function dedupeRecordsByLevel<T extends RecordWithLevel>(records: T[]): T
 export function dedupeRecordsByUser<T extends RecordWithLevel>(records: T[]): T[] {
   const byUser = new Map<string, T>();
   for (const rec of records) {
-    const existing = byUser.get(rec.userId);
+    const key = rec.userId || `legacy:${(rec.legacyPlayerName || '').trim().toLowerCase() || rec.id}`;
+    const existing = byUser.get(key);
     if (!existing || isRecordBetter(rec, existing, rec.level.mode)) {
-      byUser.set(rec.userId, rec);
+      byUser.set(key, rec);
     }
   }
   return Array.from(byUser.values());
 }
 
-export async function recalculateUserPp(userId: string) {
+export async function recalculateUserPp(userId: string | null | undefined) {
+  if (!userId) return;
   const userRecords = await prisma.record.findMany({
     where: { userId, status: RecordStatus.APPROVED },
     include: { level: true },
@@ -159,6 +162,10 @@ export async function consolidateBeforeApprove(recordId: string): Promise<
 
   if (!record) {
     return { ok: false, reason: 'Không tìm thấy kỷ lục.' };
+  }
+
+  if (!record.userId) {
+    return { ok: true };
   }
 
   const siblings = await prisma.record.findMany({

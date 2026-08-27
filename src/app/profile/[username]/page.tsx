@@ -507,12 +507,21 @@ export default function ProfilePage() {
                   ) : (
                     (data.gdUsername || isOwner) && (
                       <span
-                        className={`flex items-center gap-1 ${isOwner ? 'cursor-pointer hover:opacity-80' : ''}`}
-                        onClick={() => startInlineEdit('gdUsername', data.gdUsername)}
-                        title={isOwner ? t('profile.click_edit') : undefined}
+                        className={`flex items-center gap-1 ${isOwner && !data.gdVerified ? 'cursor-pointer hover:opacity-80' : ''}`}
+                        onClick={() => {
+                          if (isOwner && !data.gdVerified) startInlineEdit('gdUsername', data.gdUsername);
+                        }}
+                        title={data.gdVerified ? t('profile.gd_locked') : isOwner ? t('profile.click_edit') : undefined}
                       >
                         <Gamepad2 className="w-3 h-3" /> {data.gdUsername || t('profile.add_gd')}
-                        {isOwner && <Pencil className="w-2.5 h-2.5 opacity-50" />}
+                        {data.gdVerified ? (
+                          <span className="inline-flex items-center gap-0.5 text-emerald-500" title={t('profile.gd_verified')}>
+                            <ShieldCheck className="w-3 h-3" />
+                          </span>
+                        ) : isOwner ? (
+                          <span className="text-[9px] font-bold uppercase ui-dim">{t('profile.gd_unverified')}</span>
+                        ) : null}
+                        {isOwner && !data.gdVerified && <Pencil className="w-2.5 h-2.5 opacity-50" />}
                       </span>
                     )
                   )}

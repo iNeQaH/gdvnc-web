@@ -51,14 +51,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (action === 'APPROVE') {
       await recalculateUserPp(record.userId);
 
-      await prisma.notification.create({
-        data: {
-          userId: record.userId,
-          title: 'Kỷ Lục Được Phê Duyệt',
-          message: `Kỷ lục hoàn thành màn chơi "${record.level.name}" của bạn đã được Admin phê duyệt và cập nhật điểm Points vào Bảng Xếp Hạng!`,
-        },
-      });
-    } else {
+      if (record.userId) {
+        await prisma.notification.create({
+          data: {
+            userId: record.userId,
+            title: 'Kỷ Lục Được Phê Duyệt',
+            message: `Kỷ lục hoàn thành màn chơi "${record.level.name}" của bạn đã được Admin phê duyệt và cập nhật điểm Points vào Bảng Xếp Hạng!`,
+          },
+        });
+      }
+    } else if (record.userId) {
       await prisma.notification.create({
         data: {
           userId: record.userId,

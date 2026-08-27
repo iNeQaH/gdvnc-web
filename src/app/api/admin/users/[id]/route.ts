@@ -35,7 +35,13 @@ export async function DELETE(req: Request, context: any) {
     }
 
     await prisma.$transaction([
-      prisma.record.deleteMany({ where: { userId: id } }),
+      prisma.record.updateMany({
+        where: { userId: id },
+        data: {
+          userId: null,
+          legacyPlayerName: targetUser.gdUsername || targetUser.username,
+        },
+      }),
       prisma.record.updateMany({ where: { reviewerId: id }, data: { reviewerId: null } }),
       prisma.creatorWork.updateMany({ where: { reviewerId: id }, data: { reviewerId: null } }),
       prisma.levelSubmission.updateMany({ where: { reviewerId: id }, data: { reviewerId: null } }),
