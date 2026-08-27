@@ -640,7 +640,7 @@ export const vi: Record<DictKey, string> = {
   'levelslist.points_range': '{min} ({req}%) — {max} (100%) điểm',
   'levelslist.victors_list': 'Danh sách chiến thắng ({n})',
   'levelslist.no_victors': 'Chưa ai hoàn thành màn này. Hãy là người đầu tiên!',
-  'levelslist.unclaimed': 'Vô chủ',
+  'levelslist.unclaimed': 'Chưa xác minh',
   'levelslist.legacy_player': 'Người chơi cũ',
   'levelslist.achievement': 'Thành tích',
   'levelslist.player': 'Người chơi',
