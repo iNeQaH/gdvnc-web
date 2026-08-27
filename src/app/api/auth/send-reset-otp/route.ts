@@ -2,19 +2,29 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
 import { isMailConfigured, sendResetPasswordEmail } from '@/lib/mail';
-import { verifyCaptchaToken } from '@/lib/captcha';
+import { consumeCaptchaToken, isHoneypotFilled } from '@/lib/captcha';
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
   try {
-    const limited = rateLimit(`reset-otp:${getClientIp(req)}`, 5, 10 * 60_000);
+    if (!isBrowserSameOriginFetch(req)) {
+      return NextResponse.json({ error: 'Invalid request.' }, { status: 403 });
+    }
+
+    const limited = rateLimit(`reset-otp:${getClientIp(req)}`, 3, 60 * 60_000);
     if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
-    const { email, locale, captchaToken } = await req.json();
+    const ip = getClientIp(req);
+    const { email, locale, captchaToken, website } = await req.json();
     const lang = locale === 'en' ? 'en' : 'vi';
 
-    if (!verifyCaptchaToken(captchaToken)) {
+    if (isHoneypotFilled(website)) {
+      return NextResponse.json({ success: true, message: lang === 'en' ? 'Check your inbox.' : 'Vui lòng kiểm tra email.' });
+    }
+
+    if (!consumeCaptchaToken(captchaToken, ip)) {
       return NextResponse.json(
         { error: lang === 'en' ? 'Anti-bot verification required.' : 'Vui lòng xác thực chống bot trước.' },
         { status: 400 }

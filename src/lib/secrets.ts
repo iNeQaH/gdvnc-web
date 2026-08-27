@@ -12,5 +12,9 @@ export function jwtSecretBytes(): Uint8Array {
 }
 
 export function captchaSecret(): string {
+  const dedicated = process.env.CAPTCHA_SECRET;
+  if (dedicated && dedicated.length >= 8) return dedicated;
+  const jwt = process.env.JWT_SECRET;
+  if (jwt && jwt.length >= 8) return jwt;
   return requireSecret('CAPTCHA_SECRET', 'dev-only-captcha-secret');
 }

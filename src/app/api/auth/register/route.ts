@@ -3,16 +3,26 @@ import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { signToken, setAuthCookie } from '@/lib/auth';
 import { Role } from '@prisma/client';
+import { isHoneypotFilled } from '@/lib/captcha';
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
   try {
-    const limited = rateLimit(`register:${getClientIp(req)}`, 8, 60_000);
+    if (!isBrowserSameOriginFetch(req)) {
+      return NextResponse.json({ error: 'Invalid request.' }, { status: 403 });
+    }
+
+    const limited = rateLimit(`register:${getClientIp(req)}`, 3, 60 * 60_000);
     if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
-    const { username, email, otp, password, gdUsername, discordTag, locale } = await req.json();
+    const { username, email, otp, password, gdUsername, discordTag, locale, website } = await req.json();
     const en = locale === 'en';
+
+    if (isHoneypotFilled(website)) {
+      return NextResponse.json({ error: en ? 'Please try again.' : 'Vui lòng thử lại.' }, { status: 400 });
+    }
 
     if (!username || !password) {
       return NextResponse.json({ error: en ? 'Please enter a username and password.' : 'Vui lòng nhập đầy đủ tên tài khoản và mật khẩu.' }, { status: 400 });

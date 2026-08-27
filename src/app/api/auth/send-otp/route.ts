@@ -2,24 +2,26 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
 import { isMailConfigured, sendOtpEmail } from '@/lib/mail';
-import { verifyCaptchaToken } from '@/lib/captcha';
+import { consumeCaptchaToken, isHoneypotFilled } from '@/lib/captcha';
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
   try {
+    if (!isBrowserSameOriginFetch(req)) {
+      return NextResponse.json({ error: 'Invalid request.' }, { status: 403 });
+    }
+
     const ip = getClientIp(req);
-    const limited = rateLimit(`otp:${ip}`, 5, 10 * 60_000);
+    const limited = rateLimit(`otp:${ip}`, 3, 60 * 60_000);
     if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
-    const { email, locale, captchaToken } = await req.json();
+    const { email, locale, captchaToken, website } = await req.json();
     const lang = locale === 'en' ? 'en' : 'vi';
 
-    if (!verifyCaptchaToken(captchaToken)) {
-      return NextResponse.json(
-        { error: lang === 'en' ? 'Anti-bot verification required.' : 'Vui lòng xác thực chống bot trước.' },
-        { status: 400 }
-      );
+    if (isHoneypotFilled(website)) {
+      return NextResponse.json({ success: true, message: lang === 'en' ? 'Check your inbox.' : 'Vui lòng kiểm tra email.' });
     }
     if (!email || !email.includes('@') || !email.includes('.')) {
       return NextResponse.json(
@@ -42,6 +44,13 @@ export async function POST(req: Request) {
               ? 'This email is already used by another account.'
               : 'Email này đã được sử dụng cho một tài khoản khác.',
         },
+        { status: 400 }
+      );
+    }
+
+    if (!consumeCaptchaToken(captchaToken, ip)) {
+      return NextResponse.json(
+        { error: lang === 'en' ? 'Anti-bot verification required.' : 'Vui lòng xác thực chống bot trước.' },
         { status: 400 }
       );
     }

@@ -93,10 +93,6 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem('gdvnc_mode', newMode);
   };
 
-  if (!mounted) {
-    return <div className="min-h-screen invisible">{children}</div>;
-  }
-
   return (
     <ThemeContext.Provider value={{ theme, setTheme, mode, setMode, resolvedMode }}>
       {children}

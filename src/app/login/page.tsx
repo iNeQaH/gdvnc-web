@@ -33,6 +33,7 @@ export default function AuthPage() {
 
   // Anti-bot Security Challenge
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [honeypot, setHoneypot] = useState('');
 
   // OTP sending state
   const [otpCooldown, setOtpCooldown] = useState(0);
@@ -77,7 +78,7 @@ export default function AuthPage() {
       const res = await fetch('/api/auth/send-reset-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: resetEmail, locale: language, captchaToken }),
+        body: JSON.stringify({ email: resetEmail, locale: language, captchaToken, website: honeypot }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
@@ -152,7 +153,7 @@ export default function AuthPage() {
       const res = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: regEmail, locale: language, captchaToken }),
+        body: JSON.stringify({ email: regEmail, locale: language, captchaToken, website: honeypot }),
       });
 
       const data = await res.json();
@@ -241,6 +242,7 @@ export default function AuthPage() {
           gdUsername: regGdUsername,
           discordTag: regDiscord,
           locale: language,
+          website: honeypot,
         }),
       });
 
@@ -396,6 +398,12 @@ export default function AuthPage() {
           </form>
         ) : tab === 'reset' ? (
           <form onSubmit={handleResetPassword} className="space-y-3.5">
+            <p className="absolute w-0 h-0 overflow-hidden opacity-0" aria-hidden="true">
+              <label>
+                Company website
+                <input type="text" name="company_url" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
+              </label>
+            </p>
             <p className="text-xs ui-dim leading-relaxed">{t('auth.reset_desc')}</p>
 
             <div className="space-y-1">
@@ -498,6 +506,12 @@ export default function AuthPage() {
           </form>
         ) : (
           <form onSubmit={handleRegister} className="space-y-3.5">
+            <p className="absolute w-0 h-0 overflow-hidden opacity-0" aria-hidden="true">
+              <label>
+                Company website
+                <input type="text" name="company_url" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
+              </label>
+            </p>
             {/* Username */}
             <div className="space-y-1">
               <label className="text-xs font-bold ui-title">{t('auth.username')} *</label>
