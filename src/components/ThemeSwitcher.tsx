@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useTheme, ThemeType, ModeType } from './ThemeProvider';
-import { Palette, ChevronDown, Check, Sun, Moon, Leaf, Monitor, Droplets, Cloud, Sparkles } from 'lucide-react';
+import { Palette, ChevronDown, Check, Sun, Moon, Leaf, Monitor, Cloud, Sparkles, Flower2 } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 
 export const ThemeSwitcher = () => {
@@ -41,6 +41,7 @@ export const ThemeSwitcher = () => {
     { id: 'mint', label: t('theme.mint'), icon: Leaf, color: 'bg-emerald-500' },
     { id: 'peach', label: t('theme.peach'), icon: Sun, color: 'bg-orange-500' },
     { id: 'lavender', label: t('theme.lavender'), icon: Sparkles, color: 'bg-purple-500' },
+    { id: 'sakura', label: t('theme.sakura'), icon: Flower2, color: 'bg-pink-400' },
     { id: 'mono', label: 'Mono', icon: Palette, color: 'bg-zinc-500' },
   ];
 

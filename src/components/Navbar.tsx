@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Trophy, Flame, Send, ShieldCheck, User as UserIcon, LogOut } from 'lucide-react';
+import { Trophy, Folder, Goal, Send, ShieldCheck, User as UserIcon, LogOut } from 'lucide-react';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { useLanguage } from './LanguageContext';
 
@@ -31,7 +31,8 @@ export const Navbar = () => {
 
   const navLinks = [
     { href: '/', label: t('nav.leaderboard'), icon: Trophy },
-    { href: '/levels', label: t('nav.demonlist'), icon: Flame },
+    { href: '/levels', label: t('nav.demonlist'), icon: Folder },
+    { href: '/challenges', label: t('nav.challenges'), icon: Goal },
     { href: '/submit', label: t('nav.submit'), icon: Send },
     ...(currentUser?.role === 'ADMIN' ? [{ href: '/admin', label: t('nav.admin'), icon: ShieldCheck }] : []),
   ];

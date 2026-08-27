@@ -54,6 +54,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       placement: submission.placement,
       mode: submission.mode,
       isVN: submission.isVN,
+      isChallenge: submission.isChallenge,
       difficultyFace: submission.difficultyFace,
       ratingType: submission.ratingType,
     });

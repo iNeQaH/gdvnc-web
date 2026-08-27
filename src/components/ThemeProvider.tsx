@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export type ThemeType = 'sky' | 'mint' | 'peach' | 'lavender' | 'mono';
+export type ThemeType = 'sky' | 'mint' | 'peach' | 'lavender' | 'mono' | 'sakura';
 export type ModeType = 'light' | 'dark' | 'system';
 
 interface ThemeContextProps {
@@ -29,7 +29,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('gdvnc_theme') as ThemeType;
-    if (savedTheme && ['sky', 'mint', 'peach', 'lavender', 'mono'].includes(savedTheme)) {
+    if (savedTheme && ['sky', 'mint', 'peach', 'lavender', 'mono', 'sakura'].includes(savedTheme)) {
       setThemeState(savedTheme);
       document.documentElement.setAttribute('data-theme', savedTheme);
     } else {

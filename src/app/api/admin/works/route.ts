@@ -18,6 +18,7 @@ export async function GET(req: Request) {
           user: {
             select: { username: true, id: true, avatarUrl: true },
           },
+          reviewer: { select: { id: true, username: true } },
         },
         orderBy: !status
           ? { submittedAt: 'desc' }

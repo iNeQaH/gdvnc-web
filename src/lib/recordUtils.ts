@@ -21,8 +21,49 @@ type RecordWithLevel = RecordLike & {
     basePp: number;
     placement: number | null;
     name: string;
+    isChallenge?: boolean;
+    gdLevelId?: number;
   };
 };
+
+export type HardestLevel = {
+  name: string;
+  placement: number | null;
+  gdLevelId: number;
+};
+
+export function pickHardestLevel(
+  records: Array<{
+    progress: number | null;
+    timeMs: number | null;
+    level: {
+      mode: LevelMode;
+      minPercent: number;
+      placement: number | null;
+      name: string;
+      gdLevelId: number;
+      isChallenge?: boolean;
+    };
+  }>
+): HardestLevel | null {
+  const qualifying = records.filter((r) => {
+    if (r.level.isChallenge) return false;
+    if (r.level.mode === LevelMode.PLATFORMER) return isQualifyingPlatformerRecord(r);
+    return isQualifyingClassicRecord(r, r.level);
+  });
+
+  const ranked = qualifying.filter((r) => r.level.placement != null);
+  const pool = ranked.length > 0 ? ranked : qualifying;
+  if (pool.length === 0) return null;
+
+  pool.sort((a, b) => (a.level.placement ?? 999999) - (b.level.placement ?? 999999));
+  const level = pool[0].level;
+  return {
+    name: level.name,
+    placement: level.placement,
+    gdLevelId: level.gdLevelId,
+  };
+}
 
 export function isQualifyingClassicRecord(
   record: { progress: number | null },
@@ -80,12 +121,22 @@ export async function recalculateUserPp(userId: string) {
   const deduped = dedupeRecordsByLevel(userRecords);
 
   const classicBasePps = deduped
-    .filter((r) => r.level.mode === LevelMode.CLASSIC && isQualifyingClassicRecord(r, r.level))
+    .filter(
+      (r) =>
+        !r.level.isChallenge &&
+        r.level.mode === LevelMode.CLASSIC &&
+        isQualifyingClassicRecord(r, r.level)
+    )
     .map((r) => awardedPpForProgress(r.progress, r.level.minPercent, r.level.basePp))
     .filter((pp) => pp > 0);
 
   const platformerBasePps = deduped
-    .filter((r) => r.level.mode === LevelMode.PLATFORMER && isQualifyingPlatformerRecord(r))
+    .filter(
+      (r) =>
+        !r.level.isChallenge &&
+        r.level.mode === LevelMode.PLATFORMER &&
+        isQualifyingPlatformerRecord(r)
+    )
     .map((r) => r.level.basePp);
 
   await prisma.user.update({

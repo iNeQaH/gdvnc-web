@@ -16,6 +16,7 @@ export async function GET(req: Request) {
         where: status ? { status } : {},
         include: {
           user: { select: { id: true, username: true, avatarUrl: true } },
+          reviewer: { select: { id: true, username: true } },
         },
         orderBy: !status
           ? { submittedAt: 'desc' }

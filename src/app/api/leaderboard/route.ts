@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { RecordStatus, LevelMode } from '@prisma/client';
 import { pickDecoAndLayoutBadges } from '@/lib/creatorPoints';
+import { pickHardestLevel } from '@/lib/recordUtils';
 
 export async function GET(req: Request) {
   try {
@@ -48,45 +49,32 @@ export async function GET(req: Request) {
       });
     }
 
-    if (mode === 'PLATFORMER') {
-      const players = await prisma.user.findMany({
-        where: { platformerPp: { gt: 0 } },
-        orderBy: { platformerPp: 'desc' },
-        take: 100,
-        include: {
-          records: {
-            where: {
-              status: RecordStatus.APPROVED,
-              level: { mode: LevelMode.PLATFORMER },
-            },
-            include: { level: true },
-            orderBy: { timeMs: 'asc' },
-            take: 1,
-          },
-        },
-      });
-      return NextResponse.json({ success: true, leaderboard: players });
-    }
-
-    // Default: CLASSIC PP
+    const levelMode = mode === 'PLATFORMER' ? LevelMode.PLATFORMER : LevelMode.CLASSIC;
     const players = await prisma.user.findMany({
-      where: { classicPp: { gt: 0 } },
-      orderBy: { classicPp: 'desc' },
+      where: mode === 'PLATFORMER' ? { platformerPp: { gt: 0 } } : { classicPp: { gt: 0 } },
+      orderBy: mode === 'PLATFORMER' ? { platformerPp: 'desc' } : { classicPp: 'desc' },
       take: 100,
       include: {
         records: {
           where: {
             status: RecordStatus.APPROVED,
-            level: { mode: LevelMode.CLASSIC },
+            level: { mode: levelMode, isChallenge: false },
           },
           include: { level: true },
-          orderBy: { level: { placement: 'asc' } },
-          take: 1,
         },
       },
     });
 
-    return NextResponse.json({ success: true, leaderboard: players });
+    return NextResponse.json({
+      success: true,
+      leaderboard: players.map((player) => {
+        const { records, ...rest } = player;
+        return {
+          ...rest,
+          hardestLevel: pickHardestLevel(records),
+        };
+      }),
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Lỗi tải Bảng Xếp Hạng.' }, { status: 500 });
   }

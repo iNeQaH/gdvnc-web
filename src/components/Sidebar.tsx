@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   Star, 
-  Flame, 
+  Folder, 
+  Goal,
   Send, 
   ShieldCheck, 
   User as UserIcon, 
@@ -94,7 +95,8 @@ export const Sidebar = () => {
 
   const navLinks = [
     { href: '/', label: t('nav.leaderboard'), icon: Star },
-    { href: '/levels', label: t('nav.demonlist'), icon: Flame },
+    { href: '/levels', label: t('nav.demonlist'), icon: Folder },
+    { href: '/challenges', label: t('nav.challenges'), icon: Goal },
     { href: '/submit', label: t('nav.submit'), icon: Send },
     { href: '/support', label: t('nav.supporter'), icon: Heart, highlight: false, isPink: true },
     { href: '/helps', label: 'Hỗ trợ / Helps', icon: Send},
@@ -199,7 +201,10 @@ export const Sidebar = () => {
             </div>
             {navLinks.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              const isActive =
+                item.href === '/'
+                  ? pathname === '/'
+                  : pathname === item.href || pathname.startsWith(item.href + '/');
               const actualBgCol = isActive ? 'var(--accent-bg)' : 'transparent';
               const actualTextCol = item.isPink ? '#f472b6' : (isActive ? 'var(--accent-text)' : 'var(--text-body)');
 

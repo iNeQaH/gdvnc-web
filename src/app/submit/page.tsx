@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send, CheckCircle, AlertCircle, Search, Gamepad2, Hammer, Image as ImageIcon, Video, X, Layers } from 'lucide-react';
+import { Send, CheckCircle, AlertCircle, Gamepad2, Hammer, Image as ImageIcon, X, Layers, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import LevelFormModal from '@/components/LevelFormModal';
+import ReviewStatusBadge from '@/components/ReviewStatusBadge';
 
 function SubmitForm() {
   const router = useRouter();
@@ -43,6 +44,18 @@ function SubmitForm() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [recentItems, setRecentItems] = useState<any[]>([]);
+  const fetchSeq = useRef(0);
+
+  const loadRecent = async (currentTab: typeof tab) => {
+    try {
+      const res = await fetch(`/api/submit/mine?type=${currentTab}`);
+      const data = await res.json();
+      if (data.success) setRecentItems(data.items || []);
+    } catch {
+      setRecentItems([]);
+    }
+  };
 
   useEffect(() => {
     const userStr = localStorage.getItem('gdvnc_user');
@@ -63,25 +76,45 @@ function SubmitForm() {
     setLoadingAuth(false);
   }, []);
 
-  const handleFetchLevel = async () => {
-    if (!gdLevelIdStr) return;
+  useEffect(() => {
+    if (currentUser) void loadRecent(tab);
+  }, [tab, currentUser?.id]);
+
+  useEffect(() => {
+    const id = gdLevelIdStr.trim();
+    if (!id || !/^\d+$/.test(id)) {
+      fetchSeq.current += 1;
+      setFetchedLevel(null);
+      setFetchError('');
+      setFetchingLevel(false);
+      return;
+    }
+    const seq = ++fetchSeq.current;
     setFetchingLevel(true);
     setFetchError('');
-    setFetchedLevel(null);
-    try {
-      const res = await fetch(`/api/gd/level/${gdLevelIdStr.trim()}`);
-      const data = await res.json();
-      if (data.success) {
-        setFetchedLevel(data.level);
-      } else {
-        setFetchError(data.error || t('submit.level_fetch_fail'));
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/gd/level/${id}`);
+        const data = await res.json();
+        if (seq !== fetchSeq.current) return;
+        if (data.success) {
+          setFetchedLevel(data.level);
+        } else {
+          setFetchedLevel(null);
+          setFetchError(data.error || t('submit.level_fetch_fail'));
+        }
+      } catch {
+        if (seq !== fetchSeq.current) return;
+        setFetchedLevel(null);
+        setFetchError(t('submit.api_error'));
+      } finally {
+        if (seq === fetchSeq.current) setFetchingLevel(false);
       }
-    } catch (e) {
-      setFetchError(t('submit.api_error'));
-    } finally {
-      setFetchingLevel(false);
-    }
-  };
+    }, 1000);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [gdLevelIdStr, t]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -204,6 +237,7 @@ function SubmitForm() {
       }
 
       setSuccess(true);
+      void loadRecent(tab);
     } catch (err: any) {
       setError(t('common.server_error'));
     } finally {
@@ -230,7 +264,7 @@ function SubmitForm() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
       <div className="space-y-1">
         <h1 className="text-2xl font-black ui-title tracking-tight">Submit</h1>
         <p className="text-xs ui-dim">{t('submit.page_desc')}</p>
@@ -259,7 +293,9 @@ function SubmitForm() {
           <Layers className="w-4 h-4" /> {t('submit.tab_level')}
         </button>
       </div>
-      
+
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+      <div className="lg:col-span-3 space-y-6 min-w-0">
       {success ? (
         <div className="ui-card p-8 text-center space-y-4">
           <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto text-emerald-500">
@@ -291,7 +327,10 @@ function SubmitForm() {
             isOpen
             embedded
             onClose={() => {}}
-            onSaved={() => setSuccess(true)}
+            onSaved={() => {
+              setSuccess(true);
+              void loadRecent('LEVEL');
+            }}
             submitUrl="/api/submit"
             extraPayload={{ type: 'LEVEL', userId: currentUser.id }}
             title={t('submit.tab_level')}
@@ -318,26 +357,18 @@ function SubmitForm() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold ui-title">{t('submit.level_id')} *</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    required
-                    value={gdLevelIdStr}
-                    onChange={(e) => setGdLevelIdStr(e.target.value)}
-                    placeholder={t('submit.level_id_placeholder')}
-                    className="w-full px-3 py-2 rounded-xl text-xs ui-input focus:ring-1 focus:ring-sky-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleFetchLevel}
-                    disabled={fetchingLevel || !gdLevelIdStr}
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs inline-flex items-center justify-center mx-auto gap-1.5 cursor-pointer disabled:opacity-50" style={{ backgroundColor: "var(--accent)" }}
-                  >
-                    <Search className="w-3.5 h-3.5" />
-                    {fetchingLevel ? t('submit.querying') : t('submit.query')}
-                  </button>
-                </div>
+                <label className="text-xs font-bold ui-title flex items-center gap-1.5">
+                  {t('submit.level_id')} *
+                  {fetchingLevel && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={gdLevelIdStr}
+                  onChange={(e) => setGdLevelIdStr(e.target.value)}
+                  placeholder={t('submit.level_id_placeholder')}
+                  className="w-full px-3 py-2 rounded-xl text-xs ui-input focus:ring-1 focus:ring-sky-500"
+                />
                 {fetchError && <p className="text-[10px] text-red-500 pt-1">{fetchError}</p>}
               </div>
 
@@ -566,6 +597,30 @@ function SubmitForm() {
           </button>
         </form>
       )}
+      </div>
+      <aside className="lg:col-span-2 ui-card p-4 space-y-3 order-last">
+        <h3 className="text-xs font-black uppercase ui-title">{t('submit.recent')}</h3>
+        {recentItems.length === 0 ? (
+          <p className="text-[11px] ui-dim">{t('submit.recent_empty')}</p>
+        ) : (
+          <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+            {recentItems.map((item) => (
+              <div key={item.id} className="p-2.5 rounded-xl border ui-subtle flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="text-xs font-bold ui-title truncate">
+                    {item.levelName || `ID ${item.gdLevelId || ''}`}
+                  </div>
+                  <div className="text-[10px] ui-dim">
+                    {item.submittedAt ? new Date(item.submittedAt).toLocaleString() : ''}
+                  </div>
+                </div>
+                <ReviewStatusBadge status={item.status} t={t} />
+              </div>
+            ))}
+          </div>
+        )}
+      </aside>
+      </div>
     </div>
   );
 }

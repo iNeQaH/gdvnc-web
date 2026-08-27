@@ -6,14 +6,14 @@ export async function GET() {
   try {
     const [topClassicLevel, topPlatformerLevel, topPlayer, topCreator] = await Promise.all([
       prisma.level.findFirst({
-        where: { mode: LevelMode.CLASSIC, placement: { not: null } },
+        where: { mode: LevelMode.CLASSIC, isChallenge: false, placement: { not: null } },
         orderBy: { placement: 'asc' },
-        select: { id: true, name: true, placement: true, basePp: true, mode: true },
+        select: { id: true, gdLevelId: true, name: true, placement: true, basePp: true, mode: true },
       }),
       prisma.level.findFirst({
-        where: { mode: LevelMode.PLATFORMER, placement: { not: null } },
+        where: { mode: LevelMode.PLATFORMER, isChallenge: false, placement: { not: null } },
         orderBy: { placement: 'asc' },
-        select: { id: true, name: true, placement: true, basePp: true, mode: true },
+        select: { id: true, gdLevelId: true, name: true, placement: true, basePp: true, mode: true },
       }),
       prisma.user.findFirst({
         where: { classicPp: { gt: 0 } },

@@ -2,11 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Star, Moon, Wrench, Search, ChevronRight, CheckCircle2, User } from 'lucide-react';
+import { Star, Moon, Wrench, Search, CheckCircle2, User } from 'lucide-react';
 import * as AllLucideIcons from 'lucide-react';
 import { CUSTOM_ICONS } from '@/components/CustomIcons';
 import { useLanguage } from '@/components/LanguageContext';
 import { formatCp } from '@/lib/creatorPoints';
+import { levelPath } from '@/lib/levelUrl';
+import { useRouter } from 'next/navigation';
 
 import FloatingNav from '@/components/FloatingNav';
 
@@ -17,6 +19,7 @@ const IconRender = ({ icon, className }: { icon: string; className?: string }) =
 
 export default function HomePage() {
   const { t } = useLanguage();
+  const router = useRouter();
   const [mode, setMode] = useState<'CLASSIC' | 'PLATFORMER' | 'CREATOR'>('CLASSIC');
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [search, setSearch] = useState('');
@@ -95,7 +98,7 @@ export default function HomePage() {
         {/* Quick Stats Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
           <Link
-            href={highlights?.topClassicLevel ? `/levels/${highlights.topClassicLevel.id}` : '/levels'}
+            href={highlights?.topClassicLevel ? levelPath(highlights.topClassicLevel) : '/levels'}
             className="ui-subtle p-3.5 rounded-xl block hover:opacity-90 transition-opacity"
           >
             <div className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1">
@@ -111,7 +114,7 @@ export default function HomePage() {
             </div>
           </Link>
           <Link
-            href={highlights?.topPlatformerLevel ? `/levels/${highlights.topPlatformerLevel.id}` : '/levels'}
+            href={highlights?.topPlatformerLevel ? levelPath(highlights.topPlatformerLevel) : '/levels'}
             className="ui-subtle p-3.5 rounded-xl block hover:opacity-90 transition-opacity"
           >
             <div className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1">
@@ -243,18 +246,29 @@ export default function HomePage() {
                       <th className="px-5 py-3 text-right">{mode === 'CLASSIC' ? t('leaderboard.classic') : t('leaderboard.platformer')}</th>
                     </>
                   )}
-                  <th className="px-5 py-3 w-10 text-center"></th>
                 </tr>
               </thead>
               <tbody className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
                 {paginatedData.map((player, index) => {
                   const rank = (currentPage - 1) * pageSize + index + 1;
-                  const hardest = player.records?.[0]?.level;
+                  const hardest = player.hardestLevel;
+
+                  const goProfile = () => router.push(`/profile/${player.username}`);
+                  const onRowKey = (e: React.KeyboardEvent) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      goProfile();
+                    }
+                  };
 
                   return (
                     <tr
                       key={player.id}
-                      className="transition-colors hover:opacity-90"
+                      role="link"
+                      tabIndex={0}
+                      onClick={goProfile}
+                      onKeyDown={onRowKey}
+                      className="transition-colors hover:opacity-90 cursor-pointer"
                       style={{ backgroundColor: 'var(--bg-card)' }}
                     >
                       <td className="px-5 py-3.5 text-center">
@@ -264,7 +278,7 @@ export default function HomePage() {
                       </td>
 
                       <td className="px-5 py-3.5">
-                        <Link href={`/profile/${player.username}`} className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-2.5">
                           {player.avatarUrl ? (
                             <img src={player.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-xl object-cover" />
                           ) : (
@@ -288,7 +302,7 @@ export default function HomePage() {
                             </div>
                             <div className="text-[10px] ui-dim">{player.country || t('common.vietnam')}</div>
                           </div>
-                        </Link>
+                        </div>
                       </td>
 
                       {mode === 'CREATOR' ? (
@@ -323,12 +337,18 @@ export default function HomePage() {
                         <>
                           <td className="px-5 py-3.5">
                             {hardest ? (
-                              <div className="flex items-center gap-1.5">
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-title)' }}>
-                                  #{hardest.placement}
-                                </span>
+                              <Link
+                                href={levelPath(hardest)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex items-center gap-1.5 hover:underline"
+                              >
+                                {hardest.placement != null && (
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-title)' }}>
+                                    #{hardest.placement}
+                                  </span>
+                                )}
                                 <span className="font-medium ui-title">{hardest.name}</span>
-                              </div>
+                              </Link>
                             ) : (
                               <span className="text-[11px] ui-dim italic">-</span>
                             )}
@@ -339,12 +359,6 @@ export default function HomePage() {
                           </td>
                         </>
                       )}
-
-                      <td className="px-5 py-3.5 text-center">
-                        <Link href={`/profile/${player.username}`} className="ui-dim hover:opacity-100">
-                          <ChevronRight className="w-4 h-4" />
-                        </Link>
-                      </td>
                     </tr>
                   );
                 })}

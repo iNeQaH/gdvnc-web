@@ -46,7 +46,7 @@ async function shiftPlacementsAndRecalcPp(
   if (targetPlacement !== null) {
     if (!existingLevel) {
       await tx.level.updateMany({
-        where: { mode: pMode, placement: { gte: targetPlacement } },
+        where: { mode: pMode, isChallenge: false, placement: { gte: targetPlacement } },
         data: { placement: { increment: 1 } },
       });
     } else {
@@ -54,18 +54,18 @@ async function shiftPlacementsAndRecalcPp(
       if (oldPlacement !== null && oldPlacement !== targetPlacement) {
         if (oldPlacement < targetPlacement) {
           await tx.level.updateMany({
-            where: { mode: pMode, placement: { gt: oldPlacement, lte: targetPlacement } },
+            where: { mode: pMode, isChallenge: false, placement: { gt: oldPlacement, lte: targetPlacement } },
             data: { placement: { decrement: 1 } },
           });
         } else {
           await tx.level.updateMany({
-            where: { mode: pMode, placement: { gte: targetPlacement, lt: oldPlacement } },
+            where: { mode: pMode, isChallenge: false, placement: { gte: targetPlacement, lt: oldPlacement } },
             data: { placement: { increment: 1 } },
           });
         }
       } else if (oldPlacement === null) {
         await tx.level.updateMany({
-          where: { mode: pMode, placement: { gte: targetPlacement } },
+          where: { mode: pMode, isChallenge: false, placement: { gte: targetPlacement } },
           data: { placement: { increment: 1 } },
         });
       }
@@ -73,7 +73,7 @@ async function shiftPlacementsAndRecalcPp(
   }
 
   const allRankedLevels = await tx.level.findMany({
-    where: { mode: pMode, placement: { not: null } },
+    where: { mode: pMode, isChallenge: false, placement: { not: null } },
     select: { id: true, placement: true, basePp: true },
   });
 
@@ -109,6 +109,7 @@ export async function upsertLevelFromForm(input: {
   placement?: number | string | null;
   mode?: LevelMode | string;
   isVN?: boolean;
+  isChallenge?: boolean;
   difficultyFace?: number;
   ratingType?: string;
 }) {
@@ -147,10 +148,13 @@ export async function upsertLevelFromForm(input: {
       ? gdbData.description
       : existingLevel?.description || '';
 
+  const isChallengeLevel = input.isChallenge !== undefined ? !!input.isChallenge : !!existingLevel?.isChallenge;
+
   const placementChanged =
-    !existingLevel ||
-    existingLevel.placement !== targetPlacement ||
-    existingLevel.mode !== pMode;
+    !isChallengeLevel &&
+    (!existingLevel ||
+      existingLevel.placement !== targetPlacement ||
+      existingLevel.mode !== pMode);
 
   const finalPp = targetPlacement ? calculateBasePp(targetPlacement) : 0;
   const affectedLevelIds: string[] = [];
@@ -167,6 +171,7 @@ export async function upsertLevelFromForm(input: {
     basePp: finalPp,
     mode: pMode,
     isVN: input.isVN !== undefined ? input.isVN : false,
+    isChallenge: input.isChallenge !== undefined ? !!input.isChallenge : false,
     difficultyFace: input.difficultyFace !== undefined ? input.difficultyFace : 10,
     ratingType: input.ratingType !== undefined ? input.ratingType : 'NONE',
   };
@@ -205,7 +210,7 @@ export async function upsertLevelFromForm(input: {
   // (Pointercrate imports previously wrote a different curve).
   void prisma.level
     .findMany({
-      where: { mode: pMode, placement: { not: null } },
+      where: { mode: pMode, isChallenge: false, placement: { not: null } },
       select: { id: true, placement: true, basePp: true },
     })
     .then(async (ranked) => {

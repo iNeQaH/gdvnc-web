@@ -75,6 +75,7 @@ model Level {
   difficultyFace Int       @default(0) // 0-14 scale
   ratingType    String     @default("NONE") // NONE, FEATURE, EPIC, LEGENDARY, MYTHIC
   isVN          Boolean    @default(false)
+  isChallenge   Boolean    @default(false)
   placement     Int?       // 1, 2, 3...
   basePp        Float
   minPercent    Int        @default(100) // Qualifying %
@@ -94,6 +95,7 @@ model Level {
 
   @@index([placement])
   @@index([mode])
+  @@index([isChallenge])
 }
 
 model Record {
@@ -235,6 +237,7 @@ model LevelSubmission {
   placement      Int?
   mode           LevelMode    @default(CLASSIC)
   isVN           Boolean      @default(false)
+  isChallenge    Boolean      @default(false)
   difficultyFace Int          @default(0)
   ratingType     String       @default("NONE")
   status         RecordStatus @default(PENDING)

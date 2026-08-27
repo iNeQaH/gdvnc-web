@@ -53,6 +53,7 @@ const IconRender = ({ icon, className }: { icon: string, className?: string }) =
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import { type DictKey } from '@/lib/dictionaries';
+import ReviewStatusBadge from '@/components/ReviewStatusBadge';
 
 type QueueStatus = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED';
 type QueueCounts = { pending: number; approved: number; rejected: number };
@@ -70,10 +71,10 @@ function QueueStatusFilters({
 }) {
   const all = counts.pending + counts.approved + counts.rejected;
   const items: Array<[QueueStatus, DictKey, number]> = [
-    ['ALL', 'admin.filter_all', all],
     ['PENDING', 'admin.filter_pending', counts.pending],
     ['APPROVED', 'admin.filter_approved', counts.approved],
     ['REJECTED', 'admin.filter_rejected', counts.rejected],
+    ['ALL', 'admin.filter_all', all],
   ];
   return (
     <div className="flex items-center gap-1 p-0.5 rounded-xl border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
@@ -94,27 +95,17 @@ function QueueStatusFilters({
   );
 }
 
-function ReviewStatusBadge({ status, t }: { status: string; t: (key: DictKey) => string }) {
-  const isApproved = status === 'APPROVED';
-  const isRejected = status === 'REJECTED';
+function ReviewerLine({ item, t }: { item: { status: string; reviewer?: { username?: string } | null }; t: (key: DictKey, vars?: Record<string, string | number>) => string }) {
+  if (item.status !== 'APPROVED' && item.status !== 'REJECTED') return null;
   return (
-    <span
-      className="px-2 py-0.5 rounded font-black text-[10px] uppercase"
-      style={
-        isApproved
-          ? { backgroundColor: 'var(--badge-green-bg)', color: 'var(--badge-green-text)' }
-          : isRejected
-            ? { backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }
-            : { backgroundColor: 'var(--bg-subtle)', color: 'var(--text-dim)' }
-      }
-    >
-      {isApproved ? t('admin.status_approved') : isRejected ? t('admin.status_rejected') : t('admin.status_pending')}
-    </span>
+    <div className="text-[10px] ui-dim">
+      {t('admin.reviewed_by', { name: item.reviewer?.username || '—' })}
+    </div>
   );
 }
 
 import LevelFormModal from '@/components/LevelFormModal';
-import { formatCp, getDecoBadgeCp, getLayoutBadgeCp, isDecoBadgeName, isLayoutBadgeName } from '@/lib/creatorPoints';
+import { formatCp, getDecoBadgeCp, getLayoutBadgeCp, isDecoCategory, isLayoutCategory } from '@/lib/creatorPoints';
 
 export default function AdminPage() {
   const { t, language } = useLanguage();
@@ -134,7 +125,7 @@ export default function AdminPage() {
 
   // Record moderation state
   const [pendingRecords, setPendingRecords] = useState<any[]>([]);
-  const [recordFilter, setRecordFilter] = useState<QueueStatus>('ALL');
+  const [recordFilter, setRecordFilter] = useState<QueueStatus>('PENDING');
   const [recordCounts, setRecordCounts] = useState<QueueCounts>({ pending: 0, approved: 0, rejected: 0 });
   const [loadingRecords, setLoadingRecords] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -142,7 +133,7 @@ export default function AdminPage() {
 
   // Works moderation state
   const [pendingWorks, setPendingWorks] = useState<any[]>([]);
-  const [workFilter, setWorkFilter] = useState<QueueStatus>('ALL');
+  const [workFilter, setWorkFilter] = useState<QueueStatus>('PENDING');
   const [workCounts, setWorkCounts] = useState<QueueCounts>({ pending: 0, approved: 0, rejected: 0 });
   const [loadingWorks, setLoadingWorks] = useState(true);
   const [workReviewData, setWorkReviewData] = useState<Record<string, { decoBadgeId?: string, layoutBadgeId?: string, cpAwarded?: string, rejectReason?: string }>>({});
@@ -164,7 +155,7 @@ export default function AdminPage() {
   const [isBadgeEditModalOpen, setIsBadgeEditModalOpen] = useState(false);
   const [draggedBadgeId, setDraggedBadgeId] = useState<string | null>(null);
   const [pendingLevelSubs, setPendingLevelSubs] = useState<any[]>([]);
-  const [levelSubFilter, setLevelSubFilter] = useState<QueueStatus>('ALL');
+  const [levelSubFilter, setLevelSubFilter] = useState<QueueStatus>('PENDING');
   const [levelSubCounts, setLevelSubCounts] = useState<QueueCounts>({ pending: 0, approved: 0, rejected: 0 });
   const [loadingLevelSubs, setLoadingLevelSubs] = useState(true);
 
@@ -188,12 +179,12 @@ export default function AdminPage() {
         setCurrentUser(u);
       } catch (e) {}
     }
-    fetchPendingRecords('ALL');
+    fetchPendingRecords('PENDING');
     fetchUsers('');
-    fetchWorks('ALL');
+    fetchWorks('PENDING');
     fetchBadges();
     fetchBadgeCategories();
-    fetchLevelSubs('ALL');
+    fetchLevelSubs('PENDING');
   }, []);
 
   const fetchWorks = async (status: QueueStatus = workFilter) => {
@@ -250,11 +241,11 @@ export default function AdminPage() {
   };
 
   const decoBadges = badgesList
-    .filter((b) => isDecoBadgeName(b.name))
-    .sort((a, b) => (getDecoBadgeCp(a.name) || 0) - (getDecoBadgeCp(b.name) || 0));
+    .filter((b) => isDecoCategory(b))
+    .sort((a, b) => (getDecoBadgeCp(b.name) || 0) - (getDecoBadgeCp(a.name) || 0) || (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   const layoutBadges = badgesList
-    .filter((b) => isLayoutBadgeName(b.name))
-    .sort((a, b) => (getLayoutBadgeCp(a.name) || 0) - (getLayoutBadgeCp(b.name) || 0));
+    .filter((b) => isLayoutCategory(b))
+    .sort((a, b) => (getLayoutBadgeCp(b.name) || 0) - (getLayoutBadgeCp(a.name) || 0) || (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
   const fetchPendingRecords = async (status: QueueStatus = recordFilter) => {
     setLoadingRecords(true);
@@ -756,8 +747,9 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 text-xs">
+                    <div className="flex flex-col items-end gap-1 text-xs">
                       <ReviewStatusBadge status={rec.status} t={t} />
+                      <ReviewerLine item={rec} t={t} />
                       {rec.progress && (
                         <span className="px-2 py-0.5 rounded font-black text-xs" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
                           {rec.progress}%
@@ -907,7 +899,10 @@ export default function AdminPage() {
                         </div>
                       </div>
                     </div>
-                    <ReviewStatusBadge status={work.status} t={t} />
+                    <div className="flex flex-col items-end gap-1">
+                      <ReviewStatusBadge status={work.status} t={t} />
+                      <ReviewerLine item={work} t={t} />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
@@ -1084,7 +1079,10 @@ export default function AdminPage() {
                         </div>
                       </div>
                     </div>
-                    <ReviewStatusBadge status={sub.status} t={t} />
+                    <div className="flex flex-col items-end gap-1">
+                      <ReviewStatusBadge status={sub.status} t={t} />
+                      <ReviewerLine item={sub} t={t} />
+                    </div>
                   </div>
                   {sub.videoUrl && (
                     <a href={sub.videoUrl} target="_blank" rel="noreferrer" className="text-xs font-semibold truncate hover:underline block" style={{ color: 'var(--accent)' }}>

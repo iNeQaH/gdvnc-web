@@ -87,14 +87,14 @@ export async function getProfileEmbedData(username: string): Promise<ProfileEmbe
   const dedupedRecords = dedupeRecordsByLevel(user.records);
 
   const classicForPp = dedupedRecords
-    .filter((r) => r.level.mode === LevelMode.CLASSIC && isQualifyingClassicRecord(r, r.level))
+    .filter((r) => !r.level.isChallenge && r.level.mode === LevelMode.CLASSIC && isQualifyingClassicRecord(r, r.level))
     .map((r) => ({
       name: r.level.name,
       placement: r.level.placement ?? 999,
     }));
 
   const platformerForPp = dedupedRecords
-    .filter((r) => r.level.mode === LevelMode.PLATFORMER && isQualifyingPlatformerRecord(r))
+    .filter((r) => !r.level.isChallenge && r.level.mode === LevelMode.PLATFORMER && isQualifyingPlatformerRecord(r))
     .map((r) => ({
       name: r.level.name,
       placement: r.level.placement ?? 999,

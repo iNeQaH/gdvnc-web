@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Check, Loader2 } from 'lucide-react';
+import { X, Check, Loader2, Tag } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { useToast } from './GlobalToast';
 import { getDifficultyFaceUrl, getRatingIconUrl } from '@/lib/gdDifficulty';
+import ColorToggle from './ColorToggle';
 
 interface LevelFormModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
     placement: '',
     mode: 'CLASSIC',
     isVN: false,
+    isChallenge: false,
     difficultyFace: 10,
     ratingType: 'NONE' as 'NONE' | 'FEATURE' | 'EPIC' | 'LEGENDARY' | 'MYTHIC'
   });
@@ -33,6 +35,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
   const [fetchingLevel, setFetchingLevel] = useState(false);
   const fetchSeq = useRef(0);
   const skipNextFetchRef = useRef(false);
+  const [tagsOpen, setTagsOpen] = useState(false);
 
   const fetchGdLevel = async (id: string) => {
     if (!id || !/^\d+$/.test(id)) return;
@@ -76,6 +79,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
         placement: initialData.placement?.toString() || '',
         mode: initialData.mode || 'CLASSIC',
         isVN: initialData.isVN || false,
+        isChallenge: initialData.isChallenge || false,
         difficultyFace: initialData.difficultyFace ?? 10,
         ratingType: initialData.ratingType || 'NONE',
       });
@@ -91,6 +95,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
         placement: '',
         mode: 'CLASSIC',
         isVN: false,
+        isChallenge: false,
         difficultyFace: 10,
         ratingType: 'NONE',
       });
@@ -108,7 +113,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
 
     const timer = setTimeout(() => {
       void fetchGdLevel(id);
-    }, 400);
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, [form.gdLevelId, isOpen]);
@@ -170,6 +175,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
   };
 
   const formBody = (
+    <>
       <div
         className={embedded ? 'w-full rounded-3xl border p-6 space-y-5' : 'w-full max-w-md rounded-3xl border shadow-2xl overflow-hidden p-6 space-y-5'}
         style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
@@ -238,14 +244,23 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
               </div>
 
               <div className="flex items-center justify-between p-2 rounded-xl border ui-subtle">
-                <label className="text-[11px] font-bold uppercase ui-title">Level của người Việt (Vietnam)</label>
-                <input 
-                  type="checkbox"
-                  checked={form.isVN}
-                  onChange={e => setForm({...form, isVN: e.target.checked})}
-                  className="w-4 h-4 cursor-pointer"
-                />
+                <span className="text-[11px] font-bold uppercase ui-title">{t('filters.tags')}</span>
+                <button
+                  type="button"
+                  onClick={() => setTagsOpen(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border cursor-pointer"
+                  style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                >
+                  <Tag className="w-3.5 h-3.5" />
+                  {t('tags.button')}
+                </button>
               </div>
+              {(form.isVN || form.isChallenge) && (
+                <div className="flex flex-wrap gap-1.5 text-[10px] font-bold">
+                  {form.isVN && <span className="px-1.5 py-0.5 rounded bg-red-500/10 text-red-500">VN</span>}
+                  {form.isChallenge && <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600">Challenge</span>}
+                </div>
+              )}
             </div>
           </div>
 
@@ -320,9 +335,49 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
           </button>
         </div>
       </div>
+      {tagsOpen && (
+        <div
+          className="fixed inset-0 z-[100001] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setTagsOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border p-5 space-y-4 shadow-2xl"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold ui-title">{t('tags.title')}</h3>
+              <button type="button" onClick={() => setTagsOpen(false)} className="p-1.5 rounded-lg">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <ColorToggle pressed={form.isVN} onToggle={() => setForm({ ...form, isVN: !form.isVN })}>
+                VN
+              </ColorToggle>
+              <ColorToggle pressed={form.isChallenge} onToggle={() => setForm({ ...form, isChallenge: !form.isChallenge })}>
+                Challenge
+              </ColorToggle>
+            </div>
+            <button
+              type="button"
+              onClick={() => setTagsOpen(false)}
+              className="w-full py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)]"
+              style={{ backgroundColor: 'var(--accent)' }}
+            >
+              {t('filters.done')}
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 
-  if (embedded) return formBody;
+  if (embedded) return (
+    <>
+      {formBody}
+    </>
+  );
 
   return (
     <div className="fixed inset-0 z-[100000] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">

@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { X, Flag } from 'lucide-react';
+import { X, Flag, Goal } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { DIFFICULTY_FILTER_OPTIONS, getDifficultyFaceUrl } from '@/lib/gdDifficulty';
+import ColorToggle from './ColorToggle';
 
 interface LevelFiltersModalProps {
   isOpen: boolean;
@@ -16,6 +17,10 @@ interface LevelFiltersModalProps {
   setFilterFaces: (next: number[]) => void;
   filterVN: boolean;
   setFilterVN: (next: boolean) => void;
+  filterChallenge?: boolean;
+  setFilterChallenge?: (next: boolean) => void;
+  showModeFilters?: boolean;
+  showChallengeToggle?: boolean;
 }
 
 export default function LevelFiltersModal({
@@ -29,6 +34,10 @@ export default function LevelFiltersModal({
   setFilterFaces,
   filterVN,
   setFilterVN,
+  filterChallenge = false,
+  setFilterChallenge,
+  showModeFilters = true,
+  showChallengeToggle = false,
 }: LevelFiltersModalProps) {
   const { t } = useLanguage();
 
@@ -50,80 +59,94 @@ export default function LevelFiltersModal({
         <h2 className="text-xl font-black ui-title">{t('filters.title')}</h2>
 
         <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-[11px] font-bold uppercase ui-dim">{t('filters.mode')}</label>
-            <div className="flex flex-wrap gap-2">
-              {['CLASSIC', 'PLATFORMER'].map((m) => (
-                <label key={m} className="flex items-center gap-2 px-3 py-2 rounded-xl border ui-subtle cursor-pointer hover:bg-black/5">
-                  <input
-                    type="checkbox"
-                    checked={filterModes.includes(m)}
-                    onChange={() => toggle(filterModes, m, setFilterModes)}
-                  />
-                  <span className="text-xs font-bold">{m}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+          {showModeFilters && (
+            <>
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold uppercase ui-dim">{t('filters.mode')}</label>
+                <div className="flex flex-wrap gap-2">
+                  {['CLASSIC', 'PLATFORMER'].map((m) => (
+                    <ColorToggle
+                      key={m}
+                      pressed={filterModes.includes(m)}
+                      onToggle={() => toggle(filterModes, m, setFilterModes)}
+                    >
+                      {m}
+                    </ColorToggle>
+                  ))}
+                </div>
+              </div>
 
-          <div className="space-y-2">
-            <label className="text-[11px] font-bold uppercase ui-dim">{t('filters.tier')}</label>
-            <div className="flex flex-wrap gap-2">
-              {['MAIN', 'EXTENDED', 'LEGACY'].map((tierName) => (
-                <label key={tierName} className="flex items-center gap-2 px-3 py-2 rounded-xl border ui-subtle cursor-pointer hover:bg-black/5">
-                  <input
-                    type="checkbox"
-                    checked={filterTiers.includes(tierName)}
-                    onChange={() => toggle(filterTiers, tierName, setFilterTiers)}
-                  />
-                  <span className="text-xs font-bold">{t(`levelslist.${tierName.toLowerCase()}` as any)}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold uppercase ui-dim">{t('filters.tier')}</label>
+                <div className="flex flex-wrap gap-2">
+                  {['MAIN', 'EXTENDED', 'LEGACY'].map((tierName) => (
+                    <ColorToggle
+                      key={tierName}
+                      pressed={filterTiers.includes(tierName)}
+                      onToggle={() => toggle(filterTiers, tierName, setFilterTiers)}
+                    >
+                      {t(`levelslist.${tierName.toLowerCase()}` as any)}
+                    </ColorToggle>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="space-y-2">
             <label className="text-[11px] font-bold uppercase ui-dim">{t('filters.difficulty')}</label>
             <div className="flex flex-wrap gap-2">
               {DIFFICULTY_FILTER_OPTIONS.map((df) => (
-                <label key={df.val} className="flex items-center gap-2 px-3 py-2 rounded-xl border ui-subtle cursor-pointer hover:bg-black/5">
-                  <input
-                    type="checkbox"
-                    checked={filterFaces.includes(df.val)}
-                    onChange={() => toggle(filterFaces, df.val, setFilterFaces)}
-                  />
+                <ColorToggle
+                  key={df.val}
+                  pressed={filterFaces.includes(df.val)}
+                  onToggle={() => toggle(filterFaces, df.val, setFilterFaces)}
+                >
                   <img src={getDifficultyFaceUrl(df.val)} className="w-5 h-5 object-contain" alt="" />
-                  <span className="text-xs font-bold">{df.label}</span>
-                </label>
+                  {df.label}
+                </ColorToggle>
               ))}
             </div>
           </div>
 
           <div className="space-y-2">
             <label className="text-[11px] font-bold uppercase ui-dim">{t('filters.tags')}</label>
-            <label className="flex items-center gap-2 px-3 py-2 rounded-xl border ui-subtle cursor-pointer w-fit hover:bg-black/5">
-              <input
-                type="checkbox"
-                checked={filterVN}
-                onChange={(e) => setFilterVN(e.target.checked)}
-              />
-              <Flag className="w-4 h-4 text-red-500" />
-              <span className="text-xs font-bold">{t('filters.vn_only')}</span>
-            </label>
+            <div className="flex flex-wrap gap-2">
+              <ColorToggle pressed={filterVN} onToggle={() => setFilterVN(!filterVN)}>
+                <Flag className="w-4 h-4 text-red-500" />
+                {t('filters.vn_only')}
+              </ColorToggle>
+              {showChallengeToggle && setFilterChallenge && (
+                <ColorToggle pressed={filterChallenge} onToggle={() => setFilterChallenge(!filterChallenge)}>
+                  <Goal className="w-4 h-4" />
+                  {t('filters.challenge')}
+                </ColorToggle>
+              )}
+            </div>
           </div>
         </div>
 
-        <button
-          onClick={() => {
-            setFilterModes(['CLASSIC', 'PLATFORMER']);
-            setFilterTiers(['MAIN', 'EXTENDED', 'LEGACY']);
-            setFilterFaces([]);
-            setFilterVN(false);
-          }}
-          className="w-full py-2.5 rounded-xl border text-xs font-bold hover:bg-black/5 mt-4"
-        >
-          {t('filters.reset')}
-        </button>
+        <div className="flex items-center gap-2 pt-2">
+          <button
+            onClick={() => {
+              setFilterModes([]);
+              setFilterTiers([]);
+              setFilterFaces([]);
+              setFilterVN(false);
+              setFilterChallenge?.(false);
+            }}
+            className="flex-1 py-2.5 rounded-xl border text-xs font-bold hover:bg-black/5"
+          >
+            {t('filters.reset')}
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl text-xs font-bold text-[color:var(--accent-fg)]"
+            style={{ backgroundColor: 'var(--accent)' }}
+          >
+            {t('filters.done')}
+          </button>
+        </div>
       </div>
     </div>
   );

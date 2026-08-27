@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle, Video, Clock } from 'lucide-react';
+import LevelTagChips from '@/components/LevelTagChips';
 import { useLanguage } from '@/components/LanguageContext';
 import LevelNeighborNav from '@/components/LevelNeighborNav';
 import { awardedPpForProgress } from '@/lib/ScoringEngine';
@@ -15,17 +16,17 @@ export default function DemonDetailView({
   lastLevel,
 }: {
   level: any;
-  prevLevel?: { id: string; name: string; placement: number | null } | null;
-  nextLevel?: { id: string; name: string; placement: number | null } | null;
-  firstLevel?: { id: string; name: string; placement: number | null } | null;
-  lastLevel?: { id: string; name: string; placement: number | null } | null;
+  prevLevel?: { id: string; gdLevelId: number; name: string; placement: number | null } | null;
+  nextLevel?: { id: string; gdLevelId: number; name: string; placement: number | null } | null;
+  firstLevel?: { id: string; gdLevelId: number; name: string; placement: number | null } | null;
+  lastLevel?: { id: string; gdLevelId: number; name: string; placement: number | null } | null;
 }) {
   const { t } = useLanguage();
 
   return (
     <>
       <div className="max-w-4xl mx-auto pb-24 space-y-6">
-        <Link href="/levels" className="inline-flex items-center gap-1.5 text-xs font-bold ui-dim hover:opacity-100 transition-opacity">
+        <Link href={level.isChallenge ? '/challenges' : '/levels'} className="inline-flex items-center gap-1.5 text-xs font-bold ui-dim hover:opacity-100 transition-opacity">
           <ArrowLeft className="w-4 h-4" />
           {t('levelslist.back')}
         </Link>
@@ -50,8 +51,9 @@ export default function DemonDetailView({
           <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col gap-2 pointer-events-none">
             <div className="flex items-center gap-3">
               <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-white text-black shadow-lg">
-                #{level.placement || '-'}
+                {level.placement != null ? `#${level.placement}` : 'Unranked'}
               </span>
+              <LevelTagChips level={level} contrast="onDark" />
               <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-black/50 text-white backdrop-blur-md border border-white/10 shadow-lg">
                 {level.difficulty}
               </span>

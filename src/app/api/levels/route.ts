@@ -17,8 +17,11 @@ export async function GET(req: Request) {
       placementWhere = { gt: 150 };
     }
 
+    const challenge = searchParams.get('challenge') === '1';
+
     const levels = await prisma.level.findMany({
       where: {
+        isChallenge: challenge,
         ...(mode !== 'ALL' ? { mode: mode as LevelMode } : {}),
         ...(tier ? { placement: placementWhere } : {}),
       },

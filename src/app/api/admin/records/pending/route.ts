@@ -17,6 +17,7 @@ export async function GET(req: Request) {
         include: {
           user: true,
           level: true,
+          reviewer: { select: { id: true, username: true } },
         },
         orderBy: !status
           ? { submittedAt: 'desc' }

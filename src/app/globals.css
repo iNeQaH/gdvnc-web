@@ -70,11 +70,11 @@
   --accent-fg: #ffffff;
 }
 .dark[data-theme="mint"] {
-  --bg-page: #020a05;
-  --bg-card: #051a0d;
-  --bg-subtle: #04140a;
-  --border-ui: #064e3b;
-  --border-subtle: #064e3b;
+  --bg-page: #0c1612;
+  --bg-card: #1a2e24;
+  --bg-subtle: #14241c;
+  --border-ui: #245c45;
+  --border-subtle: #1a3a2c;
   
   --text-title: #f0fdf4;
   --text-body: #bbf7d0;
@@ -106,11 +106,11 @@
   --accent-fg: #ffffff;
 }
 .dark[data-theme="peach"] {
-  --bg-page: #0f0502;
-  --bg-card: #1a0a05;
-  --bg-subtle: #140804;
-  --border-ui: #431407;
-  --border-subtle: #431407;
+  --bg-page: #16110c;
+  --bg-card: #2a2118;
+  --bg-subtle: #1f1914;
+  --border-ui: #5c3d24;
+  --border-subtle: #3d2a1c;
   
   --text-title: #fff7ed;
   --text-body: #ffedd5;
@@ -142,11 +142,11 @@
   --accent-fg: #ffffff;
 }
 .dark[data-theme="lavender"] {
-  --bg-page: #0b0417;
-  --bg-card: #14082e;
-  --bg-subtle: #0f0624;
-  --border-ui: #3b0764;
-  --border-subtle: #3b0764;
+  --bg-page: #12101c;
+  --bg-card: #231e35;
+  --bg-subtle: #1a1728;
+  --border-ui: #4c3d6e;
+  --border-subtle: #332a4a;
   
   --text-title: #f5f3ff;
   --text-body: #ede9fe;
@@ -178,11 +178,11 @@
   --accent-fg: #ffffff;
 }
 .dark[data-theme="mono"] {
-  --bg-page: #000000;
-  --bg-card: #000000;
-  --bg-subtle: #09090b;
-  --border-ui: #27272a;
-  --border-subtle: #18181b;
+  --bg-page: #0f1115;
+  --bg-card: #1c1e24;
+  --bg-subtle: #16181d;
+  --border-ui: #3f434c;
+  --border-subtle: #2a2d34;
   
   --text-title: #ffffff;
   --text-body: #d4d4d8;
@@ -193,6 +193,42 @@
   --accent-bg: #27272a;
   --accent-text: #ffffff;
   --accent-fg: #000000;
+}
+
+/* 6. SAKURA THEME */
+[data-theme="sakura"] {
+  --bg-page: #fdf2f5;
+  --bg-card: #ffffff;
+  --bg-subtle: #fff7f9;
+  --border-ui: #f9c5d5;
+  --border-subtle: #fce7ee;
+  
+  --text-title: #4a1528;
+  --text-body: #6b3046;
+  --text-dim: #a85d76;
+
+  --accent: #e85d8c;
+  --accent-hover: #d9487a;
+  --accent-bg: #fce7ee;
+  --accent-text: #be185d;
+  --accent-fg: #ffffff;
+}
+.dark[data-theme="sakura"] {
+  --bg-page: #161016;
+  --bg-card: #2a1e26;
+  --bg-subtle: #1f171c;
+  --border-ui: #5c3a4a;
+  --border-subtle: #3d2832;
+  
+  --text-title: #fdf2f5;
+  --text-body: #f9c5d5;
+  --text-dim: #e8a0b6;
+
+  --accent: #f472b6;
+  --accent-hover: #e85d8c;
+  --accent-bg: #9d174d;
+  --accent-text: #fce7ee;
+  --accent-fg: #ffffff;
 }
 
 body {

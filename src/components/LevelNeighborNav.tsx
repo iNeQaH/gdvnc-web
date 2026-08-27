@@ -5,8 +5,11 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 
+import { levelPath } from '@/lib/levelUrl';
+
 interface NeighborLevel {
   id: string;
+  gdLevelId: number;
   name: string;
   placement: number | null;
 }
@@ -35,7 +38,7 @@ export default function LevelNeighborNav({
     >
       {firstLevel ? (
         <Link
-          href={`/levels/${firstLevel.id}`}
+          href={levelPath(firstLevel)}
           className="p-2 rounded-xl transition-colors hover:bg-black/5 dark:hover:bg-white/10"
           title={`#${firstLevel.placement} ${firstLevel.name}`}
         >
@@ -49,7 +52,7 @@ export default function LevelNeighborNav({
 
       {prevLevel ? (
         <Link
-          href={`/levels/${prevLevel.id}`}
+          href={levelPath(prevLevel)}
           className="p-2 rounded-xl transition-colors hover:bg-black/5 dark:hover:bg-white/10"
           title={`#${prevLevel.placement} ${prevLevel.name}`}
         >
@@ -69,7 +72,7 @@ export default function LevelNeighborNav({
 
       {nextLevel ? (
         <Link
-          href={`/levels/${nextLevel.id}`}
+          href={levelPath(nextLevel)}
           className="p-2 rounded-xl transition-colors hover:bg-black/5 dark:hover:bg-white/10"
           title={`#${nextLevel.placement} ${nextLevel.name}`}
         >
@@ -83,7 +86,7 @@ export default function LevelNeighborNav({
 
       {lastLevel ? (
         <Link
-          href={`/levels/${lastLevel.id}`}
+          href={levelPath(lastLevel)}
           className="p-2 rounded-xl transition-colors hover:bg-black/5 dark:hover:bg-white/10"
           title={`#${lastLevel.placement} ${lastLevel.name}`}
         >

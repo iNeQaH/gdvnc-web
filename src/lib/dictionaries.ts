@@ -2,6 +2,7 @@ export const en = {
   // Navigation & Sidebar
   'nav.leaderboard': 'Leaderboard',
   'nav.demonlist': 'Levels',
+  'nav.challenges': 'Challenge List',
   'nav.submit': 'Submit',
   'nav.roulette': 'Roulette',
   'nav.supporter': 'Supporter',
@@ -27,6 +28,7 @@ export const en = {
   'theme.mint': 'Mint',
   'theme.peach': 'Peach',
   'theme.lavender': 'Lavender',
+  'theme.sakura': 'Sakura',
   'theme.slate': 'Dark',
 
   // Common
@@ -116,8 +118,8 @@ export const en = {
   'submit.desc': 'Submit your completion for moderation review.',
   'submit.level': 'Select Demon Level',
   'submit.search_level_placeholder': 'Type level name (e.g. Tidal, Acheron)...',
-  'submit.video_url': 'Video Proof Link (YouTube / Twitch)',
-  'submit.raw_url': 'Raw Footage Link (Google Drive / Mega)',
+  'submit.video_url': 'Link Video',
+  'submit.raw_url': 'Raw Footage',
   'submit.hz': 'Refresh Rate (Hz)',
   'submit.fps': 'Framerate (FPS)',
   'submit.device': 'Device',
@@ -150,6 +152,8 @@ export const en = {
   'submit.tab_player': 'Player',
   'submit.tab_creator': 'Creator (Works)',
   'submit.tab_level': 'Submit Level',
+  'submit.recent': 'Recent submissions',
+  'submit.recent_empty': 'No submissions yet.',
   'submit.btn_level': 'Submit for review',
   'submit.level_ok': 'Level submitted. Waiting for admin approval.',
 
@@ -353,7 +357,12 @@ export const en = {
   'filters.difficulty': 'Difficulty',
   'filters.tags': 'Tags',
   'filters.vn_only': 'VN Only',
+  'filters.challenge': 'Challenge',
   'filters.reset': 'Reset Filters',
+  'filters.done': 'Done',
+  'tags.title': 'Tags',
+  'tags.button': 'Tags',
+  'tags.challenge': 'Challenge',
 
   // Inbox
   'inbox.title': 'Inbox & Notifications',
@@ -376,6 +385,7 @@ export const en = {
   'admin.tab_levels': 'Add Level',
   'admin.queue_title': 'Record Queue ({n})',
   'admin.filter_pending': 'Pending',
+  'admin.reviewed_by': 'Reviewed by {name}',
   'admin.filter_approved': 'Approved',
   'admin.filter_rejected': 'Rejected',
   'admin.status_pending': 'Pending',
@@ -478,6 +488,7 @@ export type DictKey = keyof typeof en;
 export const vi: Record<DictKey, string> = {
   'nav.leaderboard': 'Bảng Xếp Hạng',
   'nav.demonlist': 'Danh sách',
+  'nav.challenges': 'Challenge List',
   'nav.submit': 'Nộp',
   'nav.roulette': 'Cò quay',
   'nav.supporter': 'Ủng hộ',
@@ -502,6 +513,7 @@ export const vi: Record<DictKey, string> = {
   'theme.mint': 'Bạc hà',
   'theme.peach': 'Cam đào',
   'theme.lavender': 'Tím nhạt',
+  'theme.sakura': 'Sakura',
   'theme.slate': 'Tối',
 
   'common.loading': 'Đang tải...',
@@ -587,8 +599,8 @@ export const vi: Record<DictKey, string> = {
   'submit.desc': 'Gửi bằng chứng, Admin sẽ duyệt và cập nhật Points.',
   'submit.level': 'Chọn màn chơi',
   'submit.search_level_placeholder': 'Điền tên màn chơi (ví dụ: Tidal, Acheron)...',
-  'submit.video_url': 'Link Video Bằng Chứng (YouTube / Twitch)',
-  'submit.raw_url': 'Link Raw Footage Chưa Cắt (Google Drive / Mega)',
+  'submit.video_url': 'Link Video',
+  'submit.raw_url': 'Raw Footage',
   'submit.hz': 'Tần số quét (Hz)',
   'submit.fps': 'Tốc độ khung hình (FPS)',
   'submit.device': 'Thiết bị',
@@ -621,6 +633,8 @@ export const vi: Record<DictKey, string> = {
   'submit.tab_player': 'Người Chơi',
   'submit.tab_creator': 'Creator (Works)',
   'submit.tab_level': 'Submit Level',
+  'submit.recent': 'Gần đây',
+  'submit.recent_empty': 'Chưa có bài nộp nào.',
   'submit.btn_level': 'Gửi để duyệt',
   'submit.level_ok': 'Đã gửi level. Chờ Admin xét duyệt.',
 
@@ -820,7 +834,12 @@ export const vi: Record<DictKey, string> = {
   'filters.difficulty': 'Độ khó',
   'filters.tags': 'Nhãn',
   'filters.vn_only': 'Chỉ VN',
+  'filters.challenge': 'Challenge',
   'filters.reset': 'Đặt lại bộ lọc',
+  'filters.done': 'Xong',
+  'tags.title': 'Nhãn',
+  'tags.button': 'Nhãn',
+  'tags.challenge': 'Challenge',
 
   'inbox.title': 'Hộp Thư & Thông Báo',
   'inbox.unread': '{n} tin nhắn chưa đọc',
@@ -841,6 +860,7 @@ export const vi: Record<DictKey, string> = {
   'admin.tab_levels': 'Thêm Màn Chơi',
   'admin.queue_title': 'Hàng Đợi Kỷ Lục ({n})',
   'admin.filter_pending': 'Chưa duyệt',
+  'admin.reviewed_by': 'Duyệt bởi {name}',
   'admin.filter_approved': 'Đã duyệt',
   'admin.filter_rejected': 'Từ chối',
   'admin.status_pending': 'Chưa duyệt',

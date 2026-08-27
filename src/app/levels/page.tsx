@@ -13,8 +13,9 @@ import LevelFiltersModal from '@/components/LevelFiltersModal';
 import FloatingNav from '@/components/FloatingNav';
 import { useToast } from '@/components/GlobalToast';
 import { getDifficultyFaceUrl, getRatingIconUrl, matchesDifficultyFilter } from '@/lib/gdDifficulty';
+import { levelPath } from '@/lib/levelUrl';
 
-export default function LevelsListPage() {
+export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main' | 'challenge' }) {
   const { t } = useLanguage();
   const { showConfirm, showToast } = useToast();
   const [levels, setLevels] = useState<any[]>([]);
@@ -25,13 +26,14 @@ export default function LevelsListPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 50;
+  const pageSize = 20;
 
   // Filters
-  const [filterModes, setFilterModes] = useState<string[]>(['CLASSIC']);
-  const [filterTiers, setFilterTiers] = useState<string[]>(['MAIN']);
+  const [filterModes, setFilterModes] = useState<string[]>([]);
+  const [filterTiers, setFilterTiers] = useState<string[]>([]);
   const [filterFaces, setFilterFaces] = useState<number[]>([]);
   const [filterVN, setFilterVN] = useState(false);
+  const isChallengeList = listKind === 'challenge';
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [editingLevel, setEditingLevel] = useState<any>(null);
 
@@ -49,7 +51,7 @@ export default function LevelsListPage() {
 
   const fetchLevels = () => {
     setLoading(true);
-    fetch('/api/levels?mode=ALL')
+    fetch(`/api/levels?mode=ALL&challenge=${isChallengeList ? '1' : '0'}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -134,7 +136,7 @@ export default function LevelsListPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b" style={{ borderColor: 'var(--border-ui)' }}>
         <div className="space-y-1">
           <h1 className="text-2xl font-black tracking-tight flex items-center gap-2 ui-title">
-            {t('levelslist.title')}
+            {t(isChallengeList ? 'nav.challenges' : 'levelslist.title')}
           </h1>
           <p className="text-xs ui-dim max-w-md">{t('levelslist.desc')}</p>
         </div>
@@ -275,8 +277,8 @@ export default function LevelsListPage() {
             <button
               onClick={() => {
                 setSearch('');
-                setFilterModes(['CLASSIC']);
-                setFilterTiers(['MAIN', 'EXTENDED', 'LEGACY']);
+                setFilterModes([]);
+                setFilterTiers([]);
                 setFilterFaces([]);
                 setFilterVN(false);
               }}
@@ -298,7 +300,7 @@ export default function LevelsListPage() {
                   className="group relative rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all border ui-card flex items-center justify-between p-3 gap-3"
                   style={{ borderColor: 'var(--border-ui)' }}
                 >
-                  <Link href={'/levels/' + lvl.id} className="flex items-center gap-3.5 flex-1 min-w-0">
+                  <Link href={levelPath(lvl)} className="flex items-center gap-3.5 flex-1 min-w-0">
                     <span className="w-10 text-center text-xs font-black shrink-0 px-1.5 py-1 rounded-lg bg-black/5 dark:bg-white/10 ui-title">
                       {placement}
                     </span>
@@ -320,6 +322,11 @@ export default function LevelsListPage() {
                         {lvl.isVN && (
                           <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-red-500/10 text-red-500 border border-red-500/20 shrink-0">
                             🇻🇳 VN
+                          </span>
+                        )}
+                        {isChallengeList && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25 shrink-0">
+                            Challenge
                           </span>
                         )}
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 ui-dim shrink-0">
@@ -392,7 +399,7 @@ export default function LevelsListPage() {
                 {/* Overlay Gradient */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
 
-                <Link href={'/levels/' + lvl.id} className="relative p-4 flex flex-col h-full justify-between text-white z-10">
+                <Link href={levelPath(lvl)} className="relative p-4 flex flex-col h-full justify-between text-white z-10">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-1.5">
                       <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-black/60 backdrop-blur-sm border border-white/20">
@@ -401,6 +408,11 @@ export default function LevelsListPage() {
                       {lvl.isVN && (
                         <span className="px-2 py-0.5 rounded-lg text-[10px] font-black bg-red-600/90 text-white backdrop-blur-sm border border-red-400/30">
                           🇻🇳 VN
+                        </span>
+                      )}
+                      {isChallengeList && (
+                        <span className="px-2 py-0.5 rounded-lg text-[10px] font-black bg-amber-500/90 text-black backdrop-blur-sm border border-amber-300/40">
+                          Challenge
                         </span>
                       )}
                     </div>
@@ -529,7 +541,6 @@ export default function LevelsListPage() {
         )}
 
         <FloatingNav 
-          alwaysVisible
           currentPage={currentPage} 
           totalPages={totalPages} 
           onPageChange={setCurrentPage} 
@@ -562,6 +573,7 @@ export default function LevelsListPage() {
         setFilterFaces={setFilterFaces}
         filterVN={filterVN}
         setFilterVN={setFilterVN}
+        showModeFilters={!isChallengeList}
       />
     </div>
   );

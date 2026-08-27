@@ -28,13 +28,22 @@ function normalizeBadgeName(name: string): string {
 export function getDecoBadgeCp(name: string): number | null {
   const key = normalizeBadgeName(name);
   if (key in DECO_BADGE_CP) return DECO_BADGE_CP[key];
-  if (key.startsWith('feature')) return DECO_BADGE_CP.feature;
+  if (key.includes('mythic')) return DECO_BADGE_CP.mythic;
+  if (key.includes('legendary')) return DECO_BADGE_CP.legendary;
+  if (key.includes('epic')) return DECO_BADGE_CP.epic;
+  if (key.includes('feature')) return DECO_BADGE_CP.feature;
+  if (key.includes('rated') || key.includes('star')) return DECO_BADGE_CP.star;
   return null;
 }
 
 export function getLayoutBadgeCp(name: string): number | null {
   const key = normalizeBadgeName(name);
   if (key in LAYOUT_BADGE_CP) return LAYOUT_BADGE_CP[key];
+  if (key.includes('professional')) return LAYOUT_BADGE_CP.professional;
+  if (key.includes('cool')) return LAYOUT_BADGE_CP.cool;
+  if (key.includes('good')) return LAYOUT_BADGE_CP.good;
+  if (key.includes('beginner')) return LAYOUT_BADGE_CP.beginner;
+  if (key.includes('normal')) return LAYOUT_BADGE_CP.normal;
   return null;
 }
 
@@ -44,6 +53,14 @@ export function isDecoBadgeName(name: string): boolean {
 
 export function isLayoutBadgeName(name: string): boolean {
   return getLayoutBadgeCp(name) !== null;
+}
+
+export function isDecoCategory(badge: { badgeCategory?: { name?: string | null } | null }): boolean {
+  return String(badge.badgeCategory?.name || '').toLowerCase().includes('deco');
+}
+
+export function isLayoutCategory(badge: { badgeCategory?: { name?: string | null } | null }): boolean {
+  return String(badge.badgeCategory?.name || '').toLowerCase().includes('layout');
 }
 
 export type QualityBadge = {
@@ -86,11 +103,11 @@ export function pickDecoAndLayoutBadges(badges: BadgeLike[]): {
       glowColor: badge.glowColor,
     };
 
-    if (cat.includes('deco') || isDecoBadgeName(badge.name)) {
+    if (isDecoCategory(badge) || cat.includes('deco') || isDecoBadgeName(badge.name)) {
       const score = getDecoBadgeCp(badge.name) ?? 1000 - (badge.sortOrder ?? 0);
       if (!deco || score > deco.score) deco = { badge: mapped, score };
     }
-    if (cat.includes('layout') || isLayoutBadgeName(badge.name)) {
+    if (isLayoutCategory(badge) || cat.includes('layout') || isLayoutBadgeName(badge.name)) {
       const score = getLayoutBadgeCp(badge.name) ?? 1000 - (badge.sortOrder ?? 0);
       if (!layout || score > layout.score) layout = { badge: mapped, score };
     }

@@ -39,13 +39,13 @@ export async function DELETE(req: Request) {
       // 2. Shift placements up (decrement)
       if (oldPlacement !== null) {
         await tx.level.updateMany({
-          where: { mode, placement: { gt: oldPlacement } },
+          where: { mode, isChallenge: false, placement: { gt: oldPlacement } },
           data: { placement: { decrement: 1 } }
         });
 
         // 3. Recompute base PPs
         const allRankedLevels = await tx.level.findMany({
-          where: { mode, placement: { not: null } },
+          where: { mode, isChallenge: false, placement: { not: null } },
           select: { id: true, placement: true, basePp: true },
         });
 
