@@ -64,7 +64,7 @@ export const en = {
   'leaderboard.no_quality': 'None',
   'leaderboard.loading': 'Loading leaderboard...',
   'leaderboard.empty': 'No players found on the leaderboard.',
-  'leaderboard.empty_hint': 'Run Seed in start_gdvnc.bat to load sample data.',
+  'leaderboard.empty_hint': 'No ranked players yet. Approved records will appear here.',
   'leaderboard.stats.top1_classic': 'Top 1 Classic',
   'leaderboard.stats.top1_plat': 'Top 1 Platformer',
   'leaderboard.stats.top1_player': 'Top 1 Player',
