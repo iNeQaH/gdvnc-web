@@ -914,10 +914,10 @@ export default function AdminPage() {
                         </a>
                       </div>
                     )}
-                    {work.imageUrl && (
+                    {work.imageUrl && work.status === 'PENDING' && (
                       <div className="flex items-center gap-1.5">
                         <span className="ui-dim">Ảnh:</span>
-                        <a href={work.imageUrl} target="_blank" rel="noreferrer" className="font-semibold hover:underline" style={{ color: 'var(--accent)' }}>
+                        <a href={work.imageUrl.split(',')[0]} target="_blank" rel="noreferrer" className="font-semibold hover:underline" style={{ color: 'var(--accent)' }}>
                           Xem Ảnh Mẫu
                         </a>
                       </div>

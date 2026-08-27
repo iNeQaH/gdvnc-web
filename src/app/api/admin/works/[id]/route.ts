@@ -4,9 +4,19 @@ import prisma from '@/lib/prisma';
 import { RecordStatus } from '@prisma/client';
 import { recalculateCreatorPoints } from '@/lib/creatorPoints';
 import { extractYoutubeId, upsertLevelFromForm } from '@/lib/upsertLevel';
+import { purgeWorkImages } from '@/lib/workImages';
+
+async function finalizeWorkImages(workId: string, imageUrl: string | null | undefined) {
+  await purgeWorkImages(imageUrl);
+  await prisma.creatorWork.update({
+    where: { id: workId },
+    data: { imageUrl: null },
+  });
+}
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
+  let admin;
+  try { admin = await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
 
   try {
     const { id } = await params;
@@ -18,7 +28,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const work = await prisma.creatorWork.findUnique({
       where: { id },
-      include: { user: true },
+      select: {
+        id: true,
+        userId: true,
+        gdLevelId: true,
+        videoUrl: true,
+        imageUrl: true,
+        levelName: true,
+        status: true,
+      },
     });
 
     if (!work) return NextResponse.json({ error: 'Không tìm thấy Work.' }, { status: 404 });
@@ -33,11 +51,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         data: {
           status: RecordStatus.REJECTED,
           rejectReason: rejectReason || 'Không đạt quy chuẩn Creator.',
-          reviewedAt: new Date()
+          reviewedAt: new Date(),
+          reviewerId: admin.userId,
+          imageUrl: null,
         }
       });
-      
-      // Notify
+
+      await purgeWorkImages(work.imageUrl);
+
       await prisma.notification.create({
         data: {
           userId: work.userId,
@@ -45,11 +66,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           message: `Tác phẩm "${work.levelName}" của bạn đã bị từ chối. Lý do: ${rejectReason || 'Không xác định'}`
         }
       });
-      
-      return NextResponse.json({ success: true, work: updated });
+
+      return NextResponse.json({ success: true, work: { ...updated, imageUrl: null } });
     }
 
-    // APPROVE — add the level once (GD fetch only if it is not already on the list)
     if (work.gdLevelId) {
       const existingLevel = await prisma.level.findUnique({
         where: { gdLevelId: work.gdLevelId },
@@ -72,7 +92,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
     }
 
-    // APPROVE — badgeId may be a comma-separated string (deco + layout)
     const badgeIds = typeof badgeId === 'string' ? badgeId.split(',').filter(Boolean) : [];
     const extraCp = Number.parseFloat(cpAwarded || '0') || 0;
 
@@ -82,9 +101,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         status: RecordStatus.APPROVED,
         badgeGranted: badgeIds.join(','),
         cpGranted: extraCp,
-        reviewedAt: new Date()
+        reviewedAt: new Date(),
+        reviewerId: admin.userId,
+        imageUrl: null,
       }
     });
+
+    await purgeWorkImages(work.imageUrl);
 
     for (const bId of badgeIds) {
       const existingBadge = await prisma.userBadge.findUnique({
@@ -112,7 +135,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
     });
 
-    return NextResponse.json({ success: true, work: updated });
+    return NextResponse.json({ success: true, work: { ...updated, imageUrl: null } });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Lỗi xử lý Work' }, { status: 500 });
   }

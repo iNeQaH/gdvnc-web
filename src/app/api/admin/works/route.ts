@@ -33,7 +33,9 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       success: true,
-      works: status ? works : sortModerationQueue(works),
+      works: (status ? works : sortModerationQueue(works)).map((work) =>
+        work.status === RecordStatus.PENDING ? work : { ...work, imageUrl: null }
+      ),
       counts: {
         pending: pendingCount,
         approved: approvedCount,

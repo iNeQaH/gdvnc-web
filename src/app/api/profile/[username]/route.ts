@@ -39,9 +39,30 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
             submittedAt: 'desc',
           },
         },
-        createdLevels: true,
+        createdLevels: {
+          select: {
+            id: true,
+            gdLevelId: true,
+            name: true,
+            mode: true,
+            placement: true,
+            basePp: true,
+            difficulty: true,
+            ratingType: true,
+            youtubeId: true,
+          },
+        },
         creatorWorks: {
+          where: { status: RecordStatus.APPROVED },
           orderBy: { submittedAt: 'desc' },
+          select: {
+            id: true,
+            levelName: true,
+            gdLevelId: true,
+            submittedAt: true,
+            badgeGranted: true,
+            cpGranted: true,
+          },
         },
         userBadges: {
           include: {

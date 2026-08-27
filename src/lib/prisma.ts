@@ -5,7 +5,10 @@ const globalForPrisma = globalThis as unknown as {
   prismaGdvnc?: PrismaClient;
 };
 
-const databaseUrl = process.env.DATABASE_URL || 'mysql://root:root@localhost:3306/gdvnc';
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error('DATABASE_URL is not set.');
+}
 
 export const prisma =
   globalForPrisma.prismaGdvnc ??

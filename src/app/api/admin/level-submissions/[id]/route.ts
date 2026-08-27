@@ -5,11 +5,12 @@ import { RecordStatus } from '@prisma/client';
 import { upsertLevelFromForm } from '@/lib/upsertLevel';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
+  let admin;
+  try { admin = await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
 
   try {
     const { id } = await params;
-    const { action, rejectReason, reviewerId } = await req.json();
+    const { action, rejectReason } = await req.json();
 
     if (!['APPROVE', 'REJECT'].includes(action)) {
       return NextResponse.json({ error: 'Hành động không hợp lệ.' }, { status: 400 });
@@ -17,7 +18,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const submission = await prisma.levelSubmission.findUnique({
       where: { id },
-      include: { user: true },
     });
     if (!submission) {
       return NextResponse.json({ error: 'Không tìm thấy yêu cầu thêm level.' }, { status: 404 });
@@ -33,7 +33,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         data: {
           status: RecordStatus.REJECTED,
           rejectReason: rejectReason || 'Không đạt quy chuẩn.',
-          reviewerId: reviewerId || null,
+          reviewerId: admin.userId,
           reviewedAt: new Date(),
         },
       });
@@ -63,7 +63,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       where: { id },
       data: {
         status: RecordStatus.APPROVED,
-        reviewerId: reviewerId || null,
+        reviewerId: admin.userId,
         reviewedAt: new Date(),
       },
     });

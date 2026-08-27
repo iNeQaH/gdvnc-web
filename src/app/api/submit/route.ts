@@ -6,6 +6,7 @@ import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { clipText, isHttpsUrl } from '@/lib/validate';
 import { estimateDataUrlBytes } from '@/lib/profileEmbed';
+import { storeDataUrlAsImage } from '@/lib/workImages';
 
 export async function POST(req: Request) {
   let auth;
@@ -80,11 +81,24 @@ export async function POST(req: Request) {
       }
 
       let storedImage: string | null = null;
-      if (typeof imageUrl === 'string' && imageUrl.startsWith('data:image/')) {
-        if (estimateDataUrlBytes(imageUrl) > 4 * 1024 * 1024) {
+      const blobs: string[] = [];
+      if (typeof imageUrl === 'string' && imageUrl.startsWith('data:image/')) blobs.push(imageUrl);
+      if (Array.isArray(data.imageUrls)) {
+        for (const item of data.imageUrls) {
+          if (typeof item === 'string' && item.startsWith('data:image/')) blobs.push(item);
+        }
+      }
+
+      if (blobs.length > 0) {
+        if (estimateDataUrlBytes(blobs[0]) > 4 * 1024 * 1024) {
           return NextResponse.json({ error: 'Ảnh work vượt quá 4MB.' }, { status: 400 });
         }
-        storedImage = imageUrl;
+        const refs: string[] = [];
+        for (const blob of blobs.slice(0, 3)) {
+          if (estimateDataUrlBytes(blob) > 4 * 1024 * 1024) continue;
+          refs.push(await storeDataUrlAsImage(blob));
+        }
+        storedImage = refs.join(',') || null;
       } else if (typeof imageUrl === 'string' && imageUrl.startsWith('/api/images/')) {
         storedImage = clipText(imageUrl, 200);
       }
