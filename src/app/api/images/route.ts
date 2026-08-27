@@ -1,25 +1,36 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { estimateDataUrlBytes } from '@/lib/profileEmbed';
+import { requireAuth } from '@/lib/auth';
+import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
-const MAX_AVATAR_BYTES = 10 * 1024 * 1024;
-const MAX_COVER_BYTES = 20 * 1024 * 1024;
-const MAX_GENERIC_BYTES = 20 * 1024 * 1024;
+const MAX_AVATAR_BYTES = 4 * 1024 * 1024;
+const MAX_COVER_BYTES = 8 * 1024 * 1024;
+const ALLOWED = /^data:image\/(jpeg|jpg|png|webp|gif);base64,/i;
 
 export async function POST(req: Request) {
+  let auth;
+  try {
+    auth = await requireAuth();
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const limited = rateLimit(`images:${auth.userId}`, 20, 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
+
   try {
     const { dataUrl, kind } = await req.json();
 
-    if (!dataUrl || !dataUrl.startsWith('data:image')) {
+    if (!dataUrl || typeof dataUrl !== 'string' || !ALLOWED.test(dataUrl)) {
       return NextResponse.json({ error: 'Invalid image format' }, { status: 400 });
     }
 
     const bytes = estimateDataUrlBytes(dataUrl);
-    const maxBytes =
-      kind === 'avatar' ? MAX_AVATAR_BYTES : kind === 'cover' ? MAX_COVER_BYTES : MAX_GENERIC_BYTES;
+    const maxBytes = kind === 'cover' ? MAX_COVER_BYTES : MAX_AVATAR_BYTES;
 
     if (bytes > maxBytes) {
-      const mb = kind === 'avatar' ? 10 : 20;
+      const mb = kind === 'cover' ? 8 : 4;
       return NextResponse.json(
         { error: `Ảnh vượt quá giới hạn ${mb}MB.` },
         { status: 400 }

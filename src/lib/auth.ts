@@ -1,10 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
-import prisma from './prisma';
-
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'fallback_jwt_secret_change_me'
-);
+import { jwtSecretBytes } from '@/lib/secrets';
 
 const COOKIE_NAME = 'gdvnc_token';
 const TOKEN_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
@@ -25,7 +21,7 @@ export async function signToken(payload: { userId: string; username: string; rol
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(`${TOKEN_MAX_AGE}s`)
-    .sign(JWT_SECRET);
+    .sign(jwtSecretBytes());
 }
 
 /**
@@ -33,7 +29,7 @@ export async function signToken(payload: { userId: string; username: string; rol
  */
 export async function verifyToken(token: string): Promise<JwtPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, jwtSecretBytes());
     return payload as unknown as JwtPayload;
   } catch {
     return null;

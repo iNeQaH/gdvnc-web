@@ -1,16 +1,21 @@
 import { NextResponse } from 'next/server';
 import { mapDifficultyFace, mapRatingType } from '@/lib/gdDifficulty';
+import { getClientIp } from '@/lib/requestIp';
+import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = await params;
-  const { id } = resolvedParams;
+  const limited = rateLimit(`gd:${getClientIp(_req)}`, 40, 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
-  if (!id) {
-    return NextResponse.json({ error: 'Missing level ID' }, { status: 400 });
+  const { id } = await params;
+  if (!/^\d{1,12}$/.test(id)) {
+    return NextResponse.json({ error: 'Invalid level ID' }, { status: 400 });
   }
 
   try {
-    const res = await fetch(`https://gdbrowser.com/api/level/${id}`);
+    const res = await fetch(`https://gdbrowser.com/api/level/${id}`, {
+      signal: AbortSignal.timeout(8000),
+    });
     if (!res.ok) {
       return NextResponse.json({ error: 'Level not found or GDBrowser is down' }, { status: 404 });
     }
@@ -32,7 +37,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         basePp: 0,
       },
     });
-  } catch (error: any) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch level from GD servers' }, { status: 500 });
   }
 }

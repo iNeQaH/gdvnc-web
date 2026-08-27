@@ -3,9 +3,14 @@ import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { signToken, setAuthCookie } from '@/lib/auth';
 import { Role } from '@prisma/client';
+import { getClientIp } from '@/lib/requestIp';
+import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
   try {
+    const limited = rateLimit(`register:${getClientIp(req)}`, 8, 60_000);
+    if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
+
     const { username, email, otp, password, gdUsername, discordTag, locale } = await req.json();
     const en = locale === 'en';
 
@@ -25,8 +30,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: en ? 'Username must be at least 3 characters.' : 'Tên người dùng phải có ít nhất 3 ký tự.' }, { status: 400 });
     }
 
-    if (password.length < 6) {
-      return NextResponse.json({ error: en ? 'Password must be at least 6 characters.' : 'Mật khẩu phải có ít nhất 6 ký tự.' }, { status: 400 });
+    if (password.length < 6 || password.length > 128) {
+      return NextResponse.json({ error: en ? 'Password must be 6–128 characters.' : 'Mật khẩu phải từ 6 đến 128 ký tự.' }, { status: 400 });
     }
 
     const validOtp = await prisma.otp.findFirst({

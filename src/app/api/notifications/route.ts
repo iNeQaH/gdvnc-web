@@ -1,23 +1,24 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth';
 
-export async function GET(req: Request) {
+export async function GET() {
+  let auth;
   try {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    auth = await requireAuth();
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-    if (!userId) {
-      return NextResponse.json({ error: 'Thiếu userId' }, { status: 400 });
-    }
-
+  try {
     const notifications = await prisma.notification.findMany({
-      where: { userId },
+      where: { userId: auth.userId },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
 
     const unreadCount = await prisma.notification.count({
-      where: { userId, isRead: false },
+      where: { userId: auth.userId, isRead: false },
     });
 
     return NextResponse.json({
@@ -31,19 +32,32 @@ export async function GET(req: Request) {
 }
 
 export async function PATCH(req: Request) {
+  let auth;
+  try {
+    auth = await requireAuth();
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
-    const { notificationId, userId, markAll } = body;
+    const { notificationId, markAll } = body;
 
-    if (markAll && userId) {
+    if (markAll) {
       await prisma.notification.updateMany({
-        where: { userId, isRead: false },
+        where: { userId: auth.userId, isRead: false },
         data: { isRead: true },
       });
       return NextResponse.json({ success: true, message: 'Đã đánh dấu đọc tất cả.' });
     }
 
     if (notificationId) {
+      const existing = await prisma.notification.findFirst({
+        where: { id: notificationId, userId: auth.userId },
+      });
+      if (!existing) {
+        return NextResponse.json({ error: 'Không tìm thấy thông báo.' }, { status: 404 });
+      }
       const updated = await prisma.notification.update({
         where: { id: notificationId },
         data: { isRead: true },

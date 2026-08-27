@@ -29,7 +29,7 @@ export const NotificationModal = ({ userId, isOpen, onClose, onUpdateUnreadCount
     if (!userId) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/notifications?userId=${userId}`);
+      const res = await fetch(`/api/notifications`);
       const data = await res.json();
       if (data.success) {
         setNotifications(data.notifications || []);
@@ -75,7 +75,7 @@ export const NotificationModal = ({ userId, isOpen, onClose, onUpdateUnreadCount
       await fetch('/api/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, markAll: true }),
+        body: JSON.stringify({ markAll: true }),
       });
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       if (onUpdateUnreadCount) onUpdateUnreadCount(0);

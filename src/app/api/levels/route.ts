@@ -6,7 +6,8 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const mode = searchParams.get('mode') || 'CLASSIC';
-    const tier = searchParams.get('tier'); // 'main' (1-75), 'extended' (76-150), 'legacy' (151+)
+    const tier = searchParams.get('tier');
+    const challenge = searchParams.get('challenge') === '1';
 
     let placementWhere: any = {};
     if (tier === 'main') {
@@ -17,8 +18,6 @@ export async function GET(req: Request) {
       placementWhere = { gt: 150 };
     }
 
-    const challenge = searchParams.get('challenge') === '1';
-
     const levels = await prisma.level.findMany({
       where: {
         isChallenge: challenge,
@@ -28,26 +27,40 @@ export async function GET(req: Request) {
       orderBy: {
         placement: 'asc',
       },
-      include: {
-        records: {
-          where: { status: RecordStatus.APPROVED },
-          include: {
-            user: {
-              select: {
-                id: true,
-                username: true,
-                avatarUrl: true,
-                classicPp: true,
-                platformerPp: true,
-              },
-            },
+      select: {
+        id: true,
+        gdLevelId: true,
+        name: true,
+        mode: true,
+        difficulty: true,
+        difficultyFace: true,
+        ratingType: true,
+        isVN: true,
+        isChallenge: true,
+        placement: true,
+        basePp: true,
+        minPercent: true,
+        creatorName: true,
+        youtubeId: true,
+        description: true,
+        _count: {
+          select: {
+            records: { where: { status: RecordStatus.APPROVED } },
           },
-          orderBy: mode === LevelMode.PLATFORMER ? { timeMs: 'asc' } : { submittedAt: 'asc' },
         },
       },
     });
 
-    return NextResponse.json({ success: true, levels });
+    return NextResponse.json(
+      {
+        success: true,
+        levels: levels.map((lvl) => {
+          const { _count, ...rest } = lvl;
+          return { ...rest, victorCount: _count.records };
+        }),
+      },
+      { headers: { 'Cache-Control': 'public, s-maxage=20, stale-while-revalidate=60' } }
+    );
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Lỗi truy xuất Levels List.' }, { status: 500 });
   }

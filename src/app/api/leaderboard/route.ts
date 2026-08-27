@@ -4,10 +4,28 @@ import { RecordStatus, LevelMode } from '@prisma/client';
 import { pickDecoAndLayoutBadges } from '@/lib/creatorPoints';
 import { pickHardestLevel } from '@/lib/recordUtils';
 
+const CACHE_MS = 30_000;
+const cache = new Map<string, { at: number; body: unknown }>();
+
+const publicUser = {
+  id: true,
+  username: true,
+  avatarUrl: true,
+  role: true,
+  country: true,
+  supporterUntil: true,
+} as const;
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const mode = searchParams.get('mode') || 'CLASSIC'; // CLASSIC, PLATFORMER, CREATOR
+    const mode = searchParams.get('mode') || 'CLASSIC';
+    const cached = cache.get(mode);
+    if (cached && Date.now() - cached.at < CACHE_MS) {
+      return NextResponse.json(cached.body, {
+        headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
+      });
+    }
 
     if (mode === 'CREATOR') {
       const creators = await prisma.user.findMany({
@@ -15,13 +33,8 @@ export async function GET(req: Request) {
         orderBy: { creatorPoints: 'desc' },
         take: 100,
         select: {
-          id: true,
-          username: true,
-          avatarUrl: true,
+          ...publicUser,
           creatorPoints: true,
-          role: true,
-          country: true,
-          supporterUntil: true,
           createdLevels: {
             select: { name: true, difficulty: true },
           },
@@ -32,7 +45,7 @@ export async function GET(req: Request) {
           },
         },
       });
-      return NextResponse.json({
+      const body = {
         success: true,
         leaderboard: creators.map((creator) => {
           const { userBadges, ...rest } = creator;
@@ -46,26 +59,47 @@ export async function GET(req: Request) {
             ),
           };
         }),
+      };
+      cache.set(mode, { at: Date.now(), body });
+      return NextResponse.json(body, {
+        headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
       });
     }
 
     const levelMode = mode === 'PLATFORMER' ? LevelMode.PLATFORMER : LevelMode.CLASSIC;
+    const ppField = mode === 'PLATFORMER' ? 'platformerPp' : 'classicPp';
     const players = await prisma.user.findMany({
-      where: mode === 'PLATFORMER' ? { platformerPp: { gt: 0 } } : { classicPp: { gt: 0 } },
-      orderBy: mode === 'PLATFORMER' ? { platformerPp: 'desc' } : { classicPp: 'desc' },
+      where: { [ppField]: { gt: 0 } },
+      orderBy: { [ppField]: 'desc' },
       take: 100,
-      include: {
+      select: {
+        ...publicUser,
+        classicPp: true,
+        platformerPp: true,
         records: {
           where: {
             status: RecordStatus.APPROVED,
             level: { mode: levelMode, isChallenge: false },
           },
-          include: { level: true },
+          select: {
+            progress: true,
+            timeMs: true,
+            level: {
+              select: {
+                mode: true,
+                minPercent: true,
+                placement: true,
+                name: true,
+                gdLevelId: true,
+                isChallenge: true,
+              },
+            },
+          },
         },
       },
     });
 
-    return NextResponse.json({
+    const body = {
       success: true,
       leaderboard: players.map((player) => {
         const { records, ...rest } = player;
@@ -74,6 +108,10 @@ export async function GET(req: Request) {
           hardestLevel: pickHardestLevel(records),
         };
       }),
+    };
+    cache.set(mode, { at: Date.now(), body });
+    return NextResponse.json(body, {
+      headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Lỗi tải Bảng Xếp Hạng.' }, { status: 500 });

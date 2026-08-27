@@ -1,29 +1,24 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 import prisma from '@/lib/prisma';
 import { isMailConfigured, sendResetPasswordEmail } from '@/lib/mail';
+import { verifyCaptchaToken } from '@/lib/captcha';
+import { getClientIp } from '@/lib/requestIp';
+import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
   try {
+    const limited = rateLimit(`reset-otp:${getClientIp(req)}`, 5, 10 * 60_000);
+    if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
+
     const { email, locale, captchaToken } = await req.json();
     const lang = locale === 'en' ? 'en' : 'vi';
 
-    if (!captchaToken) {
+    if (!verifyCaptchaToken(captchaToken)) {
       return NextResponse.json(
         { error: lang === 'en' ? 'Anti-bot verification required.' : 'Vui lòng xác thực chống bot trước.' },
         { status: 400 }
       );
-    }
-
-    const crypto = require('crypto');
-    const secret = process.env.CAPTCHA_SECRET || 'fallback_secret_gdvnc_2026';
-    const parts = captchaToken.split('.');
-    if (parts.length !== 2) {
-      return NextResponse.json({ error: 'Invalid captcha token' }, { status: 400 });
-    }
-    const [payload, signature] = parts;
-    const expectedSig = crypto.createHmac('sha256', secret).update(payload).digest('hex');
-    if (signature !== expectedSig) {
-      return NextResponse.json({ error: 'Captcha token mismatch' }, { status: 400 });
     }
 
     if (!email || !email.includes('@') || !email.includes('.')) {
@@ -40,15 +35,13 @@ export async function POST(req: Request) {
     });
 
     if (!existing) {
-      return NextResponse.json(
-        {
-          error:
-            lang === 'en'
-              ? 'No account found with this email address.'
-              : 'Không tìm thấy tài khoản nào với email này.',
-        },
-        { status: 404 }
-      );
+      return NextResponse.json({
+        success: true,
+        message:
+          lang === 'en'
+            ? `If an account exists, a reset code was sent.`
+            : `Nếu tài khoản tồn tại, mã đặt lại mật khẩu đã được gửi.`,
+      });
     }
 
     if (!isMailConfigured()) {
@@ -63,7 +56,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpCode = crypto.randomInt(100000, 1000000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await prisma.otp.deleteMany({ where: { email: cleanEmail } });

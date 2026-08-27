@@ -17,7 +17,7 @@ export const TopUserBar = () => {
         const u = JSON.parse(userStr);
         setCurrentUser(u);
 
-        fetch(`/api/notifications?userId=${u.id}`)
+        fetch(`/api/notifications`)
           .then((res) => res.json())
           .then((data) => {
             if (data.success) {

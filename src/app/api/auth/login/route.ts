@@ -2,15 +2,23 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { signToken, setAuthCookie } from '@/lib/auth';
+import { getClientIp } from '@/lib/requestIp';
+import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
   try {
+    const limited = rateLimit(`login:${getClientIp(req)}`, 8, 60_000);
+    if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
+
     const { username, identifier, password, locale } = await req.json();
     const loginInput = (identifier || username || '').trim();
     const en = locale === 'en';
 
-    if (!loginInput || !password) {
+    if (!loginInput || !password || typeof password !== 'string') {
       return NextResponse.json({ error: en ? 'Please enter your username/email and password.' : 'Vui lòng nhập đầy đủ tài khoản/email và mật khẩu.' }, { status: 400 });
+    }
+    if (password.length > 128) {
+      return NextResponse.json({ error: en ? 'Incorrect username / email or password.' : 'Tên người dùng / Email hoặc mật khẩu không chính xác.' }, { status: 401 });
     }
 
     // Find user by username OR email
@@ -20,6 +28,20 @@ export async function POST(req: Request) {
           { username: loginInput },
           { email: loginInput.toLowerCase() },
         ],
+      },
+      select: {
+        id: true,
+        username: true,
+        role: true,
+        avatarUrl: true,
+        discordTag: true,
+        gdUsername: true,
+        classicPp: true,
+        platformerPp: true,
+        creatorPoints: true,
+        spPoints: true,
+        supporterUntil: true,
+        passwordHash: true,
       },
     });
 

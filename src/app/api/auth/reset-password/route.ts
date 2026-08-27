@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { getClientIp } from '@/lib/requestIp';
+import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
   try {
+    const limited = rateLimit(`reset:${getClientIp(req)}`, 8, 60_000);
+    if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
+
     const { email, otp, password, locale } = await req.json();
     const en = locale === 'en';
 
@@ -14,7 +19,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (password.length < 6) {
+    if (password.length < 6 || password.length > 128) {
       return NextResponse.json(
         { error: en ? 'Password must be at least 6 characters.' : 'Mật khẩu phải có ít nhất 6 ký tự.' },
         { status: 400 }

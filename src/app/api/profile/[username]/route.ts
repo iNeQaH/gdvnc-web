@@ -7,6 +7,8 @@ import {
   isQualifyingClassicRecord,
   isQualifyingPlatformerRecord,
 } from '@/lib/recordUtils';
+import { requireAuth } from '@/lib/auth';
+import { clipText } from '@/lib/validate';
 
 export async function GET(req: Request, { params }: { params: Promise<{ username: string }> }) {
   try {
@@ -14,7 +16,20 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
 
     const user = await prisma.user.findUnique({
       where: { username },
-      include: {
+      select: {
+        id: true,
+        username: true,
+        role: true,
+        bio: true,
+        avatarUrl: true,
+        coverUrl: true,
+        supporterUntil: true,
+        discordTag: true,
+        gdUsername: true,
+        country: true,
+        classicPp: true,
+        platformerPp: true,
+        creatorPoints: true,
         records: {
           where: { status: RecordStatus.APPROVED },
           include: {
@@ -158,28 +173,25 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ username: string }> }) {
   try {
+    const auth = await requireAuth();
     const { username } = await params;
     const body = await req.json();
 
-    // Verify requesting user matches target user or is ADMIN
-    if (!body.requesterId) {
-       return NextResponse.json({ error: 'Cần xác thực' }, { status: 401 });
-    }
-
-    const requester = await prisma.user.findUnique({ where: { id: body.requesterId } });
-    if (!requester || (requester.username !== username && requester.role !== 'ADMIN' && requester.username !== 'iNeQaH')) {
-       return NextResponse.json({ error: 'Không có quyền sửa profile này' }, { status: 403 });
+    const isSelf = auth.username === username;
+    const isAdmin = auth.role === 'ADMIN';
+    if (!isSelf && !isAdmin) {
+      return NextResponse.json({ error: 'Không có quyền sửa profile này' }, { status: 403 });
     }
 
     const updated = await prisma.user.update({
       where: { username },
       data: {
-        bio: body.bio !== undefined ? body.bio : undefined,
-        avatarUrl: body.avatarUrl !== undefined ? body.avatarUrl : undefined,
-        coverUrl: body.coverUrl !== undefined ? body.coverUrl : undefined,
-        country: body.country !== undefined ? body.country : undefined,
-        gdUsername: body.gdUsername !== undefined ? body.gdUsername : undefined,
-        discordTag: body.discordTag !== undefined ? body.discordTag : undefined,
+        bio: body.bio !== undefined ? clipText(body.bio, 2000) : undefined,
+        avatarUrl: body.avatarUrl !== undefined ? clipText(body.avatarUrl, 400) : undefined,
+        coverUrl: body.coverUrl !== undefined ? clipText(body.coverUrl, 400) : undefined,
+        country: body.country !== undefined ? clipText(body.country, 80) : undefined,
+        gdUsername: body.gdUsername !== undefined ? clipText(body.gdUsername, 80) : undefined,
+        discordTag: body.discordTag !== undefined ? clipText(body.discordTag, 80) : undefined,
       },
       select: {
         bio: true,
@@ -193,6 +205,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
 
     return NextResponse.json({ success: true, updated });
   } catch (error: any) {
+    if (error?.message === 'UNAUTHORIZED') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return NextResponse.json({ error: error.message || 'Lỗi cập nhật profile.' }, { status: 500 });
   }
 }

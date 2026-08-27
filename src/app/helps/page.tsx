@@ -42,7 +42,7 @@ export default function HelpsPage() {
       const res = await fetch('/api/helps', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content, userId: currentUser.id })
+        body: JSON.stringify({ title, content })
       });
       const data = await res.json();
       if (res.ok) {

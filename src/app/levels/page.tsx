@@ -355,7 +355,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
                       )}
                       <span className="text-[11px] font-bold flex items-center gap-1 ui-dim">
                         <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
-                        {lvl.records?.length || 0}
+                        {lvl.victorCount ?? lvl.records?.length ?? 0}
                       </span>
                     </div>
                   </Link>
@@ -431,7 +431,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
                       />
                       <span className="text-xs font-bold flex items-center gap-1 opacity-90 bg-black/50 backdrop-blur-sm px-2 py-0.5 rounded-md border border-white/10">
                         <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                        {lvl.records?.length || 0}
+                        {lvl.victorCount ?? lvl.records?.length ?? 0}
                       </span>
                     </div>
                   </div>

@@ -94,7 +94,6 @@ export default function ProfilePage() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          requesterId: currentUser.id,
           ...fields,
         }),
       });
@@ -270,7 +269,6 @@ export default function ProfilePage() {
           body: JSON.stringify({
             title: `Yêu cầu xoá tài khoản: ${data.username}`,
             content: `Người dùng ${data.username} (ID: ${data.id}) yêu cầu xoá tài khoản của mình.`,
-            userId: currentUser.id,
           }),
         });
         const resData = await res.json();

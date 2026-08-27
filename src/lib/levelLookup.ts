@@ -7,7 +7,11 @@ import { dedupeRecordsByUser } from '@/lib/recordUtils';
 const levelInclude = {
   records: {
     where: { status: RecordStatus.APPROVED },
-    include: { user: true },
+    include: {
+      user: {
+        select: { id: true, username: true, avatarUrl: true, classicPp: true, platformerPp: true },
+      },
+    },
     orderBy: [
       { timeMs: 'asc' as const },
       { progress: 'desc' as const },

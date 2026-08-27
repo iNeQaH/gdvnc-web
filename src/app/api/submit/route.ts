@@ -2,31 +2,40 @@ import { requireAuth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { RecordStatus } from '@prisma/client';
+import { getClientIp } from '@/lib/requestIp';
+import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { clipText, isHttpsUrl } from '@/lib/validate';
+import { estimateDataUrlBytes } from '@/lib/profileEmbed';
 
 export async function POST(req: Request) {
-  try { await requireAuth(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
+  let auth;
+  try {
+    auth = await requireAuth();
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const limited = rateLimit(`submit:${auth.userId}`, 12, 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
   try {
     const body = await req.json();
     const { type, ...data } = body;
+    const userId = auth.userId;
 
-    // Must be logged in, so we assume client passes valid userId
-    const { userId } = data;
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, username: true },
+    });
     if (!user) return NextResponse.json({ error: 'Không tìm thấy tài khoản người dùng.' }, { status: 404 });
 
     if (type === 'PLAYER') {
       const { gdLevelId, levelName, creatorName, isPlatformer, progress, timeMs, videoUrl, rawProofUrl, hz, fps, device, comment } = data;
 
-      if (!gdLevelId || !videoUrl) {
-        return NextResponse.json({ error: 'Vui lòng điền ID màn chơi và link video.' }, { status: 400 });
+      if (!gdLevelId || !isHttpsUrl(videoUrl)) {
+        return NextResponse.json({ error: 'Vui lòng điền ID màn chơi và link video HTTPS.' }, { status: 400 });
       }
 
-      // Find or create level based on gdLevelId
       let level = await prisma.level.findUnique({
         where: { gdLevelId: parseInt(gdLevelId, 10) }
       });
@@ -35,8 +44,8 @@ export async function POST(req: Request) {
         level = await prisma.level.create({
           data: {
             gdLevelId: parseInt(gdLevelId, 10),
-            name: levelName || 'Unknown Level',
-            creatorName: creatorName || 'Unknown',
+            name: clipText(levelName, 120) || 'Unknown Level',
+            creatorName: clipText(creatorName, 80) || 'Unknown',
             mode: isPlatformer ? 'PLATFORMER' : 'CLASSIC',
             difficulty: 'Unrated',
             basePp: 0,
@@ -45,19 +54,18 @@ export async function POST(req: Request) {
         });
       }
 
-      // Create pending record
       const record = await prisma.record.create({
         data: {
           userId,
           levelId: level.id,
           progress: progress ? parseInt(progress, 10) : null,
           timeMs: timeMs ? parseInt(timeMs, 10) : null,
-          videoUrl,
-          rawProofUrl: rawProofUrl || null,
+          videoUrl: clipText(videoUrl, 500),
+          rawProofUrl: isHttpsUrl(rawProofUrl) ? clipText(rawProofUrl, 500) : null,
           hz: hz ? parseInt(hz, 10) : 60,
           fps: fps ? parseInt(fps, 10) : null,
-          device: device || 'PC',
-          comment: comment || null,
+          device: clipText(device, 40) || 'PC',
+          comment: clipText(comment, 1000) || null,
           status: RecordStatus.PENDING,
           prioritySp: 0,
         },
@@ -71,15 +79,25 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Vui lòng điền tên Work / Tác phẩm.' }, { status: 400 });
       }
 
+      let storedImage: string | null = null;
+      if (typeof imageUrl === 'string' && imageUrl.startsWith('data:image/')) {
+        if (estimateDataUrlBytes(imageUrl) > 4 * 1024 * 1024) {
+          return NextResponse.json({ error: 'Ảnh work vượt quá 4MB.' }, { status: 400 });
+        }
+        storedImage = imageUrl;
+      } else if (typeof imageUrl === 'string' && imageUrl.startsWith('/api/images/')) {
+        storedImage = clipText(imageUrl, 200);
+      }
+
       const work = await prisma.creatorWork.create({
         data: {
           userId,
-          username: data.username || user.username,
-          levelName,
+          username: user.username,
+          levelName: clipText(levelName, 120),
           gdLevelId: gdLevelId ? parseInt(gdLevelId, 10) : null,
-          videoUrl: videoUrl || null,
-          imageUrl: imageUrl || null,
-          description: description || null,
+          videoUrl: isHttpsUrl(videoUrl) ? clipText(videoUrl, 500) : null,
+          imageUrl: storedImage,
+          description: clipText(description, 4000) || null,
           status: RecordStatus.PENDING,
           prioritySp: 0,
         }
@@ -96,7 +114,7 @@ export async function POST(req: Request) {
         data: {
           userId,
           gdLevelId: parseInt(gdLevelId, 10),
-          videoUrl: videoUrl || null,
+          videoUrl: isHttpsUrl(videoUrl) ? clipText(videoUrl, 500) : null,
           minPercent: minPercent ? parseInt(String(minPercent), 10) : 100,
           placement: placement ? parseInt(String(placement), 10) : null,
           mode: mode || 'CLASSIC',
