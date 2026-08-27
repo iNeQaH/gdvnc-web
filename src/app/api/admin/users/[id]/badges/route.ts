@@ -2,7 +2,7 @@ import { requireAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { Role } from '@prisma/client';
-import { recalculateCreatorPoints } from '@/lib/creatorPoints';
+import { recalculateCreatorPoints } from '@/lib/recalculateCreatorPoints';
 
 const SUPER_ADMIN = 'iNeQaH';
 
