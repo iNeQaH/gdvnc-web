@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { LevelMode } from '@prisma/client';
+import { getPlayerLeaderboard, playerDisplayName } from '@/lib/leaderboard';
 
 export async function GET() {
   try {
-    const [topClassicLevel, topPlatformerLevel, topPlayer, topCreator] = await Promise.all([
+    const [topClassicLevel, topPlatformerLevel, classicBoard, topCreator] = await Promise.all([
       prisma.level.findFirst({
         where: { mode: LevelMode.CLASSIC, isChallenge: false, placement: { not: null } },
         orderBy: { placement: 'asc' },
@@ -15,17 +16,26 @@ export async function GET() {
         orderBy: { placement: 'asc' },
         select: { id: true, gdLevelId: true, name: true, placement: true, basePp: true, mode: true },
       }),
-      prisma.user.findFirst({
-        where: { classicPp: { gt: 0 } },
-        orderBy: { classicPp: 'desc' },
-        select: { id: true, username: true, avatarUrl: true, classicPp: true },
-      }),
+      getPlayerLeaderboard('CLASSIC'),
       prisma.user.findFirst({
         where: { creatorPoints: { gt: 0 } },
         orderBy: { creatorPoints: 'desc' },
-        select: { id: true, username: true, avatarUrl: true, creatorPoints: true },
+        select: { id: true, username: true, gdUsername: true, avatarUrl: true, creatorPoints: true },
       }),
     ]);
+
+    const top = classicBoard[0];
+    const topPlayer = top
+      ? {
+          id: top.id,
+          username: top.username,
+          gdUsername: top.gdUsername,
+          displayName: playerDisplayName(top),
+          avatarUrl: top.avatarUrl,
+          classicPp: top.classicPp,
+          isLegacy: top.isLegacy,
+        }
+      : null;
 
     return NextResponse.json({
       success: true,
@@ -33,7 +43,12 @@ export async function GET() {
         topClassicLevel,
         topPlatformerLevel,
         topPlayer,
-        topCreator,
+        topCreator: topCreator
+          ? {
+              ...topCreator,
+              displayName: playerDisplayName(topCreator),
+            }
+          : null,
       },
     });
   } catch (error: any) {

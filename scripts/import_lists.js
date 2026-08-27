@@ -315,6 +315,18 @@ async function main() {
       let backup = [];
       if (WIPE) {
         backup = await backupAndWipeLevels();
+      } else if (!ONLY_PEMON) {
+        const cleared = await prisma.level.updateMany({
+          where: { isChallenge: false, placement: { not: null } },
+          data: { placement: null, basePp: 0 },
+        });
+        console.log(`Cleared ${cleared.count} old placements before Pointercrate/Pemonlist ranks`);
+      } else {
+        const cleared = await prisma.level.updateMany({
+          where: { mode: 'PLATFORMER', isChallenge: false, placement: { not: null } },
+          data: { placement: null, basePp: 0 },
+        });
+        console.log(`Cleared ${cleared.count} old platformer placements`);
       }
       let classicIds = new Set();
       if (!ONLY_PEMON) {
@@ -327,6 +339,25 @@ async function main() {
         classicIds = new Set(existing.map((l) => l.gdLevelId));
       }
       await importPemonlist(classicIds);
+      const ranked = await prisma.level.findMany({
+        where: { isChallenge: false, placement: { not: null } },
+        select: { id: true, placement: true, basePp: true, mode: true },
+      });
+      let ppFixed = 0;
+      for (const lvl of ranked) {
+        const correctPp = calculateBasePp(lvl.placement);
+        if (Math.abs(correctPp - lvl.basePp) > 0.01) {
+          await prisma.level.update({ where: { id: lvl.id }, data: { basePp: correctPp } });
+          ppFixed++;
+        }
+      }
+      const classicRanked = ranked.filter((l) => l.mode === 'CLASSIC');
+      const platRanked = ranked.filter((l) => l.mode === 'PLATFORMER');
+      const classicPlaces = new Set(classicRanked.map((l) => l.placement));
+      const platPlaces = new Set(platRanked.map((l) => l.placement));
+      console.log(
+        `Ranks unique? classic ${classicPlaces.size}/${classicRanked.length} platformer ${platPlaces.size}/${platRanked.length} ppFixed=${ppFixed}`
+      );
       if (WIPE) {
         const userIds = await restoreRecords(backup);
         const extra = await prisma.user.findMany({

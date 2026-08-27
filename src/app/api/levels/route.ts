@@ -25,7 +25,7 @@ export async function GET(req: Request) {
         ...(tier ? { placement: placementWhere } : {}),
       },
       orderBy: {
-        placement: 'asc',
+        placement: { sort: 'asc', nulls: 'last' },
       },
       select: {
         id: true,

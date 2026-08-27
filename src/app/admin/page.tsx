@@ -95,6 +95,51 @@ function QueueStatusFilters({
   );
 }
 
+function queueFilterTotal(counts: QueueCounts, filter: QueueStatus) {
+  if (filter === 'ALL') return counts.pending + counts.approved + counts.rejected;
+  if (filter === 'PENDING') return counts.pending;
+  if (filter === 'APPROVED') return counts.approved;
+  return counts.rejected;
+}
+
+function AdminListPager({
+  page,
+  total,
+  onPage,
+  t,
+}: {
+  page: number;
+  total: number;
+  onPage: (p: number) => void;
+  t: (key: DictKey, vars?: Record<string, string | number>) => string;
+}) {
+  const pages = Math.max(1, Math.ceil(total / 10));
+  if (total <= 10) return null;
+  return (
+    <div className="flex items-center justify-center gap-2 pt-1">
+      <button
+        type="button"
+        disabled={page <= 1}
+        onClick={() => onPage(page - 1)}
+        className="px-3 py-1 rounded-xl text-[11px] font-bold border disabled:opacity-40 cursor-pointer"
+        style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+      >
+        {t('admin.prev')}
+      </button>
+      <span className="text-[11px] ui-dim font-semibold">{t('admin.page_of', { n: page, total: pages })}</span>
+      <button
+        type="button"
+        disabled={page >= pages}
+        onClick={() => onPage(page + 1)}
+        className="px-3 py-1 rounded-xl text-[11px] font-bold border disabled:opacity-40 cursor-pointer"
+        style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+      >
+        {t('admin.next')}
+      </button>
+    </div>
+  );
+}
+
 function ReviewerLine({ item, t }: { item: { status: string; reviewer?: { username?: string } | null }; t: (key: DictKey, vars?: Record<string, string | number>) => string }) {
   if (item.status !== 'APPROVED' && item.status !== 'REJECTED') return null;
   return (
@@ -126,6 +171,7 @@ export default function AdminPage() {
   // Record moderation state
   const [pendingRecords, setPendingRecords] = useState<any[]>([]);
   const [recordFilter, setRecordFilter] = useState<QueueStatus>('PENDING');
+  const [recordPage, setRecordPage] = useState(1);
   const [recordCounts, setRecordCounts] = useState<QueueCounts>({ pending: 0, approved: 0, rejected: 0 });
   const [loadingRecords, setLoadingRecords] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -134,6 +180,7 @@ export default function AdminPage() {
   // Works moderation state
   const [pendingWorks, setPendingWorks] = useState<any[]>([]);
   const [workFilter, setWorkFilter] = useState<QueueStatus>('PENDING');
+  const [workPage, setWorkPage] = useState(1);
   const [workCounts, setWorkCounts] = useState<QueueCounts>({ pending: 0, approved: 0, rejected: 0 });
   const [loadingWorks, setLoadingWorks] = useState(true);
   const [workReviewData, setWorkReviewData] = useState<Record<string, { decoBadgeId?: string, layoutBadgeId?: string, cpAwarded?: string, rejectReason?: string }>>({});
@@ -156,6 +203,7 @@ export default function AdminPage() {
   const [draggedBadgeId, setDraggedBadgeId] = useState<string | null>(null);
   const [pendingLevelSubs, setPendingLevelSubs] = useState<any[]>([]);
   const [levelSubFilter, setLevelSubFilter] = useState<QueueStatus>('PENDING');
+  const [levelSubPage, setLevelSubPage] = useState(1);
   const [levelSubCounts, setLevelSubCounts] = useState<QueueCounts>({ pending: 0, approved: 0, rejected: 0 });
   const [loadingLevelSubs, setLoadingLevelSubs] = useState(true);
 
@@ -179,22 +227,23 @@ export default function AdminPage() {
         setCurrentUser(u);
       } catch (e) {}
     }
-    fetchPendingRecords('PENDING');
+    fetchPendingRecords('PENDING', 1);
     fetchUsers('');
-    fetchWorks('PENDING');
+    fetchWorks('PENDING', 1);
     fetchBadges();
     fetchBadgeCategories();
-    fetchLevelSubs('PENDING');
+    fetchLevelSubs('PENDING', 1);
   }, []);
 
-  const fetchWorks = async (status: QueueStatus = workFilter) => {
+  const fetchWorks = async (status: QueueStatus = workFilter, page = 1) => {
     setLoadingWorks(true);
     try {
-      const res = await fetch(`/api/admin/works?status=${status}`);
+      const res = await fetch(`/api/admin/works?status=${status}&page=${page}`);
       const data = await res.json();
       if (data.success) {
         setPendingWorks(data.works || []);
         if (data.counts) setWorkCounts(data.counts);
+        setWorkPage(data.page || page);
       }
     } catch (e) {
       console.error(e);
@@ -224,14 +273,15 @@ export default function AdminPage() {
     } catch (e) {}
   };
 
-  const fetchLevelSubs = async (status: QueueStatus = levelSubFilter) => {
+  const fetchLevelSubs = async (status: QueueStatus = levelSubFilter, page = 1) => {
     setLoadingLevelSubs(true);
     try {
-      const res = await fetch(`/api/admin/level-submissions?status=${status}`);
+      const res = await fetch(`/api/admin/level-submissions?status=${status}&page=${page}`);
       const data = await res.json();
       if (data.success) {
         setPendingLevelSubs(data.submissions || []);
         if (data.counts) setLevelSubCounts(data.counts);
+        setLevelSubPage(data.page || page);
       }
     } catch (e) {
       console.error(e);
@@ -247,14 +297,15 @@ export default function AdminPage() {
     .filter((b) => isLayoutCategory(b))
     .sort((a, b) => (getLayoutBadgeCp(b.name) || 0) - (getLayoutBadgeCp(a.name) || 0) || (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
-  const fetchPendingRecords = async (status: QueueStatus = recordFilter) => {
+  const fetchPendingRecords = async (status: QueueStatus = recordFilter, page = 1) => {
     setLoadingRecords(true);
     try {
-      const res = await fetch(`/api/admin/records/pending?status=${status}`);
+      const res = await fetch(`/api/admin/records/pending?status=${status}&page=${page}`);
       const data = await res.json();
       if (data.success) {
         setPendingRecords(data.records || []);
         if (data.counts) setRecordCounts(data.counts);
+        setRecordPage(data.page || page);
       }
     } catch (e) {
       console.error(e);
@@ -311,24 +362,7 @@ export default function AdminPage() {
 
       const data = await res.json();
       if (data.success) {
-        const nextStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
-        setPendingRecords((prev) =>
-          prev.map((r) =>
-            r.id === recordId
-              ? {
-                  ...r,
-                  status: nextStatus,
-                  rejectReason: action === 'REJECT' ? rejectReason[recordId] || t('admin.default_reject') : r.rejectReason,
-                  reviewedAt: new Date().toISOString(),
-                }
-              : r
-          )
-        );
-        setRecordCounts((c) => ({
-          pending: Math.max(0, c.pending - 1),
-          approved: c.approved + (action === 'APPROVE' ? 1 : 0),
-          rejected: c.rejected + (action === 'REJECT' ? 1 : 0),
-        }));
+        await fetchPendingRecords(recordFilter, recordPage);
       } else {
         showToast(data.error || t('admin.action_fail'), 'error');
       }
@@ -356,24 +390,7 @@ export default function AdminPage() {
       });
       const resData = await res.json();
       if (resData.success) {
-        const nextStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
-        setPendingWorks((prev) =>
-          prev.map((w) =>
-            w.id === workId
-              ? {
-                  ...w,
-                  ...(resData.work || {}),
-                  status: nextStatus,
-                  rejectReason: action === 'REJECT' ? data.rejectReason || 'Không đạt quy chuẩn Creator' : w.rejectReason,
-                }
-              : w
-          )
-        );
-        setWorkCounts((c) => ({
-          pending: Math.max(0, c.pending - 1),
-          approved: c.approved + (action === 'APPROVE' ? 1 : 0),
-          rejected: c.rejected + (action === 'REJECT' ? 1 : 0),
-        }));
+        await fetchWorks(workFilter, workPage);
         showToast(action === 'APPROVE' ? 'Đã duyệt Work!' : 'Đã từ chối Work', action === 'REJECT' ? 'error' : 'success');
       } else {
         showToast(resData.error || 'Lỗi duyệt Work', 'error');
@@ -517,24 +534,7 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (data.success) {
-        const nextStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
-        setPendingLevelSubs((prev) =>
-          prev.map((s) =>
-            s.id === id
-              ? {
-                  ...s,
-                  ...(data.submission || {}),
-                  status: nextStatus,
-                  rejectReason: action === 'REJECT' ? rejectReason[id] || t('admin.default_reject') : s.rejectReason,
-                }
-              : s
-          )
-        );
-        setLevelSubCounts((c) => ({
-          pending: Math.max(0, c.pending - 1),
-          approved: c.approved + (action === 'APPROVE' ? 1 : 0),
-          rejected: c.rejected + (action === 'REJECT' ? 1 : 0),
-        }));
+        await fetchLevelSubs(levelSubFilter, levelSubPage);
         showToast(action === 'APPROVE' ? t('admin.level_sub_ok') : t('admin.level_sub_reject'), action === 'REJECT' ? 'error' : 'success');
       } else {
         showToast(data.error || t('admin.action_fail'), 'error');
@@ -656,7 +656,7 @@ export default function AdminPage() {
             }}
           >
             <Shield className="w-3.5 h-3.5" />
-            Works ({pendingWorks.length})
+            Works ({workCounts.pending})
           </button>
           <button
             onClick={() => setTab('levelSubs')}
@@ -667,7 +667,7 @@ export default function AdminPage() {
             }}
           >
             <Layers className="w-3.5 h-3.5" />
-            {t('admin.tab_level_subs')} ({pendingLevelSubs.length})
+            {t('admin.tab_level_subs')} ({levelSubCounts.pending})
           </button>
           <button
             onClick={() => setTab('badges')}
@@ -712,19 +712,20 @@ export default function AdminPage() {
       {tab === 'records' && (
         <div className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold ui-title">
-            <span>{t('admin.queue_title', { n: pendingRecords.length })}</span>
+            <span>{t('admin.queue_title', { n: queueFilterTotal(recordCounts, recordFilter) })}</span>
             <div className="flex items-center gap-2">
               <QueueStatusFilters
                 value={recordFilter}
                 counts={recordCounts}
                 onChange={(status) => {
                   setRecordFilter(status);
-                  fetchPendingRecords(status);
+                  setRecordPage(1);
+                  fetchPendingRecords(status, 1);
                 }}
                 t={t}
               />
               <button
-                onClick={() => fetchPendingRecords(recordFilter)}
+                onClick={() => fetchPendingRecords(recordFilter, recordPage)}
                 className="inline-flex items-center gap-1 text-[11px] font-semibold ui-dim hover:opacity-100 cursor-pointer"
               >
                 <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
@@ -753,7 +754,7 @@ export default function AdminPage() {
                           {rec.user.avatarUrl ? (
                             <img src={rec.user.avatarUrl} alt="" className="w-full h-full object-cover" />
                           ) : (
-                            rec.user.username[0]
+                            rec.user.gdUsername?.[0] || rec.user.username[0]
                           )}
                         </Link>
                       ) : (
@@ -764,7 +765,7 @@ export default function AdminPage() {
                       <div>
                         {rec.user ? (
                           <Link href={`/profile/${rec.user.username}`} className="font-bold ui-title text-xs hover:underline" style={{ color: 'var(--accent)' }}>
-                            {rec.user.username}
+                            {rec.user.gdUsername || rec.user.username}
                           </Link>
                         ) : (
                           <div className="font-bold ui-title text-xs">
@@ -873,6 +874,12 @@ export default function AdminPage() {
                   )}
                 </div>
               ))}
+              <AdminListPager
+                page={recordPage}
+                total={queueFilterTotal(recordCounts, recordFilter)}
+                onPage={(p) => fetchPendingRecords(recordFilter, p)}
+                t={t}
+              />
             </div>
           )}
         </div>
@@ -881,19 +888,20 @@ export default function AdminPage() {
       {tab === 'works' && (
         <div className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold ui-title">
-            <span>{t('admin.works_queue', { n: pendingWorks.length })}</span>
+            <span>{t('admin.works_queue', { n: queueFilterTotal(workCounts, workFilter) })}</span>
             <div className="flex items-center gap-2">
               <QueueStatusFilters
                 value={workFilter}
                 counts={workCounts}
                 onChange={(status) => {
                   setWorkFilter(status);
-                  fetchWorks(status);
+                  setWorkPage(1);
+                  fetchWorks(status, 1);
                 }}
                 t={t}
               />
               <button
-                onClick={() => fetchWorks(workFilter)}
+                onClick={() => fetchWorks(workFilter, workPage)}
                 className="inline-flex items-center gap-1 text-[11px] font-semibold ui-dim hover:opacity-100 cursor-pointer"
               >
                 <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
@@ -923,7 +931,7 @@ export default function AdminPage() {
                       </Link>
                       <div>
                         <Link href={`/profile/${work.user.username}`} className="font-bold ui-title text-xs hover:underline" style={{ color: 'var(--accent)' }}>
-                          {work.user.username}
+                          {work.user.gdUsername || work.user.username}
                         </Link>
                         <div className="text-[11px] ui-dim">
                           Tác phẩm: {work.levelName} {work.gdLevelId ? `(ID: ${work.gdLevelId})` : ''}
@@ -1046,6 +1054,12 @@ export default function AdminPage() {
                   )}
                 </div>
               ))}
+              <AdminListPager
+                page={workPage}
+                total={queueFilterTotal(workCounts, workFilter)}
+                onPage={(p) => fetchWorks(workFilter, p)}
+                t={t}
+              />
             </div>
           )}
         </div>
@@ -1062,19 +1076,20 @@ export default function AdminPage() {
         {tab === 'levelSubs' && (
         <div className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold ui-title">
-            <span>{t('admin.level_sub_queue', { n: pendingLevelSubs.length })}</span>
+            <span>{t('admin.level_sub_queue', { n: queueFilterTotal(levelSubCounts, levelSubFilter) })}</span>
             <div className="flex items-center gap-2">
               <QueueStatusFilters
                 value={levelSubFilter}
                 counts={levelSubCounts}
                 onChange={(status) => {
                   setLevelSubFilter(status);
-                  fetchLevelSubs(status);
+                  setLevelSubPage(1);
+                  fetchLevelSubs(status, 1);
                 }}
                 t={t}
               />
               <button
-                onClick={() => fetchLevelSubs(levelSubFilter)}
+                onClick={() => fetchLevelSubs(levelSubFilter, levelSubPage)}
                 className="inline-flex items-center gap-1 text-[11px] font-semibold ui-dim hover:opacity-100 cursor-pointer"
               >
                 <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
@@ -1103,7 +1118,7 @@ export default function AdminPage() {
                       </Link>
                       <div>
                         <Link href={`/profile/${sub.user?.username}`} className="font-bold ui-title text-xs hover:underline" style={{ color: 'var(--accent)' }}>
-                          {sub.user?.username}
+                          {sub.user?.gdUsername || sub.user?.username}
                         </Link>
                         <div className="text-[11px] ui-dim">
                           GD ID {sub.gdLevelId} · {sub.mode} {sub.placement ? `· #${sub.placement}` : '· Unranked'} {sub.isVN ? '· VN' : ''}
@@ -1156,6 +1171,12 @@ export default function AdminPage() {
                   )}
                 </div>
               ))}
+              <AdminListPager
+                page={levelSubPage}
+                total={queueFilterTotal(levelSubCounts, levelSubFilter)}
+                onPage={(p) => fetchLevelSubs(levelSubFilter, p)}
+                t={t}
+              />
             </div>
           )}
         </div>
@@ -1765,18 +1786,30 @@ export default function AdminPage() {
 
 
 function AdminHelpsTab() {
+  const { t } = useLanguage();
   const [helps, setHelps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedHelp, setSelectedHelp] = useState<any>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
 
-  useEffect(() => {
-    fetch('/api/admin/helps')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setHelps(data);
+  const loadHelps = (p = 1) => {
+    setLoading(true);
+    fetch(`/api/admin/helps?page=${p}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.helps)) {
+          setHelps(data.helps);
+          setTotal(data.total || 0);
+          setPage(data.page || p);
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadHelps(1);
   }, []);
 
   const handleDelete = async (id: string) => {
@@ -1786,8 +1819,8 @@ function AdminHelpsTab() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id })
     });
-    setHelps(helps.filter(h => h.id !== id));
     setSelectedHelp(null);
+    loadHelps(page);
   };
 
   if (loading) return <div>Đang tải...</div>;
@@ -1803,7 +1836,7 @@ function AdminHelpsTab() {
             </Link>
             <div>
               <Link href={`/profile/${h.user?.username}`} onClick={(e) => e.stopPropagation()} className="text-xs font-bold ui-dim hover:underline">
-                {h.user?.username || 'Unknown'}
+                {h.user?.gdUsername || h.user?.username || 'Unknown'}
               </Link>
               <h3 className="text-sm font-black truncate max-w-[200px] sm:max-w-md">{h.title}</h3>
             </div>
@@ -1826,7 +1859,7 @@ function AdminHelpsTab() {
                   <img src={selectedHelp.user?.avatarUrl || '/default-avatar.png'} alt="" className="w-20 h-20 rounded-2xl object-cover shadow-md hover:opacity-80" />
                 </Link>
                 <Link href={`/profile/${selectedHelp.user?.username}`} className="text-sm font-black hover:underline">
-                  {selectedHelp.user?.username}
+                  {selectedHelp.user?.gdUsername || selectedHelp.user?.username}
                 </Link>
                 <div className="text-[10px] font-bold ui-dim">{new Date(selectedHelp.createdAt).toLocaleString()}</div>
               </div>
@@ -1845,6 +1878,7 @@ function AdminHelpsTab() {
           </div>
         </div>
       )}
+      <AdminListPager page={page} total={total} onPage={loadHelps} t={t} />
     </div>
   );
 }

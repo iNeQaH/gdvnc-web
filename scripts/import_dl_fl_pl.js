@@ -294,11 +294,36 @@ async function main() {
     .map((r) => toLevel(r, 'PLATFORMER', Number(r.dlTop)))
     .filter(Boolean);
 
-  console.log(`Will upsert classic(ranked)=${classic.length} future(unranked)=${futureOnly.length} platformer=${platformer.length}`);
+  function uniqueRanked(levels, label) {
+    const seen = new Set();
+    const out = [];
+    let dropped = 0;
+    for (const l of levels) {
+      if (!l || l.placement == null) { out.push(l); continue; }
+      const key = `${l.mode}:${l.placement}`;
+      if (seen.has(key)) { dropped++; continue; }
+      seen.add(key);
+      out.push(l);
+    }
+    if (dropped) console.log(`Dropped ${dropped} duplicate ${label} ranks`);
+    return out;
+  }
 
-  const a = await upsertLevels(classic, 'classic');
+  const classicUnique = uniqueRanked(classic, 'classic');
+  const platformerUnique = uniqueRanked(platformer, 'platformer');
+  console.log(`Will upsert classic(ranked)=${classicUnique.length} future(unranked)=${futureOnly.length} platformer=${platformerUnique.length}`);
+
+  if (!DRY_RUN) {
+    const cleared = await prisma.level.updateMany({
+      where: { isChallenge: false, placement: { not: null } },
+      data: { placement: null, basePp: 0 },
+    });
+    console.log(`Cleared old placements: ${cleared.count}`);
+  }
+
+  const a = await upsertLevels(classicUnique, 'classic');
   const b = await upsertLevels(futureOnly, 'future');
-  const c = await upsertLevels(platformer, 'platformer');
+  const c = await upsertLevels(platformerUnique, 'platformer');
   console.log('Classic:', a);
   console.log('Future (unranked extras):', b);
   console.log('Platformer:', c);

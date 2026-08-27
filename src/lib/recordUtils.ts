@@ -13,7 +13,7 @@ type RecordWithLevel = RecordLike & {
   userId: string | null;
   legacyPlayerName?: string | null;
   levelId: string;
-  videoUrl: string;
+  videoUrl?: string;
   hz?: number | null;
   device?: string | null;
   level: {
@@ -32,6 +32,33 @@ export type HardestLevel = {
   placement: number | null;
   gdLevelId: number;
 };
+
+export function calculateModePp(
+  records: Array<{
+    progress: number | null;
+    timeMs: number | null;
+    submittedAt: Date;
+    levelId: string;
+    level: {
+      mode: LevelMode;
+      minPercent: number;
+      basePp: number;
+      isChallenge?: boolean;
+    };
+  }>,
+  mode: LevelMode
+): number {
+  const deduped = dedupeRecordsByLevel(records as RecordWithLevel[]).filter(
+    (r) => !r.level.isChallenge && r.level.mode === mode
+  );
+  const pps =
+    mode === LevelMode.PLATFORMER
+      ? deduped.filter(isQualifyingPlatformerRecord).map((r) => r.level.basePp)
+      : deduped
+          .filter((r) => isQualifyingClassicRecord(r, r.level))
+          .map((r) => awardedPpForProgress(r.progress, r.level.minPercent, r.level.basePp));
+  return calculateTotalPp(pps.filter((pp) => pp > 0));
+}
 
 export function pickHardestLevel(
   records: Array<{

@@ -75,9 +75,12 @@ export default function HomePage() {
     }
   };
 
-  const filtered = leaderboard.filter((item) =>
-    item.username.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = leaderboard.filter((item) => {
+    const q = search.toLowerCase();
+    return [item.displayName, item.gdUsername, item.username]
+      .filter(Boolean)
+      .some((name: string) => name.toLowerCase().includes(q));
+  });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginatedData = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -125,22 +128,36 @@ export default function HomePage() {
             </div>
             <div className="text-[10px] ui-dim">{t('leaderboard.speedrun')}</div>
           </Link>
+          {highlights?.topPlayer?.username ? (
           <Link
-            href={highlights?.topPlayer ? `/profile/${highlights.topPlayer.username}` : '#'}
+            href={`/profile/${highlights.topPlayer.username}`}
             className="ui-subtle p-3.5 rounded-xl block hover:opacity-90 transition-opacity"
           >
             <div className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1">
               <User className="w-3 h-3" /> {t('leaderboard.stats.top1_player')}
             </div>
             <div className="text-base font-extrabold ui-title mt-0.5 truncate">
-              {highlights?.topPlayer?.username || t('leaderboard.stats.no_data')}
+              {highlights.topPlayer.displayName || highlights.topPlayer.gdUsername || highlights.topPlayer.username}
+            </div>
+            <div className="text-[10px] ui-dim">
+              {`${Number(highlights.topPlayer.classicPp || 0).toFixed(2)} ${t('leaderboard.points')}`}
+            </div>
+          </Link>
+          ) : (
+          <div className="ui-subtle p-3.5 rounded-xl">
+            <div className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1">
+              <User className="w-3 h-3" /> {t('leaderboard.stats.top1_player')}
+            </div>
+            <div className="text-base font-extrabold ui-title mt-0.5 truncate">
+              {highlights?.topPlayer?.displayName || highlights?.topPlayer?.gdUsername || t('leaderboard.stats.no_data')}
             </div>
             <div className="text-[10px] ui-dim">
               {highlights?.topPlayer
                 ? `${Number(highlights.topPlayer.classicPp || 0).toFixed(2)} ${t('leaderboard.points')}`
                 : '—'}
             </div>
-          </Link>
+          </div>
+          )}
           <Link
             href={highlights?.topCreator ? `/profile/${highlights.topCreator.username}` : '#'}
             className="ui-subtle p-3.5 rounded-xl block hover:opacity-90 transition-opacity"
@@ -149,7 +166,7 @@ export default function HomePage() {
               <Wrench className="w-3 h-3" /> {t('leaderboard.stats.top1_creator')}
             </div>
             <div className="text-base font-extrabold ui-title mt-0.5 truncate">
-              {highlights?.topCreator?.username || t('leaderboard.stats.no_data')}
+              {highlights?.topCreator?.displayName || highlights?.topCreator?.gdUsername || highlights?.topCreator?.username || t('leaderboard.stats.no_data')}
             </div>
             <div className="text-[10px] ui-dim">
               {highlights?.topCreator
@@ -252,9 +269,14 @@ export default function HomePage() {
                 {paginatedData.map((player, index) => {
                   const rank = (currentPage - 1) * pageSize + index + 1;
                   const hardest = player.hardestLevel;
+                  const displayName = player.displayName || player.gdUsername || player.username || '?';
+                  const profileHref = player.username ? `/profile/${player.username}` : null;
 
-                  const goProfile = () => router.push(`/profile/${player.username}`);
+                  const goProfile = () => {
+                    if (profileHref) router.push(profileHref);
+                  };
                   const onRowKey = (e: React.KeyboardEvent) => {
+                    if (!profileHref) return;
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
                       goProfile();
@@ -264,11 +286,11 @@ export default function HomePage() {
                   return (
                     <tr
                       key={player.id}
-                      role="link"
-                      tabIndex={0}
-                      onClick={goProfile}
+                      role={profileHref ? 'link' : undefined}
+                      tabIndex={profileHref ? 0 : undefined}
+                      onClick={profileHref ? goProfile : undefined}
                       onKeyDown={onRowKey}
-                      className="transition-colors hover:opacity-90 cursor-pointer"
+                      className={`transition-colors hover:opacity-90 ${profileHref ? 'cursor-pointer' : ''}`}
                       style={{ backgroundColor: 'var(--bg-card)' }}
                     >
                       <td className="px-5 py-3.5 text-center">
@@ -283,12 +305,15 @@ export default function HomePage() {
                             <img src={player.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-xl object-cover" />
                           ) : (
                             <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs text-[color:var(--accent-fg)]" style={{ backgroundColor: 'var(--accent)' }}>
-                              {player.username[0]}
+                              {displayName[0]}
                             </div>
                           )}
                           <div>
                             <div className="font-bold ui-title flex items-center gap-1.5">
-                              {player.username}
+                              {displayName}
+                              {player.isLegacy && (
+                                <span className="text-[9px] font-bold uppercase ui-dim">{t('levelslist.unclaimed')}</span>
+                              )}
                               {player.role === 'ADMIN' && (
                                 <span className="px-1 py-0.2 text-[9px] font-extrabold uppercase rounded" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
                                   Admin
@@ -300,7 +325,7 @@ export default function HomePage() {
                                 </span>
                               )}
                             </div>
-                            <div className="text-[10px] ui-dim">{player.country || t('common.vietnam')}</div>
+                            <div className="text-[10px] ui-dim">{player.isLegacy ? '—' : (player.country || t('common.vietnam'))}</div>
                           </div>
                         </div>
                       </td>
