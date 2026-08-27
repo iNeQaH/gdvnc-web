@@ -69,13 +69,30 @@ export async function getAuthUser(): Promise<JwtPayload | null> {
   return verifyToken(token);
 }
 
+export function isStaffRole(role?: string | null) {
+  return role === 'ADMIN' || role === 'MODERATOR';
+}
+
+export function isFullAdminRole(role?: string | null) {
+  return role === 'ADMIN';
+}
+
 /**
  * Require the current user to be an ADMIN or MODERATOR.
  * Returns the payload if authorized, throws otherwise.
  */
 export async function requireAdmin(): Promise<JwtPayload> {
   const user = await getAuthUser();
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'MODERATOR')) {
+  if (!user || !isStaffRole(user.role)) {
+    throw new Error('UNAUTHORIZED');
+  }
+  return user;
+}
+
+/** Require a full ADMIN (not moderator). */
+export async function requireFullAdmin(): Promise<JwtPayload> {
+  const user = await getAuthUser();
+  if (!user || !isFullAdminRole(user.role)) {
     throw new Error('UNAUTHORIZED');
   }
   return user;

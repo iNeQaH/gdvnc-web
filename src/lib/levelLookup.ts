@@ -9,7 +9,7 @@ const levelInclude = {
     where: { status: RecordStatus.APPROVED },
     include: {
       user: {
-        select: { id: true, username: true, avatarUrl: true, classicPp: true, platformerPp: true, gdVerified: true },
+        select: { id: true, username: true, gdUsername: true, avatarUrl: true, classicPp: true, platformerPp: true, gdVerified: true },
       },
     },
     orderBy: [

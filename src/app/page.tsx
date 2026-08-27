@@ -2,13 +2,14 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Star, Moon, Wrench, Search, CheckCircle2, User } from 'lucide-react';
+import { Star, Moon, Wrench, Search, CheckCircle2, User, Trash2 } from 'lucide-react';
 import * as AllLucideIcons from 'lucide-react';
 import { CUSTOM_ICONS } from '@/components/CustomIcons';
 import { useLanguage } from '@/components/LanguageContext';
 import { formatCp } from '@/lib/creatorPoints';
 import { levelPath } from '@/lib/levelUrl';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/GlobalToast';
 
 import FloatingNav from '@/components/FloatingNav';
 
@@ -19,18 +20,25 @@ const IconRender = ({ icon, className }: { icon: string; className?: string }) =
 
 export default function HomePage() {
   const { t } = useLanguage();
+  const { showConfirm, showToast } = useToast();
   const router = useRouter();
   const [mode, setMode] = useState<'CLASSIC' | 'PLATFORMER' | 'CREATOR'>('CLASSIC');
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [highlights, setHighlights] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const isStaff = currentUser?.role === 'ADMIN' || currentUser?.role === 'MODERATOR';
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 50;
+  const pageSize = 10;
 
   useEffect(() => {
+    const userStr = localStorage.getItem('gdvnc_user');
+    if (userStr) {
+      try { setCurrentUser(JSON.parse(userStr)); } catch {}
+    }
     fetchLeaderboard(mode);
     setCurrentPage(1); // Reset page on mode change
 
@@ -81,6 +89,23 @@ export default function HomePage() {
       .filter(Boolean)
       .some((name: string) => name.toLowerCase().includes(q));
   });
+
+  const deleteLegacyPlayer = (name: string) => {
+    showConfirm(t('leaderboard.delete_legacy_confirm', { name }), async () => {
+      const res = await fetch('/api/admin/legacy-players', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.error || t('admin.action_fail'), 'error');
+        return;
+      }
+      showToast(t('leaderboard.delete_legacy_ok', { n: data.deleted || 0 }), 'success');
+      fetchLeaderboard(mode);
+    });
+  };
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginatedData = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -313,6 +338,19 @@ export default function HomePage() {
                               {displayName}
                               {player.isLegacy && (
                                 <span className="text-[9px] font-bold uppercase ui-dim">{t('levelslist.unclaimed')}</span>
+                              )}
+                              {player.isLegacy && isStaff && (
+                                <button
+                                  type="button"
+                                  title={t('leaderboard.delete_legacy')}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteLegacyPlayer(displayName);
+                                  }}
+                                  className="p-0.5 rounded hover:bg-red-500/15 text-red-500"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
                               )}
                               {player.role === 'ADMIN' && (
                                 <span className="px-1 py-0.2 text-[9px] font-extrabold uppercase rounded" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>

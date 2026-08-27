@@ -1,4 +1,4 @@
-import { requireAdmin } from '@/lib/auth';
+import { requireFullAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { Role } from '@prisma/client';
@@ -6,19 +6,14 @@ import { Role } from '@prisma/client';
 const SUPER_ADMIN = 'iNeQaH';
 
 export async function DELETE(req: Request, context: any) {
-  try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
+  let actorJwt;
+  try { actorJwt = await requireFullAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
 
   try {
     const params = await context.params;
     const { id } = params;
-    const body = await req.json().catch(() => ({}));
-    const currentAdminUsername = body?.currentAdminUsername as string | undefined;
 
-    if (!currentAdminUsername) {
-      return NextResponse.json({ error: 'Thiếu thông tin admin.' }, { status: 400 });
-    }
-
-    const actor = await prisma.user.findUnique({ where: { username: currentAdminUsername } });
+    const actor = await prisma.user.findUnique({ where: { id: actorJwt.userId } });
     if (!actor || (actor.role !== Role.ADMIN && actor.username !== SUPER_ADMIN)) {
       return NextResponse.json({ error: 'Bạn không có quyền thực hiện thao tác này.' }, { status: 403 });
     }

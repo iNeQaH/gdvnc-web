@@ -1,12 +1,17 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle, Video, Clock } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, CheckCircle, Video, Clock, Trash2 } from 'lucide-react';
 import LevelTagChips from '@/components/LevelTagChips';
 import { useLanguage } from '@/components/LanguageContext';
+import { useToast } from '@/components/GlobalToast';
 import LevelNeighborNav from '@/components/LevelNeighborNav';
+import FloatingNav from '@/components/FloatingNav';
 import { awardedPpForProgress } from '@/lib/ScoringEngine';
+
+const PAGE_SIZE = 10;
 
 export default function DemonDetailView({
   level,
@@ -22,6 +27,35 @@ export default function DemonDetailView({
   lastLevel?: { id: string; gdLevelId: number; name: string; placement: number | null } | null;
 }) {
   const { t } = useLanguage();
+  const { showConfirm, showToast } = useToast();
+  const router = useRouter();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const isStaff = currentUser?.role === 'ADMIN' || currentUser?.role === 'MODERATOR';
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('gdvnc_user');
+    if (userStr) {
+      try { setCurrentUser(JSON.parse(userStr)); } catch {}
+    }
+  }, []);
+
+  const records = level.records || [];
+  const totalPages = Math.max(1, Math.ceil(records.length / PAGE_SIZE));
+  const pageRecords = records.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const deleteRecord = (id: string) => {
+    showConfirm(t('levelslist.delete_record_confirm'), async () => {
+      const res = await fetch(`/api/admin/records/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.error || t('admin.action_fail'), 'error');
+        return;
+      }
+      showToast(t('common.deleted'), 'success');
+      router.refresh();
+    });
+  };
 
   return (
     <>
@@ -113,11 +147,11 @@ export default function DemonDetailView({
           <div className="md:col-span-2 space-y-4">
             <h3 className="font-black text-lg ui-title flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-emerald-500" />
-              {t('levelslist.victors_list', { n: level.records.length })}
+              {t('levelslist.victors_list', { n: records.length })}
             </h3>
 
             <div className="ui-card overflow-hidden">
-              {level.records.length === 0 ? (
+              {records.length === 0 ? (
                 <div className="p-12 text-center text-sm font-medium ui-dim italic">
                   {t('levelslist.no_victors')}
                 </div>
@@ -133,10 +167,15 @@ export default function DemonDetailView({
                       </tr>
                     </thead>
                     <tbody>
-                      {level.records.map((rec: any, idx: number) => (
+                      {pageRecords.map((rec: any, idx: number) => {
+                        const rank = (currentPage - 1) * PAGE_SIZE + idx + 1;
+                        const displayName = rec.user
+                          ? (rec.user.gdUsername || rec.user.username)
+                          : (rec.legacyPlayerName || t('levelslist.legacy_player'));
+                        return (
                         <tr key={rec.id} className="border-b last:border-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors" style={{ borderColor: 'var(--border-subtle)' }}>
-                          <td className="px-5 py-3 text-center font-black" style={{ color: idx < 3 ? 'var(--accent)' : 'var(--text-dim)' }}>
-                            #{idx + 1}
+                          <td className="px-5 py-3 text-center font-black" style={{ color: rank <= 3 ? 'var(--accent)' : 'var(--text-dim)' }}>
+                            #{rank}
                           </td>
                           <td className="px-5 py-3 font-bold ui-title">
                             {rec.user ? (
@@ -145,17 +184,17 @@ export default function DemonDetailView({
                                   <img src={rec.user.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
                                 ) : (
                                   <div className="w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px]">
-                                    {rec.user.username[0]}
+                                    {displayName[0]}
                                   </div>
                                 )}
-                                {rec.user.username}
+                                {displayName}
                               </Link>
                             ) : (
                               <span className="flex items-center gap-2">
                                 <div className="w-6 h-6 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center text-[10px] ui-dim">
-                                  {(rec.legacyPlayerName || '?')[0]}
+                                  {(displayName || '?')[0]}
                                 </div>
-                                <span>{rec.legacyPlayerName || t('levelslist.legacy_player')}</span>
+                                <span>{displayName}</span>
                                 <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-dim)' }}>
                                   {t('levelslist.unclaimed')}
                                 </span>
@@ -173,14 +212,27 @@ export default function DemonDetailView({
                             )}
                           </td>
                           <td className="px-5 py-3 text-right">
-                            {rec.videoUrl && (
-                              <a href={rec.videoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex p-1.5 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors">
-                                <Video className="w-4 h-4" />
-                              </a>
-                            )}
+                            <div className="inline-flex items-center justify-end gap-1">
+                              {rec.videoUrl && (
+                                <a href={rec.videoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex p-1.5 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors">
+                                  <Video className="w-4 h-4" />
+                                </a>
+                              )}
+                              {isStaff && (
+                                <button
+                                  type="button"
+                                  title={t('levelslist.delete_record')}
+                                  onClick={() => deleteRecord(rec.id)}
+                                  className="inline-flex p-1.5 rounded-lg text-red-500 hover:bg-red-500/10"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -189,6 +241,12 @@ export default function DemonDetailView({
           </div>
         </div>
       </div>
+
+      <FloatingNav
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
 
       <LevelNeighborNav
         currentPlacement={level.placement}

@@ -1,4 +1,4 @@
-import { requireAdmin } from '@/lib/auth';
+import { requireFullAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { Role } from '@prisma/client';
@@ -6,11 +6,12 @@ import { Role } from '@prisma/client';
 const SUPER_ADMIN = 'iNeQaH';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
+  let actorJwt;
+  try { actorJwt = await requireFullAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
 
   try {
     const { id } = await params;
-    const { newRole, currentAdminUsername, grantSupporterMonths } = await req.json();
+    const { newRole, grantSupporterMonths } = await req.json();
 
     if (!grantSupporterMonths && !['USER', 'MODERATOR', 'ADMIN'].includes(newRole)) {
       return NextResponse.json({ error: 'Quyền (Role) không hợp lệ.' }, { status: 400 });
@@ -18,7 +19,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     // Verify current performing admin
     const actor = await prisma.user.findUnique({
-      where: { username: currentAdminUsername },
+      where: { id: actorJwt.userId },
     });
 
     if (!actor || (actor.role !== Role.ADMIN && actor.username !== SUPER_ADMIN)) {

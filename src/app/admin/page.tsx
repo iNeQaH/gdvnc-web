@@ -163,6 +163,13 @@ export default function AdminPage() {
     if (saved) setTabState(saved as any);
   }, []);
 
+  useEffect(() => {
+    if (currentUser && currentUser.role !== 'ADMIN' && tab === 'badges') {
+      setTabState('records');
+      localStorage.setItem('adminTab', 'records');
+    }
+  }, [currentUser, tab]);
+
   const setTab = (t: any) => {
     setTabState(t);
     localStorage.setItem('adminTab', t);
@@ -593,6 +600,7 @@ export default function AdminPage() {
   }
 
   const isSuperAdmin = currentUser.username === 'iNeQaH';
+  const isFullAdmin = currentUser.role === 'ADMIN';
 
   const filteredUsers = usersList.filter((u) => {
     if (roleFilter === 'ALL') return true;
@@ -669,6 +677,7 @@ export default function AdminPage() {
             <Layers className="w-3.5 h-3.5" />
             {t('admin.tab_level_subs')} ({levelSubCounts.pending})
           </button>
+          {isFullAdmin && (
           <button
             onClick={() => setTab('badges')}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
@@ -680,6 +689,7 @@ export default function AdminPage() {
             <Crown className="w-3.5 h-3.5" />
             Badges
           </button>
+          )}
           <button
             onClick={() => setTab('users')}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
@@ -729,6 +739,28 @@ export default function AdminPage() {
                 className="inline-flex items-center gap-1 text-[11px] font-semibold ui-dim hover:opacity-100 cursor-pointer"
               >
                 <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
+              </button>
+              <button
+                onClick={async () => {
+                  setLoadingRecords(true);
+                  try {
+                    const res = await fetch('/api/admin/records/cleanup-placeholder', { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success) {
+                      showToast(t('admin.cleanup_placeholder_ok', { n: data.deleted || 0 }), 'success');
+                      fetchPendingRecords(recordFilter, 1);
+                    } else {
+                      showToast(data.error || t('admin.action_fail'), 'error');
+                    }
+                  } catch {
+                    showToast(t('common.server_error'), 'error');
+                  } finally {
+                    setLoadingRecords(false);
+                  }
+                }}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-500 hover:opacity-80 cursor-pointer"
+              >
+                <Trash2 className="w-3 h-3" /> {t('admin.cleanup_placeholder')}
               </button>
             </div>
           </div>
@@ -1182,7 +1214,7 @@ export default function AdminPage() {
         </div>
       )}
 
-            {tab === 'badges' && (
+            {isFullAdmin && tab === 'badges' && (
         <div className="space-y-4">
           <div className="ui-card p-5 space-y-3">
             <h3 className="font-bold text-sm ui-title">{t('badge.categories')}</h3>

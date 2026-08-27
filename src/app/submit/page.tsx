@@ -6,6 +6,7 @@ import { Send, CheckCircle, AlertCircle, Gamepad2, Hammer, Image as ImageIcon, X
 import { useLanguage } from '@/components/LanguageContext';
 import LevelFormModal from '@/components/LevelFormModal';
 import ReviewStatusBadge from '@/components/ReviewStatusBadge';
+import GdUnverifiedNotice from '@/components/GdUnverifiedNotice';
 
 function SubmitForm() {
   const router = useRouter();
@@ -269,6 +270,8 @@ function SubmitForm() {
         <h1 className="text-2xl font-black ui-title tracking-tight">Submit</h1>
         <p className="text-xs ui-dim">{t('submit.page_desc')}</p>
       </div>
+
+      {currentUser.gdUsername && !currentUser.gdVerified && <GdUnverifiedNotice />}
 
       <div className="flex gap-2 p-1 rounded-xl" style={{ backgroundColor: 'var(--bg-subtle)' }}>
         <button

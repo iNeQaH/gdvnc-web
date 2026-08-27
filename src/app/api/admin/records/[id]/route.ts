@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { RecordStatus } from '@prisma/client';
 import { consolidateBeforeApprove, recalculateUserPp } from '@/lib/recordUtils';
+import { clearLeaderboardCache } from '@/lib/leaderboard';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   let admin;
@@ -87,6 +88,7 @@ export async function DELETE(req: Request, context: any) {
 
     await prisma.record.delete({ where: { id } });
     await recalculateUserPp(record.userId);
+    clearLeaderboardCache();
 
     return NextResponse.json({ success: true, message: 'Đã xóa kỷ lục và cập nhật Points.' });
   } catch (error: any) {

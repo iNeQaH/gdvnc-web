@@ -12,6 +12,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import { formatCp } from '@/lib/creatorPoints';
 import { levelPath } from '@/lib/levelUrl';
+import GdUnverifiedNotice from '@/components/GdUnverifiedNotice';
 
 const IconRender = ({ icon, className }: { icon: string, className?: string }) => {
   const Comp = (CUSTOM_ICONS as any)[icon] || (AllLucideIcons as any)[icon] || AllLucideIcons.Star;
@@ -29,7 +30,9 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<'classic' | 'platformer' | 'creator'>('classic');
   const [currentUser, setCurrentUser] = useState<any>(null);
   const isOwner = !!(currentUser && currentUser.username === username);
-  const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'ADMIN';
+  const isStaff = currentUser?.role === 'ADMIN' || currentUser?.role === 'MODERATOR';
+  const isFullAdmin = currentUser?.role === 'ADMIN';
+  const isAdmin = isFullAdmin;
 
   // Direct editing states
   const [isEditingBio, setIsEditingBio] = useState(false);
@@ -165,7 +168,7 @@ export default function ProfilePage() {
   };
 
   const handleOpenManageModal = async () => {
-    if (!currentUser || currentUser.role !== 'ADMIN') return;
+    if (!currentUser || !isStaff) return;
     setSelectedRole(data.role);
     setSupporterMonthsToAdd('0');
     setSelectedBadgeIds((data.badges || []).map((b: any) => b.id));
@@ -183,11 +186,11 @@ export default function ProfilePage() {
   };
 
   const handleSaveAdminManagement = async () => {
-    if (!currentUser || currentUser.role !== 'ADMIN' || !data) return;
+    if (!currentUser || !isStaff || !data) return;
     setSavingAdminChanges(true);
 
     try {
-      if (selectedRole !== data.role || supporterMonthsToAdd !== '0') {
+      if (isFullAdmin && (selectedRole !== data.role || supporterMonthsToAdd !== '0')) {
         const months = parseInt(supporterMonthsToAdd);
         const res = await fetch(`/api/admin/users/${data.id}/role`, {
           method: 'PATCH',
@@ -225,7 +228,7 @@ export default function ProfilePage() {
         }
       }
 
-      if (isEditingCp) {
+      if (isFullAdmin && isEditingCp) {
         const value = Number(cpInput);
         if (!Number.isFinite(value) || value < 0) {
           showToast('Creator Points không hợp lệ.', 'error');
@@ -284,8 +287,7 @@ export default function ProfilePage() {
   };
 
   const handleForceDeleteAccount = () => {
-    const isAdminUser = currentUser?.role === 'ADMIN' || currentUser?.role === 'ADMIN';
-    if (!currentUser || !isAdminUser || !data) return;
+    if (!currentUser || !isFullAdmin || !data) return;
     showConfirm(`Xoá vĩnh viễn tài khoản "${data.username}"? Hành động này không thể hoàn tác.`, async () => {
       try {
         const res = await fetch(`/api/admin/users/${data.id}`, {
@@ -311,7 +313,7 @@ export default function ProfilePage() {
   };
 
   const handleResetCp = () => {
-    if (!currentUser || currentUser.role !== 'ADMIN' || !data) return;
+    if (!currentUser || !isFullAdmin || !data) return;
     showConfirm(t('profile.cp_reset_confirm'), async () => {
       try {
         const res = await fetch(`/api/admin/users/${data.id}/cp`, {
@@ -365,6 +367,7 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
+      {isOwner && data.gdUsername && !data.gdVerified && <GdUnverifiedNotice />}
       {/* Image Editor Modal Dialog */}
       <ImageEditorModal
         isOpen={imageModal.open}
@@ -553,13 +556,13 @@ export default function ProfilePage() {
                       </span>
                     )
                   )}
-                  {currentUser?.role === 'ADMIN' && (
+                  {isStaff && (
                     <span className="flex items-center gap-1"><Medal className="w-3 h-3" /> UID: {data.id.substring(0, 8)}</span>
                   )}
                 </div>
                 
                 
-                {currentUser?.role === 'ADMIN' && (
+                {isStaff && (
                   <div className="pt-2 flex flex-wrap gap-2">
                     <button 
                       onClick={handleOpenManageModal}
@@ -567,7 +570,7 @@ export default function ProfilePage() {
                       style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}
                     >
                       <ShieldCheck className="w-3.5 h-3.5" />
-                      Quản Lý Role & Badge
+                      {isFullAdmin ? 'Quản Lý Role & Badge' : 'Gán huy hiệu'}
                     </button>
                   </div>
                 )}
@@ -709,7 +712,7 @@ export default function ProfilePage() {
                 <Medal className="w-3 h-3" /> {t("profile.creator_pp")}
               </div>
               <div className="text-xl font-black mt-0.5 flex items-center gap-2" style={{ color: 'var(--accent)' }}>
-                {currentUser?.role === 'ADMIN' && isEditingCp ? (
+                {isFullAdmin && isEditingCp ? (
                   <input
                     type="number"
                     step="0.1"
@@ -727,7 +730,7 @@ export default function ProfilePage() {
                 )}
               </div>
               <div className="text-[10px] ui-dim">{t("profile.levels_created", { n: data.createdLevels?.length || 0 })}</div>
-              {currentUser?.role === 'ADMIN' && (
+              {isFullAdmin && (
                 <div className="flex items-center gap-1.5 mt-2">
                   <button
                     onClick={handleResetCp}
@@ -923,7 +926,7 @@ export default function ProfilePage() {
                         <a href={item.videoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold hover:underline" style={{ color: 'var(--accent)' }}>
                           <Play className="w-3 h-3" /> {t("profile.watch")}
                         </a>
-                        {currentUser?.role === 'ADMIN' && (
+                        {isStaff && (
                           <button
                             onClick={() => handleDeleteRecord(item.recordId, item.name || item.levelName)}
                             className="p-1 rounded hover:bg-red-500/20 text-red-500 transition-colors"
@@ -975,7 +978,7 @@ export default function ProfilePage() {
                         <a href={rec.videoUrl} target="_blank" rel="noreferrer" className="font-semibold hover:underline flex items-center gap-1" style={{ color: 'var(--accent)' }}>
                           <Play className="w-3 h-3" /> {t("profile.watch")}
                         </a>
-                        {currentUser?.role === 'ADMIN' && (
+                        {isStaff && (
                           <button
                             onClick={() => handleDeleteRecord(rec.recordId, rec.name)}
                             className="p-1 rounded hover:bg-red-500/20 text-red-500 transition-colors"
@@ -1136,6 +1139,8 @@ export default function ProfilePage() {
               </button>
             </div>
 
+            {isFullAdmin && (
+            <>
             {/* Section 1: Role Selection */}
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider ui-dim flex items-center gap-1.5">
@@ -1222,6 +1227,8 @@ export default function ProfilePage() {
                 ))}
               </div>
             </div>
+            </>
+            )}
 
             {/* Section 3: Badges */}
             <div className="space-y-2">
@@ -1256,6 +1263,7 @@ export default function ProfilePage() {
                   </div>
                 )}
               </button>
+              {isFullAdmin && (
               <div className="flex items-center justify-end gap-2 pt-1">
                 <button
                   type="button"
@@ -1266,6 +1274,7 @@ export default function ProfilePage() {
                   <RotateCcw className="w-3 h-3" /> {t('profile.reset_cp')}
                 </button>
               </div>
+              )}
             </div>
 
             {/* Action buttons */}
