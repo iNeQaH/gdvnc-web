@@ -85,19 +85,21 @@ async function shiftPlacementsAndRecalcPp(
       updatesToRun.push({ id: lvl.id, correctPp });
     }
   }
-
-  for (let i = 0; i < updatesToRun.length; i += 50) {
-    const chunk = updatesToRun.slice(i, i + 50);
-    await Promise.all(
-      chunk.map((u) =>
-        tx.level.update({
-          where: { id: u.id },
-          data: { basePp: u.correctPp },
-        })
-      )
-    );
+  if (updatesToRun.length > 0) {
+    for (let i = 0; i < updatesToRun.length; i += 500) {
+      const chunk = updatesToRun.slice(i, i + 500);
+      let sql = 'UPDATE `Level` SET `basePp` = CASE `id` ';
+      const ids = [];
+      
+      for (const u of chunk) {
+        sql += `WHEN '${u.id}' THEN ${u.correctPp} `;
+        ids.push(`'${u.id}'`);
+      }
+      
+      sql += `END WHERE \`id\` IN (${ids.join(',')});`;
+      await tx.$executeRawUnsafe(sql);
+    }
   }
-
   return affectedLevelIds;
 }
 
