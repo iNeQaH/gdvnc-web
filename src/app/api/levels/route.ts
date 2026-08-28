@@ -5,7 +5,49 @@ import {
   getExternalList,
   mergeExternalWithDb,
   syncExternalListToDb,
+  type ExternalListLevel,
 } from '@/lib/externalLists';
+
+const dbLevelSelect = {
+  id: true,
+  gdLevelId: true,
+  name: true,
+  mode: true,
+  difficulty: true,
+  difficultyFace: true,
+  ratingType: true,
+  isVN: true,
+  isChallenge: true,
+  placement: true,
+  basePp: true,
+  minPercent: true,
+  creatorName: true,
+  youtubeId: true,
+  description: true,
+  _count: { select: { records: { where: { status: RecordStatus.APPROVED } } } },
+} as const;
+
+function mapDbLevels(levels: Array<any>) {
+  return levels.map(({ _count, ...rest }) => ({ ...rest, victorCount: _count.records }));
+}
+
+async function loadDbFallback(mode: string, tier: string | null, challenge: boolean) {
+  let placementWhere: any = {};
+  if (tier === 'main') placementWhere = { gte: 1, lte: 75 };
+  else if (tier === 'extended') placementWhere = { gte: 76, lte: 500 };
+  else if (tier === 'legacy') placementWhere = { gt: 500 };
+
+  const levels = await prisma.level.findMany({
+    where: {
+      isChallenge: challenge,
+      ...(mode !== 'ALL' ? { mode: mode as LevelMode } : {}),
+      ...(tier ? { placement: placementWhere } : {}),
+    },
+    orderBy: { placement: { sort: 'asc', nulls: 'last' } },
+    select: dbLevelSelect,
+  });
+  return mapDbLevels(levels);
+}
 
 export async function GET(req: Request) {
   try {
@@ -15,44 +57,9 @@ export async function GET(req: Request) {
     const challenge = searchParams.get('challenge') === '1';
 
     if (challenge) {
-      let placementWhere: any = {};
-      if (tier === 'main') placementWhere = { gte: 1, lte: 75 };
-      else if (tier === 'extended') placementWhere = { gte: 76, lte: 500 };
-      else if (tier === 'legacy') placementWhere = { gt: 500 };
-
-      const levels = await prisma.level.findMany({
-        where: {
-          isChallenge: true,
-          ...(mode !== 'ALL' ? { mode: mode as LevelMode } : {}),
-          ...(tier ? { placement: placementWhere } : {}),
-        },
-        orderBy: { placement: { sort: 'asc', nulls: 'last' } },
-        select: {
-          id: true,
-          gdLevelId: true,
-          name: true,
-          mode: true,
-          difficulty: true,
-          difficultyFace: true,
-          ratingType: true,
-          isVN: true,
-          isChallenge: true,
-          placement: true,
-          basePp: true,
-          minPercent: true,
-          creatorName: true,
-          youtubeId: true,
-          description: true,
-          _count: { select: { records: { where: { status: RecordStatus.APPROVED } } } },
-        },
-      });
-
+      const levels = await loadDbFallback(mode, tier, true);
       return NextResponse.json(
-        {
-          success: true,
-          levels: levels.map(({ _count, ...rest }) => ({ ...rest, victorCount: _count.records })),
-          source: 'database',
-        },
+        { success: true, levels, source: 'database' },
         { headers: { 'Cache-Control': 'public, s-maxage=20, stale-while-revalidate=60' } }
       );
     }
@@ -60,16 +67,26 @@ export async function GET(req: Request) {
     const modes: Array<'CLASSIC' | 'PLATFORMER'> =
       mode === 'PLATFORMER' ? ['PLATFORMER'] : mode === 'CLASSIC' ? ['CLASSIC'] : ['CLASSIC', 'PLATFORMER'];
 
-    const externalLists = await Promise.all(
+    const externalResults = await Promise.all(
       modes.map(async (m) => {
         try {
-          return await getExternalList(m);
+          const list = await getExternalList(m);
+          return { mode: m, list, ok: list.length > 0 };
         } catch (e) {
           console.error(`external list ${m} failed`, e);
-          return [];
+          return { mode: m, list: [] as ExternalListLevel[], ok: false };
         }
       })
     );
+
+    const anyExternalOk = externalResults.some((r) => r.ok);
+    if (!anyExternalOk) {
+      const levels = await loadDbFallback(mode, tier, false);
+      return NextResponse.json(
+        { success: true, levels, source: 'database-fallback' },
+        { headers: { 'Cache-Control': 'public, s-maxage=20, stale-while-revalidate=60' } }
+      );
+    }
 
     const dbLevels = await prisma.level.findMany({
       where: {
@@ -106,20 +123,31 @@ export async function GET(req: Request) {
       ])
     );
 
-    let levels = externalLists.flatMap((list) => mergeExternalWithDb(list, dbByGd));
+    let levels = externalResults.flatMap((r) =>
+      r.ok ? mergeExternalWithDb(r.list, dbByGd) : []
+    );
 
-    if (tier === 'main') levels = levels.filter((l) => l.placement >= 1 && l.placement <= 75);
-    else if (tier === 'extended') levels = levels.filter((l) => l.placement >= 76 && l.placement <= 500);
-    else if (tier === 'legacy') levels = levels.filter((l) => l.placement > 500);
+    // If one mode failed, fill that mode from DB so Classic/Platformer is not blank.
+    for (const r of externalResults) {
+      if (r.ok) continue;
+      const dbOnly = await loadDbFallback(r.mode, tier, false);
+      levels = [...levels, ...dbOnly];
+    }
+
+    if (tier === 'main') levels = levels.filter((l) => l.placement != null && l.placement >= 1 && l.placement <= 75);
+    else if (tier === 'extended') levels = levels.filter((l) => l.placement != null && l.placement >= 76 && l.placement <= 500);
+    else if (tier === 'legacy') levels = levels.filter((l) => l.placement != null && l.placement > 500);
 
     levels.sort((a, b) => {
-      if (a.mode !== b.mode) return a.mode === 'CLASSIC' ? -1 : 1;
-      return a.placement - b.placement;
+      const am = String(a.mode);
+      const bm = String(b.mode);
+      if (am !== bm) return am === 'CLASSIC' ? -1 : 1;
+      return (a.placement ?? 99999) - (b.placement ?? 99999);
     });
 
-    // Keep local ratings/records in sync with live ranks (non-blocking)
-    for (const m of modes) {
-      void syncExternalListToDb(m).catch((err) => console.error(`sync ${m}`, err));
+    for (const r of externalResults) {
+      if (!r.ok) continue;
+      void syncExternalListToDb(r.mode).catch((err) => console.error(`sync ${r.mode}`, err));
     }
 
     return NextResponse.json(
@@ -127,6 +155,17 @@ export async function GET(req: Request) {
       { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' } }
     );
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi truy xuất Levels List.' }, { status: 500 });
+    try {
+      const { searchParams } = new URL(req.url);
+      const mode = searchParams.get('mode') || 'CLASSIC';
+      const tier = searchParams.get('tier');
+      const levels = await loadDbFallback(mode, tier, searchParams.get('challenge') === '1');
+      return NextResponse.json(
+        { success: true, levels, source: 'database-fallback', warning: error.message },
+        { headers: { 'Cache-Control': 'public, s-maxage=20, stale-while-revalidate=60' } }
+      );
+    } catch {
+      return NextResponse.json({ error: error.message || 'Lỗi truy xuất Levels List.' }, { status: 500 });
+    }
   }
 }

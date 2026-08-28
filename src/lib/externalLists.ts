@@ -17,19 +17,35 @@ export type ExternalListLevel = {
 
 type CacheEntry = { at: number; levels: ExternalListLevel[] };
 
-const CACHE_MS = 5 * 60_000;
+const CACHE_MS = 10 * 60_000;
+const FETCH_TIMEOUT_MS = 12_000;
 const cache: Record<string, CacheEntry> = {};
+
+async function fetchJson(url: string) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 async function fetchPointercrateListed(): Promise<ExternalListLevel[]> {
   const all: ExternalListLevel[] = [];
   let after = 0;
-  for (let page = 0; page < 20; page++) {
-    const res = await fetch(
-      `https://pointercrate.com/api/v2/demons/listed?limit=100&after=${after}`,
-      { next: { revalidate: 300 } }
+  // Official list is large; stop once we have enough ranked entries for our PP curve.
+  const maxPlacement = 500;
+  for (let page = 0; page < 8; page++) {
+    const data = await fetchJson(
+      `https://pointercrate.com/api/v2/demons/listed?limit=100&after=${after}`
     );
-    if (!res.ok) throw new Error(`Pointercrate HTTP ${res.status}`);
-    const data = await res.json();
     if (!Array.isArray(data) || data.length === 0) break;
     for (const demon of data) {
       const gdLevelId = Number(demon.level_id);
@@ -43,22 +59,20 @@ async function fetchPointercrateListed(): Promise<ExternalListLevel[]> {
         creatorName: demon.publisher?.name || null,
         verifierName: demon.verifier?.name || null,
         youtubeId: extractYoutubeId(demon.video),
-        minPercent: Number.isFinite(demon.requirement) ? Number(demon.requirement) : 100,
+        minPercent: Number.isFinite(Number(demon.requirement)) ? Number(demon.requirement) : 100,
         mode: 'CLASSIC',
         description: null,
       });
     }
-    after = data[data.length - 1].position;
+    const lastPos = Number(data[data.length - 1]?.position);
+    if (!Number.isFinite(lastPos) || lastPos >= maxPlacement) break;
+    after = lastPos;
   }
   return all;
 }
 
 async function fetchPemonlist(): Promise<ExternalListLevel[]> {
-  const res = await fetch('https://pemonlist.com/api/list?limit=1000', {
-    next: { revalidate: 300 },
-  });
-  if (!res.ok) throw new Error(`Pemonlist HTTP ${res.status}`);
-  const data = await res.json();
+  const data = await fetchJson('https://pemonlist.com/api/list?limit=1000');
   const demons = Array.isArray(data?.data) ? data.data : [];
   const all: ExternalListLevel[] = [];
   for (const demon of demons) {
@@ -91,6 +105,9 @@ export async function getExternalList(mode: 'CLASSIC' | 'PLATFORMER'): Promise<E
   if (cached && Date.now() - cached.at < CACHE_MS) return cached.levels;
 
   const levels = mode === 'CLASSIC' ? await fetchPointercrateListed() : await fetchPemonlist();
+  if (levels.length === 0) {
+    throw new Error(`Empty ${mode} list from upstream`);
+  }
   cache[mode] = { at: Date.now(), levels };
   return levels;
 }
@@ -110,6 +127,11 @@ export async function findExternalLevel(gdLevelId: number): Promise<ExternalList
 /** Sync API list fields into DB. Keeps difficultyFace / ratingType / isVN / isChallenge / difficulty. */
 export async function syncExternalListToDb(mode: 'CLASSIC' | 'PLATFORMER') {
   const external = await getExternalList(mode);
+  // Never wipe DB ranks from a failed/empty upstream response.
+  if (external.length < 10) {
+    throw new Error(`Refusing sync for ${mode}: only ${external.length} upstream levels`);
+  }
+
   const levelMode = mode === 'PLATFORMER' ? LevelMode.PLATFORMER : LevelMode.CLASSIC;
   const existing = await prisma.level.findMany({
     where: { isChallenge: false, mode: levelMode },
@@ -177,7 +199,6 @@ export async function syncExternalListToDb(mode: 'CLASSIC' | 'PLATFORMER') {
     }
   }
 
-  // Levels no longer on the external list lose placement (keep row for records/ratings)
   const staleIds = existing.filter((l) => l.placement != null && !seen.has(l.gdLevelId)).map((l) => l.id);
   if (staleIds.length > 0) {
     await prisma.level.updateMany({
