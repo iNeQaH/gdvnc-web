@@ -76,6 +76,28 @@ const DIFFICULTY_NAME_TO_FACE: Record<string, number> = {
   'extreme demon': 14,
 };
 
+export function formatDifficultyLabel(face: number, fallback?: string | null): string {
+  const labels: Record<number, string> = {
+    0: 'N/A',
+    1: 'Auto',
+    2: 'Easy',
+    3: 'Normal',
+    4: 'Hard',
+    5: 'Hard',
+    6: 'Harder',
+    7: 'Harder',
+    8: 'Insane',
+    9: 'Insane',
+    10: 'Easy Demon',
+    11: 'Medium Demon',
+    12: 'Hard Demon',
+    13: 'Insane Demon',
+    14: 'Extreme Demon',
+  };
+  if (face in labels) return labels[face];
+  return (fallback && String(fallback).trim()) || 'Demon';
+}
+
 export function mapDifficultyFace(difficulty: string | null | undefined): number {
   if (!difficulty) return 0;
   const key = String(difficulty).trim().toLowerCase();

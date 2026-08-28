@@ -5,6 +5,8 @@ import { LevelMode, RecordStatus } from '@prisma/client';
 import { dedupeRecordsByUser } from '@/lib/recordUtils';
 import { calculateBasePp } from '@/lib/ScoringEngine';
 import { findExternalLevel } from '@/lib/externalLists';
+import { formatDifficultyLabel, mapDifficultyFace } from '@/lib/gdDifficulty';
+import { fetchGdBrowser } from '@/lib/upsertLevel';
 
 const levelInclude = {
   records: {
@@ -22,17 +24,56 @@ const levelInclude = {
   },
 };
 
+function needsDifficultyRefresh(level: { difficulty: string; difficultyFace: number }) {
+  if (level.difficultyFace === 0) return true;
+  if (level.difficulty === 'Extreme Demon' && level.difficultyFace !== 14) return true;
+  if (level.difficulty === 'Demon') return true;
+  return false;
+}
+
+async function refreshDifficultyFromGd<T extends { id: string; gdLevelId: number; difficulty: string; difficultyFace: number }>(
+  level: T
+): Promise<T> {
+  if (!needsDifficultyRefresh(level)) return level;
+  const gdb = await fetchGdBrowser(level.gdLevelId);
+  if (!gdb?.difficulty) {
+    // At least align text with stored face when GD is unavailable
+    if (level.difficultyFace > 0) {
+      const label = formatDifficultyLabel(level.difficultyFace, level.difficulty);
+      if (label !== level.difficulty) {
+        void prisma.level.update({ where: { id: level.id }, data: { difficulty: label } }).catch(() => {});
+        return { ...level, difficulty: label };
+      }
+    }
+    return level;
+  }
+  const difficultyFace = mapDifficultyFace(gdb.difficulty);
+  const difficulty = String(gdb.difficulty);
+  void prisma.level
+    .update({
+      where: { id: level.id },
+      data: { difficulty, difficultyFace },
+    })
+    .catch(() => {});
+  return { ...level, difficulty, difficultyFace };
+}
+
 async function ensureLevelFromExternal(gdLevelId: number) {
   const ext = await findExternalLevel(gdLevelId);
   if (!ext) return null;
   const levelMode = ext.mode === 'PLATFORMER' ? LevelMode.PLATFORMER : LevelMode.CLASSIC;
+  const gdb = await fetchGdBrowser(gdLevelId);
+  const difficulty = gdb?.difficulty ? String(gdb.difficulty) : 'Demon';
+  const difficultyFace = gdb?.difficulty ? mapDifficultyFace(gdb.difficulty) : 0;
+
   return prisma.level.upsert({
     where: { gdLevelId },
     create: {
       gdLevelId: ext.gdLevelId,
       name: ext.name,
       mode: levelMode,
-      difficulty: 'Extreme Demon',
+      difficulty,
+      difficultyFace,
       placement: ext.placement,
       basePp: calculateBasePp(ext.placement),
       minPercent: ext.minPercent,
@@ -67,7 +108,7 @@ export async function resolvePublicLevel(id: string) {
     } else if (!level.isChallenge) {
       const ext = await findExternalLevel(gdLevelId).catch(() => null);
       if (ext) {
-        const patched = {
+        level = {
           ...level,
           name: ext.name,
           placement: ext.placement,
@@ -91,11 +132,10 @@ export async function resolvePublicLevel(id: string) {
             },
           })
           .catch(() => {});
-        return patched;
       }
     }
     if (!level) notFound();
-    return level;
+    return refreshDifficultyFromGd(level);
   }
 
   if (UUID_RE.test(id)) {

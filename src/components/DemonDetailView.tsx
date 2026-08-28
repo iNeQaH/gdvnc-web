@@ -9,6 +9,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import LevelNeighborNav from '@/components/LevelNeighborNav';
 import { awardedPpForProgress } from '@/lib/ScoringEngine';
+import { formatDifficultyLabel } from '@/lib/gdDifficulty';
 
 const PAGE_SIZE = 5;
 
@@ -88,7 +89,7 @@ export default function DemonDetailView({
               </span>
               <LevelTagChips level={level} contrast="onDark" />
               <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-black/50 text-white backdrop-blur-md border border-white/10 shadow-lg">
-                {level.difficulty}
+                {formatDifficultyLabel(level.difficultyFace ?? 0, level.difficulty)}
               </span>
               <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-red-500/80 text-white backdrop-blur-md shadow-lg">
                 {level.minPercent && level.minPercent < 100
@@ -120,7 +121,7 @@ export default function DemonDetailView({
                 </div>
                 <div>
                   <div className="text-[10px] uppercase font-bold ui-dim">{t('levelslist.difficulty')}</div>
-                  <div className="font-semibold text-sm ui-title">{level.difficulty}</div>
+                  <div className="font-semibold text-sm ui-title">{formatDifficultyLabel(level.difficultyFace ?? 0, level.difficulty)}</div>
                 </div>
                 <div>
                   <div className="text-[10px] uppercase font-bold ui-dim">{t('leaderboard.points')}</div>

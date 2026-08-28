@@ -20,7 +20,7 @@ export function extractYoutubeId(videoUrl?: string | null): string | null {
   return ytMatch ? ytMatch[1] : null;
 }
 
-async function fetchGdBrowser(gdLevelId: number): Promise<any | null> {
+export async function fetchGdBrowser(gdLevelId: number): Promise<any | null> {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
