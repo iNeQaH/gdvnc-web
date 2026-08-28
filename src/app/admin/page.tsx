@@ -102,6 +102,101 @@ function queueFilterTotal(counts: QueueCounts, filter: QueueStatus) {
   return counts.rejected;
 }
 
+type ReviewDecision = 'APPROVE' | 'REJECT' | null;
+
+function toggleReviewDecision(current: ReviewDecision, next: 'APPROVE' | 'REJECT'): ReviewDecision {
+  if (current === next) return null;
+  return next;
+}
+
+function ReviewDecisionToggles({
+  value,
+  onChange,
+  t,
+  disabled,
+}: {
+  value: ReviewDecision;
+  onChange: (v: ReviewDecision) => void;
+  t: (key: DictKey) => string;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => onChange(toggleReviewDecision(value, 'REJECT'))}
+        className="px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer border transition-all disabled:opacity-50"
+        style={
+          value === 'REJECT'
+            ? { backgroundColor: 'var(--badge-red-text)', color: '#fff', borderColor: 'transparent' }
+            : { backgroundColor: 'var(--bg-subtle)', color: 'var(--text-dim)', borderColor: 'var(--border-ui)' }
+        }
+      >
+        {t('admin.reject')}
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => onChange(toggleReviewDecision(value, 'APPROVE'))}
+        className="px-4 py-1.5 rounded-xl text-xs font-bold cursor-pointer border transition-all disabled:opacity-50"
+        style={
+          value === 'APPROVE'
+            ? { backgroundColor: 'var(--badge-green-text)', color: '#fff', borderColor: 'transparent' }
+            : { backgroundColor: 'var(--bg-subtle)', color: 'var(--text-dim)', borderColor: 'var(--border-ui)' }
+        }
+      >
+        {t('admin.approve')}
+      </button>
+    </div>
+  );
+}
+
+function ReviewConfirmBar({
+  visible,
+  confirming,
+  onConfirm,
+  onCancel,
+  t,
+  selectedCount,
+}: {
+  visible: boolean;
+  confirming?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+  t: (key: DictKey) => string;
+  selectedCount: number;
+}) {
+  if (!visible) return null;
+  return (
+    <div
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5 p-1.5 rounded-2xl shadow-xl border backdrop-blur-md"
+      style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+    >
+      <span className="px-2 text-[11px] font-bold ui-dim whitespace-nowrap">{selectedCount}</span>
+      <div className="w-px h-6" style={{ backgroundColor: 'var(--border-ui)' }} />
+      <button
+        type="button"
+        disabled={confirming || selectedCount === 0}
+        onClick={onConfirm}
+        className="px-4 py-2 rounded-xl text-xs font-bold cursor-pointer disabled:opacity-40"
+        style={{ backgroundColor: 'var(--badge-green-text)', color: '#fff' }}
+      >
+        {t('common.confirm')}
+      </button>
+      <button
+        type="button"
+        disabled={confirming}
+        onClick={onCancel}
+        className="px-4 py-2 rounded-xl text-xs font-bold cursor-pointer border disabled:opacity-40"
+        style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)', backgroundColor: 'var(--bg-subtle)' }}
+      >
+        {t('common.cancel')}
+      </button>
+    </div>
+  );
+}
+
 function AdminListPager({
   page,
   total,
@@ -226,6 +321,13 @@ export default function AdminPage() {
   const [userViewMode, setUserViewMode] = useState<'list' | 'grid'>('list');
   const [userPage, setUserPage] = useState(1);
   const [helpsTotal, setHelpsTotal] = useState(0);
+  const [recordSelected, setRecordSelected] = useState<string[]>([]);
+  const [recordAction, setRecordAction] = useState<ReviewDecision>(null);
+  const [workSelected, setWorkSelected] = useState<string[]>([]);
+  const [workAction, setWorkAction] = useState<ReviewDecision>(null);
+  const [levelSubSelected, setLevelSubSelected] = useState<string[]>([]);
+  const [levelSubAction, setLevelSubAction] = useState<ReviewDecision>(null);
+  const [bulkConfirming, setBulkConfirming] = useState(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem('gdvnc_user');
@@ -376,12 +478,13 @@ export default function AdminPage() {
 
       const data = await res.json();
       if (data.success) {
-        await fetchPendingRecords(recordFilter, recordPage);
-      } else {
-        showToast(data.error || t('admin.action_fail'), 'error');
+        return true;
       }
+      showToast(data.error || t('admin.action_fail'), 'error');
+      return false;
     } catch (e) {
       showToast(t('common.server_error'), 'error');
+      return false;
     } finally {
       setActionLoading(null);
     }
@@ -404,13 +507,13 @@ export default function AdminPage() {
       });
       const resData = await res.json();
       if (resData.success) {
-        await fetchWorks(workFilter, workPage);
-        showToast(action === 'APPROVE' ? 'Đã duyệt Work!' : 'Đã từ chối Work', action === 'REJECT' ? 'error' : 'success');
-      } else {
-        showToast(resData.error || 'Lỗi duyệt Work', 'error');
+        return true;
       }
+      showToast(resData.error || 'Lỗi duyệt Work', 'error');
+      return false;
     } catch (e) {
       showToast('Lỗi kết nối server', 'error');
+      return false;
     } finally {
       setActionLoading(null);
     }
@@ -548,16 +651,65 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (data.success) {
-        await fetchLevelSubs(levelSubFilter, levelSubPage);
-        showToast(action === 'APPROVE' ? t('admin.level_sub_ok') : t('admin.level_sub_reject'), action === 'REJECT' ? 'error' : 'success');
-      } else {
-        showToast(data.error || t('admin.action_fail'), 'error');
+        return true;
       }
+      showToast(data.error || t('admin.action_fail'), 'error');
+      return false;
     } catch (e) {
       showToast(t('common.server_error'), 'error');
+      return false;
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const confirmRecordReviews = async () => {
+    if (!recordAction || recordSelected.length === 0) return;
+    const action = recordAction;
+    setBulkConfirming(true);
+    let ok = 0;
+    for (const id of recordSelected) {
+      if (await handleReview(id, action)) ok++;
+    }
+    setRecordSelected([]);
+    setRecordAction(null);
+    await fetchPendingRecords(recordFilter, recordPage);
+    setBulkConfirming(false);
+    if (ok > 0) showToast(action === 'APPROVE' ? t('admin.approve') : t('admin.reject'), action === 'REJECT' ? 'error' : 'success');
+  };
+
+  const confirmWorkReviews = async () => {
+    if (!workAction || workSelected.length === 0) return;
+    const action = workAction;
+    setBulkConfirming(true);
+    let ok = 0;
+    for (const id of workSelected) {
+      if (await handleReviewWork(id, action)) ok++;
+    }
+    setWorkSelected([]);
+    setWorkAction(null);
+    await fetchWorks(workFilter, workPage);
+    setBulkConfirming(false);
+    if (ok > 0) showToast(action === 'APPROVE' ? 'Đã duyệt Work!' : 'Đã từ chối Work', action === 'REJECT' ? 'error' : 'success');
+  };
+
+  const confirmLevelSubReviews = async () => {
+    if (!levelSubAction || levelSubSelected.length === 0) return;
+    const action = levelSubAction;
+    setBulkConfirming(true);
+    let ok = 0;
+    for (const id of levelSubSelected) {
+      if (await handleReviewLevelSub(id, action)) ok++;
+    }
+    setLevelSubSelected([]);
+    setLevelSubAction(null);
+    await fetchLevelSubs(levelSubFilter, levelSubPage);
+    setBulkConfirming(false);
+    if (ok > 0) showToast(action === 'APPROVE' ? t('admin.level_sub_ok') : t('admin.level_sub_reject'), action === 'REJECT' ? 'error' : 'success');
+  };
+
+  const toggleId = (list: string[], id: string, setList: (v: string[]) => void) => {
+    setList(list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
   };
 
   const filteredBadges = badgesList
@@ -727,16 +879,18 @@ export default function AdminPage() {
 
       {/* Tab 1: Record Moderation Queue */}
       {tab === 'records' && (
-        <div className="space-y-3">
+        <div className="space-y-3 pb-20">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold ui-title">
             <span>{t('admin.queue_title', { n: queueFilterTotal(recordCounts, recordFilter) })}</span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <QueueStatusFilters
                 value={recordFilter}
                 counts={recordCounts}
                 onChange={(status) => {
                   setRecordFilter(status);
                   setRecordPage(1);
+                  setRecordSelected([]);
+                  setRecordAction(null);
                   fetchPendingRecords(status, 1);
                 }}
                 t={t}
@@ -747,6 +901,12 @@ export default function AdminPage() {
               >
                 <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
               </button>
+              <ReviewDecisionToggles
+                value={recordAction}
+                onChange={setRecordAction}
+                t={t}
+                disabled={bulkConfirming}
+              />
             </div>
           </div>
 
@@ -766,6 +926,14 @@ export default function AdminPage() {
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
                     <div className="flex items-center gap-2.5">
+                      {rec.status === 'PENDING' && (
+                        <input
+                          type="checkbox"
+                          checked={recordSelected.includes(rec.id)}
+                          onChange={() => toggleId(recordSelected, rec.id, setRecordSelected)}
+                          className="w-4 h-4 rounded cursor-pointer accent-[var(--accent)] shrink-0"
+                        />
+                      )}
                       {rec.user ? (
                         <Link href={`/profile/${rec.user.username}`} className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs overflow-hidden shrink-0" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
                           {rec.user.avatarUrl ? (
@@ -859,34 +1027,15 @@ export default function AdminPage() {
                   )}
 
                   {rec.status === 'PENDING' && (
-                  <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                  <div className="pt-1">
                     <input
                       type="text"
                       placeholder={t('admin.reject_ph')}
                       value={rejectReason[rec.id] || ''}
                       onChange={(e) => setRejectReason({ ...rejectReason, [rec.id]: e.target.value })}
-                      className="flex-1 px-3 py-1.5 rounded-xl text-xs border focus:outline-none"
+                      className="w-full px-3 py-1.5 rounded-xl text-xs border focus:outline-none"
                       style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                     />
-
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        disabled={actionLoading === rec.id}
-                        onClick={() => handleReview(rec.id, 'REJECT')}
-                        className="px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer"
-                        style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}
-                      >
-                        {t('admin.reject')}
-                      </button>
-                      <button
-                        disabled={actionLoading === rec.id}
-                        onClick={() => handleReview(rec.id, 'APPROVE')}
-                        className="px-4 py-1.5 rounded-xl text-xs font-bold text-white cursor-pointer shadow-xs"
-                        style={{ backgroundColor: 'var(--badge-green-text)' }}
-                      >
-                        {t('admin.approve')}
-                      </button>
-                    </div>
                   </div>
                   )}
                 </div>
@@ -894,25 +1043,41 @@ export default function AdminPage() {
               <AdminListPager
                 page={recordPage}
                 total={queueFilterTotal(recordCounts, recordFilter)}
-                onPage={(p) => fetchPendingRecords(recordFilter, p)}
+                onPage={(p) => {
+                  setRecordSelected([]);
+                  fetchPendingRecords(recordFilter, p);
+                }}
                 t={t}
               />
             </div>
           )}
+          <ReviewConfirmBar
+            visible={recordAction !== null}
+            confirming={bulkConfirming}
+            selectedCount={recordSelected.length}
+            onConfirm={confirmRecordReviews}
+            onCancel={() => {
+              setRecordAction(null);
+              setRecordSelected([]);
+            }}
+            t={t}
+          />
         </div>
       )}
 
       {tab === 'works' && (
-        <div className="space-y-3">
+        <div className="space-y-3 pb-20">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold ui-title">
             <span>{t('admin.works_queue', { n: queueFilterTotal(workCounts, workFilter) })}</span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <QueueStatusFilters
                 value={workFilter}
                 counts={workCounts}
                 onChange={(status) => {
                   setWorkFilter(status);
                   setWorkPage(1);
+                  setWorkSelected([]);
+                  setWorkAction(null);
                   fetchWorks(status, 1);
                 }}
                 t={t}
@@ -923,6 +1088,12 @@ export default function AdminPage() {
               >
                 <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
               </button>
+              <ReviewDecisionToggles
+                value={workAction}
+                onChange={setWorkAction}
+                t={t}
+                disabled={bulkConfirming}
+              />
             </div>
           </div>
 
@@ -939,6 +1110,14 @@ export default function AdminPage() {
                 <div key={work.id} className="ui-card p-4 sm:p-5 space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
                     <div className="flex items-center gap-2.5">
+                      {work.status === 'PENDING' && (
+                        <input
+                          type="checkbox"
+                          checked={workSelected.includes(work.id)}
+                          onChange={() => toggleId(workSelected, work.id, setWorkSelected)}
+                          className="w-4 h-4 rounded cursor-pointer accent-[var(--accent)] shrink-0"
+                        />
+                      )}
                       <Link href={`/profile/${work.user.username}`} className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs overflow-hidden shrink-0" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
                         {work.user.avatarUrl ? (
                           <img src={work.user.avatarUrl} alt="" className="w-full h-full object-cover" />
@@ -1000,73 +1179,52 @@ export default function AdminPage() {
                   )}
 
                   {work.status === 'PENDING' && (
-                  <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-                    <div className="flex flex-col gap-2 flex-1">
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={workReviewData[work.id]?.decoBadgeId || ''}
-                          onChange={(e) => setWorkReviewData({ ...workReviewData, [work.id]: { ...workReviewData[work.id], decoBadgeId: e.target.value } })}
-                          className="flex-1 px-2 py-1.5 rounded-xl text-xs border focus:outline-none font-sans"
-                          style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)', fontFamily: 'inherit' }}
-                        >
-                          <option value="">-- Deco Badge --</option>
-                          {decoBadges.map(b => (
-                            <option key={b.id} value={b.id}>
-                              {b.name} (+{formatCp(getDecoBadgeCp(b.name) || 0)})
-                            </option>
-                          ))}
-                        </select>
-                        <select
-                          value={workReviewData[work.id]?.layoutBadgeId || ''}
-                          onChange={(e) => setWorkReviewData({ ...workReviewData, [work.id]: { ...workReviewData[work.id], layoutBadgeId: e.target.value } })}
-                          className="flex-1 px-2 py-1.5 rounded-xl text-xs border focus:outline-none font-sans"
-                          style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)', fontFamily: 'inherit' }}
-                        >
-                          <option value="">-- Layout Badge --</option>
-                          {layoutBadges.map(b => (
-                            <option key={b.id} value={b.id}>
-                              {b.name} (+{formatCp(getLayoutBadgeCp(b.name) || 0)})
-                            </option>
-                          ))}
-                        </select>
-                        <input
-                          type="number"
-                          placeholder="CP (+)"
-                          value={workReviewData[work.id]?.cpAwarded || ''}
-                          onChange={(e) => setWorkReviewData({ ...workReviewData, [work.id]: { ...workReviewData[work.id], cpAwarded: e.target.value } })}
-                          className="w-20 px-2 py-1.5 rounded-xl text-xs border focus:outline-none"
-                          style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                          title="Điểm cộng thêm cho work (ngoài điểm từ badge)"
-                        />
-                      </div>
+                  <div className="pt-2 flex flex-col gap-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <select
+                        value={workReviewData[work.id]?.decoBadgeId || ''}
+                        onChange={(e) => setWorkReviewData({ ...workReviewData, [work.id]: { ...workReviewData[work.id], decoBadgeId: e.target.value } })}
+                        className="flex-1 min-w-[140px] px-2 py-1.5 rounded-xl text-xs border focus:outline-none font-sans"
+                        style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)', fontFamily: 'inherit' }}
+                      >
+                        <option value="">-- Deco Badge --</option>
+                        {decoBadges.map(b => (
+                          <option key={b.id} value={b.id}>
+                            {b.name} (+{formatCp(getDecoBadgeCp(b.name) || 0)})
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={workReviewData[work.id]?.layoutBadgeId || ''}
+                        onChange={(e) => setWorkReviewData({ ...workReviewData, [work.id]: { ...workReviewData[work.id], layoutBadgeId: e.target.value } })}
+                        className="flex-1 min-w-[140px] px-2 py-1.5 rounded-xl text-xs border focus:outline-none font-sans"
+                        style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)', fontFamily: 'inherit' }}
+                      >
+                        <option value="">-- Layout Badge --</option>
+                        {layoutBadges.map(b => (
+                          <option key={b.id} value={b.id}>
+                            {b.name} (+{formatCp(getLayoutBadgeCp(b.name) || 0)})
+                          </option>
+                        ))}
+                      </select>
                       <input
-                        type="text"
-                        placeholder={t('admin.reject_ph')}
-                        value={workReviewData[work.id]?.rejectReason || ''}
-                        onChange={(e) => setWorkReviewData({ ...workReviewData, [work.id]: { ...workReviewData[work.id], rejectReason: e.target.value } })}
-                        className="w-full px-3 py-1.5 rounded-xl text-xs border focus:outline-none"
+                        type="number"
+                        placeholder="CP (+)"
+                        value={workReviewData[work.id]?.cpAwarded || ''}
+                        onChange={(e) => setWorkReviewData({ ...workReviewData, [work.id]: { ...workReviewData[work.id], cpAwarded: e.target.value } })}
+                        className="w-20 px-2 py-1.5 rounded-xl text-xs border focus:outline-none"
                         style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                        title="Điểm cộng thêm cho work (ngoài điểm từ badge)"
                       />
                     </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0 mt-2 sm:mt-0">
-                      <button
-                        disabled={actionLoading === work.id}
-                        onClick={() => handleReviewWork(work.id, 'REJECT')}
-                        className="px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer"
-                        style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}
-                      >
-                        {t('admin.reject')}
-                      </button>
-                      <button
-                        disabled={actionLoading === work.id}
-                        onClick={() => handleReviewWork(work.id, 'APPROVE')}
-                        className="px-4 py-1.5 rounded-xl text-xs font-bold text-white cursor-pointer shadow-xs"
-                        style={{ backgroundColor: 'var(--badge-green-text)' }}
-                      >
-                        {t('admin.approve')}
-                      </button>
-                    </div>
+                    <input
+                      type="text"
+                      placeholder={t('admin.reject_ph')}
+                      value={workReviewData[work.id]?.rejectReason || ''}
+                      onChange={(e) => setWorkReviewData({ ...workReviewData, [work.id]: { ...workReviewData[work.id], rejectReason: e.target.value } })}
+                      className="w-full px-3 py-1.5 rounded-xl text-xs border focus:outline-none"
+                      style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                    />
                   </div>
                   )}
                 </div>
@@ -1074,11 +1232,25 @@ export default function AdminPage() {
               <AdminListPager
                 page={workPage}
                 total={queueFilterTotal(workCounts, workFilter)}
-                onPage={(p) => fetchWorks(workFilter, p)}
+                onPage={(p) => {
+                  setWorkSelected([]);
+                  fetchWorks(workFilter, p);
+                }}
                 t={t}
               />
             </div>
           )}
+          <ReviewConfirmBar
+            visible={workAction !== null}
+            confirming={bulkConfirming}
+            selectedCount={workSelected.length}
+            onConfirm={confirmWorkReviews}
+            onCancel={() => {
+              setWorkAction(null);
+              setWorkSelected([]);
+            }}
+            t={t}
+          />
         </div>
       )}
 
@@ -1091,16 +1263,18 @@ export default function AdminPage() {
         )}
 
         {tab === 'levelSubs' && (
-        <div className="space-y-3">
+        <div className="space-y-3 pb-20">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold ui-title">
             <span>{t('admin.level_sub_queue', { n: queueFilterTotal(levelSubCounts, levelSubFilter) })}</span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <QueueStatusFilters
                 value={levelSubFilter}
                 counts={levelSubCounts}
                 onChange={(status) => {
                   setLevelSubFilter(status);
                   setLevelSubPage(1);
+                  setLevelSubSelected([]);
+                  setLevelSubAction(null);
                   fetchLevelSubs(status, 1);
                 }}
                 t={t}
@@ -1111,6 +1285,12 @@ export default function AdminPage() {
               >
                 <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
               </button>
+              <ReviewDecisionToggles
+                value={levelSubAction}
+                onChange={setLevelSubAction}
+                t={t}
+                disabled={bulkConfirming}
+              />
             </div>
           </div>
           {loadingLevelSubs ? (
@@ -1126,6 +1306,14 @@ export default function AdminPage() {
                 <div key={sub.id} className="ui-card p-4 sm:p-5 space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
                     <div className="flex items-center gap-2.5">
+                      {sub.status === 'PENDING' && (
+                        <input
+                          type="checkbox"
+                          checked={levelSubSelected.includes(sub.id)}
+                          onChange={() => toggleId(levelSubSelected, sub.id, setLevelSubSelected)}
+                          className="w-4 h-4 rounded cursor-pointer accent-[var(--accent)] shrink-0"
+                        />
+                      )}
                       <Link href={`/profile/${sub.user?.username}`} className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs overflow-hidden shrink-0" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
                         {sub.user?.avatarUrl ? (
                           <img src={sub.user.avatarUrl} alt="" className="w-full h-full object-cover" />
@@ -1158,7 +1346,6 @@ export default function AdminPage() {
                     </div>
                   )}
                   {sub.status === 'PENDING' && (
-                  <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       placeholder={t('admin.reject_ph')}
                       value={rejectReason[sub.id] || ''}
@@ -1166,36 +1353,31 @@ export default function AdminPage() {
                       className="w-full px-3 py-1.5 rounded-xl text-xs border focus:outline-none"
                       style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                     />
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        disabled={actionLoading === sub.id}
-                        onClick={() => handleReviewLevelSub(sub.id, 'REJECT')}
-                        className="px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer"
-                        style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}
-                      >
-                        {t('admin.reject')}
-                      </button>
-                      <button
-                        disabled={actionLoading === sub.id}
-                        onClick={() => handleReviewLevelSub(sub.id, 'APPROVE')}
-                        className="px-4 py-1.5 rounded-xl text-xs font-bold text-white cursor-pointer shadow-xs"
-                        style={{ backgroundColor: 'var(--badge-green-text)' }}
-                      >
-                        {t('admin.approve')}
-                      </button>
-                    </div>
-                  </div>
                   )}
                 </div>
               ))}
               <AdminListPager
                 page={levelSubPage}
                 total={queueFilterTotal(levelSubCounts, levelSubFilter)}
-                onPage={(p) => fetchLevelSubs(levelSubFilter, p)}
+                onPage={(p) => {
+                  setLevelSubSelected([]);
+                  fetchLevelSubs(levelSubFilter, p);
+                }}
                 t={t}
               />
             </div>
           )}
+          <ReviewConfirmBar
+            visible={levelSubAction !== null}
+            confirming={bulkConfirming}
+            selectedCount={levelSubSelected.length}
+            onConfirm={confirmLevelSubReviews}
+            onCancel={() => {
+              setLevelSubAction(null);
+              setLevelSubSelected([]);
+            }}
+            t={t}
+          />
         </div>
       )}
 
@@ -1831,7 +2013,6 @@ function AdminHelpsTab({ onTotalChange }: { onTotalChange?: (n: number) => void 
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Xoá yêu cầu này?')) return;
     await fetch('/api/admin/helps', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
