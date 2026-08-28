@@ -58,19 +58,21 @@ export async function DELETE(req: Request) {
       }
     }
     // Run updates in chunks of 50 to avoid TiDB serverless timeouts
-        if (updatesToRun.length > 0) {
+    if (updatesToRun.length > 0) {
       for (let i = 0; i < updatesToRun.length; i += 500) {
         const chunk = updatesToRun.slice(i, i + 500);
         
-        let sql = 'UPDATE `Level` SET `basePp` = CASE `id` ';
+        // Chú ý: Dùng dấu ngoặc kép (") cho "Level", "basePp" và "id"
+        let sql = 'UPDATE "Level" SET "basePp" = CASE "id" ';
         const ids = [];
         
         for (const u of chunk) {
+          // u.id vẫn dùng nháy đơn (') vì đây là giá trị string UUID
           sql += `WHEN '${u.id}' THEN ${u.correctPp} `;
           ids.push(`'${u.id}'`);
         }
         
-        sql += `END WHERE \`id\` IN (${ids.join(',')});`;
+        sql += `END WHERE "id" IN (${ids.join(',')});`;
         
         await tx.$executeRawUnsafe(sql);
       }
