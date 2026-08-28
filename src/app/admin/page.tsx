@@ -286,6 +286,7 @@ export default function AdminPage() {
 
   const [isLevelFormOpen, setIsLevelFormOpen] = useState(false);
   const [levelFormInitialData, setLevelFormInitialData] = useState<any>(null);
+  const [syncingLists, setSyncingLists] = useState(false);
   const [adminToast, setAdminToast] = useState<{ text: string, isError: boolean } | null>(null);
   const [userSortOrder, setUserSortOrder] = useState<'asc' | 'desc'>('asc');
   const [userViewMode, setUserViewMode] = useState<'list' | 'grid'>('list');
@@ -670,6 +671,35 @@ export default function AdminPage() {
     await fetchLevelSubs(levelSubFilter, levelSubPage);
     setBulkConfirming(false);
     if (ok > 0) showToast(t('common.confirm') + `: ${ok}`, 'success');
+  };
+
+  const handleSyncLists = (mode: 'ALL' | 'CLASSIC' | 'PLATFORMER') => {
+    showConfirm(t('admin.sync_lists_confirm'), async () => {
+      setSyncingLists(true);
+      try {
+        const res = await fetch('/api/admin/lists/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          showToast(data.error || t('admin.sync_lists_fail'), 'error');
+          return;
+        }
+        const summary = (data.results || [])
+          .map(
+            (r: { mode: string; synced: number; created: number; updated: number; stale: number }) =>
+              `${r.mode}: ${r.synced} (${r.created}+ / ${r.updated}~ / ${r.stale}-)`
+          )
+          .join(' · ');
+        showToast(t('admin.sync_lists_ok', { summary }), 'success');
+      } catch {
+        showToast(t('admin.sync_lists_fail'), 'error');
+      } finally {
+        setSyncingLists(false);
+      }
+    });
   };
 
   const filteredBadges = badgesList
@@ -1623,6 +1653,38 @@ export default function AdminPage() {
 
 {tab === 'levels' && (
           <div className="ui-card p-6 space-y-4">
+            <p className="text-sm ui-dim">{t('admin.sync_lists_desc')}</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={syncingLists}
+                onClick={() => handleSyncLists('ALL')}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                style={{ backgroundColor: 'var(--accent)' }}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${syncingLists ? 'animate-spin' : ''}`} />
+                {syncingLists ? t('admin.sync_lists_working') : t('admin.sync_lists')}
+              </button>
+              <button
+                type="button"
+                disabled={syncingLists}
+                onClick={() => handleSyncLists('CLASSIC')}
+                className="px-4 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)', backgroundColor: 'var(--bg-subtle)' }}
+              >
+                {t('admin.sync_lists_classic')}
+              </button>
+              <button
+                type="button"
+                disabled={syncingLists}
+                onClick={() => handleSyncLists('PLATFORMER')}
+                className="px-4 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)', backgroundColor: 'var(--bg-subtle)' }}
+              >
+                {t('admin.sync_lists_plat')}
+              </button>
+            </div>
+            <hr style={{ borderColor: 'var(--border-subtle)' }} />
             <p className="text-sm ui-dim">Bạn có thể quản lý, thêm hoặc cập nhật Level tại đây.</p>
             <button
               onClick={() => {

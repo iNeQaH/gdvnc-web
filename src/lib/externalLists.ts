@@ -100,9 +100,20 @@ async function fetchPemonlist(): Promise<ExternalListLevel[]> {
   return all;
 }
 
-export async function getExternalList(mode: 'CLASSIC' | 'PLATFORMER'): Promise<ExternalListLevel[]> {
+export function clearExternalListCache(mode?: 'CLASSIC' | 'PLATFORMER') {
+  if (mode) delete cache[mode];
+  else {
+    delete cache.CLASSIC;
+    delete cache.PLATFORMER;
+  }
+}
+
+export async function getExternalList(
+  mode: 'CLASSIC' | 'PLATFORMER',
+  opts?: { force?: boolean }
+): Promise<ExternalListLevel[]> {
   const cached = cache[mode];
-  if (cached && Date.now() - cached.at < CACHE_MS) return cached.levels;
+  if (!opts?.force && cached && Date.now() - cached.at < CACHE_MS) return cached.levels;
 
   const levels = mode === 'CLASSIC' ? await fetchPointercrateListed() : await fetchPemonlist();
   if (levels.length === 0) {
@@ -125,8 +136,11 @@ export async function findExternalLevel(gdLevelId: number): Promise<ExternalList
 }
 
 /** Sync API list fields into DB. Keeps difficultyFace / ratingType / isVN / isChallenge / difficulty. */
-export async function syncExternalListToDb(mode: 'CLASSIC' | 'PLATFORMER') {
-  const external = await getExternalList(mode);
+export async function syncExternalListToDb(
+  mode: 'CLASSIC' | 'PLATFORMER',
+  opts?: { force?: boolean }
+) {
+  const external = await getExternalList(mode, opts);
   // Never wipe DB ranks from a failed/empty upstream response.
   if (external.length < 10) {
     throw new Error(`Refusing sync for ${mode}: only ${external.length} upstream levels`);
@@ -149,13 +163,16 @@ export async function syncExternalListToDb(mode: 'CLASSIC' | 'PLATFORMER') {
   });
   const byGd = new Map(existing.map((l) => [l.gdLevelId, l]));
   const seen = new Set<number>();
+  const affectedIds: string[] = [];
+  let created = 0;
+  let updated = 0;
 
   for (const row of external) {
     seen.add(row.gdLevelId);
     const basePp = calculateBasePp(row.placement);
     const cur = byGd.get(row.gdLevelId);
     if (!cur) {
-      await prisma.level.create({
+      const createdLevel = await prisma.level.create({
         data: {
           gdLevelId: row.gdLevelId,
           name: row.name,
@@ -172,6 +189,8 @@ export async function syncExternalListToDb(mode: 'CLASSIC' | 'PLATFORMER') {
           isChallenge: false,
         },
       });
+      created += 1;
+      affectedIds.push(createdLevel.id);
       continue;
     }
 
@@ -197,6 +216,8 @@ export async function syncExternalListToDb(mode: 'CLASSIC' | 'PLATFORMER') {
           youtubeId: row.youtubeId,
         },
       });
+      updated += 1;
+      affectedIds.push(cur.id);
     }
   }
 
@@ -206,9 +227,17 @@ export async function syncExternalListToDb(mode: 'CLASSIC' | 'PLATFORMER') {
       where: { id: { in: staleIds } },
       data: { placement: null, basePp: 0 },
     });
+    affectedIds.push(...staleIds);
   }
 
-  return { synced: external.length, stale: staleIds.length };
+  return {
+    mode,
+    synced: external.length,
+    created,
+    updated,
+    stale: staleIds.length,
+    affectedIds,
+  };
 }
 
 export function mergeExternalWithDb(
