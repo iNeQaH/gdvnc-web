@@ -27,10 +27,22 @@ async function fetchJson(url: string) {
   try {
     const res = await fetch(url, {
       signal: controller.signal,
-      headers: { Accept: 'application/json' },
+      redirect: 'follow',
+      headers: {
+        Accept: 'application/json',
+        'Accept-Language': 'en',
+        'User-Agent': 'GDVNC/1.0 (+https://gdvnc-web.vercel.app)',
+      },
       cache: 'no-store',
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+    if (!res.ok) {
+      if (res.status === 403) {
+        throw new Error(
+          `API từ chối yêu cầu (HTTP 403). Pointercrate/Cloudflare đang chặn IP máy chủ. Thử lại sau, hoặc gọi từ máy local.`
+        );
+      }
+      throw new Error(`HTTP ${res.status} for ${url}`);
+    }
     return await res.json();
   } finally {
     clearTimeout(timer);
@@ -44,7 +56,7 @@ async function fetchPointercrateListed(): Promise<ExternalListLevel[]> {
   const maxPlacement = 500;
   for (let page = 0; page < 8; page++) {
     const data = await fetchJson(
-      `https://pointercrate.com/api/v2/demons/listed?limit=100&after=${after}`
+      `https://pointercrate.com/api/v2/demons/listed/?limit=100&after=${after}`
     );
     if (!Array.isArray(data) || data.length === 0) break;
     for (const demon of data) {

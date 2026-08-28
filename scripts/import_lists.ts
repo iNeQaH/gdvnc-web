@@ -26,7 +26,9 @@ async function importPointercrate() {
   let after = 0;
   const allDemons: any[] = [];
   while (true) {
-    const res = await fetch(`https://pointercrate.com/api/v2/demons/listed?limit=100&after=${after}`);
+    const res = await fetch(`https://pointercrate.com/api/v2/demons/listed/?limit=100&after=${after}`, {
+      headers: { Accept: 'application/json', 'User-Agent': 'GDVNC/1.0 (+https://gdvnc-web.vercel.app)' },
+    });
     const data = await res.json();
     if (!data.length) break;
     allDemons.push(...data);
