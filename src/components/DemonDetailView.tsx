@@ -8,7 +8,6 @@ import LevelTagChips from '@/components/LevelTagChips';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import LevelNeighborNav from '@/components/LevelNeighborNav';
-import FloatingNav from '@/components/FloatingNav';
 import { awardedPpForProgress } from '@/lib/ScoringEngine';
 
 const PAGE_SIZE = 5;
@@ -250,16 +249,52 @@ export default function DemonDetailView({
                 </div>
               )}
             </div>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 pt-1">
+                <button
+                  type="button"
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage(1)}
+                  className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold border disabled:opacity-40 cursor-pointer"
+                  style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                >
+                  «
+                </button>
+                <button
+                  type="button"
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="px-3 py-1.5 rounded-xl text-[11px] font-bold border disabled:opacity-40 cursor-pointer"
+                  style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                >
+                  {t('common.page_prev')}
+                </button>
+                <span className="text-[11px] font-bold ui-dim px-1">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="px-3 py-1.5 rounded-xl text-[11px] font-bold border disabled:opacity-40 cursor-pointer"
+                  style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                >
+                  {t('common.page_next')}
+                </button>
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage(totalPages)}
+                  className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold border disabled:opacity-40 cursor-pointer"
+                  style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                >
+                  »
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
-
-      <FloatingNav
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-        alwaysVisible={totalPages > 1}
-      />
 
       <LevelNeighborNav
         currentPlacement={level.placement}

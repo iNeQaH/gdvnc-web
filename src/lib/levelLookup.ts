@@ -1,8 +1,10 @@
 import { notFound, permanentRedirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { isAllDigitsId, UUID_RE } from '@/lib/levelUrl';
-import { RecordStatus } from '@prisma/client';
+import { LevelMode, RecordStatus } from '@prisma/client';
 import { dedupeRecordsByUser } from '@/lib/recordUtils';
+import { calculateBasePp } from '@/lib/ScoringEngine';
+import { findExternalLevel } from '@/lib/externalLists';
 
 const levelInclude = {
   records: {
@@ -20,12 +22,78 @@ const levelInclude = {
   },
 };
 
+async function ensureLevelFromExternal(gdLevelId: number) {
+  const ext = await findExternalLevel(gdLevelId);
+  if (!ext) return null;
+  const levelMode = ext.mode === 'PLATFORMER' ? LevelMode.PLATFORMER : LevelMode.CLASSIC;
+  return prisma.level.upsert({
+    where: { gdLevelId },
+    create: {
+      gdLevelId: ext.gdLevelId,
+      name: ext.name,
+      mode: levelMode,
+      difficulty: 'Extreme Demon',
+      placement: ext.placement,
+      basePp: calculateBasePp(ext.placement),
+      minPercent: ext.minPercent,
+      creatorName: ext.creatorName,
+      verifierName: ext.verifierName,
+      youtubeId: ext.youtubeId,
+      description: ext.description,
+      isChallenge: false,
+    },
+    update: {
+      name: ext.name,
+      placement: ext.placement,
+      basePp: calculateBasePp(ext.placement),
+      minPercent: ext.minPercent,
+      creatorName: ext.creatorName,
+      verifierName: ext.verifierName,
+      youtubeId: ext.youtubeId,
+    },
+    include: levelInclude,
+  });
+}
+
 export async function resolvePublicLevel(id: string) {
   if (isAllDigitsId(id)) {
-    const level = await prisma.level.findUnique({
-      where: { gdLevelId: Number(id) },
+    const gdLevelId = Number(id);
+    let level = await prisma.level.findUnique({
+      where: { gdLevelId },
       include: levelInclude,
     });
+    if (!level) {
+      level = await ensureLevelFromExternal(gdLevelId);
+    } else if (!level.isChallenge) {
+      const ext = await findExternalLevel(gdLevelId).catch(() => null);
+      if (ext) {
+        const patched = {
+          ...level,
+          name: ext.name,
+          placement: ext.placement,
+          basePp: calculateBasePp(ext.placement),
+          minPercent: ext.minPercent,
+          creatorName: ext.creatorName ?? level.creatorName,
+          verifierName: ext.verifierName ?? level.verifierName,
+          youtubeId: ext.youtubeId ?? level.youtubeId,
+        };
+        void prisma.level
+          .update({
+            where: { id: level.id },
+            data: {
+              name: ext.name,
+              placement: ext.placement,
+              basePp: calculateBasePp(ext.placement),
+              minPercent: ext.minPercent,
+              creatorName: ext.creatorName,
+              verifierName: ext.verifierName,
+              youtubeId: ext.youtubeId,
+            },
+          })
+          .catch(() => {});
+        return patched;
+      }
+    }
     if (!level) notFound();
     return level;
   }
