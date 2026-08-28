@@ -101,8 +101,8 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
     if (filterTiers.length > 0) {
       let tierMatch = false;
       if (filterTiers.includes('MAIN') && lvl.placement && lvl.placement <= 75) tierMatch = true;
-      if (filterTiers.includes('EXTENDED') && lvl.placement && lvl.placement > 75 && lvl.placement <= 150) tierMatch = true;
-      if (filterTiers.includes('LEGACY') && lvl.placement && lvl.placement > 150) tierMatch = true;
+      if (filterTiers.includes('EXTENDED') && lvl.placement && lvl.placement > 75 && lvl.placement <= 500) tierMatch = true;
+      if (filterTiers.includes('LEGACY') && lvl.placement && lvl.placement > 500) tierMatch = true;
       if (!tierMatch) return false;
     }
 

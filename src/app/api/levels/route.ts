@@ -13,9 +13,9 @@ export async function GET(req: Request) {
     if (tier === 'main') {
       placementWhere = { gte: 1, lte: 75 };
     } else if (tier === 'extended') {
-      placementWhere = { gte: 76, lte: 150 };
+      placementWhere = { gte: 76, lte: 500 };
     } else if (tier === 'legacy') {
-      placementWhere = { gt: 150 };
+      placementWhere = { gt: 500 };
     }
 
     const levels = await prisma.level.findMany({

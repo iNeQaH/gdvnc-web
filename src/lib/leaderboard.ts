@@ -127,20 +127,17 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER') {
     });
   }
 
-  return [...registered, ...legacy]
-    .sort((a, b) => {
-      const ap = mode === 'PLATFORMER' ? a.platformerPp : a.classicPp;
-      const bp = mode === 'PLATFORMER' ? b.platformerPp : b.classicPp;
-      return bp - ap;
-    })
-    .slice(0, 100);
+  return [...registered, ...legacy].sort((a, b) => {
+    const ap = mode === 'PLATFORMER' ? a.platformerPp : a.classicPp;
+    const bp = mode === 'PLATFORMER' ? b.platformerPp : b.classicPp;
+    return bp - ap;
+  });
 }
 
 export async function getCreatorLeaderboard() {
   const creators = await prisma.user.findMany({
     where: { creatorPoints: { gt: 0 } },
     orderBy: { creatorPoints: 'desc' },
-    take: 100,
     select: {
       ...publicUser,
       creatorPoints: true,

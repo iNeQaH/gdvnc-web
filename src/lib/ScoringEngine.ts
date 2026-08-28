@@ -5,8 +5,8 @@
  */
 
 export const MAX_PP = 2500;   // Base PP for Top 1 Extreme Demon
-export const MIN_PP = 10;     // Base PP for lowest rated Demon (#150)
-export const LIST_SIZE = 150; // Main list size
+export const MIN_PP = 10;     // Base PP for lowest rated Demon (#500)
+export const LIST_SIZE = 500; // Main list size
 /** Pointercrate: reaching the requirement awards 10% of the level's points. */
 export const MIN_PROGRESS_SCORE_RATIO = 0.1;
 
