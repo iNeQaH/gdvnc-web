@@ -23,6 +23,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -49,6 +50,21 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
     }
     fetchLevels();
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const q = searchInput.trim();
+      setSearch(q);
+      if (q) {
+        setFilterModes([]);
+        setFilterTiers([]);
+        setFilterFaces([]);
+        setFilterVN(false);
+      }
+      setCurrentPage(1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const fetchLevels = () => {
     setLoading(true);
@@ -174,13 +190,23 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
               <input
                 type="text"
                 placeholder={t('levelslist.search_demon')}
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full pl-9 pr-4 py-2 rounded-xl text-xs font-semibold ui-input focus:ring-2 focus:ring-red-500/20"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-full pl-9 pr-14 py-2 rounded-xl text-xs font-semibold ui-input focus:ring-2 focus:ring-red-500/20"
               />
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchInput('');
+                    setSearch('');
+                    setCurrentPage(1);
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-bold ui-dim hover:opacity-100 px-1.5 py-0.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10"
+                >
+                  {t('common.clear')}
+                </button>
+              )}
             </div>
 
             <button

@@ -4,7 +4,7 @@ import { renderSiteOgImage } from '@/lib/siteOg';
 export const runtime = 'edge';
 
 export async function GET(req: NextRequest) {
-  const title = req.nextUrl.searchParams.get('title') || 'GDVNC';
+  const title = req.nextUrl.searchParams.get('title') || 'GDVN';
   const desc = req.nextUrl.searchParams.get('desc') || '';
   return renderSiteOgImage(title, desc);
 }

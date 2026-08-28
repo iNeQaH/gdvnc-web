@@ -225,6 +225,7 @@ export default function AdminPage() {
   const [userSortOrder, setUserSortOrder] = useState<'asc' | 'desc'>('asc');
   const [userViewMode, setUserViewMode] = useState<'list' | 'grid'>('list');
   const [userPage, setUserPage] = useState(1);
+  const [helpsTotal, setHelpsTotal] = useState(0);
 
   useEffect(() => {
     const userStr = localStorage.getItem('gdvnc_user');
@@ -240,6 +241,12 @@ export default function AdminPage() {
     fetchBadges();
     fetchBadgeCategories();
     fetchLevelSubs('PENDING', 1);
+    fetch('/api/admin/helps?page=1')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setHelpsTotal(data.total || 0);
+      })
+      .catch(() => {});
   }, []);
 
   const fetchWorks = async (status: QueueStatus = workFilter, page = 1) => {
@@ -713,7 +720,7 @@ export default function AdminPage() {
               className={"px-4 py-2 font-bold text-xs transition-colors " + (tab === 'helps' ? 'border-b-2' : 'ui-dim hover:opacity-100')}
               style={{ borderColor: tab === 'helps' ? 'var(--accent)' : 'transparent', color: tab === 'helps' ? 'var(--text-title)' : undefined }}
             >
-              Helps
+              Helps ({helpsTotal})
             </button>
         </div>
       </div>
@@ -739,28 +746,6 @@ export default function AdminPage() {
                 className="inline-flex items-center gap-1 text-[11px] font-semibold ui-dim hover:opacity-100 cursor-pointer"
               >
                 <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
-              </button>
-              <button
-                onClick={async () => {
-                  setLoadingRecords(true);
-                  try {
-                    const res = await fetch('/api/admin/records/cleanup-placeholder', { method: 'POST' });
-                    const data = await res.json();
-                    if (data.success) {
-                      showToast(t('admin.cleanup_placeholder_ok', { n: data.deleted || 0 }), 'success');
-                      fetchPendingRecords(recordFilter, 1);
-                    } else {
-                      showToast(data.error || t('admin.action_fail'), 'error');
-                    }
-                  } catch {
-                    showToast(t('common.server_error'), 'error');
-                  } finally {
-                    setLoadingRecords(false);
-                  }
-                }}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-500 hover:opacity-80 cursor-pointer"
-              >
-                <Trash2 className="w-3 h-3" /> {t('admin.cleanup_placeholder')}
               </button>
             </div>
           </div>
@@ -1101,7 +1086,7 @@ export default function AdminPage() {
         {tab === 'helps' && (
           <div className="space-y-4">
             <h2 className="text-xl font-black mb-4">Hỗ trợ / Helps</h2>
-            <AdminHelpsTab />
+            <AdminHelpsTab onTotalChange={setHelpsTotal} />
           </div>
         )}
 
@@ -1817,7 +1802,7 @@ export default function AdminPage() {
 
 
 
-function AdminHelpsTab() {
+function AdminHelpsTab({ onTotalChange }: { onTotalChange?: (n: number) => void }) {
   const { t } = useLanguage();
   const [helps, setHelps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1834,6 +1819,7 @@ function AdminHelpsTab() {
           setHelps(data.helps);
           setTotal(data.total || 0);
           setPage(data.page || p);
+          onTotalChange?.(data.total || 0);
         }
         setLoading(false);
       })

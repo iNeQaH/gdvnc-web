@@ -150,5 +150,5 @@ export async function getProfileEmbedData(username: string): Promise<ProfileEmbe
 
 export function buildProfileEmbedDescription(data: ProfileEmbedData) {
   const lines = [...data.pointLines, ...data.hardestLines];
-  return lines.length > 0 ? lines.join(' · ') : `GDVNC profile — ${data.username}`;
+  return lines.length > 0 ? lines.join(' · ') : `GDVN profile — ${data.username}`;
 }

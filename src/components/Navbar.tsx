@@ -53,7 +53,7 @@ export const Navbar = () => {
           </div>
           <div>
             <span className="font-extrabold text-base tracking-tight ui-title">
-              GDVNC<span style={{ color: 'var(--accent)' }}>Hub</span>
+              GDVN
             </span>
           </div>
         </Link>

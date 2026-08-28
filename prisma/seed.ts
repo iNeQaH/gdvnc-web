@@ -21,7 +21,7 @@ function calcTotalPp(basePps: number[]): number {
 }
 
 async function main() {
-  console.log('Seeding GDVNC Database...');
+  console.log('Seeding GDVN Database...');
 
   // 1. Create Admin Account: iNeQaH
   const adminPasswordHash = await bcrypt.hash('Honkaiimpact3rd!', 10);
@@ -32,7 +32,7 @@ async function main() {
     update: {
       passwordHash: adminPasswordHash,
       role: Role.ADMIN,
-      bio: 'Administrator of GDVNC. Passionate extreme demon slayer & level architect.',
+      bio: 'Administrator of GDVN. Passionate extreme demon slayer & level architect.',
       discordTag: 'iNeQaH#0001',
       gdUsername: 'iNeQaH',
       country: 'Vietnam',
@@ -41,7 +41,7 @@ async function main() {
       username: 'iNeQaH',
       passwordHash: adminPasswordHash,
       role: Role.ADMIN,
-      bio: 'Administrator of GDVNC. Passionate extreme demon slayer & level architect.',
+      bio: 'Administrator of GDVN. Passionate extreme demon slayer & level architect.',
       discordTag: 'iNeQaH#0001',
       gdUsername: 'iNeQaH',
       country: 'Vietnam',

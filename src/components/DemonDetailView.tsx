@@ -11,7 +11,7 @@ import LevelNeighborNav from '@/components/LevelNeighborNav';
 import FloatingNav from '@/components/FloatingNav';
 import { awardedPpForProgress } from '@/lib/ScoringEngine';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 5;
 
 export default function DemonDetailView({
   level,
@@ -122,6 +122,18 @@ export default function DemonDetailView({
                 <div>
                   <div className="text-[10px] uppercase font-bold ui-dim">{t('levelslist.difficulty')}</div>
                   <div className="font-semibold text-sm ui-title">{level.difficulty}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold ui-dim">{t('leaderboard.points')}</div>
+                  <div className="font-semibold text-sm ui-title" style={{ color: 'var(--accent)' }}>
+                    {level.minPercent && level.minPercent < 100
+                      ? t('levelslist.points_range', {
+                          min: awardedPpForProgress(level.minPercent, level.minPercent, level.basePp).toFixed(2),
+                          req: level.minPercent,
+                          max: Number(level.basePp).toFixed(2),
+                        })
+                      : `${Number(level.basePp).toFixed(2)} ${t('leaderboard.points')}`}
+                  </div>
                 </div>
                 <div>
                   <div className="text-[10px] uppercase font-bold ui-dim">{t('levelslist.description')}</div>
@@ -246,6 +258,7 @@ export default function DemonDetailView({
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
+        alwaysVisible={totalPages > 1}
       />
 
       <LevelNeighborNav

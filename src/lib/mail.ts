@@ -36,8 +36,8 @@ function mapSendError(error: any, locale: 'vi' | 'en'): Error {
   if (badLogin) {
     return new Error(
       locale === 'en'
-        ? 'Gmail rejected the login. SMTP_USER must be the exact Gmail that created the App Password (the address shown at the top of myaccount.google.com), not the GDVNC username.'
-        : 'Gmail từ chối đăng nhập. SMTP_USER phải là đúng địa chỉ Gmail đang mở khi tạo Mật khẩu ứng dụng (email hiện trên cùng trang myaccount.google.com), không phải username GDVNC.'
+        ? 'Gmail rejected the login. SMTP_USER must be the exact Gmail that created the App Password (the address shown at the top of myaccount.google.com), not the GDVN username.'
+        : 'Gmail từ chối đăng nhập. SMTP_USER phải là đúng địa chỉ Gmail đang mở khi tạo Mật khẩu ứng dụng (email hiện trên cùng trang myaccount.google.com), không phải username GDVN.'
     );
   }
   return error instanceof Error ? error : new Error(raw || 'SMTP error');
@@ -62,13 +62,13 @@ export async function sendOtpEmail(to: string, code: string, locale: 'vi' | 'en'
   }
 
   const transporter = createTransporter();
-  const from = env('SMTP_FROM') || `"GDVNC" <${user}>`;
+  const from = env('SMTP_FROM') || `"GDVN" <${user}>`;
 
   const isEn = locale === 'en';
   const subject = isEn
-    ? 'GDVNC registration code'
-    : 'Mã xác nhận đăng ký tài khoản GDVNC';
-  const heading = isEn ? 'Verify your GDVNC email' : 'Xác thực email đăng ký GDVNC';
+    ? 'GDVN registration code'
+    : 'Mã xác nhận đăng ký tài khoản GDVN';
+  const heading = isEn ? 'Verify your GDVN email' : 'Xác thực email đăng ký GDVN';
   const intro = isEn ? 'Your verification code is:' : 'Mã xác thực của bạn là:';
   const expire = isEn
     ? 'This code is valid for 10 minutes. If you did not request an account, please ignore this email.'
@@ -109,11 +109,11 @@ export async function sendResetPasswordEmail(to: string, code: string, locale: '
 
   const user = env('SMTP_USER');
   const transporter = createTransporter();
-  const from = env('SMTP_FROM') || `"GDVNC" <${user}>`;
+  const from = env('SMTP_FROM') || `"GDVN" <${user}>`;
   const isEn = locale === 'en';
 
-  const subject = isEn ? 'GDVNC password reset code' : 'Mã đặt lại mật khẩu GDVNC';
-  const heading = isEn ? 'Reset your GDVNC password' : 'Đặt lại mật khẩu GDVNC';
+  const subject = isEn ? 'GDVN password reset code' : 'Mã đặt lại mật khẩu GDVN';
+  const heading = isEn ? 'Reset your GDVN password' : 'Đặt lại mật khẩu GDVN';
   const intro = isEn ? 'Your password reset code is:' : 'Mã đặt lại mật khẩu của bạn là:';
   const expire = isEn
     ? 'This code is valid for 10 minutes. If you did not request a reset, please ignore this email.'

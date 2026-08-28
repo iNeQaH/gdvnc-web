@@ -18,7 +18,7 @@ export function renderSiteOgImage(title: string, description: string) {
         }}
       >
         <div style={{ display: 'flex', fontSize: 28, color: '#60a5fa', marginBottom: 20, fontWeight: 700 }}>
-          GDVNC
+          GDVN
         </div>
         <div style={{ display: 'flex', fontSize: 58, fontWeight: 800, lineHeight: 1.15 }}>
           {title}

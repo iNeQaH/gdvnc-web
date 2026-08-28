@@ -12,20 +12,19 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   return {
     metadataBase: new URL(base),
-    title: `${embed.title} | GDVNC`,
+    title: `${embed.title} | GDVN`,
     description: embed.description,
     openGraph: {
       title: embed.title,
       description: embed.description,
       type: 'website',
       url: embed.url,
-      images: [{ url: embed.image, width: 512, height: 512, alt: embed.title }],
+      siteName: 'GDVN',
     },
     twitter: {
       card: 'summary',
       title: embed.title,
       description: embed.description,
-      images: [embed.image],
     },
   };
 }

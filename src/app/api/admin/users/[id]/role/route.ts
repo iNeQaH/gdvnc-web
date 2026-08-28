@@ -79,7 +79,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           data: {
             userId: target.id,
             title: 'Cấp Quyền Supporter',
-            message: `Bạn vừa được Admin "${actor.username}" cấp ${months} tháng Supporter! Cảm ơn bạn đã đồng hành cùng cộng đồng GDVNC.`,
+            message: `Bạn vừa được Admin "${actor.username}" cấp ${months} tháng Supporter! Cảm ơn bạn đã đồng hành cùng cộng đồng GDVN.`,
           },
         });
       } else {

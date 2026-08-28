@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { pageMetadata } from '@/lib/pageMeta';
 
 export const metadata = pageMetadata(
-  'GDVNC Helps',
+  'GDVN Helps',
   'Yêu cầu hỗ trợ, đề xuất, báo lỗi,...',
   '/helps'
 );

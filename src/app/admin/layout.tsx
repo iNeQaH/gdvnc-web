@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import { pageMetadata } from '@/lib/pageMeta';
 
 export const metadata = pageMetadata(
-  'GDVNC Admin',
-  'Trang quản trị web GDVNC',
+  'GDVN Admin',
+  'Trang quản trị web GDVN',
   '/admin'
 );
 

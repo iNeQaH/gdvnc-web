@@ -1,6 +1,6 @@
 /**
  * ScoringEngine.ts
- * Core Scoring Formula for GDVNC.
+ * Core Scoring Formula for GDVN.
  * Hybrid Model: Exponential Base PP + osu! Weighted PP Decay ($0.95^{n-1}$).
  */
 

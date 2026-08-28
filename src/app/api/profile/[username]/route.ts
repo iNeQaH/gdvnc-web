@@ -214,9 +214,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
       return NextResponse.json({ error: 'Không tìm thấy người chơi.' }, { status: 404 });
     }
 
-    let nextGdUsername: string | undefined = body.gdUsername !== undefined ? clipText(body.gdUsername, 80) : undefined;
-    if (nextGdUsername !== undefined && current.gdVerified && !isAdmin) {
-      nextGdUsername = current.gdUsername ?? undefined;
+    let nextGdUsername: string | null | undefined =
+      body.gdUsername !== undefined ? (clipText(body.gdUsername, 80) || null) : undefined;
+    let nextGdVerified: boolean | undefined;
+    if (nextGdUsername !== undefined) {
+      const prev = (current.gdUsername || '').trim().toLowerCase();
+      const next = (nextGdUsername || '').trim().toLowerCase();
+      if (next !== prev) {
+        nextGdVerified = false;
+      }
     }
 
     const updated = await prisma.user.update({
@@ -227,6 +233,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         coverUrl: body.coverUrl !== undefined ? clipText(body.coverUrl, 400) : undefined,
         country: body.country !== undefined ? clipText(body.country, 80) : undefined,
         gdUsername: nextGdUsername,
+        gdVerified: nextGdVerified,
         discordTag: body.discordTag !== undefined ? clipText(body.discordTag, 80) : undefined,
       },
       select: {

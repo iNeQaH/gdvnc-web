@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Star, Moon, Medal, Play, Globe, MessageSquare, Gamepad2, ArrowLeft, Camera, Check, X, Pencil, ShieldCheck, Heart, Trash2, Hammer, User as UserIcon, Shield, Crown, Trophy, Award, Zap, Flame, Diamond, StarHalf, CheckCircle, ChevronDown, RotateCcw } from 'lucide-react';
+import { Star, Moon, Medal, Play, Globe, MessageSquare, Gamepad2, ArrowLeft, Camera, Check, X, Pencil, ShieldCheck, Heart, Trash2, Hammer, User as UserIcon, Shield, Crown, Trophy, Award, Zap, Flame, Diamond, StarHalf, CheckCircle, ChevronDown, RotateCcw, UserCheck } from 'lucide-react';
 import * as AllLucideIcons from 'lucide-react';
 import { CUSTOM_ICONS } from '@/components/CustomIcons';
 import ImageEditorModal from '@/components/ImageEditorModal';
@@ -38,6 +38,7 @@ export default function ProfilePage() {
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [bioInput, setBioInput] = useState('');
   const [saving, setSaving] = useState(false);
+  const [verifyingGd, setVerifyingGd] = useState(false);
 
   // Image Editor Modal state
   const [imageModal, setImageModal] = useState<{
@@ -102,11 +103,12 @@ export default function ProfilePage() {
       });
       const resData = await res.json();
       if (resData.success) {
-        setData({ ...data, ...fields });
+        const merged = resData.updated ? { ...data, ...resData.updated } : { ...data, ...fields };
+        setData(merged);
         setIsEditingBio(false);
         // Also update local storage if it's the current logged in user
         if (currentUser.username === username) {
-          const updatedLocalUser = { ...currentUser, ...fields };
+          const updatedLocalUser = { ...currentUser, ...merged };
           localStorage.setItem('gdvnc_user', JSON.stringify(updatedLocalUser));
           window.dispatchEvent(new Event('gdvnc_user_update'));
         }
@@ -510,21 +512,21 @@ export default function ProfilePage() {
                   ) : (
                     (data.gdUsername || isOwner) && (
                       <span
-                        className={`flex items-center gap-1 ${isOwner && !data.gdVerified ? 'cursor-pointer hover:opacity-80' : ''}`}
+                        className={`flex items-center gap-1 ${isOwner ? 'cursor-pointer hover:opacity-80' : ''}`}
                         onClick={() => {
-                          if (isOwner && !data.gdVerified) startInlineEdit('gdUsername', data.gdUsername);
+                          if (isOwner) startInlineEdit('gdUsername', data.gdUsername);
                         }}
-                        title={data.gdVerified ? t('profile.gd_locked') : isOwner ? t('profile.click_edit') : undefined}
+                        title={isOwner ? t('profile.click_edit') : undefined}
                       >
                         <Gamepad2 className="w-3 h-3" /> {data.gdUsername || t('profile.add_gd')}
                         {data.gdVerified ? (
                           <span className="inline-flex items-center gap-0.5 text-emerald-500" title={t('profile.gd_verified')}>
                             <ShieldCheck className="w-3 h-3" />
                           </span>
-                        ) : isOwner ? (
+                        ) : data.gdUsername ? (
                           <span className="text-[9px] font-bold uppercase ui-dim">{t('profile.gd_unverified')}</span>
                         ) : null}
-                        {isOwner && !data.gdVerified && <Pencil className="w-2.5 h-2.5 opacity-50" />}
+                        {isOwner && <Pencil className="w-2.5 h-2.5 opacity-50" />}
                       </span>
                     )
                   )}
@@ -564,6 +566,35 @@ export default function ProfilePage() {
                 
                 {isStaff && (
                   <div className="pt-2 flex flex-wrap gap-2">
+                    {data.gdUsername && !data.gdVerified && (
+                      <button
+                        type="button"
+                        disabled={verifyingGd}
+                        onClick={async () => {
+                          setVerifyingGd(true);
+                          try {
+                            const res = await fetch(`/api/admin/users/${data.id}/verify`, { method: 'POST' });
+                            const resData = await res.json();
+                            if (!res.ok || !resData.success) {
+                              showToast(resData.error || t('admin.verify_fail'), 'error');
+                              return;
+                            }
+                            showToast(t('admin.verify_ok', { name: data.gdUsername, n: resData.claimed || 0 }), 'success');
+                            setData({ ...data, gdVerified: true });
+                            fetchProfile();
+                          } catch {
+                            showToast(t('admin.verify_fail'), 'error');
+                          } finally {
+                            setVerifyingGd(false);
+                          }
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+                        style={{ borderColor: 'var(--border-ui)', color: 'var(--accent)' }}
+                      >
+                        <UserCheck className="w-3.5 h-3.5" />
+                        {t('admin.verify_gd')}
+                      </button>
+                    )}
                     <button 
                       onClick={handleOpenManageModal}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm hover:opacity-90 transition-opacity"

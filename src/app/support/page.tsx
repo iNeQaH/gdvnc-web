@@ -13,7 +13,7 @@ export default function SupportPage() {
   const { t } = useLanguage();
   const [selectedPlan, setSelectedPlan] = useState<number>(1);
   const [showTransfer, setShowTransfer] = useState(false);
-  const transferContent = `GDVNC ${selectedPlan}T`;
+  const transferContent = `GDVN ${selectedPlan}T`;
   const qrSrc = `https://img.vietqr.io/image/${BANK_CODE}-${BANK_ACCOUNT}-compact2.png?accountName=${encodeURIComponent(BANK_OWNER)}&addInfo=${encodeURIComponent(transferContent)}`;
 
   const plans = [
@@ -27,7 +27,7 @@ export default function SupportPage() {
     <div className="space-y-8 max-w-4xl mx-auto">
       <section className="ui-card p-6 sm:p-10 text-center space-y-4 relative overflow-hidden">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase" style={{ backgroundColor: 'rgba(236, 72, 153, 0.1)', color: '#ec4899' }}>
-          <Heart className="w-3.5 h-3.5 fill-current" /> GDVNC Support
+          <Heart className="w-3.5 h-3.5 fill-current" /> GDVN Support
         </div>
 
         <div className="space-y-2 max-w-2xl mx-auto">

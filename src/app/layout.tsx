@@ -11,20 +11,19 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://gdvnc-web.vercel.app"),
-  title: "Geometry Dash Vietnam Community",
+  title: "Geometry Dash Việt Nam",
   description: "Trang web chính thức của cộng đồng GDVN",
   openGraph: {
-    title: "Geometry Dash Vietnam Community",
+    title: "Geometry Dash Việt Nam",
     description: "Trang web chính thức của cộng đồng GDVN",
     type: "website",
     url: "https://gdvnc-web.vercel.app/",
-    siteName: "GDVNC",
+    siteName: "GDVN",
     locale: "vi_VN",
-    images: [{ url: "/api/og/site?title=Geometry%20Dash%20Vietnam%20Community&desc=Trang%20web%20chinh%20thuc%20cua%20cong%20dong%20GDVN", width: 1200, height: 630, alt: "Geometry Dash Vietnam Community" }],
   },
   twitter: {
-    card: "summary_large_image",
-    title: "Geometry Dash Vietnam Community",
+    card: "summary",
+    title: "Geometry Dash Việt Nam",
     description: "Trang web chính thức của cộng đồng GDVN",
   },
   icons: {
@@ -57,7 +56,7 @@ export default function RootLayout({
                   </main>
 
                   <footer className="border-t py-4 text-center text-xs tracking-widest font-black ui-dim" style={{ borderColor: 'var(--border-subtle)' }}>
-                    GDVNC
+                    GDVN
                   </footer>
                 </div>
               </div>
