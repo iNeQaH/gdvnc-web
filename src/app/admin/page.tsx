@@ -152,49 +152,19 @@ function ReviewDecisionToggles({
   );
 }
 
-function ReviewConfirmBar({
-  visible,
-  confirming,
-  onConfirm,
-  onCancel,
-  t,
-  selectedCount,
-}: {
-  visible: boolean;
-  confirming?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-  t: (key: DictKey) => string;
-  selectedCount: number;
-}) {
-  if (!visible) return null;
-  return (
-    <div
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5 p-1.5 rounded-2xl shadow-xl border backdrop-blur-md"
-      style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
-    >
-      <span className="px-2 text-[11px] font-bold ui-dim whitespace-nowrap">{selectedCount}</span>
-      <div className="w-px h-6" style={{ backgroundColor: 'var(--border-ui)' }} />
-      <button
-        type="button"
-        disabled={confirming || selectedCount === 0}
-        onClick={onConfirm}
-        className="px-4 py-2 rounded-xl text-xs font-bold cursor-pointer disabled:opacity-40"
-        style={{ backgroundColor: 'var(--badge-green-text)', color: '#fff' }}
-      >
-        {t('common.confirm')}
-      </button>
-      <button
-        type="button"
-        disabled={confirming}
-        onClick={onCancel}
-        className="px-4 py-2 rounded-xl text-xs font-bold cursor-pointer border disabled:opacity-40"
-        style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)', backgroundColor: 'var(--bg-subtle)' }}
-      >
-        {t('common.cancel')}
-      </button>
-    </div>
-  );
+function decisionCount(map: Record<string, ReviewDecision>) {
+  return Object.values(map).filter((v) => v === 'APPROVE' || v === 'REJECT').length;
+}
+
+function setDecisionInMap(
+  prev: Record<string, ReviewDecision>,
+  id: string,
+  value: ReviewDecision
+) {
+  const next = { ...prev };
+  if (!value) delete next[id];
+  else next[id] = value;
+  return next;
 }
 
 function AdminListPager({
@@ -321,12 +291,9 @@ export default function AdminPage() {
   const [userViewMode, setUserViewMode] = useState<'list' | 'grid'>('list');
   const [userPage, setUserPage] = useState(1);
   const [helpsTotal, setHelpsTotal] = useState(0);
-  const [recordSelected, setRecordSelected] = useState<string[]>([]);
-  const [recordAction, setRecordAction] = useState<ReviewDecision>(null);
-  const [workSelected, setWorkSelected] = useState<string[]>([]);
-  const [workAction, setWorkAction] = useState<ReviewDecision>(null);
-  const [levelSubSelected, setLevelSubSelected] = useState<string[]>([]);
-  const [levelSubAction, setLevelSubAction] = useState<ReviewDecision>(null);
+  const [recordDecisions, setRecordDecisions] = useState<Record<string, ReviewDecision>>({});
+  const [workDecisions, setWorkDecisions] = useState<Record<string, ReviewDecision>>({});
+  const [levelSubDecisions, setLevelSubDecisions] = useState<Record<string, ReviewDecision>>({});
   const [bulkConfirming, setBulkConfirming] = useState(false);
 
   useEffect(() => {
@@ -664,52 +631,45 @@ export default function AdminPage() {
   };
 
   const confirmRecordReviews = async () => {
-    if (!recordAction || recordSelected.length === 0) return;
-    const action = recordAction;
+    const entries = Object.entries(recordDecisions).filter(([, a]) => a === 'APPROVE' || a === 'REJECT') as Array<[string, 'APPROVE' | 'REJECT']>;
+    if (entries.length === 0) return;
     setBulkConfirming(true);
     let ok = 0;
-    for (const id of recordSelected) {
+    for (const [id, action] of entries) {
       if (await handleReview(id, action)) ok++;
     }
-    setRecordSelected([]);
-    setRecordAction(null);
+    setRecordDecisions({});
     await fetchPendingRecords(recordFilter, recordPage);
     setBulkConfirming(false);
-    if (ok > 0) showToast(action === 'APPROVE' ? t('admin.approve') : t('admin.reject'), action === 'REJECT' ? 'error' : 'success');
+    if (ok > 0) showToast(t('common.confirm') + `: ${ok}`, 'success');
   };
 
   const confirmWorkReviews = async () => {
-    if (!workAction || workSelected.length === 0) return;
-    const action = workAction;
+    const entries = Object.entries(workDecisions).filter(([, a]) => a === 'APPROVE' || a === 'REJECT') as Array<[string, 'APPROVE' | 'REJECT']>;
+    if (entries.length === 0) return;
     setBulkConfirming(true);
     let ok = 0;
-    for (const id of workSelected) {
+    for (const [id, action] of entries) {
       if (await handleReviewWork(id, action)) ok++;
     }
-    setWorkSelected([]);
-    setWorkAction(null);
+    setWorkDecisions({});
     await fetchWorks(workFilter, workPage);
     setBulkConfirming(false);
-    if (ok > 0) showToast(action === 'APPROVE' ? 'Đã duyệt Work!' : 'Đã từ chối Work', action === 'REJECT' ? 'error' : 'success');
+    if (ok > 0) showToast(t('common.confirm') + `: ${ok}`, 'success');
   };
 
   const confirmLevelSubReviews = async () => {
-    if (!levelSubAction || levelSubSelected.length === 0) return;
-    const action = levelSubAction;
+    const entries = Object.entries(levelSubDecisions).filter(([, a]) => a === 'APPROVE' || a === 'REJECT') as Array<[string, 'APPROVE' | 'REJECT']>;
+    if (entries.length === 0) return;
     setBulkConfirming(true);
     let ok = 0;
-    for (const id of levelSubSelected) {
+    for (const [id, action] of entries) {
       if (await handleReviewLevelSub(id, action)) ok++;
     }
-    setLevelSubSelected([]);
-    setLevelSubAction(null);
+    setLevelSubDecisions({});
     await fetchLevelSubs(levelSubFilter, levelSubPage);
     setBulkConfirming(false);
-    if (ok > 0) showToast(action === 'APPROVE' ? t('admin.level_sub_ok') : t('admin.level_sub_reject'), action === 'REJECT' ? 'error' : 'success');
-  };
-
-  const toggleId = (list: string[], id: string, setList: (v: string[]) => void) => {
-    setList(list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
+    if (ok > 0) showToast(t('common.confirm') + `: ${ok}`, 'success');
   };
 
   const filteredBadges = badgesList
@@ -879,9 +839,21 @@ export default function AdminPage() {
 
       {/* Tab 1: Record Moderation Queue */}
       {tab === 'records' && (
-        <div className="space-y-3 pb-20">
+        <div className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold ui-title">
-            <span>{t('admin.queue_title', { n: queueFilterTotal(recordCounts, recordFilter) })}</span>
+            <div className="flex items-center gap-2">
+              <span>{t('admin.queue_title', { n: queueFilterTotal(recordCounts, recordFilter) })}</span>
+              <button
+                type="button"
+                disabled={bulkConfirming || decisionCount(recordDecisions) === 0}
+                onClick={confirmRecordReviews}
+                className="px-3 py-1.5 rounded-xl text-[11px] font-bold cursor-pointer disabled:opacity-40"
+                style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-fg)' }}
+              >
+                {t('common.confirm')}
+                {decisionCount(recordDecisions) > 0 ? ` (${decisionCount(recordDecisions)})` : ''}
+              </button>
+            </div>
             <div className="flex flex-wrap items-center gap-2">
               <QueueStatusFilters
                 value={recordFilter}
@@ -889,8 +861,7 @@ export default function AdminPage() {
                 onChange={(status) => {
                   setRecordFilter(status);
                   setRecordPage(1);
-                  setRecordSelected([]);
-                  setRecordAction(null);
+                  setRecordDecisions({});
                   fetchPendingRecords(status, 1);
                 }}
                 t={t}
@@ -901,12 +872,6 @@ export default function AdminPage() {
               >
                 <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
               </button>
-              <ReviewDecisionToggles
-                value={recordAction}
-                onChange={setRecordAction}
-                t={t}
-                disabled={bulkConfirming}
-              />
             </div>
           </div>
 
@@ -926,14 +891,6 @@ export default function AdminPage() {
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
                     <div className="flex items-center gap-2.5">
-                      {rec.status === 'PENDING' && (
-                        <input
-                          type="checkbox"
-                          checked={recordSelected.includes(rec.id)}
-                          onChange={() => toggleId(recordSelected, rec.id, setRecordSelected)}
-                          className="w-4 h-4 rounded cursor-pointer accent-[var(--accent)] shrink-0"
-                        />
-                      )}
                       {rec.user ? (
                         <Link href={`/profile/${rec.user.username}`} className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs overflow-hidden shrink-0" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
                           {rec.user.avatarUrl ? (
@@ -1027,14 +984,20 @@ export default function AdminPage() {
                   )}
 
                   {rec.status === 'PENDING' && (
-                  <div className="pt-1">
+                  <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
                     <input
                       type="text"
                       placeholder={t('admin.reject_ph')}
                       value={rejectReason[rec.id] || ''}
                       onChange={(e) => setRejectReason({ ...rejectReason, [rec.id]: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded-xl text-xs border focus:outline-none"
+                      className="flex-1 px-3 py-1.5 rounded-xl text-xs border focus:outline-none"
                       style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                    />
+                    <ReviewDecisionToggles
+                      value={recordDecisions[rec.id] || null}
+                      onChange={(v) => setRecordDecisions((prev) => setDecisionInMap(prev, rec.id, v))}
+                      t={t}
+                      disabled={bulkConfirming}
                     />
                   </div>
                   )}
@@ -1044,31 +1007,32 @@ export default function AdminPage() {
                 page={recordPage}
                 total={queueFilterTotal(recordCounts, recordFilter)}
                 onPage={(p) => {
-                  setRecordSelected([]);
+                  setRecordDecisions({});
                   fetchPendingRecords(recordFilter, p);
                 }}
                 t={t}
               />
             </div>
           )}
-          <ReviewConfirmBar
-            visible={recordAction !== null}
-            confirming={bulkConfirming}
-            selectedCount={recordSelected.length}
-            onConfirm={confirmRecordReviews}
-            onCancel={() => {
-              setRecordAction(null);
-              setRecordSelected([]);
-            }}
-            t={t}
-          />
         </div>
       )}
 
       {tab === 'works' && (
-        <div className="space-y-3 pb-20">
+        <div className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold ui-title">
-            <span>{t('admin.works_queue', { n: queueFilterTotal(workCounts, workFilter) })}</span>
+            <div className="flex items-center gap-2">
+              <span>{t('admin.works_queue', { n: queueFilterTotal(workCounts, workFilter) })}</span>
+              <button
+                type="button"
+                disabled={bulkConfirming || decisionCount(workDecisions) === 0}
+                onClick={confirmWorkReviews}
+                className="px-3 py-1.5 rounded-xl text-[11px] font-bold cursor-pointer disabled:opacity-40"
+                style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-fg)' }}
+              >
+                {t('common.confirm')}
+                {decisionCount(workDecisions) > 0 ? ` (${decisionCount(workDecisions)})` : ''}
+              </button>
+            </div>
             <div className="flex flex-wrap items-center gap-2">
               <QueueStatusFilters
                 value={workFilter}
@@ -1076,8 +1040,7 @@ export default function AdminPage() {
                 onChange={(status) => {
                   setWorkFilter(status);
                   setWorkPage(1);
-                  setWorkSelected([]);
-                  setWorkAction(null);
+                  setWorkDecisions({});
                   fetchWorks(status, 1);
                 }}
                 t={t}
@@ -1088,12 +1051,6 @@ export default function AdminPage() {
               >
                 <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
               </button>
-              <ReviewDecisionToggles
-                value={workAction}
-                onChange={setWorkAction}
-                t={t}
-                disabled={bulkConfirming}
-              />
             </div>
           </div>
 
@@ -1110,14 +1067,6 @@ export default function AdminPage() {
                 <div key={work.id} className="ui-card p-4 sm:p-5 space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
                     <div className="flex items-center gap-2.5">
-                      {work.status === 'PENDING' && (
-                        <input
-                          type="checkbox"
-                          checked={workSelected.includes(work.id)}
-                          onChange={() => toggleId(workSelected, work.id, setWorkSelected)}
-                          className="w-4 h-4 rounded cursor-pointer accent-[var(--accent)] shrink-0"
-                        />
-                      )}
                       <Link href={`/profile/${work.user.username}`} className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs overflow-hidden shrink-0" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
                         {work.user.avatarUrl ? (
                           <img src={work.user.avatarUrl} alt="" className="w-full h-full object-cover" />
@@ -1225,6 +1174,14 @@ export default function AdminPage() {
                       className="w-full px-3 py-1.5 rounded-xl text-xs border focus:outline-none"
                       style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                     />
+                    <div className="flex justify-end">
+                      <ReviewDecisionToggles
+                        value={workDecisions[work.id] || null}
+                        onChange={(v) => setWorkDecisions((prev) => setDecisionInMap(prev, work.id, v))}
+                        t={t}
+                        disabled={bulkConfirming}
+                      />
+                    </div>
                   </div>
                   )}
                 </div>
@@ -1233,24 +1190,13 @@ export default function AdminPage() {
                 page={workPage}
                 total={queueFilterTotal(workCounts, workFilter)}
                 onPage={(p) => {
-                  setWorkSelected([]);
+                  setWorkDecisions({});
                   fetchWorks(workFilter, p);
                 }}
                 t={t}
               />
             </div>
           )}
-          <ReviewConfirmBar
-            visible={workAction !== null}
-            confirming={bulkConfirming}
-            selectedCount={workSelected.length}
-            onConfirm={confirmWorkReviews}
-            onCancel={() => {
-              setWorkAction(null);
-              setWorkSelected([]);
-            }}
-            t={t}
-          />
         </div>
       )}
 
@@ -1263,9 +1209,21 @@ export default function AdminPage() {
         )}
 
         {tab === 'levelSubs' && (
-        <div className="space-y-3 pb-20">
+        <div className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold ui-title">
-            <span>{t('admin.level_sub_queue', { n: queueFilterTotal(levelSubCounts, levelSubFilter) })}</span>
+            <div className="flex items-center gap-2">
+              <span>{t('admin.level_sub_queue', { n: queueFilterTotal(levelSubCounts, levelSubFilter) })}</span>
+              <button
+                type="button"
+                disabled={bulkConfirming || decisionCount(levelSubDecisions) === 0}
+                onClick={confirmLevelSubReviews}
+                className="px-3 py-1.5 rounded-xl text-[11px] font-bold cursor-pointer disabled:opacity-40"
+                style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-fg)' }}
+              >
+                {t('common.confirm')}
+                {decisionCount(levelSubDecisions) > 0 ? ` (${decisionCount(levelSubDecisions)})` : ''}
+              </button>
+            </div>
             <div className="flex flex-wrap items-center gap-2">
               <QueueStatusFilters
                 value={levelSubFilter}
@@ -1273,8 +1231,7 @@ export default function AdminPage() {
                 onChange={(status) => {
                   setLevelSubFilter(status);
                   setLevelSubPage(1);
-                  setLevelSubSelected([]);
-                  setLevelSubAction(null);
+                  setLevelSubDecisions({});
                   fetchLevelSubs(status, 1);
                 }}
                 t={t}
@@ -1285,12 +1242,6 @@ export default function AdminPage() {
               >
                 <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
               </button>
-              <ReviewDecisionToggles
-                value={levelSubAction}
-                onChange={setLevelSubAction}
-                t={t}
-                disabled={bulkConfirming}
-              />
             </div>
           </div>
           {loadingLevelSubs ? (
@@ -1306,14 +1257,6 @@ export default function AdminPage() {
                 <div key={sub.id} className="ui-card p-4 sm:p-5 space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
                     <div className="flex items-center gap-2.5">
-                      {sub.status === 'PENDING' && (
-                        <input
-                          type="checkbox"
-                          checked={levelSubSelected.includes(sub.id)}
-                          onChange={() => toggleId(levelSubSelected, sub.id, setLevelSubSelected)}
-                          className="w-4 h-4 rounded cursor-pointer accent-[var(--accent)] shrink-0"
-                        />
-                      )}
                       <Link href={`/profile/${sub.user?.username}`} className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs overflow-hidden shrink-0" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
                         {sub.user?.avatarUrl ? (
                           <img src={sub.user.avatarUrl} alt="" className="w-full h-full object-cover" />
@@ -1346,6 +1289,7 @@ export default function AdminPage() {
                     </div>
                   )}
                   {sub.status === 'PENDING' && (
+                  <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
                     <input
                       placeholder={t('admin.reject_ph')}
                       value={rejectReason[sub.id] || ''}
@@ -1353,6 +1297,13 @@ export default function AdminPage() {
                       className="w-full px-3 py-1.5 rounded-xl text-xs border focus:outline-none"
                       style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                     />
+                    <ReviewDecisionToggles
+                      value={levelSubDecisions[sub.id] || null}
+                      onChange={(v) => setLevelSubDecisions((prev) => setDecisionInMap(prev, sub.id, v))}
+                      t={t}
+                      disabled={bulkConfirming}
+                    />
+                  </div>
                   )}
                 </div>
               ))}
@@ -1360,24 +1311,13 @@ export default function AdminPage() {
                 page={levelSubPage}
                 total={queueFilterTotal(levelSubCounts, levelSubFilter)}
                 onPage={(p) => {
-                  setLevelSubSelected([]);
+                  setLevelSubDecisions({});
                   fetchLevelSubs(levelSubFilter, p);
                 }}
                 t={t}
               />
             </div>
           )}
-          <ReviewConfirmBar
-            visible={levelSubAction !== null}
-            confirming={bulkConfirming}
-            selectedCount={levelSubSelected.length}
-            onConfirm={confirmLevelSubReviews}
-            onCancel={() => {
-              setLevelSubAction(null);
-              setLevelSubSelected([]);
-            }}
-            t={t}
-          />
         </div>
       )}
 
