@@ -88,7 +88,7 @@ async function shiftPlacementsAndRecalcPp(
   if (updatesToRun.length > 0) {
     for (let i = 0; i < updatesToRun.length; i += 500) {
       const chunk = updatesToRun.slice(i, i + 500);
-      let sql = 'UPDATE `Level` SET `basePp` = CASE `id` ';
+      let sql = 'UPDATE "Level" SET "basePp" = CASE "id" ';
       const ids = [];
       
       for (const u of chunk) {
@@ -96,7 +96,8 @@ async function shiftPlacementsAndRecalcPp(
         ids.push(`'${u.id}'`);
       }
       
-      sql += `END WHERE \`id\` IN (${ids.join(',')});`;
+      sql += `END WHERE "id" IN (${ids.join(',')});`;
+      
       await tx.$executeRawUnsafe(sql);
     }
   }
