@@ -65,6 +65,21 @@ type Particle = {
   blinkSpeed: number;
 };
 
+function mixRgb(a: [number, number, number], b: [number, number, number], t: number) {
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * t),
+    Math.round(a[1] + (b[1] - a[1]) * t),
+    Math.round(a[2] + (b[2] - a[2]) * t),
+  ] as [number, number, number];
+}
+
+function readAccentRgb(el: HTMLElement): [number, number, number] {
+  const raw = getComputedStyle(el).color || 'rgb(226, 232, 240)';
+  const m = raw.match(/(\d+)[^\d]+(\d+)[^\d]+(\d+)/);
+  if (!m) return [226, 232, 240];
+  return [Number(m[1]), Number(m[2]), Number(m[3])];
+}
+
 export default function TimelineFx({
   viewStart,
   ppd,
@@ -109,17 +124,24 @@ export default function TimelineFx({
     let last = performance.now();
 
     function spawn(scatter: boolean): Particle {
-      const speed = 32 + Math.random() * 48;
+      const x = scatter ? Math.random() * width : width * (0.78 + Math.random() * 0.28);
+      const y = scatter ? Math.random() * height * 0.55 : -12 - Math.random() * 40;
+      const tx = -12;
+      const ty = height + 12;
+      const dist = Math.max(80, Math.hypot(tx - x, ty - y));
+      const maxSpeed = dist / 2.4;
+      const minSpeed = dist / 16;
+      const speed = minSpeed + Math.random() * (maxSpeed - minSpeed);
       return {
-        x: scatter ? Math.random() * width : width * (0.78 + Math.random() * 0.28),
-        y: scatter ? Math.random() * height * 0.55 : -10 - Math.random() * 36,
-        vx: -(22 + Math.random() * 38),
-        vy: speed * (0.55 + Math.random() * 0.45),
+        x,
+        y,
+        vx: ((tx - x) / dist) * speed,
+        vy: ((ty - y) / dist) * speed,
         size: 2 + Math.random() * 4,
-        life: scatter ? Math.random() * 2.2 : 0,
-        maxLife: 2.6 + Math.random() * 3.2,
+        life: scatter ? Math.random() * 6 : 0,
+        maxLife: 10 + Math.random() * 8,
         blink: Math.random() * Math.PI * 2,
-        blinkSpeed: 4.2 + Math.random() * 7.5,
+        blinkSpeed: 3.2 + Math.random() * 6.5,
       };
     }
 
@@ -130,6 +152,8 @@ export default function TimelineFx({
     function tick(now: number) {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
+      const theme = readAccentRgb(canvas);
+      const bright = mixRgb(theme, [255, 255, 255], 0.35);
       ctx!.clearRect(0, 0, width, height);
       const list = particles.current;
       for (let i = 0; i < list.length; i++) {
@@ -143,17 +167,23 @@ export default function TimelineFx({
           continue;
         }
         const fade = 1 - p.life / p.maxLife;
-        const flash = 0.28 + 0.72 * (0.5 + 0.5 * Math.sin(p.blink));
-        const white = flash > 0.8;
+        const wave = 0.5 + 0.5 * Math.sin(p.blink);
+        const flash = 0.22 + 0.78 * wave;
+        const white = wave > 0.88;
+        const themeFlash = !white && wave > 0.62;
         ctx!.save();
-        ctx!.globalAlpha = fade * (0.12 + flash * 0.72);
+        ctx!.globalAlpha = fade * (0.18 + flash * 0.72);
         if (white) {
           ctx!.shadowColor = 'rgba(255,255,255,0.45)';
           ctx!.shadowBlur = 5;
           ctx!.fillStyle = '#ffffff';
+        } else if (themeFlash) {
+          ctx!.shadowColor = `rgba(${theme[0]},${theme[1]},${theme[2]},0.4)`;
+          ctx!.shadowBlur = 4;
+          ctx!.fillStyle = `rgb(${bright[0]},${bright[1]},${bright[2]})`;
         } else {
           ctx!.shadowBlur = 0;
-          ctx!.fillStyle = 'rgba(226,232,240,0.9)';
+          ctx!.fillStyle = `rgb(${theme[0]},${theme[1]},${theme[2]})`;
         }
         ctx!.fillRect(p.x, p.y, p.size, p.size);
         ctx!.restore();

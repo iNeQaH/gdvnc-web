@@ -30,13 +30,16 @@ export default function TimelineApp() {
   const [formOpen, setFormOpen] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
   const [saving, setSaving] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const [ldm, setLdm] = useState(false);
+  const zoomHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [zoomTip, setZoomTip] = useState<{ index: number } | null>(null);
 
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = prev;
+      if (zoomHideRef.current) clearTimeout(zoomHideRef.current);
     };
   }, []);
 
@@ -49,6 +52,11 @@ export default function TimelineApp() {
       }
     } catch {
       setCanEdit(false);
+    }
+    try {
+      setLdm(localStorage.getItem('gdvnc_timeline_ldm') === '1');
+    } catch {
+      setLdm(false);
     }
   }, []);
 
@@ -149,7 +157,28 @@ export default function TimelineApp() {
     setCenter(clampCenter(Date.now(), w, pxPerDayAt(zoom)));
   }
 
+  function toggleLdm() {
+    setLdm((on) => {
+      const next = !on;
+      try {
+        localStorage.setItem('gdvnc_timeline_ldm', next ? '1' : '0');
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }
+
+  function applyZoom(next: number) {
+    const index = nearestTierIndex(next);
+    setZoom(index);
+    setZoomTip({ index });
+    if (zoomHideRef.current) clearTimeout(zoomHideRef.current);
+    zoomHideRef.current = setTimeout(() => setZoomTip(null), 1000);
+  }
+
   const tierLabel = t(`timeline.tier.${tier.id}` as DictKey);
+  const zoomTipPct = zoomTip ? zoomTip.index / (TIERS.length - 1) : 0;
 
   return (
     <div className="gdvn-timeline" ref={rootRef}>
@@ -164,12 +193,13 @@ export default function TimelineApp() {
         <div className="actions">
           <button
             type="button"
-            className="icon-btn"
-            onClick={jumpToToday}
-            aria-label={t('timeline.jump_today')}
-            title={t('timeline.jump_today')}
+            className={`ldm-btn ${ldm ? 'is-on' : ''}`}
+            onClick={toggleLdm}
+            aria-pressed={ldm}
+            aria-label={t('timeline.ldm_hint')}
+            title={t('timeline.ldm_hint')}
           >
-            <RotateCcw className="w-4 h-4" />
+            {t('timeline.ldm')}
           </button>
           {canEdit ? (
             <button
@@ -200,6 +230,7 @@ export default function TimelineApp() {
           setFormOpen(true);
         }}
         canEdit={canEdit}
+        ldm={ldm}
         t={t}
       />
 
@@ -210,8 +241,18 @@ export default function TimelineApp() {
         </div>
       ) : null}
 
+      <button
+        type="button"
+        className="jump-today-dock"
+        onClick={jumpToToday}
+        aria-label={t('timeline.jump_today')}
+        title={t('timeline.jump_today')}
+      >
+        <RotateCcw className="w-4 h-4" />
+      </button>
+
       <div className="zoom-dock">
-        <button type="button" onClick={() => setZoom((z) => stepZoom(z, -1))} aria-label={t('timeline.zoom_out')}>
+        <button type="button" onClick={() => applyZoom(stepZoom(zoom, -1))} aria-label={t('timeline.zoom_out')}>
           −
         </button>
         <div className="zoom-track-wrap">
@@ -224,6 +265,16 @@ export default function TimelineApp() {
               />
             ))}
           </div>
+          {zoomTip ? (
+            <div
+              className="zoom-tip"
+              style={{
+                left: `calc(var(--zoom-thumb) / 2 + ${zoomTipPct} * (100% - var(--zoom-thumb)))`,
+              }}
+            >
+              {t(`timeline.tier.${TIERS[zoomTip.index].id}` as DictKey)}
+            </div>
+          ) : null}
           <input
             className="zoom-track"
             type="range"
@@ -231,11 +282,12 @@ export default function TimelineApp() {
             max={TIERS.length - 1}
             step="1"
             value={nearestTierIndex(zoom)}
-            onChange={(e) => setZoom(Number(e.target.value))}
+            onInput={(e) => applyZoom(Number((e.target as HTMLInputElement).value))}
+            onChange={(e) => applyZoom(Number(e.target.value))}
             aria-label={t('timeline.zoom_in')}
           />
         </div>
-        <button type="button" onClick={() => setZoom((z) => stepZoom(z, 1))} aria-label={t('timeline.zoom_in')}>
+        <button type="button" onClick={() => applyZoom(stepZoom(zoom, 1))} aria-label={t('timeline.zoom_in')}>
           +
         </button>
       </div>

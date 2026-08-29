@@ -81,6 +81,50 @@
   justify-self: end;
 }
 
+.gdvn-timeline .ldm-btn {
+  min-width: 44px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  background: var(--tl-hud);
+  border: 1px solid var(--tl-border);
+  color: var(--tl-accent-2);
+  cursor: pointer;
+}
+
+.gdvn-timeline .ldm-btn:hover,
+.gdvn-timeline .ldm-btn.is-on {
+  background: var(--tl-accent);
+  color: var(--tl-btn-fg);
+  border-color: var(--tl-accent);
+}
+
+.gdvn-timeline .jump-today-dock {
+  position: absolute;
+  left: 20px;
+  bottom: 22px;
+  z-index: 20;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tl-hud);
+  border: 1px solid var(--tl-border);
+  color: var(--tl-accent-2);
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+}
+
+.gdvn-timeline .jump-today-dock:hover {
+  background: var(--tl-accent-soft);
+}
+
 .gdvn-timeline .zoom-dock {
   position: absolute;
   bottom: 22px;
@@ -95,6 +139,7 @@
   border: 1px solid var(--tl-border);
   border-radius: 999px;
   backdrop-filter: blur(14px);
+  overflow: visible;
 }
 
 .gdvn-timeline .zoom-dock button {
@@ -119,6 +164,7 @@
   height: 18px;
   display: flex;
   align-items: center;
+  overflow: visible;
 }
 
 .gdvn-timeline .zoom-snaps {
@@ -214,6 +260,23 @@
 .gdvn-timeline .zoom-track::-ms-fill-upper {
   background: transparent;
   border: none;
+}
+
+.gdvn-timeline .zoom-tip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+  z-index: 3;
+  pointer-events: none;
+  white-space: nowrap;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--tl-accent-2);
+  background: var(--tl-hud);
+  border: 1px solid var(--tl-border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  backdrop-filter: blur(12px);
 }
 
 .gdvn-timeline .brand h1 {
@@ -336,6 +399,7 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
+  color: var(--tl-accent);
 }
 
 .gdvn-timeline .timeline-clip {

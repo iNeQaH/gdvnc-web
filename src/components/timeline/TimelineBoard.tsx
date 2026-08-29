@@ -43,6 +43,7 @@ export default function TimelineBoard({
   onOpen,
   onEdit,
   canEdit,
+  ldm,
   t,
 }: {
   events: ChronicleEvent[];
@@ -55,6 +56,7 @@ export default function TimelineBoard({
   onOpen: (event: ChronicleEvent) => void;
   onEdit: (event: ChronicleEvent) => void;
   canEdit: boolean;
+  ldm: boolean;
   t: (key: DictKey) => string;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -225,7 +227,9 @@ export default function TimelineBoard({
       onDoubleClick={onDblClick}
       onClick={() => setCluster(null)}
     >
-      <TimelineFx viewStart={viewStart} ppd={ppd} width={size.w} height={size.h} />
+      {ldm ? null : (
+        <TimelineFx viewStart={viewStart} ppd={ppd} width={size.w} height={size.h} />
+      )}
       <div className="timeline-clip" style={{ width: lineEndX }}>
       {stackPeriods(posPeriods).map(({ e, lane }) => {
         const left = timeToX(e.span.start);
