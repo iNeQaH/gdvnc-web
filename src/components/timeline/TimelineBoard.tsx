@@ -14,6 +14,7 @@ import {
 } from '@/lib/timeline/time';
 import { clusterCollapsed, layoutLane, type LaneItem } from '@/lib/timeline/layout';
 import EventCard from '@/components/timeline/EventCard';
+import TimelineFx from '@/components/timeline/TimelineFx';
 import type { ChronicleEvent, TimelineTierId } from '@/lib/timeline/types';
 import type { DictKey } from '@/lib/dictionaries';
 
@@ -224,6 +225,7 @@ export default function TimelineBoard({
       onDoubleClick={onDblClick}
       onClick={() => setCluster(null)}
     >
+      <TimelineFx viewStart={viewStart} ppd={ppd} width={size.w} height={size.h} />
       <div className="timeline-clip" style={{ width: lineEndX }}>
       {stackPeriods(posPeriods).map(({ e, lane }) => {
         const left = timeToX(e.span.start);
@@ -267,6 +269,20 @@ export default function TimelineBoard({
       })}
 
       <div className="gold-line" />
+
+      {[...posLayout, ...negLayout]
+        .filter((i) => !i.collapsed)
+        .map((i) => {
+          const x = i.left + i.width / 2;
+          const neg = i.event.nature === 'negative';
+          return (
+            <div
+              key={`stem-${i.event.id}`}
+              className={`stem ${neg ? 'neg' : 'pos'}`}
+              style={{ left: x }}
+            />
+          );
+        })}
 
       <div className="lane pos">
         {posLayout

@@ -17,15 +17,9 @@ export function timelineRightPadPx() {
 }
 
 export function clampCenter(ms: number, viewWidthPx: number, ppd: number) {
-  const origin = TIMELINE_ORIGIN;
-  const end = timelineEnd();
   const half = (viewWidthPx / 2 / ppd) * DAY_MS;
-  const padMs = (timelineRightPadPx() / ppd) * DAY_MS;
-  const span = end - origin;
-  if (span <= half * 2) return origin + span / 2;
-  const maxCenter = end - half + padMs;
-  const minCenter = origin + half;
-  return Math.min(maxCenter, Math.max(minCenter, ms));
+  const minCenter = TIMELINE_ORIGIN + half;
+  return Math.max(minCenter, ms);
 }
 
 /** Pixels per day at each discrete zoom snap. */

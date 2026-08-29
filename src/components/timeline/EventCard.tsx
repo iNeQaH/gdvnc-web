@@ -35,7 +35,7 @@ export default function EventCard({
   return (
     <article
       className={`event-card ${tone}`}
-      style={{ left: item.left }}
+      style={{ left: item.left, width: item.width }}
       onClick={() => onOpen(event)}
       onContextMenu={(e) => {
         if (!canEdit) return;
@@ -48,7 +48,6 @@ export default function EventCard({
         <Media event={event} />
       </div>
       {side === 'neg' && <div className="card-title">{event.title}</div>}
-      <div className="connector" />
     </article>
   );
 }

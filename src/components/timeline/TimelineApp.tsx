@@ -230,16 +230,10 @@ export default function TimelineApp() {
             min="0"
             max={TIERS.length - 1}
             step="1"
-            list="gdvn-timeline-zoom-snaps"
             value={nearestTierIndex(zoom)}
             onChange={(e) => setZoom(Number(e.target.value))}
             aria-label={t('timeline.zoom_in')}
           />
-          <datalist id="gdvn-timeline-zoom-snaps">
-            {TIERS.map((_, i) => (
-              <option key={i} value={i} />
-            ))}
-          </datalist>
         </div>
         <button type="button" onClick={() => setZoom((z) => stepZoom(z, 1))} aria-label={t('timeline.zoom_in')}>
           +

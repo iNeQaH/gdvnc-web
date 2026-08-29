@@ -1,7 +1,7 @@
 import { TIERS } from '@/lib/timeline/tiers';
 import type { ChronicleEvent } from '@/lib/timeline/types';
 
-const CARD_W = 196;
+export const CARD_W = 200;
 const CARD_GAP = 22;
 
 export type LaneItem = {
