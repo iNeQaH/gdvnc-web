@@ -126,7 +126,6 @@ export default function TimelineApp() {
     return () => window.removeEventListener('keydown', onKey);
   }, [zoom]);
 
-  const tier = TIERS[nearestTierIndex(zoom)];
   const viewLabel = useMemo(() => formatDate(center), [center]);
 
   async function saveEvent(next: ChronicleEvent) {
@@ -266,7 +265,6 @@ export default function TimelineApp() {
     panTo(eventSpan(next).center);
   }
 
-  const tierLabel = t(`timeline.tier.${tier.id}` as DictKey);
   const zoomTipPct = zoomTip ? zoomTip.index / (TIERS.length - 1) : 0;
 
   return (
@@ -282,7 +280,7 @@ export default function TimelineApp() {
           onClose={() => setDateOpen(false)}
           onPick={jumpToDate}
           valueMs={center}
-          chip={`${tierLabel} · ${viewLabel}`}
+          chip={viewLabel}
           t={t}
         />
         <div className="actions">

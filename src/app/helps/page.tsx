@@ -192,11 +192,11 @@ export default function HelpsPage() {
             <div className="text-sm ui-dim">{t('helps.faq_loading')}</div>
           ) : faqHtml.trim() ? (
             <article
-              className="faq-body ui-card p-5 sm:p-8 rounded-2xl text-sm leading-relaxed space-y-3"
+              className="faq-body text-sm leading-relaxed space-y-3"
               dangerouslySetInnerHTML={{ __html: sanitizeFaqHtml(faqHtml) }}
             />
           ) : (
-            <div className="ui-card p-8 rounded-2xl text-sm ui-dim text-center">{t('helps.faq_empty')}</div>
+            <div className="text-sm ui-dim">{t('helps.faq_empty')}</div>
           )}
         </div>
       )}

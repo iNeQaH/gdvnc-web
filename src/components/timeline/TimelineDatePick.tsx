@@ -102,55 +102,57 @@ export default function TimelineDatePick({
       ? createPortal(
           <div className="date-jump-overlay" onMouseDown={closeAnimated}>
             <form
-              className="now-chip now-chip-edit date-jump-fly"
+              className={`now-chip now-chip-edit date-jump-fly${centered ? ' is-centered' : ''}`}
               style={
                 centered
                   ? {
                       top: '50%',
                       left: '50%',
-                      width: 280,
                       transform: 'translate(-50%, -50%) scale(1.08)',
                     }
                   : {
                       top: fly.top,
                       left: fly.left,
-                      width: Math.max(fly.width, 168),
                       transform: 'none',
                     }
               }
               onSubmit={go}
               onMouseDown={(e) => e.stopPropagation()}
             >
-              <input
-                ref={dayRef}
-                className="date-jump-num"
-                inputMode="numeric"
-                maxLength={2}
-                aria-label={t('timeline.day')}
-                value={day}
-                onChange={(e) => setDay(digits(e.target.value, 2))}
-              />
-              <span>/</span>
-              <input
-                className="date-jump-num"
-                inputMode="numeric"
-                maxLength={2}
-                aria-label={t('timeline.month')}
-                value={month}
-                onChange={(e) => setMonth(digits(e.target.value, 2))}
-              />
-              <span>/</span>
-              <input
-                className="date-jump-num is-year"
-                inputMode="numeric"
-                maxLength={4}
-                aria-label={t('timeline.year')}
-                value={year}
-                onChange={(e) => setYear(digits(e.target.value, 4))}
-              />
-              <button type="submit" className="date-jump-go">
-                {t('timeline.goto_date')}
-              </button>
+              <div className="date-jump-lead">
+                <input
+                  ref={dayRef}
+                  className="date-jump-num"
+                  inputMode="numeric"
+                  maxLength={2}
+                  aria-label={t('timeline.day')}
+                  value={day}
+                  onChange={(e) => setDay(digits(e.target.value, 2))}
+                />
+                <span>/</span>
+                <input
+                  className="date-jump-num"
+                  inputMode="numeric"
+                  maxLength={2}
+                  aria-label={t('timeline.month')}
+                  value={month}
+                  onChange={(e) => setMonth(digits(e.target.value, 2))}
+                />
+                <span>/</span>
+              </div>
+              <div className="date-jump-tail">
+                <input
+                  className="date-jump-num is-year"
+                  inputMode="numeric"
+                  maxLength={4}
+                  aria-label={t('timeline.year')}
+                  value={year}
+                  onChange={(e) => setYear(digits(e.target.value, 4))}
+                />
+                <button type="submit" className="date-jump-go">
+                  {t('timeline.goto_date')}
+                </button>
+              </div>
             </form>
           </div>,
           document.body

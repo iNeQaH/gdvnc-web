@@ -154,28 +154,54 @@
 .date-jump-overlay .date-jump-fly {
   position: fixed;
   z-index: 401;
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  width: max-content;
   gap: 4px;
   font-size: 13px;
   letter-spacing: 0.06em;
   color: var(--accent-hover);
-  padding: 8px 12px;
+  padding: 6px 8px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--bg-card) 86%, transparent);
   border: 1px solid var(--border-ui);
   backdrop-filter: blur(12px);
   cursor: default;
-  transform-origin: center center;
+  overflow: hidden;
+  box-sizing: border-box;
+  transform-origin: left center;
   transition:
     top 0.18s cubic-bezier(0.22, 1, 0.36, 1),
     left 0.18s cubic-bezier(0.22, 1, 0.36, 1),
-    width 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    gap 0.18s cubic-bezier(0.22, 1, 0.36, 1),
     transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.date-jump-overlay .date-jump-lead,
+.date-jump-overlay .date-jump-tail {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.date-jump-overlay .date-jump-lead {
+  overflow: hidden;
+  max-width: 7.5rem;
+  transition:
+    max-width 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.16s ease,
+    gap 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.date-jump-overlay .date-jump-tail {
+  position: relative;
+  z-index: 1;
+}
+
 .date-jump-overlay .date-jump-num {
-  width: 2.1em;
+  width: 2.35ch;
   border: 0;
   background: color-mix(in srgb, var(--bg-subtle) 80%, transparent);
   color: var(--text-title);
@@ -183,11 +209,15 @@
   font-size: 14px;
   font-variant-numeric: tabular-nums;
   border-radius: 6px;
-  padding: 4px 0;
+  padding: 4px 5px;
+  box-sizing: content-box;
+  flex-shrink: 0;
 }
 
 .date-jump-overlay .date-jump-num.is-year {
-  width: 3.4em;
+  width: 4.4ch;
+  position: relative;
+  z-index: 2;
 }
 
 .date-jump-overlay .date-jump-num:focus {
@@ -195,7 +225,7 @@
 }
 
 .date-jump-overlay .date-jump-go {
-  margin-left: 4px;
+  margin-left: 2px;
   border: 0;
   border-radius: 999px;
   background: var(--accent);
@@ -204,12 +234,49 @@
   font-weight: 700;
   padding: 4px 10px;
   cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  position: relative;
+  z-index: 1;
+  max-width: 4.5rem;
+  overflow: hidden;
+  transition:
+    max-width 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    margin 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.16s ease,
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.date-jump-overlay .date-jump-fly:not(.is-centered) {
+  padding-left: 8px;
+  padding-right: 8px;
+  gap: 0;
+}
+
+.date-jump-overlay .date-jump-fly:not(.is-centered) .date-jump-lead {
+  max-width: 0;
+  opacity: 0;
+  gap: 0;
+  pointer-events: none;
+}
+
+.date-jump-overlay .date-jump-fly:not(.is-centered) .date-jump-go {
+  max-width: 0;
+  margin-left: -2.6em;
+  padding-left: 0;
+  padding-right: 0;
+  opacity: 0;
+  transform: translateX(-8px);
+  pointer-events: none;
 }
 
 .gdvn-timeline .actions {
   display: flex;
   gap: 8px;
   justify-self: end;
+  align-items: center;
+  flex-wrap: nowrap;
 }
 
 .gdvn-timeline .ldm-btn {
@@ -506,12 +573,12 @@
   position: absolute;
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.035);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.008));
   border-radius: 2px;
   pointer-events: none;
-  filter: blur(1.1px);
+  filter: blur(1.4px) brightness(0.42) saturate(0.4);
   transform: translate(-50%, -50%);
   overflow: hidden;
 }
@@ -519,6 +586,7 @@
 .gdvn-timeline .timeline-ghost .card-title {
   font-size: 12px;
   padding: 4px 6px 6px;
+  color: rgba(255, 255, 255, 0.28);
 }
 
 .gdvn-timeline .timeline-ghost .card-frame {
@@ -532,6 +600,11 @@
   min-height: 48px;
 }
 
+.gdvn-timeline .timeline-ghost .card-media img {
+  filter: brightness(0.38) contrast(0.9);
+  opacity: 0.55;
+}
+
 .gdvn-timeline .timeline-ghost .card-desc {
   font-size: 12px;
   min-height: 0;
@@ -539,11 +612,11 @@
 }
 
 .gdvn-timeline .timeline-ghost.is-large {
-  filter: blur(0.9px);
+  filter: blur(1.15px) brightness(0.42) saturate(0.4);
 }
 
 .gdvn-timeline .timeline-ghost.is-small {
-  filter: blur(1.6px);
+  filter: blur(1.8px) brightness(0.36) saturate(0.35);
 }
 
 .gdvn-timeline .timeline-particles {
@@ -1063,10 +1136,25 @@
 
 @media (max-width: 767px) {
   .gdvn-timeline .hud {
-    grid-template-columns: 1fr auto;
-    align-items: start;
-    gap: 6px 8px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "brand actions"
+      "date date";
+    align-items: center;
+    gap: 8px 8px;
     padding: 8px 10px 0;
+  }
+
+  .gdvn-timeline .brand {
+    grid-area: brand;
+    min-width: 0;
+  }
+
+  .gdvn-timeline .actions {
+    grid-area: actions;
+    justify-self: end;
+    align-self: center;
+    gap: 4px;
   }
 
   .gdvn-timeline .brand h1 {
@@ -1085,7 +1173,7 @@
   }
 
   .gdvn-timeline .date-jump {
-    grid-column: 1 / -1;
+    grid-area: date;
     justify-self: center;
   }
 
@@ -1118,6 +1206,7 @@
   .gdvn-timeline .gold-btn {
     font-size: 9px;
     padding: 6px 10px;
+    white-space: nowrap;
   }
 
   .gdvn-timeline .jump-today-dock {
