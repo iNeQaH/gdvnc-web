@@ -560,7 +560,7 @@
   top: 0;
   left: 0;
   bottom: 0;
-  overflow: hidden;
+  overflow: visible;
   z-index: 3;
 }
 
@@ -595,7 +595,7 @@
   height: 72px;
   display: grid;
   place-items: center;
-  transform: translateY(-50%);
+  transform: translateY(calc(-50% - 36px));
   border: 0;
   background: transparent;
   color: var(--tl-accent-2);
