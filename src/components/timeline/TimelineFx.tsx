@@ -174,7 +174,8 @@ export default function TimelineFx({
     let last = performance.now();
 
     function spawn(scatter: boolean): Particle {
-      const y = height * 0.5 + (Math.random() - 0.5) * height * 0.46;
+      const band = Math.min(52, height * 0.08);
+      const y = height * 0.5 + (Math.random() - 0.5) * band;
       const x = scatter ? Math.random() * width : width + 8 + Math.random() * 48;
       const dist = Math.max(80, width + 56);
       const maxSpeed = dist / 2.8;
@@ -184,7 +185,7 @@ export default function TimelineFx({
         x,
         y,
         vx: -speed,
-        vy: (Math.random() - 0.5) * 6,
+        vy: (Math.random() - 0.5) * 1.4,
         size: 2 + Math.random() * 4,
         life: scatter ? Math.random() * 6 : 0,
         maxLife: 10 + Math.random() * 8,
