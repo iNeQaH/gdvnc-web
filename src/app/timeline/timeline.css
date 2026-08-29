@@ -39,7 +39,7 @@
   position: absolute;
   top: 0;
   right: 0;
-  width: 12%;
+  width: 36px;
   height: 100%;
   z-index: 11;
   pointer-events: none;
@@ -112,8 +112,37 @@
   background: var(--tl-accent-soft);
 }
 
-.gdvn-timeline .zoom-track {
+.gdvn-timeline .zoom-track-wrap {
+  position: relative;
   width: min(240px, 42vw);
+}
+
+.gdvn-timeline .zoom-snaps {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 10px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.gdvn-timeline .zoom-snap {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 10px;
+  background: var(--tl-accent);
+  opacity: 0.4;
+  transform: translateX(-50%);
+  border-radius: 1px;
+}
+
+.gdvn-timeline .zoom-track {
+  position: relative;
+  z-index: 1;
+  width: 100%;
   accent-color: var(--tl-accent);
 }
 
@@ -186,15 +215,37 @@
   cursor: grabbing;
 }
 
+.gdvn-timeline .timeline-clip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  overflow: hidden;
+  z-index: 3;
+}
+
 .gdvn-timeline .gold-line {
   position: absolute;
   left: 0;
-  right: 0;
+  width: 100%;
+  right: auto;
   top: 50%;
   height: 2px;
   transform: translateY(-50%);
   background: var(--tl-accent);
   z-index: 4;
+}
+
+.gdvn-timeline .line-arrow {
+  position: absolute;
+  z-index: 6;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 7px 0 7px 14px;
+  border-color: transparent transparent transparent var(--tl-accent);
+  transform: translate(-1px, -50%);
+  pointer-events: none;
 }
 
 .gdvn-timeline .lane {

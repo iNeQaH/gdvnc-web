@@ -7,6 +7,10 @@ import {
   eventIsPeriodLine,
   eventSpan,
   clampCenter,
+  timelineEnd,
+  stepZoom,
+  TIMELINE_ARROW_GUTTER_PX,
+  TIMELINE_NOW_INSET_PX,
 } from '@/lib/timeline/time';
 import { clusterCollapsed, layoutLane, type LaneItem } from '@/lib/timeline/layout';
 import EventCard from '@/components/timeline/EventCard';
@@ -118,11 +122,10 @@ export default function TimelineBoard({
       e.preventDefault();
       const s = live.current;
       if (e.ctrlKey || e.metaKey) {
-        const dir = e.deltaY > 0 ? -0.18 : 0.18;
         const rect = el.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const atTime = s.viewStart + (x / s.ppd) * DAY_MS;
-        const next = Math.min(5, Math.max(0, s.zoom + dir));
+        const next = stepZoom(s.zoom, e.deltaY > 0 ? -1 : 1);
         const nextPpd = pxPerDayAt(next);
         const newCenter = atTime - ((x - s.size.w / 2) / nextPpd) * DAY_MS;
         s.setZoom(next);
@@ -161,7 +164,7 @@ export default function TimelineBoard({
     const rect = el.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const atTime = viewStart + (x / ppd) * DAY_MS;
-    const next = Math.min(5, zoom + 1);
+    const next = Math.min(5, Math.round(zoom) + 1);
     setZoom(next);
     setCenter(bound(atTime));
   }
@@ -186,6 +189,11 @@ export default function TimelineBoard({
   }
 
   const lineY = size.h / 2;
+  const nowX = timeToX(timelineEnd());
+  const lineEndX = Math.min(
+    size.w - TIMELINE_ARROW_GUTTER_PX,
+    Math.max(0, nowX + TIMELINE_NOW_INSET_PX)
+  );
 
   const posPeriods: Prepared[] = [];
   const negPeriods: Prepared[] = [];
@@ -216,6 +224,7 @@ export default function TimelineBoard({
       onDoubleClick={onDblClick}
       onClick={() => setCluster(null)}
     >
+      <div className="timeline-clip" style={{ width: lineEndX }}>
       {stackPeriods(posPeriods).map(({ e, lane }) => {
         const left = timeToX(e.span.start);
         const width = Math.max(8, timeToX(e.span.end) - timeToX(e.span.start));
@@ -344,6 +353,8 @@ export default function TimelineBoard({
           ))}
         </div>
       ) : null}
+      </div>
+      <div className="line-arrow" style={{ left: lineEndX, top: lineY }} />
     </div>
   );
 }

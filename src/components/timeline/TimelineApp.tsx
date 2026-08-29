@@ -10,7 +10,7 @@ import { useToast } from '@/components/GlobalToast';
 import type { ChronicleEvent } from '@/lib/timeline/types';
 import type { DictKey } from '@/lib/dictionaries';
 import { TIERS } from '@/lib/timeline/tiers';
-import { nearestTierIndex, formatDate, clampCenter, pxPerDayAt } from '@/lib/timeline/time';
+import { nearestTierIndex, formatDate, clampCenter, pxPerDayAt, stepZoom } from '@/lib/timeline/time';
 import '@/app/timeline/timeline.css';
 
 function isFullAdmin(role?: string | null) {
@@ -80,8 +80,8 @@ export default function TimelineApp() {
       if (e.key === 'ArrowRight') {
         setCenter((c) => clampCenter(c + (90 / ppd) * day, window.innerWidth, ppd));
       }
-      if (e.key === '+' || e.key === '=') setZoom((z) => Math.min(5, z + 0.25));
-      if (e.key === '-') setZoom((z) => Math.max(0, z - 0.25));
+      if (e.key === '+' || e.key === '=') setZoom((z) => stepZoom(z, 1));
+      if (e.key === '-') setZoom((z) => stepZoom(z, -1));
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -211,19 +211,37 @@ export default function TimelineApp() {
       ) : null}
 
       <div className="zoom-dock">
-        <button type="button" onClick={() => setZoom((z) => Math.max(0, z - 0.35))} aria-label={t('timeline.zoom_out')}>
+        <button type="button" onClick={() => setZoom((z) => stepZoom(z, -1))} aria-label={t('timeline.zoom_out')}>
           −
         </button>
-        <input
-          className="zoom-track"
-          type="range"
-          min="0"
-          max="5"
-          step="0.01"
-          value={zoom}
-          onChange={(e) => setZoom(Number(e.target.value))}
-        />
-        <button type="button" onClick={() => setZoom((z) => Math.min(5, z + 0.35))} aria-label={t('timeline.zoom_in')}>
+        <div className="zoom-track-wrap">
+          <div className="zoom-snaps" aria-hidden>
+            {TIERS.map((item, i) => (
+              <span
+                key={item.id}
+                className="zoom-snap"
+                style={{ left: `${(i / (TIERS.length - 1)) * 100}%` }}
+              />
+            ))}
+          </div>
+          <input
+            className="zoom-track"
+            type="range"
+            min="0"
+            max={TIERS.length - 1}
+            step="1"
+            list="gdvn-timeline-zoom-snaps"
+            value={nearestTierIndex(zoom)}
+            onChange={(e) => setZoom(Number(e.target.value))}
+            aria-label={t('timeline.zoom_in')}
+          />
+          <datalist id="gdvn-timeline-zoom-snaps">
+            {TIERS.map((_, i) => (
+              <option key={i} value={i} />
+            ))}
+          </datalist>
+        </div>
+        <button type="button" onClick={() => setZoom((z) => stepZoom(z, 1))} aria-label={t('timeline.zoom_in')}>
           +
         </button>
       </div>

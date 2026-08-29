@@ -7,13 +7,25 @@ export function timelineEnd() {
   return Date.now();
 }
 
+/** Space for the right-end arrow, outside the event clip. */
+export const TIMELINE_ARROW_GUTTER_PX = 44;
+/** Keep "now" events left of the arrow (≈ half card + gap). */
+export const TIMELINE_NOW_INSET_PX = 108;
+
+export function timelineRightPadPx() {
+  return TIMELINE_ARROW_GUTTER_PX + TIMELINE_NOW_INSET_PX;
+}
+
 export function clampCenter(ms: number, viewWidthPx: number, ppd: number) {
   const origin = TIMELINE_ORIGIN;
   const end = timelineEnd();
   const half = (viewWidthPx / 2 / ppd) * DAY_MS;
+  const padMs = (timelineRightPadPx() / ppd) * DAY_MS;
   const span = end - origin;
   if (span <= half * 2) return origin + span / 2;
-  return Math.min(end - half, Math.max(origin + half, ms));
+  const maxCenter = end - half + padMs;
+  const minCenter = origin + half;
+  return Math.min(maxCenter, Math.max(minCenter, ms));
 }
 
 /** Pixels per day at each discrete zoom snap. */
@@ -33,6 +45,14 @@ export function pxPerDayAt(zoom: number) {
 
 export function nearestTierIndex(zoom: number) {
   return Math.round(clampZoom(zoom));
+}
+
+export function snapZoom(zoom: number) {
+  return nearestTierIndex(zoom);
+}
+
+export function stepZoom(zoom: number, dir: number) {
+  return clampZoom(nearestTierIndex(zoom) + dir);
 }
 
 export function pad(n: number) {
