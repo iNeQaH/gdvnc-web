@@ -63,6 +63,7 @@ type Particle = {
   maxLife: number;
   blink: number;
   blinkSpeed: number;
+  hueShift: number;
 };
 
 function mixRgb(a: [number, number, number], b: [number, number, number], t: number) {
@@ -79,6 +80,53 @@ function readAccentRgb(el: HTMLElement | null): [number, number, number] {
   const m = raw.match(/(\d+)[^\d]+(\d+)[^\d]+(\d+)/);
   if (!m) return [226, 232, 240];
   return [Number(m[1]), Number(m[2]), Number(m[3])];
+}
+
+function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+  const rr = r / 255;
+  const gg = g / 255;
+  const bb = b / 255;
+  const max = Math.max(rr, gg, bb);
+  const min = Math.min(rr, gg, bb);
+  const l = (max + min) / 2;
+  if (max === min) return [0, 0, l];
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h = 0;
+  if (max === rr) h = ((gg - bb) / d + (gg < bb ? 6 : 0)) / 6;
+  else if (max === gg) h = ((bb - rr) / d + 2) / 6;
+  else h = ((rr - gg) / d + 4) / 6;
+  return [h * 360, s, l];
+}
+
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  const hue = ((h % 360) + 360) % 360;
+  if (s <= 0) {
+    const v = Math.round(l * 255);
+    return [v, v, v];
+  }
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  const hk = hue / 360;
+  const channel = (t: number) => {
+    let u = t;
+    if (u < 0) u += 1;
+    if (u > 1) u -= 1;
+    if (u < 1 / 6) return p + (q - p) * 6 * u;
+    if (u < 1 / 2) return q;
+    if (u < 2 / 3) return p + (q - p) * (2 / 3 - u) * 6;
+    return p;
+  };
+  return [
+    Math.round(channel(hk + 1 / 3) * 255),
+    Math.round(channel(hk) * 255),
+    Math.round(channel(hk - 1 / 3) * 255),
+  ];
+}
+
+function shiftHue(rgb: [number, number, number], deg: number): [number, number, number] {
+  const [h, s, l] = rgbToHsl(rgb[0], rgb[1], rgb[2]);
+  return hslToRgb(h + deg, s, l);
 }
 
 export default function TimelineFx({
@@ -126,36 +174,33 @@ export default function TimelineFx({
     let last = performance.now();
 
     function spawn(scatter: boolean): Particle {
-      const x = scatter ? Math.random() * width : width * (0.78 + Math.random() * 0.28);
-      const y = scatter ? Math.random() * height * 0.55 : -12 - Math.random() * 40;
-      const tx = -12;
-      const ty = height + 12;
-      const dist = Math.max(80, Math.hypot(tx - x, ty - y));
-      const maxSpeed = dist / 2.4;
-      const minSpeed = dist / 16;
+      const y = height * 0.5 + (Math.random() - 0.5) * height * 0.46;
+      const x = scatter ? Math.random() * width : width + 8 + Math.random() * 48;
+      const dist = Math.max(80, width + 56);
+      const maxSpeed = dist / 2.8;
+      const minSpeed = dist / 18;
       const speed = minSpeed + Math.random() * (maxSpeed - minSpeed);
       return {
         x,
         y,
-        vx: ((tx - x) / dist) * speed,
-        vy: ((ty - y) / dist) * speed,
+        vx: -speed,
+        vy: (Math.random() - 0.5) * 6,
         size: 2 + Math.random() * 4,
         life: scatter ? Math.random() * 6 : 0,
         maxLife: 10 + Math.random() * 8,
         blink: Math.random() * Math.PI * 2,
         blinkSpeed: 3.2 + Math.random() * 6.5,
+        hueShift: (Math.random() - 0.5) * 16,
       };
     }
 
-    if (particles.current.length === 0) {
-      for (let i = 0; i < 52; i++) particles.current.push(spawn(true));
-    }
+    particles.current = [];
+    for (let i = 0; i < 52; i++) particles.current.push(spawn(true));
 
     function tick(now: number) {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const theme = readAccentRgb(surface);
-      const bright = mixRgb(theme, [255, 255, 255], 0.35);
       ctx!.clearRect(0, 0, width, height);
       const list = particles.current;
       for (let i = 0; i < list.length; i++) {
@@ -164,13 +209,15 @@ export default function TimelineFx({
         p.x += p.vx * dt;
         p.y += p.vy * dt;
         p.blink += p.blinkSpeed * dt;
-        if (p.life >= p.maxLife || p.x < -24 || p.y > height + 24) {
+        if (p.life >= p.maxLife || p.x < -24 || p.x > width + 64) {
           list[i] = spawn(false);
           continue;
         }
         const fade = 1 - p.life / p.maxLife;
         const wave = 0.5 + 0.5 * Math.sin(p.blink);
         const flash = 0.22 + 0.78 * wave;
+        const tint = shiftHue(theme, p.hueShift);
+        const bright = mixRgb(tint, [255, 255, 255], 0.35);
         const white = wave > 0.88;
         const themeFlash = !white && wave > 0.62;
         ctx!.save();
@@ -180,12 +227,12 @@ export default function TimelineFx({
           ctx!.shadowBlur = 5;
           ctx!.fillStyle = '#ffffff';
         } else if (themeFlash) {
-          ctx!.shadowColor = `rgba(${theme[0]},${theme[1]},${theme[2]},0.4)`;
+          ctx!.shadowColor = `rgba(${tint[0]},${tint[1]},${tint[2]},0.4)`;
           ctx!.shadowBlur = 4;
           ctx!.fillStyle = `rgb(${bright[0]},${bright[1]},${bright[2]})`;
         } else {
           ctx!.shadowBlur = 0;
-          ctx!.fillStyle = `rgb(${theme[0]},${theme[1]},${theme[2]})`;
+          ctx!.fillStyle = `rgb(${tint[0]},${tint[1]},${tint[2]})`;
         }
         ctx!.fillRect(p.x, p.y, p.size, p.size);
         ctx!.restore();
