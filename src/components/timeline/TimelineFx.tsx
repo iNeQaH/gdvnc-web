@@ -6,6 +6,7 @@ import { CARD_W } from '@/lib/timeline/layout';
 
 const GRID = 48;
 const LOOP_MS = 11 * 365.25 * DAY_MS;
+const MAX_GHOSTS_IN_VIEW = 7;
 
 type Ghost = {
   id: number;
@@ -159,7 +160,19 @@ export default function TimelineFx({
         placed.push({ ...g, key: `${g.id}-${k0 + n}`, x, top: g.y * height });
       }
     }
-    return placed;
+    const midX = width / 2;
+    const visible = placed.filter((g) => {
+      const halfW = g.w / 2;
+      const halfH = g.h / 2;
+      return g.x + halfW > 0 && g.x - halfW < width && g.top + halfH > 0 && g.top - halfH < height;
+    });
+    visible.sort((a, b) => {
+      const da = Math.abs(a.x - midX);
+      const db = Math.abs(b.x - midX);
+      if (da !== db) return da - db;
+      return a.key.localeCompare(b.key);
+    });
+    return visible.slice(0, MAX_GHOSTS_IN_VIEW);
   }, [viewStart, ppd, height, width]);
 
   useEffect(() => {
