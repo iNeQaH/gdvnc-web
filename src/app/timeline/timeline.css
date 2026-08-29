@@ -457,8 +457,8 @@
     linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
   border-radius: 2px;
   pointer-events: none;
-  filter: blur(1.6px);
-  opacity: 0.62;
+  filter: blur(1.1px);
+  opacity: 0.72;
   transform: translate(-50%, -50%);
   overflow: hidden;
 }
@@ -486,13 +486,13 @@
 }
 
 .gdvn-timeline .timeline-ghost.is-large {
-  filter: blur(1.2px);
-  opacity: 0.7;
+  filter: blur(0.9px);
+  opacity: 0.78;
 }
 
 .gdvn-timeline .timeline-ghost.is-small {
-  filter: blur(2.2px);
-  opacity: 0.52;
+  filter: blur(1.6px);
+  opacity: 0.6;
 }
 
 .gdvn-timeline .timeline-particles {
@@ -511,6 +511,22 @@
   bottom: 0;
   overflow: hidden;
   z-index: 3;
+  --tl-fade-in: 88px;
+  --tl-fade-out: 128px;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--tl-fade-in),
+    #000 calc(100% - var(--tl-fade-out)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--tl-fade-in),
+    #000 calc(100% - var(--tl-fade-out)),
+    transparent 100%
+  );
 }
 
 .gdvn-timeline .gold-line {
