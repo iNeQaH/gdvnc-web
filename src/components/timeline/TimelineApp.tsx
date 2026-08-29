@@ -31,6 +31,7 @@ export default function TimelineApp() {
   const [canEdit, setCanEdit] = useState(false);
   const [saving, setSaving] = useState(false);
   const [ldm, setLdm] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const zoomHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [zoomTip, setZoomTip] = useState<{ index: number } | null>(null);
 

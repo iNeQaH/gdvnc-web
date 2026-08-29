@@ -73,7 +73,8 @@ function mixRgb(a: [number, number, number], b: [number, number, number], t: num
   ] as [number, number, number];
 }
 
-function readAccentRgb(el: HTMLElement): [number, number, number] {
+function readAccentRgb(el: HTMLElement | null): [number, number, number] {
+  if (!el) return [226, 232, 240];
   const raw = getComputedStyle(el).color || 'rgb(226, 232, 240)';
   const m = raw.match(/(\d+)[^\d]+(\d+)[^\d]+(\d+)/);
   if (!m) return [226, 232, 240];
@@ -118,6 +119,7 @@ export default function TimelineFx({
     if (!canvas || width < 8 || height < 8) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    const surface = canvas;
     canvas.width = width;
     canvas.height = height;
     let raf = 0;
@@ -152,7 +154,7 @@ export default function TimelineFx({
     function tick(now: number) {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      const theme = readAccentRgb(canvas);
+      const theme = readAccentRgb(surface);
       const bright = mixRgb(theme, [255, 255, 255], 0.35);
       ctx!.clearRect(0, 0, width, height);
       const list = particles.current;
