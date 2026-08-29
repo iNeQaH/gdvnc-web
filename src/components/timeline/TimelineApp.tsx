@@ -20,6 +20,7 @@ import {
   nearestEventAnchor,
   neighborEvent,
   eventSpan,
+  TIMELINE_ORIGIN,
 } from '@/lib/timeline/time';
 import '@/app/timeline/timeline.css';
 
@@ -33,7 +34,7 @@ export default function TimelineApp() {
   const [events, setEvents] = useState<ChronicleEvent[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [zoom, setZoom] = useState(1);
-  const [center, setCenter] = useState(() => Date.now());
+  const [center, setCenter] = useState(TIMELINE_ORIGIN);
   const [expandedIds, setExpandedIds] = useState(() => new Set<string>());
   const [open, setOpen] = useState<ChronicleEvent | null>(null);
   const [editing, setEditing] = useState<ChronicleEvent | undefined>(undefined);
@@ -44,6 +45,9 @@ export default function TimelineApp() {
   const rootRef = useRef<HTMLDivElement>(null);
   const zoomHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const panAnim = useRef<number | null>(null);
+  const zoomAnim = useRef<number | null>(null);
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
   const centerRef = useRef(center);
   centerRef.current = center;
   const [zoomTip, setZoomTip] = useState<{ index: number } | null>(null);
@@ -55,12 +59,17 @@ export default function TimelineApp() {
   eventsRef.current = events;
 
   useEffect(() => {
+    setCenter(Date.now());
+  }, []);
+
+  useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = prev;
       if (zoomHideRef.current) clearTimeout(zoomHideRef.current);
       if (panAnim.current != null) cancelAnimationFrame(panAnim.current);
+      if (zoomAnim.current != null) cancelAnimationFrame(zoomAnim.current);
     };
   }, []);
 
@@ -216,13 +225,37 @@ export default function TimelineApp() {
   function applyZoom(next: number) {
     const index = nearestTierIndex(next);
     const w = rootRef.current?.clientWidth || window.innerWidth;
-    const around = centerRef.current;
-    const anchor = nearestEventAnchor(eventsRef.current, around, index, focusIdRef.current);
-    setZoom(index);
-    setCenter(clampCenter(anchor, w, pxPerDayAt(index)));
+    const fromZ = zoomRef.current;
+    const fromC = centerRef.current;
+    const toC = clampCenter(
+      nearestEventAnchor(eventsRef.current, fromC, index, focusIdRef.current),
+      w,
+      pxPerDayAt(index)
+    );
+    if (zoomAnim.current != null) cancelAnimationFrame(zoomAnim.current);
     setZoomTip({ index });
     if (zoomHideRef.current) clearTimeout(zoomHideRef.current);
     zoomHideRef.current = setTimeout(() => setZoomTip(null), 1000);
+    if (Math.abs(fromZ - index) < 0.02) {
+      setZoom(index);
+      setCenter(toC);
+      return;
+    }
+    const t0 = performance.now();
+    const dur = 420;
+    const step = (now: number) => {
+      const u = Math.min(1, (now - t0) / dur);
+      const ease = 1 - (1 - u) ** 3;
+      setZoom(fromZ + (index - fromZ) * ease);
+      setCenter(fromC + (toC - fromC) * ease);
+      if (u < 1) zoomAnim.current = requestAnimationFrame(step);
+      else {
+        zoomAnim.current = null;
+        setZoom(index);
+        setCenter(toC);
+      }
+    };
+    zoomAnim.current = requestAnimationFrame(step);
   }
 
   function jumpToNeighbor(dir: -1 | 1) {
@@ -350,7 +383,6 @@ export default function TimelineApp() {
             step="1"
             value={nearestTierIndex(zoom)}
             onInput={(e) => applyZoom(Number((e.target as HTMLInputElement).value))}
-            onChange={(e) => applyZoom(Number(e.target.value))}
             aria-label={t('timeline.zoom_in')}
           />
         </div>

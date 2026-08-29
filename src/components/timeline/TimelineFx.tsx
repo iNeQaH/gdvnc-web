@@ -141,6 +141,7 @@ export default function TimelineFx({
   const ghosts = useMemo(() => {
     if (!events.length || width < 8 || height < 8) return [];
     const panDays = (viewStart - TIMELINE_ORIGIN) / DAY_MS;
+    const fade = 96;
     return GHOST_SLOTS.map((slot, i) => {
       const rand = mulberry32(0x6d764e31 ^ (i + 1) * 0x9e3779b9);
       const u = slot.u + (rand() - 0.5) * 0.05;
@@ -148,18 +149,26 @@ export default function TimelineFx({
       const scale = slot.large ? 0.92 + rand() * 0.28 : 0.42 + rand() * 0.28;
       const w = CARD_W * scale;
       const h = (slot.large ? 150 : 88) * scale;
+      const pad = w / 2 + 140;
+      const span = Math.max(width + pad * 2, 1);
       const travel = u * width - panDays * ppd * slot.parallax;
-      const cycle = Math.floor(travel / width);
+      const cycle = Math.floor(travel / span);
       const pick = mulberry32(((i + 7) * 0x85ebca6b) ^ (cycle * 0xc2b2ae35));
       const event = events[Math.floor(pick() * events.length)];
+      const cx = wrap(travel, span) - pad;
+      const left = cx - w / 2;
+      const shown = Math.min(left + w, width) - Math.max(left, 0);
+      const edge = shown <= 0 ? 0 : Math.min(1, shown / fade);
+      const base = slot.large ? 0.78 : 0.6;
       return {
-        key: `${i}-${cycle}-${event.id}`,
+        key: `ghost-${i}`,
         event,
         large: slot.large,
-        x: wrap(travel, width),
+        x: cx,
         top: v * height,
         w,
         h,
+        opacity: edge * base,
       };
     });
   }, [events, viewStart, ppd, height, width]);
@@ -265,6 +274,7 @@ export default function TimelineFx({
               top: g.top,
               width: g.w,
               height: g.h,
+              opacity: g.opacity,
             }}
           >
             <div className="card-title">{g.event.title}</div>

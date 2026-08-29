@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { TIMELINE_ORIGIN } from '@/lib/timeline/time';
 import type { DictKey } from '@/lib/dictionaries';
 
@@ -53,6 +54,9 @@ export default function TimelineDatePick({
   const [year, setYear] = useState(String(selected.getFullYear()));
   const [fly, setFly] = useState<Fly | null>(null);
   const [centered, setCentered] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!open) {
@@ -66,21 +70,22 @@ export default function TimelineDatePick({
     setYear(String(d.getFullYear()));
     const r = btnRef.current?.getBoundingClientRect();
     if (r) setFly({ top: r.top, left: r.left, width: r.width });
+    setCentered(false);
     const id = requestAnimationFrame(() => {
       requestAnimationFrame(() => setCentered(true));
     });
     return () => cancelAnimationFrame(id);
-  }, [open, valueMs]);
+  }, [open]);
 
   useEffect(() => {
     if (!open || !centered) return;
-    const tmr = window.setTimeout(() => dayRef.current?.focus(), 320);
+    const tmr = window.setTimeout(() => dayRef.current?.focus(), 200);
     return () => clearTimeout(tmr);
   }, [open, centered]);
 
   function closeAnimated() {
     setCentered(false);
-    window.setTimeout(onClose, 320);
+    window.setTimeout(onClose, 200);
   }
 
   function go(e?: FormEvent) {
@@ -92,6 +97,66 @@ export default function TimelineDatePick({
     onPick(clampDate(y, m, d));
   }
 
+  const overlay =
+    open && fly && mounted
+      ? createPortal(
+          <div className="date-jump-overlay" onMouseDown={closeAnimated}>
+            <form
+              className="now-chip now-chip-edit date-jump-fly"
+              style={
+                centered
+                  ? {
+                      top: '50%',
+                      left: '50%',
+                      width: 280,
+                      transform: 'translate(-50%, -50%) scale(1.08)',
+                    }
+                  : {
+                      top: fly.top,
+                      left: fly.left,
+                      width: Math.max(fly.width, 168),
+                      transform: 'none',
+                    }
+              }
+              onSubmit={go}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <input
+                ref={dayRef}
+                className="date-jump-num"
+                inputMode="numeric"
+                maxLength={2}
+                aria-label={t('timeline.day')}
+                value={day}
+                onChange={(e) => setDay(digits(e.target.value, 2))}
+              />
+              <span>/</span>
+              <input
+                className="date-jump-num"
+                inputMode="numeric"
+                maxLength={2}
+                aria-label={t('timeline.month')}
+                value={month}
+                onChange={(e) => setMonth(digits(e.target.value, 2))}
+              />
+              <span>/</span>
+              <input
+                className="date-jump-num is-year"
+                inputMode="numeric"
+                maxLength={4}
+                aria-label={t('timeline.year')}
+                value={year}
+                onChange={(e) => setYear(digits(e.target.value, 4))}
+              />
+              <button type="submit" className="date-jump-go">
+                {t('timeline.goto_date')}
+              </button>
+            </form>
+          </div>,
+          document.body
+        )
+      : null;
+
   return (
     <div className={`date-jump ${open ? 'is-open' : ''}`}>
       <button
@@ -102,54 +167,11 @@ export default function TimelineDatePick({
         aria-expanded={open}
         title={t('timeline.goto_date')}
         style={open ? { visibility: 'hidden' } : undefined}
+        suppressHydrationWarning
       >
         {chip}
       </button>
-      {open && fly ? (
-        <div className="date-jump-overlay" onMouseDown={closeAnimated}>
-          <form
-            className={`now-chip now-chip-edit date-jump-fly ${centered ? 'is-center' : ''}`}
-            style={
-              centered
-                ? undefined
-                : { top: fly.top, left: fly.left, width: Math.max(fly.width, 168) }
-            }
-            onSubmit={go}
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <input
-              ref={dayRef}
-              className="date-jump-num"
-              inputMode="numeric"
-              maxLength={2}
-              aria-label={t('timeline.day')}
-              value={day}
-              onChange={(e) => setDay(digits(e.target.value, 2))}
-            />
-            <span>/</span>
-            <input
-              className="date-jump-num"
-              inputMode="numeric"
-              maxLength={2}
-              aria-label={t('timeline.month')}
-              value={month}
-              onChange={(e) => setMonth(digits(e.target.value, 2))}
-            />
-            <span>/</span>
-            <input
-              className="date-jump-num is-year"
-              inputMode="numeric"
-              maxLength={4}
-              aria-label={t('timeline.year')}
-              value={year}
-              onChange={(e) => setYear(digits(e.target.value, 4))}
-            />
-            <button type="submit" className="date-jump-go">
-              {t('timeline.goto_date')}
-            </button>
-          </form>
-        </div>
-      ) : null}
+      {overlay}
     </div>
   );
 }
