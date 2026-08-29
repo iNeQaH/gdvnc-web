@@ -282,6 +282,7 @@ export default function AdminPage() {
 
   // User management state
   const [userQuery, setUserQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'MODERATOR' | 'SUPPORTER' | 'USER'>('ALL');
   const [usersList, setUsersList] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
@@ -307,7 +308,6 @@ export default function AdminPage() {
       } catch (e) {}
     }
     fetchPendingRecords('PENDING', 1);
-    fetchUsers('');
     fetchWorks('PENDING', 1);
     fetchBadges();
     fetchBadgeCategories();
@@ -399,10 +399,14 @@ export default function AdminPage() {
     }
   };
 
-  const fetchUsers = async (q: string) => {
+  const fetchUsers = async (q: string, role = roleFilter) => {
     setLoadingUsers(true);
     try {
-      const res = await fetch(`/api/admin/users?query=${encodeURIComponent(q)}`);
+      const params = new URLSearchParams();
+      if (q.trim()) params.set('query', q.trim());
+      if (role && role !== 'ALL') params.set('role', role);
+      const qs = params.toString();
+      const res = await fetch(`/api/admin/users${qs ? `?${qs}` : ''}`);
       const data = await res.json();
       if (data.success) {
         setUsersList(data.users || []);
@@ -722,12 +726,16 @@ export default function AdminPage() {
       return (a.sortOrder || 0) - (b.sortOrder || 0);
     });
 
-  const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'MODERATOR' | 'SUPPORTER' | 'USER'>('ALL');
   const [userSort, setUserSort] = useState<'createdAt' | 'role' | 'pp'>('createdAt');
 
   useEffect(() => {
+    fetchUsers(userQuery, roleFilter);
     setUserPage(1);
-  }, [userQuery, roleFilter, userSort, userSortOrder]);
+  }, [roleFilter]);
+
+  useEffect(() => {
+    setUserPage(1);
+  }, [userQuery, userSort, userSortOrder]);
 
   if (!currentUser || (currentUser.role !== 'ADMIN' && currentUser.role !== 'MODERATOR')) {
     return (
@@ -1776,7 +1784,8 @@ export default function AdminPage() {
               ].map((rf) => (
                 <button
                   key={rf.id}
-                  onClick={() => setRoleFilter(rf.id as any)}
+                  type="button"
+                  onClick={() => setRoleFilter(rf.id as typeof roleFilter)}
                   className="px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer border"
                   style={{
                     backgroundColor: roleFilter === rf.id ? 'var(--accent)' : 'var(--bg-subtle)',
