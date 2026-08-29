@@ -313,9 +313,9 @@ export const Sidebar = () => {
                 className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-90"
               >
                 {currentUser.avatarUrl ? (
-                  <img src={currentUser.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-xl object-cover shrink-0" />
+                  <img src={currentUser.avatarUrl} alt="Avatar" className="w-10 h-10 rounded-xl object-cover shrink-0" />
                 ) : (
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs text-[color:var(--accent-fg)] font-bold shrink-0" style={{ backgroundColor: 'var(--accent)' }}>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm text-[color:var(--accent-fg)] font-bold shrink-0" style={{ backgroundColor: 'var(--accent)' }}>
                     {currentUser.username[0]}
                   </div>
                 )}

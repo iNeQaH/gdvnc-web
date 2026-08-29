@@ -1,11 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { TIMELINE_ORIGIN } from '@/lib/timeline/time';
 import type { DictKey } from '@/lib/dictionaries';
-
-const WEEKDAYS_VI = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-const WEEKDAYS_EN = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
 function startOfDay(ms: number) {
   const d = new Date(ms);
@@ -16,9 +13,17 @@ function daysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
 }
 
-function mondayIndex(year: number, month: number) {
-  const dow = new Date(year, month, 1).getDay();
-  return dow === 0 ? 6 : dow - 1;
+function clampDate(y: number, m: number, d: number) {
+  const year = Math.max(new Date(TIMELINE_ORIGIN).getFullYear(), y);
+  const month = Math.min(12, Math.max(1, m));
+  const dim = daysInMonth(year, month - 1);
+  const day = Math.min(dim, Math.max(1, d));
+  const ms = new Date(year, month - 1, day).getTime();
+  return ms < TIMELINE_ORIGIN ? TIMELINE_ORIGIN : ms;
+}
+
+function digits(value: string, maxLen: number) {
+  return value.replace(/\D/g, '').slice(0, maxLen);
 }
 
 export default function TimelineDatePick({
@@ -28,7 +33,6 @@ export default function TimelineDatePick({
   onPick,
   valueMs,
   chip,
-  language,
   t,
 }: {
   open: boolean;
@@ -37,18 +41,22 @@ export default function TimelineDatePick({
   onPick: (ms: number) => void;
   valueMs: number;
   chip: string;
-  language: 'en' | 'vi';
   t: (key: DictKey) => string;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const selected = startOfDay(valueMs);
-  const sel = new Date(selected);
-  const [cursor, setCursor] = useState({ y: sel.getFullYear(), m: sel.getMonth() });
+  const dayRef = useRef<HTMLInputElement>(null);
+  const selected = new Date(startOfDay(valueMs));
+  const [day, setDay] = useState(String(selected.getDate()).padStart(2, '0'));
+  const [month, setMonth] = useState(String(selected.getMonth() + 1).padStart(2, '0'));
+  const [year, setYear] = useState(String(selected.getFullYear()));
 
   useEffect(() => {
     if (!open) return;
     const d = new Date(startOfDay(valueMs));
-    setCursor({ y: d.getFullYear(), m: d.getMonth() });
+    setDay(String(d.getDate()).padStart(2, '0'));
+    setMonth(String(d.getMonth() + 1).padStart(2, '0'));
+    setYear(String(d.getFullYear()));
+    requestAnimationFrame(() => dayRef.current?.focus());
   }, [open, valueMs]);
 
   useEffect(() => {
@@ -60,86 +68,61 @@ export default function TimelineDatePick({
     return () => document.removeEventListener('mousedown', onDoc);
   }, [open, onClose]);
 
-  const origin = new Date(TIMELINE_ORIGIN);
-  const minY = origin.getFullYear();
-  const minM = origin.getMonth();
-  const weekdays = language === 'vi' ? WEEKDAYS_VI : WEEKDAYS_EN;
-  const monthFmt = useMemo(
-    () => new Intl.DateTimeFormat(language === 'vi' ? 'vi-VN' : 'en-US', { month: 'long' }),
-    [language]
-  );
-
-  const cells = useMemo(() => {
-    const lead = mondayIndex(cursor.y, cursor.m);
-    const count = daysInMonth(cursor.y, cursor.m);
-    const out: Array<{ day: number; ms: number; disabled: boolean } | null> = [];
-    for (let i = 0; i < lead; i++) out.push(null);
-    for (let day = 1; day <= count; day++) {
-      const ms = new Date(cursor.y, cursor.m, day).getTime();
-      out.push({ day, ms, disabled: ms < TIMELINE_ORIGIN });
-    }
-    return out;
-  }, [cursor.y, cursor.m]);
-
-  const canPrev = cursor.y > minY || (cursor.y === minY && cursor.m > minM);
-
-  function shiftMonth(delta: number) {
-    setCursor((c) => {
-      const d = new Date(c.y, c.m + delta, 1);
-      if (d.getFullYear() < minY || (d.getFullYear() === minY && d.getMonth() < minM)) {
-        return { y: minY, m: minM };
-      }
-      return { y: d.getFullYear(), m: d.getMonth() };
-    });
+  function go(e?: FormEvent) {
+    e?.preventDefault();
+    const d = Number(day);
+    const m = Number(month);
+    const y = Number(year);
+    if (!d || !m || !y || String(y).length < 4) return;
+    onPick(clampDate(y, m, d));
   }
 
   return (
     <div className={`date-jump ${open ? 'is-open' : ''}`} ref={wrapRef}>
-      <button
-        type="button"
-        className="now-chip"
-        onClick={onToggle}
-        aria-expanded={open}
-        aria-haspopup="dialog"
-        title={t('timeline.goto_date')}
-      >
-        {chip}
-      </button>
-      <div className="date-jump-pop" role="dialog" aria-label={t('timeline.goto_date')}>
-        <div className="date-jump-nav">
-          <button type="button" onClick={() => shiftMonth(-1)} disabled={!canPrev} aria-label={t('timeline.prev_month')}>
-            ‹
+      {open ? (
+        <form className="now-chip now-chip-edit" onSubmit={go}>
+          <input
+            ref={dayRef}
+            className="date-jump-num"
+            inputMode="numeric"
+            maxLength={2}
+            aria-label={t('timeline.day')}
+            value={day}
+            onChange={(e) => setDay(digits(e.target.value, 2))}
+          />
+          <span>/</span>
+          <input
+            className="date-jump-num"
+            inputMode="numeric"
+            maxLength={2}
+            aria-label={t('timeline.month')}
+            value={month}
+            onChange={(e) => setMonth(digits(e.target.value, 2))}
+          />
+          <span>/</span>
+          <input
+            className="date-jump-num is-year"
+            inputMode="numeric"
+            maxLength={4}
+            aria-label={t('timeline.year')}
+            value={year}
+            onChange={(e) => setYear(digits(e.target.value, 4))}
+          />
+          <button type="submit" className="date-jump-go">
+            {t('timeline.goto_date')}
           </button>
-          <div className="date-jump-label">
-            {monthFmt.format(new Date(cursor.y, cursor.m, 1))} {cursor.y}
-          </div>
-          <button type="button" onClick={() => shiftMonth(1)} aria-label={t('timeline.next_month')}>
-            ›
-          </button>
-        </div>
-        <div className="date-jump-week">
-          {weekdays.map((d) => (
-            <span key={d}>{d}</span>
-          ))}
-        </div>
-        <div className="date-jump-grid">
-          {cells.map((cell, i) =>
-            cell ? (
-              <button
-                key={cell.ms}
-                type="button"
-                className={`date-jump-day ${cell.ms === selected ? 'is-on' : ''}`}
-                disabled={cell.disabled}
-                onClick={() => onPick(cell.ms)}
-              >
-                {cell.day}
-              </button>
-            ) : (
-              <span key={`e-${i}`} />
-            )
-          )}
-        </div>
-      </div>
+        </form>
+      ) : (
+        <button
+          type="button"
+          className="now-chip"
+          onClick={onToggle}
+          aria-expanded={false}
+          title={t('timeline.goto_date')}
+        >
+          {chip}
+        </button>
+      )}
     </div>
   );
 }

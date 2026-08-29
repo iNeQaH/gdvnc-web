@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ADMIN_LIST_LIMIT, parsePageParam } from '@/lib/adminQueue';
 
+const pending = { status: 'PENDING' };
+
 export async function GET(req: Request) {
   try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
 
@@ -13,14 +15,15 @@ export async function GET(req: Request) {
 
     const [helps, total] = await Promise.all([
       prisma.helpRequest.findMany({
+        where: pending,
         orderBy: { createdAt: 'desc' },
         skip,
         take: ADMIN_LIST_LIMIT,
         include: {
-          user: { select: { id: true, username: true, avatarUrl: true, gdUsername: true } },
+          user: { select: { id: true, username: true, avatarUrl: true, gdUsername: true, gdVerified: true } },
         },
       }),
-      prisma.helpRequest.count(),
+      prisma.helpRequest.count({ where: pending }),
     ]);
 
     return NextResponse.json({ success: true, helps, page, limit: ADMIN_LIST_LIMIT, total });
@@ -30,16 +33,41 @@ export async function GET(req: Request) {
   }
 }
 
-export async function DELETE(req: Request) {
+export async function PATCH(req: Request) {
   try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
 
   try {
-    const { id } = await req.json();
-    if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
+    const { id, action, reason } = await req.json();
+    if (!id || !['APPROVE', 'REJECT'].includes(action)) {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    }
+    const rejectReason = typeof reason === 'string' ? reason.trim() : '';
+    if (action === 'REJECT' && !rejectReason) {
+      return NextResponse.json({ error: 'NEED_REASON' }, { status: 400 });
+    }
 
-    await prisma.helpRequest.delete({ where: { id } });
+    const help = await prisma.helpRequest.findUnique({ where: { id } });
+    if (!help) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    const status = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+    await prisma.helpRequest.update({ where: { id }, data: { status } });
+
+    if (help.userId) {
+      await prisma.notification.create({
+        data: {
+          userId: help.userId,
+          title: action === 'APPROVE' ? 'Yêu cầu hỗ trợ đã được duyệt' : 'Yêu cầu hỗ trợ bị từ chối',
+          message:
+            action === 'APPROVE'
+              ? `Yêu cầu "${help.title}" đã được admin duyệt.`
+              : `Yêu cầu "${help.title}" bị từ chối. Lý do: ${rejectReason}`,
+        },
+      });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    console.error('Admin helps PATCH error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

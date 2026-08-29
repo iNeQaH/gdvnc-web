@@ -19,7 +19,7 @@ function isFullAdmin(role?: string | null) {
 }
 
 export default function TimelineApp() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { showToast, showConfirm } = useToast();
   const [events, setEvents] = useState<ChronicleEvent[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -223,7 +223,6 @@ export default function TimelineApp() {
           onPick={jumpToDate}
           valueMs={center}
           chip={`${tierLabel} · ${viewLabel}`}
-          language={language}
           t={t}
         />
         <div className="actions">

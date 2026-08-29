@@ -87,100 +87,46 @@
   background: var(--tl-accent-soft);
 }
 
-.gdvn-timeline .date-jump-pop {
-  position: absolute;
-  top: calc(100% + 10px);
-  left: 50%;
-  width: 272px;
-  padding: 12px;
-  border-radius: 16px;
-  background: var(--tl-hud);
-  border: 1px solid var(--tl-border);
-  backdrop-filter: blur(16px);
-  box-shadow: 0 16px 40px var(--tl-shadow);
-  transform: translateX(-50%) translateY(-10px) scale(0.96);
-  opacity: 0;
-  pointer-events: none;
-  transform-origin: top center;
-  transition:
-    opacity 0.22s ease,
-    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.gdvn-timeline .date-jump.is-open .date-jump-pop {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0) scale(1);
-  pointer-events: auto;
-}
-
-.gdvn-timeline .date-jump-nav {
+.gdvn-timeline .now-chip-edit {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.gdvn-timeline .date-jump-nav button {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 1px solid var(--tl-border);
-  background: transparent;
-  color: var(--tl-accent-2);
-  cursor: pointer;
-}
-
-.gdvn-timeline .date-jump-nav button:disabled {
-  opacity: 0.35;
+  gap: 4px;
+  transform: scale(1.12);
+  transform-origin: center top;
+  padding: 8px 12px;
   cursor: default;
 }
 
-.gdvn-timeline .date-jump-label {
-  flex: 1;
-  text-align: center;
-  font-size: 13px;
-  text-transform: capitalize;
-  color: var(--tl-ink);
-}
-
-.gdvn-timeline .date-jump-week,
-.gdvn-timeline .date-jump-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
-  text-align: center;
-}
-
-.gdvn-timeline .date-jump-week {
-  margin-bottom: 4px;
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  color: var(--tl-ink-dim);
-}
-
-.gdvn-timeline .date-jump-day {
-  height: 32px;
+.gdvn-timeline .date-jump-num {
+  width: 2.1em;
   border: 0;
-  border-radius: 8px;
-  background: transparent;
+  background: color-mix(in srgb, var(--tl-field) 80%, transparent);
   color: var(--tl-ink);
-  cursor: pointer;
-  font-size: 12px;
+  text-align: center;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  border-radius: 6px;
+  padding: 4px 0;
 }
 
-.gdvn-timeline .date-jump-day:hover {
-  background: var(--tl-accent-soft);
+.gdvn-timeline .date-jump-num.is-year {
+  width: 3.4em;
 }
 
-.gdvn-timeline .date-jump-day.is-on {
+.gdvn-timeline .date-jump-num:focus {
+  outline: 1px solid var(--tl-accent);
+}
+
+.gdvn-timeline .date-jump-go {
+  margin-left: 4px;
+  border: 0;
+  border-radius: 999px;
   background: var(--tl-accent);
   color: var(--tl-btn-fg);
-}
-
-.gdvn-timeline .date-jump-day:disabled {
-  opacity: 0.28;
-  cursor: default;
-  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  cursor: pointer;
 }
 
 .gdvn-timeline .actions {
@@ -990,15 +936,71 @@
 
 @media (max-width: 767px) {
   .gdvn-timeline .hud {
-    grid-template-columns: 1fr;
-    gap: 8px;
-    padding: 10px 12px 0;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    gap: 6px 8px;
+    padding: 8px 10px 0;
   }
 
-  .gdvn-timeline .now-chip,
-  .gdvn-timeline .date-jump,
+  .gdvn-timeline .brand h1 {
+    letter-spacing: 0.18em;
+    font-size: 9px;
+  }
+
+  .gdvn-timeline .brand p {
+    font-size: 14px;
+    margin-top: 2px;
+  }
+
   .gdvn-timeline .actions {
-    justify-self: start;
+    justify-self: end;
+    gap: 4px;
+  }
+
+  .gdvn-timeline .date-jump {
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+
+  .gdvn-timeline .now-chip {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  .gdvn-timeline .now-chip-edit {
+    transform: scale(1.04);
+    padding: 6px 8px;
+  }
+
+  .gdvn-timeline .ldm-btn {
+    min-width: 34px;
+    height: 26px;
+    padding: 0 8px;
+    font-size: 9px;
+  }
+
+  .gdvn-timeline .gold-btn {
+    font-size: 9px;
+    padding: 6px 10px;
+  }
+
+  .gdvn-timeline .jump-today-dock {
+    left: 10px;
+    bottom: 14px;
+    width: 34px;
+    height: 34px;
+  }
+
+  .gdvn-timeline .zoom-dock {
+    bottom: 14px;
+    padding: 4px 8px;
+    gap: 6px;
+  }
+
+  .gdvn-timeline .zoom-dock button {
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
   }
 
   .gdvn-timeline .chronicle {
