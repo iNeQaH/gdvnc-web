@@ -159,7 +159,7 @@ export default function TimelineFx({
       const left = cx - w / 2;
       const shown = Math.min(left + w, width) - Math.max(left, 0);
       const edge = shown <= 0 ? 0 : Math.min(1, shown / fade);
-      const base = slot.large ? 0.28 : 0.16;
+      const base = slot.large ? 0.55 : 0.4;
       return {
         key: `ghost-${i}`,
         event,
