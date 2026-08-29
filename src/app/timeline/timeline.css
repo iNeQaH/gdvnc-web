@@ -562,22 +562,6 @@
   bottom: 0;
   overflow: hidden;
   z-index: 3;
-  --tl-fade-in: 104px;
-  --tl-fade-out: 168px;
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    #000 var(--tl-fade-in),
-    #000 calc(100% - var(--tl-fade-out)),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    #000 var(--tl-fade-in),
-    #000 calc(100% - var(--tl-fade-out)),
-    transparent 100%
-  );
 }
 
 .gdvn-timeline .gold-line {
