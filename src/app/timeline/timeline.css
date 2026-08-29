@@ -154,6 +154,24 @@
   filter: brightness(1.08);
 }
 
+.gdvn-timeline .icon-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tl-hud);
+  border: 1px solid var(--tl-border);
+  color: var(--tl-accent-2);
+  cursor: pointer;
+}
+
+.gdvn-timeline .icon-btn:hover {
+  background: var(--tl-accent-soft);
+}
+
 .gdvn-timeline .timeline-root {
   position: absolute;
   inset: 0;

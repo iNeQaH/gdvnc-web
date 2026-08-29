@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireAdmin } from '@/lib/auth';
+import { requireFullAdmin } from '@/lib/auth';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { clipText, isHttpsUrl } from '@/lib/validate';
@@ -56,7 +56,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    await requireAdmin();
+    await requireFullAdmin();
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

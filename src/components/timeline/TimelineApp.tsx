@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { RotateCcw } from 'lucide-react';
 import TimelineBoard from '@/components/timeline/TimelineBoard';
 import EventPage from '@/components/timeline/EventPage';
 import EventForm from '@/components/timeline/EventForm';
@@ -12,8 +13,8 @@ import { TIERS } from '@/lib/timeline/tiers';
 import { nearestTierIndex, formatDate, clampCenter, pxPerDayAt } from '@/lib/timeline/time';
 import '@/app/timeline/timeline.css';
 
-function isStaffRole(role?: string | null) {
-  return role === 'ADMIN' || role === 'MODERATOR';
+function isFullAdmin(role?: string | null) {
+  return role === 'ADMIN';
 }
 
 export default function TimelineApp() {
@@ -29,6 +30,7 @@ export default function TimelineApp() {
   const [formOpen, setFormOpen] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
   const [saving, setSaving] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -43,7 +45,7 @@ export default function TimelineApp() {
       const raw = localStorage.getItem('gdvnc_user');
       if (raw) {
         const user = JSON.parse(raw);
-        setCanEdit(isStaffRole(user?.role));
+        setCanEdit(isFullAdmin(user?.role));
       }
     } catch {
       setCanEdit(false);
@@ -142,10 +144,15 @@ export default function TimelineApp() {
     });
   }
 
+  function jumpToToday() {
+    const w = rootRef.current?.clientWidth || window.innerWidth;
+    setCenter(clampCenter(Date.now(), w, pxPerDayAt(zoom)));
+  }
+
   const tierLabel = t(`timeline.tier.${tier.id}` as DictKey);
 
   return (
-    <div className="gdvn-timeline">
+    <div className="gdvn-timeline" ref={rootRef}>
       <header className="hud">
         <div className="brand">
           <h1>{t('timeline.brand')}</h1>
@@ -155,6 +162,15 @@ export default function TimelineApp() {
           {tierLabel} · {viewLabel}
         </div>
         <div className="actions">
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={jumpToToday}
+            aria-label={t('timeline.jump_today')}
+            title={t('timeline.jump_today')}
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
           {canEdit ? (
             <button
               className="gold-btn"
