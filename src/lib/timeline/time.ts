@@ -1,4 +1,5 @@
 import { DAY_MS, type ChronicleEvent, type TimelineTierId } from '@/lib/timeline/types';
+import { TIERS } from '@/lib/timeline/tiers';
 
 /** Timeline starts at 2013-01-01 00:00 (Geometry Dash release year) and ends now. */
 export const TIMELINE_ORIGIN = new Date(2013, 0, 1).getTime();
@@ -70,6 +71,57 @@ export function eventSpan(event: Pick<ChronicleEvent, 'start' | 'end'>) {
   const start = event.start;
   const end = event.end && event.end > event.start ? event.end : event.start;
   return { start, end, center: (start + end) / 2, duration: Math.max(DAY_MS, end - start) };
+}
+
+export function eventTierRank(event: Pick<ChronicleEvent, 'tier'>) {
+  return TIERS.find((t) => t.id === event.tier)?.rank ?? 5;
+}
+
+export function eventsAtOrAboveTier(events: ChronicleEvent[], maxRank: number) {
+  return events
+    .filter((e) => eventTierRank(e) <= maxRank)
+    .slice()
+    .sort((a, b) => eventSpan(a).center - eventSpan(b).center);
+}
+
+export function nearestEventAnchor(
+  events: ChronicleEvent[],
+  aroundMs: number,
+  maxRank: number,
+  focusId?: string | null
+) {
+  if (focusId) {
+    const focused = events.find((e) => e.id === focusId);
+    if (focused) return eventSpan(focused).center;
+  }
+  const list = eventsAtOrAboveTier(events, maxRank);
+  if (!list.length) return aroundMs;
+  let best = list[0];
+  let bestDist = Infinity;
+  for (const e of list) {
+    const dist = Math.abs(eventSpan(e).center - aroundMs);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = e;
+    }
+  }
+  return eventSpan(best).center;
+}
+
+export function neighborEvent(
+  events: ChronicleEvent[],
+  aroundMs: number,
+  maxRank: number,
+  dir: -1 | 1
+) {
+  const list = eventsAtOrAboveTier(events, maxRank);
+  if (!list.length) return null;
+  if (dir < 0) {
+    const prev = list.filter((e) => eventSpan(e).center < aroundMs - 1);
+    return prev.length ? prev[prev.length - 1] : null;
+  }
+  const next = list.filter((e) => eventSpan(e).center > aroundMs + 1);
+  return next.length ? next[0] : null;
 }
 
 export function formatDate(ms: number, { withDay = true }: { withDay?: boolean } = {}) {

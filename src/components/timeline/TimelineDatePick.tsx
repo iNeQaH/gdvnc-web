@@ -26,6 +26,8 @@ function digits(value: string, maxLen: number) {
   return value.replace(/\D/g, '').slice(0, maxLen);
 }
 
+type Fly = { top: number; left: number; width: number };
+
 export default function TimelineDatePick({
   open,
   onToggle,
@@ -43,30 +45,43 @@ export default function TimelineDatePick({
   chip: string;
   t: (key: DictKey) => string;
 }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
   const dayRef = useRef<HTMLInputElement>(null);
   const selected = new Date(startOfDay(valueMs));
   const [day, setDay] = useState(String(selected.getDate()).padStart(2, '0'));
   const [month, setMonth] = useState(String(selected.getMonth() + 1).padStart(2, '0'));
   const [year, setYear] = useState(String(selected.getFullYear()));
+  const [fly, setFly] = useState<Fly | null>(null);
+  const [centered, setCentered] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setCentered(false);
+      setFly(null);
+      return;
+    }
     const d = new Date(startOfDay(valueMs));
     setDay(String(d.getDate()).padStart(2, '0'));
     setMonth(String(d.getMonth() + 1).padStart(2, '0'));
     setYear(String(d.getFullYear()));
-    requestAnimationFrame(() => dayRef.current?.focus());
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) setFly({ top: r.top, left: r.left, width: r.width });
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setCentered(true));
+    });
+    return () => cancelAnimationFrame(id);
   }, [open, valueMs]);
 
   useEffect(() => {
-    if (!open) return;
-    function onDoc(e: MouseEvent) {
-      if (!wrapRef.current?.contains(e.target as Node)) onClose();
-    }
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
-  }, [open, onClose]);
+    if (!open || !centered) return;
+    const tmr = window.setTimeout(() => dayRef.current?.focus(), 320);
+    return () => clearTimeout(tmr);
+  }, [open, centered]);
+
+  function closeAnimated() {
+    setCentered(false);
+    window.setTimeout(onClose, 320);
+  }
 
   function go(e?: FormEvent) {
     e?.preventDefault();
@@ -78,51 +93,63 @@ export default function TimelineDatePick({
   }
 
   return (
-    <div className={`date-jump ${open ? 'is-open' : ''}`} ref={wrapRef}>
-      {open ? (
-        <form className="now-chip now-chip-edit" onSubmit={go}>
-          <input
-            ref={dayRef}
-            className="date-jump-num"
-            inputMode="numeric"
-            maxLength={2}
-            aria-label={t('timeline.day')}
-            value={day}
-            onChange={(e) => setDay(digits(e.target.value, 2))}
-          />
-          <span>/</span>
-          <input
-            className="date-jump-num"
-            inputMode="numeric"
-            maxLength={2}
-            aria-label={t('timeline.month')}
-            value={month}
-            onChange={(e) => setMonth(digits(e.target.value, 2))}
-          />
-          <span>/</span>
-          <input
-            className="date-jump-num is-year"
-            inputMode="numeric"
-            maxLength={4}
-            aria-label={t('timeline.year')}
-            value={year}
-            onChange={(e) => setYear(digits(e.target.value, 4))}
-          />
-          <button type="submit" className="date-jump-go">
-            {t('timeline.goto_date')}
-          </button>
-        </form>
-      ) : (
-        <button
-          type="button"
-          className="now-chip"
-          onClick={onToggle}
-          aria-expanded={false}
-          title={t('timeline.goto_date')}
-        >
-          {chip}
-        </button>
-      )}
+    <div className={`date-jump ${open ? 'is-open' : ''}`}>
+      <button
+        ref={btnRef}
+        type="button"
+        className="now-chip"
+        onClick={onToggle}
+        aria-expanded={open}
+        title={t('timeline.goto_date')}
+        style={open ? { visibility: 'hidden' } : undefined}
+      >
+        {chip}
+      </button>
+      {open && fly ? (
+        <div className="date-jump-overlay" onMouseDown={closeAnimated}>
+          <form
+            className={`now-chip now-chip-edit date-jump-fly ${centered ? 'is-center' : ''}`}
+            style={
+              centered
+                ? undefined
+                : { top: fly.top, left: fly.left, width: Math.max(fly.width, 168) }
+            }
+            onSubmit={go}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <input
+              ref={dayRef}
+              className="date-jump-num"
+              inputMode="numeric"
+              maxLength={2}
+              aria-label={t('timeline.day')}
+              value={day}
+              onChange={(e) => setDay(digits(e.target.value, 2))}
+            />
+            <span>/</span>
+            <input
+              className="date-jump-num"
+              inputMode="numeric"
+              maxLength={2}
+              aria-label={t('timeline.month')}
+              value={month}
+              onChange={(e) => setMonth(digits(e.target.value, 2))}
+            />
+            <span>/</span>
+            <input
+              className="date-jump-num is-year"
+              inputMode="numeric"
+              maxLength={4}
+              aria-label={t('timeline.year')}
+              value={year}
+              onChange={(e) => setYear(digits(e.target.value, 4))}
+            />
+            <button type="submit" className="date-jump-go">
+              {t('timeline.goto_date')}
+            </button>
+          </form>
+        </div>
+      ) : null}
     </div>
   );
 }

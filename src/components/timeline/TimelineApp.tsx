@@ -11,7 +11,16 @@ import TimelineDatePick from '@/components/timeline/TimelineDatePick';
 import type { ChronicleEvent } from '@/lib/timeline/types';
 import type { DictKey } from '@/lib/dictionaries';
 import { TIERS } from '@/lib/timeline/tiers';
-import { nearestTierIndex, formatDate, clampCenter, pxPerDayAt, stepZoom } from '@/lib/timeline/time';
+import {
+  nearestTierIndex,
+  formatDate,
+  clampCenter,
+  pxPerDayAt,
+  stepZoom,
+  nearestEventAnchor,
+  neighborEvent,
+  eventSpan,
+} from '@/lib/timeline/time';
 import '@/app/timeline/timeline.css';
 
 function isFullAdmin(role?: string | null) {
@@ -39,6 +48,11 @@ export default function TimelineApp() {
   centerRef.current = center;
   const [zoomTip, setZoomTip] = useState<{ index: number } | null>(null);
   const [dateOpen, setDateOpen] = useState(false);
+  const [focusId, setFocusId] = useState<string | null>(null);
+  const focusIdRef = useRef<string | null>(null);
+  focusIdRef.current = focusId;
+  const eventsRef = useRef(events);
+  eventsRef.current = events;
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -96,8 +110,8 @@ export default function TimelineApp() {
       if (e.key === 'ArrowRight') {
         setCenter((c) => clampCenter(c + (90 / ppd) * day, window.innerWidth, ppd));
       }
-      if (e.key === '+' || e.key === '=') setZoom((z) => stepZoom(z, 1));
-      if (e.key === '-') setZoom((z) => stepZoom(z, -1));
+      if (e.key === '+' || e.key === '=') applyZoom(stepZoom(zoom, 1));
+      if (e.key === '-') applyZoom(stepZoom(zoom, -1));
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -152,6 +166,7 @@ export default function TimelineApp() {
           return;
         }
         setEvents((list) => list.filter((e) => e.id !== event.id));
+        setFocusId((id) => (id === event.id ? null : id));
         setOpen(null);
         setFormOpen(false);
       } catch {
@@ -200,10 +215,22 @@ export default function TimelineApp() {
 
   function applyZoom(next: number) {
     const index = nearestTierIndex(next);
+    const w = rootRef.current?.clientWidth || window.innerWidth;
+    const around = centerRef.current;
+    const anchor = nearestEventAnchor(eventsRef.current, around, index, focusIdRef.current);
     setZoom(index);
+    setCenter(clampCenter(anchor, w, pxPerDayAt(index)));
     setZoomTip({ index });
     if (zoomHideRef.current) clearTimeout(zoomHideRef.current);
     zoomHideRef.current = setTimeout(() => setZoomTip(null), 1000);
+  }
+
+  function jumpToNeighbor(dir: -1 | 1) {
+    const rank = nearestTierIndex(zoom);
+    const next = neighborEvent(eventsRef.current, centerRef.current, rank, dir);
+    if (!next) return;
+    setFocusId(next.id);
+    panTo(eventSpan(next).center);
   }
 
   const tierLabel = t(`timeline.tier.${tier.id}` as DictKey);
@@ -253,12 +280,17 @@ export default function TimelineApp() {
       <TimelineBoard
         events={events}
         zoom={zoom}
-        setZoom={setZoom}
+        setZoom={(z) => applyZoom(typeof z === 'function' ? z(zoom) : z)}
         center={center}
         setCenter={setCenter}
         expandedIds={expandedIds}
         setExpandedIds={setExpandedIds}
-        onOpen={setOpen}
+        onOpen={(e) => {
+          setFocusId(e.id);
+          setOpen(e);
+        }}
+        onFocusEvent={(id) => setFocusId(id)}
+        onStepEvent={jumpToNeighbor}
         onEdit={(e) => {
           if (!canEdit) return;
           setEditing(e);

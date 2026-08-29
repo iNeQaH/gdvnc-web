@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   DAY_MS,
   pxPerDayAt,
@@ -11,6 +12,7 @@ import {
   stepZoom,
   TIMELINE_ARROW_GUTTER_PX,
   TIMELINE_NOW_INSET_PX,
+  neighborEvent,
 } from '@/lib/timeline/time';
 import { clusterCollapsed, layoutLane, type LaneItem } from '@/lib/timeline/layout';
 import EventCard from '@/components/timeline/EventCard';
@@ -41,6 +43,8 @@ export default function TimelineBoard({
   expandedIds,
   setExpandedIds,
   onOpen,
+  onFocusEvent,
+  onStepEvent,
   onEdit,
   canEdit,
   ldm,
@@ -54,6 +58,8 @@ export default function TimelineBoard({
   expandedIds: Set<string>;
   setExpandedIds: (s: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
   onOpen: (event: ChronicleEvent) => void;
+  onFocusEvent: (id: string) => void;
+  onStepEvent: (dir: -1 | 1) => void;
   onEdit: (event: ChronicleEvent) => void;
   canEdit: boolean;
   ldm: boolean;
@@ -84,10 +90,6 @@ export default function TimelineBoard({
   const timeToX = (ms: number) => ((ms - viewStart) / DAY_MS) * ppd;
   const live = useRef({ zoom, center, size, ppd, viewStart, setZoom, setCenter });
   live.current = { zoom, center, size, ppd, viewStart, setZoom, setCenter };
-
-  function bound(ms: number) {
-    return clampCenter(ms, size.w, ppd);
-  }
 
   const prepared: Prepared[] = useMemo(() => {
     return events.map((e) => {
@@ -125,14 +127,7 @@ export default function TimelineBoard({
       e.preventDefault();
       const s = live.current;
       if (e.ctrlKey || e.metaKey) {
-        const rect = el.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const atTime = s.viewStart + (x / s.ppd) * DAY_MS;
-        const next = stepZoom(s.zoom, e.deltaY > 0 ? -1 : 1);
-        const nextPpd = pxPerDayAt(next);
-        const newCenter = atTime - ((x - s.size.w / 2) / nextPpd) * DAY_MS;
-        s.setZoom(next);
-        s.setCenter(clampCenter(newCenter, s.size.w, nextPpd));
+        s.setZoom(stepZoom(s.zoom, e.deltaY > 0 ? -1 : 1));
         return;
       }
       const dx = e.deltaY !== 0 ? e.deltaY : e.deltaX;
@@ -143,7 +138,7 @@ export default function TimelineBoard({
   }, []);
 
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    if ((e.target as HTMLElement).closest('.event-card, .dot, .period, .cluster-pop, button')) return;
+    if ((e.target as HTMLElement).closest('.event-card, .dot, .period, .cluster-pop, button, .lane-nav')) return;
     setGrabbing(true);
     drag.current = { x: e.clientX, center };
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -162,17 +157,11 @@ export default function TimelineBoard({
 
   function onDblClick(e: React.MouseEvent<HTMLDivElement>) {
     if ((e.target as HTMLElement).closest('.event-card, .dot, .period')) return;
-    const el = rootRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const atTime = viewStart + (x / ppd) * DAY_MS;
-    const next = Math.min(5, Math.round(zoom) + 1);
-    setZoom(next);
-    setCenter(bound(atTime));
+    setZoom(Math.min(5, Math.round(zoom) + 1));
   }
 
   function toggleExpand(item: LaneItem) {
+    onFocusEvent(item.event.id);
     setExpandedIds((s) => {
       const n = new Set(s);
       if (n.has(item.event.id)) n.delete(item.event.id);
@@ -197,6 +186,9 @@ export default function TimelineBoard({
     size.w - TIMELINE_ARROW_GUTTER_PX,
     Math.max(0, nowX + TIMELINE_NOW_INSET_PX)
   );
+  const zoomRank = Math.round(zoom);
+  const prevEvent = neighborEvent(events, center, zoomRank, -1);
+  const nextEvent = neighborEvent(events, center, zoomRank, 1);
 
   const posPeriods: Prepared[] = [];
   const negPeriods: Prepared[] = [];
@@ -332,8 +324,8 @@ export default function TimelineBoard({
               key={`dot-${i.event.id}`}
               className={`dot ${i.event.nature === 'negative' ? 'neg' : ''} ${expanded ? 'is-open' : ''}`}
               style={{ left: i.left + i.width / 2, top: lineY }}
-              onClick={(e) => {
-                e.stopPropagation();
+              onClick={(ev) => {
+                ev.stopPropagation();
                 if (expanded) toggleExpand(i);
                 else onOpen(i.event);
               }}
@@ -381,6 +373,34 @@ export default function TimelineBoard({
       ) : null}
       </div>
       <div className="line-arrow" style={{ left: lineEndX, top: lineY }} />
+      <button
+        type="button"
+        className="lane-nav is-left"
+        style={{ top: lineY }}
+        disabled={!prevEvent}
+        aria-label={t('timeline.prev_event')}
+        title={t('timeline.prev_event')}
+        onClick={(e) => {
+          e.stopPropagation();
+          onStepEvent(-1);
+        }}
+      >
+        <ChevronLeft />
+      </button>
+      <button
+        type="button"
+        className="lane-nav is-right"
+        style={{ top: lineY }}
+        disabled={!nextEvent}
+        aria-label={t('timeline.next_event')}
+        title={t('timeline.next_event')}
+        onClick={(e) => {
+          e.stopPropagation();
+          onStepEvent(1);
+        }}
+      >
+        <ChevronRight />
+      </button>
     </div>
   );
 }
