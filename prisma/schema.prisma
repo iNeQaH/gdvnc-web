@@ -274,3 +274,20 @@ model Image {
   dataUrl   String   @db.Text
   createdAt DateTime @default(now())
 }
+
+model TimelineEvent {
+  id               String   @id @default(uuid())
+  title            String
+  shortDescription String   @default("") @db.Text
+  fullDescription  String   @default("") @db.Text
+  image            String?  @db.Text
+  startAt          DateTime
+  endAt            DateTime
+  approximate      Boolean  @default(false)
+  nature           String   @default("positive") // positive | negative
+  tier             String   @default("1y") // 5y | 1y | 6m | 1m | week | day
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([startAt])
+}

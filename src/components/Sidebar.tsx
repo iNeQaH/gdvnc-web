@@ -16,6 +16,7 @@ import {
   X,
   Globe,
   ZoomIn,
+  History,
   Mail,
 } from 'lucide-react';
 import { ThemeSwitcher } from './ThemeSwitcher';
@@ -97,6 +98,7 @@ export const Sidebar = () => {
     { href: '/', label: t('nav.leaderboard'), icon: Star },
     { href: '/levels', label: t('nav.demonlist'), icon: Folder },
     { href: '/challenges', label: t('nav.challenges'), icon: Goal },
+    { href: '/timeline', label: t('nav.timeline'), icon: History },
     { href: '/submit', label: t('nav.submit'), icon: Send },
     { href: '/support', label: t('nav.supporter'), icon: Heart, highlight: false, isPink: true },
     { href: '/helps', label: t('nav.helps'), icon: Send},
