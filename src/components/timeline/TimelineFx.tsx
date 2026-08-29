@@ -1,23 +1,20 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { DAY_MS, TIMELINE_ORIGIN } from '@/lib/timeline/time';
 import { CARD_W } from '@/lib/timeline/layout';
+import type { ChronicleEvent } from '@/lib/timeline/types';
 
 const GRID = 48;
-const LOOP_MS = 11 * 365.25 * DAY_MS;
-const MAX_GHOSTS_IN_VIEW = 7;
-
-type Ghost = {
-  id: number;
-  t: number;
-  y: number;
-  scale: number;
-  parallax: number;
-  w: number;
-  h: number;
-  large: boolean;
-};
+const GHOST_SLOTS = [
+  { u: 0.13, v: 0.16, large: true, parallax: 0.14 },
+  { u: 0.48, v: 0.12, large: false, parallax: 0.5 },
+  { u: 0.86, v: 0.22, large: true, parallax: 0.18 },
+  { u: 0.2, v: 0.5, large: false, parallax: 0.54 },
+  { u: 0.7, v: 0.44, large: true, parallax: 0.16 },
+  { u: 0.11, v: 0.84, large: false, parallax: 0.56 },
+  { u: 0.78, v: 0.8, large: true, parallax: 0.2 },
+] as const;
 
 function mulberry32(seed: number) {
   let a = seed >>> 0;
@@ -29,30 +26,22 @@ function mulberry32(seed: number) {
   };
 }
 
-function makeGhosts(): Ghost[] {
-  const rand = mulberry32(0x6d764e31);
-  const start = TIMELINE_ORIGIN;
-  const end = Date.now() + 8 * 365.25 * DAY_MS;
-  const span = end - start;
-  const out: Ghost[] = [];
-  for (let i = 0; i < 36; i++) {
-    const large = rand() > 0.55;
-    const scale = large ? 1 + rand() * 0.2 : 0.38 + rand() * 0.32;
-    out.push({
-      id: i,
-      t: start + rand() * span,
-      y: 0.08 + rand() * 0.84,
-      scale,
-      parallax: large ? 0.16 : 0.55,
-      w: CARD_W * scale,
-      h: (large ? 148 : 86) * scale,
-      large,
-    });
-  }
-  return out;
+function wrap(value: number, span: number) {
+  if (span <= 0) return 0;
+  return ((value % span) + span) % span;
 }
 
-const GHOSTS = makeGhosts();
+function GhostMedia({ event }: { event: ChronicleEvent }) {
+  const [failed, setFailed] = useState(false);
+  if (!event.image || failed) {
+    return <div className="card-desc">{event.shortDescription || event.title}</div>;
+  }
+  return (
+    <div className="card-media">
+      <img src={event.image} alt="" onError={() => setFailed(true)} />
+    </div>
+  );
+}
 
 type Particle = {
   x: number;
@@ -131,11 +120,13 @@ function shiftHue(rgb: [number, number, number], deg: number): [number, number, 
 }
 
 export default function TimelineFx({
+  events,
   viewStart,
   ppd,
   width,
   height,
 }: {
+  events: ChronicleEvent[];
   viewStart: number;
   ppd: number;
   width: number;
@@ -148,32 +139,30 @@ export default function TimelineFx({
   const gridShift = originX * 0.08;
 
   const ghosts = useMemo(() => {
-    const pad = 280;
-    const placed: Array<Ghost & { key: string; x: number; top: number }> = [];
-    for (const g of GHOSTS) {
-      const phase = ((g.t - TIMELINE_ORIGIN) % LOOP_MS + LOOP_MS) % LOOP_MS;
-      const k0 = Math.floor((viewStart - LOOP_MS * 2 - TIMELINE_ORIGIN) / LOOP_MS);
-      for (let n = 0; n < 8; n++) {
-        const t = TIMELINE_ORIGIN + phase + (k0 + n) * LOOP_MS;
-        const x = ((t - viewStart) / DAY_MS) * ppd * g.parallax;
-        if (x < -g.w - pad || x > width + pad) continue;
-        placed.push({ ...g, key: `${g.id}-${k0 + n}`, x, top: g.y * height });
-      }
-    }
-    const midX = width / 2;
-    const visible = placed.filter((g) => {
-      const halfW = g.w / 2;
-      const halfH = g.h / 2;
-      return g.x + halfW > 0 && g.x - halfW < width && g.top + halfH > 0 && g.top - halfH < height;
+    if (!events.length || width < 8 || height < 8) return [];
+    const panDays = (viewStart - TIMELINE_ORIGIN) / DAY_MS;
+    return GHOST_SLOTS.map((slot, i) => {
+      const rand = mulberry32(0x6d764e31 ^ (i + 1) * 0x9e3779b9);
+      const u = slot.u + (rand() - 0.5) * 0.05;
+      const v = slot.v + (rand() - 0.5) * 0.05;
+      const scale = slot.large ? 0.92 + rand() * 0.28 : 0.42 + rand() * 0.28;
+      const w = CARD_W * scale;
+      const h = (slot.large ? 150 : 88) * scale;
+      const travel = u * width - panDays * ppd * slot.parallax;
+      const cycle = Math.floor(travel / width);
+      const pick = mulberry32(((i + 7) * 0x85ebca6b) ^ (cycle * 0xc2b2ae35));
+      const event = events[Math.floor(pick() * events.length)];
+      return {
+        key: `${i}-${cycle}-${event.id}`,
+        event,
+        large: slot.large,
+        x: wrap(travel, width),
+        top: v * height,
+        w,
+        h,
+      };
     });
-    visible.sort((a, b) => {
-      const da = Math.abs(a.x - midX);
-      const db = Math.abs(b.x - midX);
-      if (da !== db) return da - db;
-      return a.key.localeCompare(b.key);
-    });
-    return visible.slice(0, MAX_GHOSTS_IN_VIEW);
-  }, [viewStart, ppd, height, width]);
+  }, [events, viewStart, ppd, height, width]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -268,7 +257,7 @@ export default function TimelineFx({
       />
       <div className="timeline-ghosts">
         {ghosts.map((g) => (
-          <div
+          <article
             key={g.key}
             className={`timeline-ghost ${g.large ? 'is-large' : 'is-small'}`}
             style={{
@@ -277,7 +266,12 @@ export default function TimelineFx({
               width: g.w,
               height: g.h,
             }}
-          />
+          >
+            <div className="card-title">{g.event.title}</div>
+            <div className="card-frame">
+              <GhostMedia event={g.event} />
+            </div>
+          </article>
         ))}
       </div>
       <canvas ref={canvasRef} className="timeline-particles" />

@@ -228,7 +228,13 @@ export default function TimelineBoard({
       onClick={() => setCluster(null)}
     >
       {ldm ? null : (
-        <TimelineFx viewStart={viewStart} ppd={ppd} width={size.w} height={size.h} />
+        <TimelineFx
+          events={events}
+          viewStart={viewStart}
+          ppd={ppd}
+          width={size.w}
+          height={size.h}
+        />
       )}
       <div className="timeline-clip" style={{ width: lineEndX }}>
       {stackPeriods(posPeriods).map(({ e, lane }) => {
