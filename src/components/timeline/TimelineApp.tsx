@@ -7,6 +7,7 @@ import EventPage from '@/components/timeline/EventPage';
 import EventForm from '@/components/timeline/EventForm';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
+import TimelineDatePick from '@/components/timeline/TimelineDatePick';
 import type { ChronicleEvent } from '@/lib/timeline/types';
 import type { DictKey } from '@/lib/dictionaries';
 import { TIERS } from '@/lib/timeline/tiers';
@@ -18,7 +19,7 @@ function isFullAdmin(role?: string | null) {
 }
 
 export default function TimelineApp() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { showToast, showConfirm } = useToast();
   const [events, setEvents] = useState<ChronicleEvent[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -33,7 +34,11 @@ export default function TimelineApp() {
   const [ldm, setLdm] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const zoomHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const panAnim = useRef<number | null>(null);
+  const centerRef = useRef(center);
+  centerRef.current = center;
   const [zoomTip, setZoomTip] = useState<{ index: number } | null>(null);
+  const [dateOpen, setDateOpen] = useState(false);
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -41,6 +46,7 @@ export default function TimelineApp() {
     return () => {
       document.body.style.overflow = prev;
       if (zoomHideRef.current) clearTimeout(zoomHideRef.current);
+      if (panAnim.current != null) cancelAnimationFrame(panAnim.current);
     };
   }, []);
 
@@ -78,6 +84,7 @@ export default function TimelineApp() {
       if (e.key === 'Escape') {
         setOpen(null);
         setFormOpen(false);
+        setDateOpen(false);
       }
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
@@ -153,9 +160,30 @@ export default function TimelineApp() {
     });
   }
 
-  function jumpToToday() {
+  function panTo(ms: number) {
     const w = rootRef.current?.clientWidth || window.innerWidth;
-    setCenter(clampCenter(Date.now(), w, pxPerDayAt(zoom)));
+    const target = clampCenter(ms, w, pxPerDayAt(zoom));
+    if (panAnim.current != null) cancelAnimationFrame(panAnim.current);
+    const from = centerRef.current;
+    const t0 = performance.now();
+    const dur = 560;
+    const step = (now: number) => {
+      const u = Math.min(1, (now - t0) / dur);
+      const ease = 1 - (1 - u) ** 3;
+      setCenter(from + (target - from) * ease);
+      if (u < 1) panAnim.current = requestAnimationFrame(step);
+      else panAnim.current = null;
+    };
+    panAnim.current = requestAnimationFrame(step);
+  }
+
+  function jumpToToday() {
+    panTo(Date.now());
+  }
+
+  function jumpToDate(ms: number) {
+    setDateOpen(false);
+    panTo(ms);
   }
 
   function toggleLdm() {
@@ -188,9 +216,16 @@ export default function TimelineApp() {
           <h1>{t('timeline.brand')}</h1>
           <p>{t('timeline.tagline')}</p>
         </div>
-        <div className="now-chip">
-          {tierLabel} · {viewLabel}
-        </div>
+        <TimelineDatePick
+          open={dateOpen}
+          onToggle={() => setDateOpen((v) => !v)}
+          onClose={() => setDateOpen(false)}
+          onPick={jumpToDate}
+          valueMs={center}
+          chip={`${tierLabel} · ${viewLabel}`}
+          language={language}
+          t={t}
+        />
         <div className="actions">
           <button
             type="button"
