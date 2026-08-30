@@ -258,12 +258,13 @@ model LevelSubmission {
 }
 
 model HelpRequest {
-  id        String   @id @default(cuid())
-  userId    String?
-  title     String
-  content   String   @db.Text
-  status    String   @default("PENDING") // PENDING, RESOLVED
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String?
+  title      String
+  content    String   @db.Text
+  status     String   @default("PENDING")
+  reviewNote String?  @db.Text
+  createdAt  DateTime @default(now())
 
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

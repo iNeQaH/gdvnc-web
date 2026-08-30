@@ -1,4 +1,5 @@
 import { requireAdmin } from '@/lib/auth';
+import { clipReviewNote, notifyWithNote } from '@/lib/reviewNote';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { RecordStatus } from '@prisma/client';
@@ -12,6 +13,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   try {
     const { id } = await params;
     const { action, rejectReason } = await req.json();
+    const note = clipReviewNote(rejectReason);
 
     if (!['APPROVE', 'REJECT'].includes(action)) {
       return NextResponse.json({ error: 'Hành động không hợp lệ.' }, { status: 400 });
@@ -43,7 +45,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       where: { id },
       data: {
         status: newStatus,
-        rejectReason: action === 'REJECT' ? rejectReason || 'Không đạt quy chuẩn bằng chứng.' : null,
+        rejectReason: note || (action === 'REJECT' ? 'Không đạt quy chuẩn bằng chứng.' : null),
         reviewerId: admin.userId,
         reviewedAt: new Date(),
       },
@@ -57,7 +59,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           data: {
             userId: record.userId,
             title: 'Kỷ Lục Được Phê Duyệt',
-            message: `Kỷ lục hoàn thành màn chơi "${record.level.name}" của bạn đã được Admin phê duyệt và cập nhật điểm Points vào Bảng Xếp Hạng!`,
+            message: notifyWithNote(
+              `Kỷ lục hoàn thành màn chơi "${record.level.name}" của bạn đã được Admin phê duyệt và cập nhật điểm Points vào Bảng Xếp Hạng!`,
+              note
+            ),
           },
         });
       }
@@ -66,7 +71,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         data: {
           userId: record.userId,
           title: 'Kỷ Lục Bị Từ Chối',
-          message: `Kỷ lục màn chơi "${record.level.name}" của bạn đã bị từ chối với lý do: "${rejectReason || 'Không đạt quy chuẩn bằng chứng hoặc thiếu thông tin.'}"`,
+          message: `Kỷ lục màn chơi "${record.level.name}" của bạn đã bị từ chối với lý do: "${note || 'Không đạt quy chuẩn bằng chứng hoặc thiếu thông tin.'}"`,
         },
       });
     }

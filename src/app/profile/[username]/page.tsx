@@ -904,7 +904,7 @@ export default function ProfilePage() {
                   <th className="px-4 py-2.5 text-center w-20">Video</th>
                 </tr>
               </thead>
-              <tbody className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
+              <tbody className="ui-zebra">
                 {classicRecords.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-8 text-center ui-dim italic">
@@ -988,7 +988,7 @@ export default function ProfilePage() {
                   <th className="px-4 py-2.5 text-center">Video</th>
                 </tr>
               </thead>
-              <tbody className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
+              <tbody className="ui-zebra">
                 {data.platformerCompletions?.map((rec: any, idx: number) => (
                   <tr key={rec.recordId || rec.id || `plat-${idx}`} className="hover:opacity-90">
                     <td className="px-4 py-2.5">
@@ -1040,7 +1040,7 @@ export default function ProfilePage() {
                   <th className="px-4 py-2.5 text-center">Mode</th>
                 </tr>
               </thead>
-              <tbody className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
+              <tbody className="ui-zebra">
                 {data.createdLevels?.map((level: any, idx: number) => (
                   <tr key={level.id || `created-${idx}`} className="hover:opacity-90">
                     <td className="px-4 py-2.5">

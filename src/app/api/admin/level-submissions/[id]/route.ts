@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { RecordStatus } from '@prisma/client';
 import { upsertLevelFromForm } from '@/lib/upsertLevel';
+import { clipReviewNote, notifyWithNote } from '@/lib/reviewNote';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   let admin;
@@ -11,6 +12,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   try {
     const { id } = await params;
     const { action, rejectReason } = await req.json();
+    const note = clipReviewNote(rejectReason);
 
     if (!['APPROVE', 'REJECT'].includes(action)) {
       return NextResponse.json({ error: 'Hành động không hợp lệ.' }, { status: 400 });
@@ -32,7 +34,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         where: { id },
         data: {
           status: RecordStatus.REJECTED,
-          rejectReason: rejectReason || 'Không đạt quy chuẩn.',
+          rejectReason: note || 'Không đạt quy chuẩn.',
           reviewerId: admin.userId,
           reviewedAt: new Date(),
         },
@@ -41,7 +43,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         data: {
           userId: submission.userId,
           title: 'Submit Level bị từ chối',
-          message: `Level ID ${submission.gdLevelId} đã bị từ chối. Lý do: ${rejectReason || 'Không xác định'}`,
+          message: `Level ID ${submission.gdLevelId} đã bị từ chối. Lý do: ${note || 'Không xác định'}`,
         },
       });
       return NextResponse.json({ success: true, submission: updated });
@@ -63,6 +65,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       where: { id },
       data: {
         status: RecordStatus.APPROVED,
+        rejectReason: note || null,
         reviewerId: admin.userId,
         reviewedAt: new Date(),
       },
@@ -72,7 +75,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       data: {
         userId: submission.userId,
         title: 'Submit Level đã được duyệt',
-        message: `Level "${result.name}" (ID ${submission.gdLevelId}) đã được thêm vào danh sách.`,
+        message: notifyWithNote(
+          `Level "${result.name}" (ID ${submission.gdLevelId}) đã được thêm vào danh sách.`,
+          note
+        ),
       },
     });
 

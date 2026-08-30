@@ -7,6 +7,7 @@ import {
   syncExternalListToDb,
   type ExternalListLevel,
 } from '@/lib/externalLists';
+import { compareListLevels, isLegacyTier } from '@/lib/levelSort';
 
 const dbLevelSelect = {
   id: true,
@@ -32,21 +33,18 @@ function mapDbLevels(levels: Array<any>) {
 }
 
 async function loadDbFallback(mode: string, tier: string | null, challenge: boolean) {
-  let placementWhere: any = {};
-  if (tier === 'main') placementWhere = { gte: 1, lte: 75 };
-  else if (tier === 'extended') placementWhere = { gte: 76, lte: 500 };
-  else if (tier === 'legacy') placementWhere = { gt: 500 };
-
   const levels = await prisma.level.findMany({
     where: {
       isChallenge: challenge,
       ...(mode !== 'ALL' ? { mode: mode as LevelMode } : {}),
-      ...(tier ? { placement: placementWhere } : {}),
+      ...(tier === 'main' ? { placement: { gte: 1, lte: 75 } }
+        : tier === 'extended' ? { placement: { gte: 76, lte: 500 } }
+        : tier === 'legacy' ? { OR: [{ placement: { gt: 500 } }, { placement: null }] }
+        : {}),
     },
-    orderBy: { placement: { sort: 'asc', nulls: 'last' } },
     select: dbLevelSelect,
   });
-  return mapDbLevels(levels);
+  return mapDbLevels(levels).sort(compareListLevels);
 }
 
 export async function GET(req: Request) {
@@ -93,17 +91,7 @@ export async function GET(req: Request) {
         isChallenge: false,
         ...(mode !== 'ALL' ? { mode: mode as LevelMode } : {}),
       },
-      select: {
-        id: true,
-        gdLevelId: true,
-        difficulty: true,
-        difficultyFace: true,
-        ratingType: true,
-        isVN: true,
-        isChallenge: true,
-        description: true,
-        _count: { select: { records: { where: { status: RecordStatus.APPROVED } } } },
-      },
+      select: dbLevelSelect,
     });
 
     const dbByGd = new Map(
@@ -127,22 +115,29 @@ export async function GET(req: Request) {
       r.ok ? mergeExternalWithDb(r.list, dbByGd) : []
     );
 
-    // If one mode failed, fill that mode from DB so Classic/Platformer is not blank.
     for (const r of externalResults) {
       if (r.ok) continue;
-      const dbOnly = await loadDbFallback(r.mode, tier, false);
+      const dbOnly = await loadDbFallback(r.mode, null, false);
       levels = [...levels, ...dbOnly];
+    }
+
+    const seen = new Set(levels.map((l) => l.gdLevelId));
+    for (const row of mapDbLevels(dbLevels)) {
+      if (!seen.has(row.gdLevelId)) {
+        seen.add(row.gdLevelId);
+        levels.push(row);
+      }
     }
 
     if (tier === 'main') levels = levels.filter((l) => l.placement != null && l.placement >= 1 && l.placement <= 75);
     else if (tier === 'extended') levels = levels.filter((l) => l.placement != null && l.placement >= 76 && l.placement <= 500);
-    else if (tier === 'legacy') levels = levels.filter((l) => l.placement != null && l.placement > 500);
+    else if (tier === 'legacy') levels = levels.filter((l) => isLegacyTier(l.placement));
 
     levels.sort((a, b) => {
       const am = String(a.mode);
       const bm = String(b.mode);
       if (am !== bm) return am === 'CLASSIC' ? -1 : 1;
-      return (a.placement ?? 99999) - (b.placement ?? 99999);
+      return compareListLevels(a, b);
     });
 
     for (const r of externalResults) {

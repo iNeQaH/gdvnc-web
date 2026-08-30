@@ -18,8 +18,11 @@ export type ExternalListLevel = {
 type CacheEntry = { at: number; levels: ExternalListLevel[] };
 
 const CACHE_MS = 10 * 60_000;
-const FETCH_TIMEOUT_MS = 12_000;
+const FETCH_TIMEOUT_MS = 25_000;
 const cache: Record<string, CacheEntry> = {};
+
+const AREDL_CLASSIC = 'https://api.aredl.net/v2/api/aredl/levels';
+const AREDL_PLAT = 'https://api.aredl.net/v2/api/arepl/levels';
 
 async function fetchJson(url: string) {
   const controller = new AbortController();
@@ -37,9 +40,7 @@ async function fetchJson(url: string) {
     });
     if (!res.ok) {
       if (res.status === 403) {
-        throw new Error(
-          `API từ chối yêu cầu (HTTP 403). Pointercrate/Cloudflare đang chặn IP máy chủ. Thử lại sau, hoặc gọi từ máy local.`
-        );
+        throw new Error(`API từ chối yêu cầu (HTTP 403) cho ${url}`);
       }
       throw new Error(`HTTP ${res.status} for ${url}`);
     }
@@ -112,6 +113,59 @@ async function fetchPemonlist(): Promise<ExternalListLevel[]> {
   return all;
 }
 
+function mapAredlRows(data: unknown, mode: 'CLASSIC' | 'PLATFORMER'): ExternalListLevel[] {
+  const rows = Array.isArray(data)
+    ? data
+    : Array.isArray((data as { levels?: unknown })?.levels)
+      ? (data as { levels: unknown[] }).levels
+      : [];
+  const all: ExternalListLevel[] = [];
+  for (const raw of rows) {
+    const demon = raw as Record<string, unknown>;
+    const gdLevelId = Number(demon.level_id);
+    if (!Number.isFinite(gdLevelId) || gdLevelId <= 0) continue;
+    const placement = Number(demon.position);
+    if (!Number.isFinite(placement) || placement < 1) continue;
+    all.push({
+      gdLevelId,
+      name: String(demon.name || `Level ${gdLevelId}`),
+      placement,
+      creatorName: null,
+      verifierName: null,
+      youtubeId: null,
+      minPercent: 100,
+      mode,
+      description: typeof demon.description === 'string' ? demon.description : null,
+    });
+  }
+  return all;
+}
+
+async function fetchAredl(mode: 'CLASSIC' | 'PLATFORMER'): Promise<ExternalListLevel[]> {
+  const url = mode === 'PLATFORMER' ? AREDL_PLAT : AREDL_CLASSIC;
+  return mapAredlRows(await fetchJson(url), mode);
+}
+
+async function fetchClassicListed(): Promise<ExternalListLevel[]> {
+  try {
+    const listed = await fetchAredl('CLASSIC');
+    if (listed.length >= 10) return listed;
+  } catch (error) {
+    console.error('AREDL classic failed, falling back to Pointercrate', error);
+  }
+  return fetchPointercrateListed();
+}
+
+async function fetchPlatformerListed(): Promise<ExternalListLevel[]> {
+  try {
+    const listed = await fetchAredl('PLATFORMER');
+    if (listed.length >= 10) return listed;
+  } catch (error) {
+    console.error('AREDL platformer failed, falling back to Pemonlist', error);
+  }
+  return fetchPemonlist();
+}
+
 export function clearExternalListCache(mode?: 'CLASSIC' | 'PLATFORMER') {
   if (mode) delete cache[mode];
   else {
@@ -127,7 +181,7 @@ export async function getExternalList(
   const cached = cache[mode];
   if (!opts?.force && cached && Date.now() - cached.at < CACHE_MS) return cached.levels;
 
-  const levels = mode === 'CLASSIC' ? await fetchPointercrateListed() : await fetchPemonlist();
+  const levels = mode === 'CLASSIC' ? await fetchClassicListed() : await fetchPlatformerListed();
   if (levels.length === 0) {
     throw new Error(`Empty ${mode} list from upstream`);
   }

@@ -259,6 +259,19 @@ option {
   color: var(--text-title);
 }
 
+.ui-zebra tbody tr:nth-child(odd) {
+  background-color: var(--bg-card);
+}
+.ui-zebra tbody tr:nth-child(even) {
+  background-color: color-mix(in srgb, var(--text-title) 7%, var(--bg-card));
+}
+.ui-zebra-list > :nth-child(odd) {
+  background-color: var(--bg-card);
+}
+.ui-zebra-list > :nth-child(even) {
+  background-color: color-mix(in srgb, var(--text-title) 7%, var(--bg-card));
+}
+
 .ui-dim {
   color: var(--text-dim);
 }
@@ -300,7 +313,21 @@ input[type="number"] {
   border-radius: 12px;
 }
 
-.faq-body a {
-  color: var(--accent);
-  text-decoration: underline;
+.faq-body ol {
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.faq-body ul {
+  padding-left: 1.15rem;
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.faq-body li {
+  color: var(--text-body);
 }

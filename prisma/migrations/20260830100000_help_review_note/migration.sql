@@ -1,0 +1,1 @@
+ALTER TABLE "HelpRequest" ADD COLUMN IF NOT EXISTS "reviewNote" TEXT;

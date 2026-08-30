@@ -84,7 +84,11 @@ export default function HomePage() {
   };
 
   const filtered = leaderboard.filter((item) => {
+    const pts =
+      mode === 'CREATOR' ? item.creatorPoints : mode === 'PLATFORMER' ? item.platformerPp : item.classicPp;
+    if (!(pts > 0.005)) return false;
     const q = search.toLowerCase();
+    if (!q) return true;
     return [item.displayName, item.gdUsername, item.username]
       .filter(Boolean)
       .some((name: string) => name.toLowerCase().includes(q));
@@ -290,7 +294,7 @@ export default function HomePage() {
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
+              <tbody className="ui-zebra">
                 {paginatedData.map((player, index) => {
                   const rank = (currentPage - 1) * pageSize + index + 1;
                   const hardest = player.hardestLevel;
@@ -316,7 +320,6 @@ export default function HomePage() {
                       onClick={profileHref ? goProfile : undefined}
                       onKeyDown={onRowKey}
                       className={`transition-colors hover:opacity-90 ${profileHref ? 'cursor-pointer' : ''}`}
-                      style={{ backgroundColor: 'var(--bg-card)' }}
                     >
                       <td className="px-5 py-3.5 text-center">
                         <span className="font-extrabold text-xs" style={{ color: rank <= 3 ? 'var(--accent)' : 'var(--text-dim)' }}>

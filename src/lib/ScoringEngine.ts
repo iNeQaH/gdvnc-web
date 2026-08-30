@@ -33,8 +33,8 @@ export function awardedPpForProgress(
  * Formula: P(x) = MIN_PP * exp(k * (LIST_SIZE - x))
  * @param placement - The rank of the level (1 is hardest)
  */
-export function calculateBasePp(placement: number): number {
-  if (placement < 1) return 0;
+export function calculateBasePp(placement: number | null | undefined): number {
+  if (placement == null || placement < 1) return 0;
   if (placement > LIST_SIZE) return MIN_PP;
 
   const k = Math.log(MAX_PP / MIN_PP) / (LIST_SIZE - 1);

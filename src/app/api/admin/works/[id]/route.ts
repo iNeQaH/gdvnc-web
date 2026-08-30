@@ -5,6 +5,7 @@ import { RecordStatus } from '@prisma/client';
 import { recalculateCreatorPoints } from '@/lib/recalculateCreatorPoints';
 import { extractYoutubeId, upsertLevelFromForm } from '@/lib/upsertLevel';
 import { purgeWorkImages } from '@/lib/workImages';
+import { clipReviewNote, notifyWithNote } from '@/lib/reviewNote';
 
 async function finalizeWorkImages(workId: string, imageUrl: string | null | undefined) {
   await purgeWorkImages(imageUrl);
@@ -21,6 +22,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   try {
     const { id } = await params;
     const { action, rejectReason, badgeId, cpAwarded } = await req.json();
+    const note = clipReviewNote(rejectReason);
 
     if (!['APPROVE', 'REJECT'].includes(action)) {
       return NextResponse.json({ error: 'Hành động không hợp lệ.' }, { status: 400 });
@@ -50,7 +52,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         where: { id },
         data: {
           status: RecordStatus.REJECTED,
-          rejectReason: rejectReason || 'Không đạt quy chuẩn Creator.',
+          rejectReason: note || 'Không đạt quy chuẩn Creator.',
           reviewedAt: new Date(),
           reviewerId: admin.userId,
           imageUrl: null,
@@ -63,7 +65,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         data: {
           userId: work.userId,
           title: 'Tác Phẩm Bị Từ Chối',
-          message: `Tác phẩm "${work.levelName}" của bạn đã bị từ chối. Lý do: ${rejectReason || 'Không xác định'}`
+          message: `Tác phẩm "${work.levelName}" của bạn đã bị từ chối. Lý do: ${note || 'Không xác định'}`
         }
       });
 
@@ -99,6 +101,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       where: { id },
       data: {
         status: RecordStatus.APPROVED,
+        rejectReason: note || null,
         badgeGranted: badgeIds.join(','),
         cpGranted: extraCp,
         reviewedAt: new Date(),
@@ -131,7 +134,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       data: {
         userId: work.userId,
         title: 'Tác Phẩm Được Phê Duyệt!',
-        message: `Tác phẩm "${work.levelName}" của bạn đã được phê duyệt! Huy hiệu: ${badgeNames}. Tổng CP hiện tại: ${totalCp}.`
+        message: notifyWithNote(
+          `Tác phẩm "${work.levelName}" của bạn đã được phê duyệt! Huy hiệu: ${badgeNames}. Tổng CP hiện tại: ${totalCp}.`,
+          note
+        )
       }
     });
 

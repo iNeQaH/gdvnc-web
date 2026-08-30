@@ -13,6 +13,7 @@ import LevelFiltersModal from '@/components/LevelFiltersModal';
 import FloatingNav from '@/components/FloatingNav';
 import { useToast } from '@/components/GlobalToast';
 import { matchesDifficultyFilter } from '@/lib/gdDifficulty';
+import { compareListLevels } from '@/lib/levelSort';
 import { levelPath } from '@/lib/levelUrl';
 import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
 
@@ -118,7 +119,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
       let tierMatch = false;
       if (filterTiers.includes('MAIN') && lvl.placement && lvl.placement <= 75) tierMatch = true;
       if (filterTiers.includes('EXTENDED') && lvl.placement && lvl.placement > 75 && lvl.placement <= 500) tierMatch = true;
-      if (filterTiers.includes('LEGACY') && lvl.placement && lvl.placement > 500) tierMatch = true;
+      if (filterTiers.includes('LEGACY') && (!lvl.placement || lvl.placement > 500)) tierMatch = true;
       if (!tierMatch) return false;
     }
 
@@ -143,10 +144,10 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
   })
     .slice()
     .sort((a, b) => {
-      if (a.placement == null && b.placement == null) return 0;
-      if (a.placement == null) return 1;
-      if (b.placement == null) return -1;
-      return a.placement - b.placement;
+      const am = String(a.mode || '');
+      const bm = String(b.mode || '');
+      if (am !== bm) return am === 'CLASSIC' ? -1 : 1;
+      return compareListLevels(a, b);
     });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -302,7 +303,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
       </div>
 
       {/* Level List */}
-      <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'flex flex-col gap-2.5'}>
+      <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'ui-zebra-list flex flex-col'}>
         {loading ? (
           <div className="col-span-full p-16 text-center ui-dim text-xs font-medium">{t('levelslist.loading')}</div>
         ) : paginatedData.length === 0 ? (
@@ -328,8 +329,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
               return (
                 <div
                   key={lvl.id}
-                  className="group relative rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all border ui-card flex items-center justify-between p-3 gap-3"
-                  style={{ borderColor: 'var(--border-ui)' }}
+                  className="group relative overflow-hidden flex items-center justify-between p-3 gap-3"
                 >
                   <Link href={levelPath(lvl)} className="flex items-center gap-3.5 flex-1 min-w-0">
                     <span className="w-10 text-center text-xs font-black shrink-0 px-1.5 py-1 rounded-lg bg-black/5 dark:bg-white/10 ui-title">

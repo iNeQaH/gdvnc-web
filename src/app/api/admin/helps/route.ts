@@ -2,6 +2,7 @@ import { requireAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ADMIN_LIST_LIMIT, parsePageParam } from '@/lib/adminQueue';
+import { clipReviewNote, notifyWithNote } from '@/lib/reviewNote';
 
 const pending = { status: 'PENDING' };
 
@@ -41,8 +42,8 @@ export async function PATCH(req: Request) {
     if (!id || !['APPROVE', 'REJECT'].includes(action)) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
-    const rejectReason = typeof reason === 'string' ? reason.trim() : '';
-    if (action === 'REJECT' && !rejectReason) {
+    const reviewNote = clipReviewNote(reason);
+    if (action === 'REJECT' && !reviewNote) {
       return NextResponse.json({ error: 'NEED_REASON' }, { status: 400 });
     }
 
@@ -50,7 +51,14 @@ export async function PATCH(req: Request) {
     if (!help) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const status = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
-    await prisma.helpRequest.update({ where: { id }, data: { status } });
+    try {
+      await prisma.helpRequest.update({
+        where: { id },
+        data: { status, reviewNote: reviewNote || null },
+      });
+    } catch {
+      await prisma.helpRequest.update({ where: { id }, data: { status } });
+    }
 
     if (help.userId) {
       await prisma.notification.create({
@@ -59,8 +67,8 @@ export async function PATCH(req: Request) {
           title: action === 'APPROVE' ? 'Yêu cầu hỗ trợ đã được duyệt' : 'Yêu cầu hỗ trợ bị từ chối',
           message:
             action === 'APPROVE'
-              ? `Yêu cầu "${help.title}" đã được admin duyệt.`
-              : `Yêu cầu "${help.title}" bị từ chối. Lý do: ${rejectReason}`,
+              ? notifyWithNote(`Yêu cầu "${help.title}" đã được admin duyệt.`, reviewNote)
+              : `Yêu cầu "${help.title}" bị từ chối. Lý do: ${reviewNote}`,
         },
       });
     }

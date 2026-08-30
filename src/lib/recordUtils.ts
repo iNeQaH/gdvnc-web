@@ -44,6 +44,7 @@ export function calculateModePp(
       minPercent: number;
       basePp: number;
       isChallenge?: boolean;
+      placement?: number | null;
     };
   }>,
   mode: LevelMode
@@ -53,9 +54,11 @@ export function calculateModePp(
   );
   const pps =
     mode === LevelMode.PLATFORMER
-      ? deduped.filter(isQualifyingPlatformerRecord).map((r) => r.level.basePp)
+      ? deduped
+          .filter((r) => isQualifyingPlatformerRecord(r) && r.level.placement != null)
+          .map((r) => r.level.basePp)
       : deduped
-          .filter((r) => isQualifyingClassicRecord(r, r.level))
+          .filter((r) => isQualifyingClassicRecord(r, r.level) && r.level.placement != null)
           .map((r) => awardedPpForProgress(r.progress, r.level.minPercent, r.level.basePp));
   return calculateTotalPp(pps.filter((pp) => pp > 0));
 }
@@ -155,6 +158,7 @@ export async function recalculateUserPp(userId: string | null | undefined) {
       (r) =>
         !r.level.isChallenge &&
         r.level.mode === LevelMode.CLASSIC &&
+        r.level.placement != null &&
         isQualifyingClassicRecord(r, r.level)
     )
     .map((r) => awardedPpForProgress(r.progress, r.level.minPercent, r.level.basePp))
@@ -165,9 +169,11 @@ export async function recalculateUserPp(userId: string | null | undefined) {
       (r) =>
         !r.level.isChallenge &&
         r.level.mode === LevelMode.PLATFORMER &&
+        r.level.placement != null &&
         isQualifyingPlatformerRecord(r)
     )
-    .map((r) => r.level.basePp);
+    .map((r) => r.level.basePp)
+    .filter((pp) => pp > 0);
 
   await prisma.user.update({
     where: { id: userId },

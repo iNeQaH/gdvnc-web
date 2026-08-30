@@ -127,7 +127,9 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER') {
     });
   }
 
-  return [...registered, ...legacy].sort((a, b) => {
+  return [...registered, ...legacy]
+    .filter((p) => (mode === 'PLATFORMER' ? p.platformerPp : p.classicPp) > 0.005)
+    .sort((a, b) => {
     const ap = mode === 'PLATFORMER' ? a.platformerPp : a.classicPp;
     const bp = mode === 'PLATFORMER' ? b.platformerPp : b.classicPp;
     return bp - ap;

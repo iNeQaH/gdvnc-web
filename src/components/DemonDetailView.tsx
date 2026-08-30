@@ -169,7 +169,7 @@ export default function DemonDetailView({
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm border-collapse">
+                  <table className="w-full text-left text-sm border-collapse ui-zebra">
                     <thead>
                       <tr className="border-b" style={{ borderColor: 'var(--border-subtle)', backgroundColor: 'var(--bg-subtle)' }}>
                         <th className="px-5 py-3.5 text-xs font-bold ui-dim uppercase tracking-wider w-16 text-center">{t('leaderboard.rank')}</th>
@@ -185,7 +185,7 @@ export default function DemonDetailView({
                           ? (rec.user.gdUsername || rec.user.username)
                           : (rec.legacyPlayerName || t('levelslist.legacy_player'));
                         return (
-                        <tr key={rec.id} className="border-b last:border-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors" style={{ borderColor: 'var(--border-subtle)' }}>
+                        <tr key={rec.id} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                           <td className="px-5 py-3 text-center font-black" style={{ color: rank <= 3 ? 'var(--accent)' : 'var(--text-dim)' }}>
                             #{rank}
                           </td>

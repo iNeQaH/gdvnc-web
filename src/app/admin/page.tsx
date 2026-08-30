@@ -444,7 +444,7 @@ export default function AdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action,
-          rejectReason: rejectReason[recordId] || t('admin.default_reject'),
+          rejectReason: (rejectReason[recordId] || '').trim() || (action === 'REJECT' ? t('admin.default_reject') : ''),
           reviewerId: currentUser?.id,
         }),
       });
@@ -475,7 +475,7 @@ export default function AdminPage() {
           action,
           badgeId: selectedBadges.join(','),
           cpAwarded: data.cpAwarded || '0',
-          rejectReason: data.rejectReason || 'Không đạt quy chuẩn Creator',
+          rejectReason: (data.rejectReason || '').trim() || (action === 'REJECT' ? 'Không đạt quy chuẩn Creator' : ''),
         }),
       });
       const resData = await res.json();
@@ -618,7 +618,7 @@ export default function AdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action,
-          rejectReason: rejectReason[id] || t('admin.default_reject'),
+          rejectReason: (rejectReason[id] || '').trim() || (action === 'REJECT' ? t('admin.default_reject') : ''),
           reviewerId: currentUser?.id,
         }),
       });
@@ -1029,12 +1029,17 @@ export default function AdminPage() {
                       <span className="font-semibold">{t('admin.reject')}:</span> {rec.rejectReason}
                     </div>
                   )}
+                  {rec.status === 'APPROVED' && rec.rejectReason && (
+                    <div className="p-2.5 rounded-xl text-[11px] bg-emerald-500/10 text-emerald-500">
+                      <span className="font-semibold">{t('admin.review_note')}:</span> {rec.rejectReason}
+                    </div>
+                  )}
 
                   {rec.status === 'PENDING' && (
                   <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
                     <input
                       type="text"
-                      placeholder={t('admin.reject_ph')}
+                      placeholder={t('admin.review_note_ph')}
                       value={rejectReason[rec.id] || ''}
                       onChange={(e) => setRejectReason({ ...rejectReason, [rec.id]: e.target.value })}
                       className="flex-1 px-3 py-1.5 rounded-xl text-xs border focus:outline-none"
@@ -1166,6 +1171,11 @@ export default function AdminPage() {
                       <span className="font-semibold">{t('admin.reject')}:</span> {work.rejectReason}
                     </div>
                   )}
+                  {work.status === 'APPROVED' && work.rejectReason && (
+                    <div className="p-2.5 rounded-xl text-[11px] bg-emerald-500/10 text-emerald-500">
+                      <span className="font-semibold">{t('admin.review_note')}:</span> {work.rejectReason}
+                    </div>
+                  )}
 
                   {work.status === 'APPROVED' && (work.badgeGranted || work.cpGranted) && (
                     <div className="p-2.5 rounded-xl text-[11px] ui-subtle ui-dim">
@@ -1215,7 +1225,7 @@ export default function AdminPage() {
                     </div>
                     <input
                       type="text"
-                      placeholder={t('admin.reject_ph')}
+                      placeholder={t('admin.review_note_ph')}
                       value={workReviewData[work.id]?.rejectReason || ''}
                       onChange={(e) => setWorkReviewData({ ...workReviewData, [work.id]: { ...workReviewData[work.id], rejectReason: e.target.value } })}
                       className="w-full px-3 py-1.5 rounded-xl text-xs border focus:outline-none"
@@ -1335,10 +1345,15 @@ export default function AdminPage() {
                       <span className="font-semibold">{t('admin.reject')}:</span> {sub.rejectReason}
                     </div>
                   )}
+                  {sub.status === 'APPROVED' && sub.rejectReason && (
+                    <div className="p-2.5 rounded-xl text-[11px] bg-emerald-500/10 text-emerald-500">
+                      <span className="font-semibold">{t('admin.review_note')}:</span> {sub.rejectReason}
+                    </div>
+                  )}
                   {sub.status === 'PENDING' && (
                   <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
                     <input
-                      placeholder={t('admin.reject_ph')}
+                      placeholder={t('admin.review_note_ph')}
                       value={rejectReason[sub.id] || ''}
                       onChange={(e) => setRejectReason({ ...rejectReason, [sub.id]: e.target.value })}
                       className="w-full px-3 py-1.5 rounded-xl text-xs border focus:outline-none"
@@ -1805,7 +1820,7 @@ export default function AdminPage() {
             ) : sortedUsers.length === 0 ? (
               <div className="ui-card p-8 text-center ui-dim">{t('admin.no_users')}</div>
             ) : (
-              <div className={userViewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" : "flex flex-col gap-2"}>
+              <div className={userViewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" : "ui-zebra-list flex flex-col"}>
                 {sortedUsers.slice((userPage - 1) * 10, userPage * 10).map((user) => {
                   const isTargetSuper = user.username === 'iNeQaH';
                   const isSupporter = user.supporterUntil && new Date(user.supporterUntil) > new Date();
@@ -2169,7 +2184,7 @@ function AdminHelpsTab({
                   {selectedHelp.content}
                 </div>
                 <input
-                  placeholder={t('admin.reject_ph')}
+                  placeholder={t('admin.review_note_ph')}
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none"
