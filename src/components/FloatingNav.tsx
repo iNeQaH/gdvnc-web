@@ -118,7 +118,7 @@ export default function FloatingNav({
 
   return (
     <div
-      className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 p-1.5 rounded-2xl shadow-xl border backdrop-blur-md transition-opacity duration-300 ${
+      className={`gdvnc-floating-nav fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 p-1.5 rounded-2xl shadow-xl border backdrop-blur-md transition-opacity duration-300 ${
         isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
       }`}
       style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}

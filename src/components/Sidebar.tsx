@@ -72,6 +72,11 @@ export const Sidebar = () => {
     setIsOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    document.documentElement.classList.toggle('gdvnc-sidebar-open', isOpen);
+    return () => document.documentElement.classList.remove('gdvnc-sidebar-open');
+  }, [isOpen]);
+
   const handleLogout = () => {
     localStorage.removeItem('gdvnc_user');
     setCurrentUser(null);

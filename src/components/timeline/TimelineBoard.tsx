@@ -8,9 +8,7 @@ import {
   eventIsPeriodLine,
   eventSpan,
   clampCenter,
-  clampZoom,
   timelineEnd,
-  stepZoom,
   TIMELINE_ARROW_GUTTER_PX,
   TIMELINE_NOW_INSET_PX,
   neighborEvent,
@@ -38,7 +36,6 @@ type Prepared = ChronicleEvent & {
 export default function TimelineBoard({
   events,
   zoom,
-  setZoom,
   center,
   setCenter,
   expandedIds,
@@ -50,13 +47,10 @@ export default function TimelineBoard({
   canEdit,
   ldm,
   t,
-  onZoomLive,
-  onZoomEnd,
   onUserGesture,
 }: {
   events: ChronicleEvent[];
   zoom: number;
-  setZoom: (z: number | ((prev: number) => number)) => void;
   center: number;
   setCenter: (c: number | ((prev: number) => number)) => void;
   expandedIds: Set<string>;
@@ -68,8 +62,6 @@ export default function TimelineBoard({
   canEdit: boolean;
   ldm: boolean;
   t: (key: DictKey) => string;
-  onZoomLive: (zoom: number, anchorX: number) => void;
-  onZoomEnd: () => void;
   onUserGesture: () => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -84,7 +76,6 @@ export default function TimelineBoard({
     vx: number;
   } | null>(null);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
-  const pinch = useRef<{ dist: number; zoom: number } | null>(null);
   const glide = useRef<number | null>(null);
   const [cluster, setCluster] = useState<(ReturnType<typeof clusterCollapsed>[number] & { side: 'pos' | 'neg' }) | null>(
     null
@@ -112,16 +103,14 @@ export default function TimelineBoard({
   const viewEnd = center + (size.w / 2 / ppd) * DAY_MS;
   const timeToX = (ms: number) => ((ms - viewStart) / DAY_MS) * ppd;
   const live = useRef({
-    zoom,
     center,
     size,
     ppd,
     viewStart,
-    setZoom,
     setCenter,
     onUserGesture,
   });
-  live.current = { zoom, center, size, ppd, viewStart, setZoom, setCenter, onUserGesture };
+  live.current = { center, size, ppd, viewStart, setCenter, onUserGesture };
 
   const prepared: Prepared[] = useMemo(() => {
     return events.map((e) => {
@@ -156,14 +145,11 @@ export default function TimelineBoard({
     const el = rootRef.current;
     if (!el) return;
     const fn = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) return;
       e.preventDefault();
       stopGlide();
       const s = live.current;
       s.onUserGesture();
-      if (e.ctrlKey || e.metaKey) {
-        s.setZoom(stepZoom(s.zoom, e.deltaY > 0 ? -1 : 1));
-        return;
-      }
       const dx = e.deltaY !== 0 ? e.deltaY : e.deltaX;
       s.setCenter((c) => clampCenter(c + (dx / s.ppd) * DAY_MS, s.size.w, s.ppd));
     };
@@ -176,36 +162,6 @@ export default function TimelineBoard({
       cancelAnimationFrame(glide.current);
       glide.current = null;
     }
-  }
-
-  function pinchDist() {
-    const pts = [...pointers.current.values()];
-    if (pts.length < 2) return 0;
-    return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-  }
-
-  function pinchAnchorX() {
-    const el = rootRef.current;
-    const pts = [...pointers.current.values()];
-    if (!el || pts.length < 2) return live.current.size.w / 2;
-    const rect = el.getBoundingClientRect();
-    return (pts[0].x + pts[1].x) / 2 - rect.left;
-  }
-
-  function beginPinch() {
-    const dist = pinchDist();
-    if (dist < 8) return;
-    drag.current = null;
-    setGrabbing(false);
-    pinch.current = { dist, zoom: live.current.zoom };
-  }
-
-  function applyPinch() {
-    const start = pinch.current;
-    const dist = pinchDist();
-    if (!start || dist < 8) return;
-    const next = clampZoom(start.zoom + Math.log2(dist / start.dist) * 1.4);
-    onZoomLive(next, pinchAnchorX());
   }
 
   function startGlide(vxPxPerMs: number) {
@@ -235,7 +191,8 @@ export default function TimelineBoard({
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
     if (pointers.current.size >= 2) {
-      beginPinch();
+      drag.current = null;
+      setGrabbing(false);
       return;
     }
 
@@ -249,13 +206,11 @@ export default function TimelineBoard({
   }
 
   function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
-    if (!pointers.current.has(e.pointerId) && !drag.current) return;
     if (pointers.current.has(e.pointerId)) {
       pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     }
-
-    if (pinch.current && pointers.current.size >= 2) {
-      applyPinch();
+    if (pointers.current.size >= 2) {
+      drag.current = null;
       return;
     }
 
@@ -275,11 +230,7 @@ export default function TimelineBoard({
   function endPointer(e: React.PointerEvent<HTMLDivElement>) {
     pointers.current.delete(e.pointerId);
 
-    if (pinch.current) {
-      if (pointers.current.size < 2) {
-        pinch.current = null;
-        onZoomEnd();
-      }
+    if (pointers.current.size >= 1) {
       drag.current = null;
       setGrabbing(false);
       return;
@@ -293,11 +244,6 @@ export default function TimelineBoard({
       setGrabbing(false);
       startGlide(vx);
     }
-  }
-
-  function onDblClick(e: React.MouseEvent<HTMLDivElement>) {
-    if ((e.target as HTMLElement).closest('.event-card, .dot, .period')) return;
-    setZoom(Math.min(5, Math.round(zoom) + 1));
   }
 
   function toggleExpand(item: LaneItem) {
@@ -357,7 +303,6 @@ export default function TimelineBoard({
       onPointerMove={onPointerMove}
       onPointerUp={endPointer}
       onPointerCancel={endPointer}
-      onDoubleClick={onDblClick}
       onClick={() => setCluster(null)}
     >
       {ldm ? null : (

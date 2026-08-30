@@ -21,6 +21,7 @@
   inset: 3.5rem 0 0 0;
   z-index: 20;
   overflow: hidden;
+  touch-action: pan-x pinch-zoom;
   background:
     radial-gradient(900px 520px at 78% 18%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 58%),
     var(--bg-page);
@@ -537,7 +538,7 @@
   inset: 0;
   z-index: 2;
   overflow: hidden;
-  touch-action: none;
+  touch-action: pan-x pinch-zoom;
   cursor: grab;
   user-select: none;
 }

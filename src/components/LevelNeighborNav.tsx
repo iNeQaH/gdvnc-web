@@ -33,7 +33,7 @@ export default function LevelNeighborNav({
 
   return (
     <div
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 p-1.5 rounded-2xl shadow-xl border backdrop-blur-md"
+      className="gdvnc-floating-nav fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 p-1.5 rounded-2xl shadow-xl border backdrop-blur-md"
       style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
     >
       {firstLevel ? (

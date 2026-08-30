@@ -15,13 +15,10 @@ import {
   nearestTierIndex,
   formatDate,
   clampCenter,
-  clampZoom,
   pxPerDayAt,
-  stepZoom,
   nearestEventAnchor,
   neighborEvent,
   eventSpan,
-  centerForZoomAnchor,
   TIMELINE_ORIGIN,
 } from '@/lib/timeline/time';
 import '@/app/timeline/timeline.css';
@@ -76,20 +73,6 @@ export default function TimelineApp() {
   }, []);
 
   useEffect(() => {
-    const meta = document.querySelector('meta[name="viewport"]');
-    const prev = meta?.getAttribute('content') ?? '';
-    if (meta) {
-      meta.setAttribute(
-        'content',
-        'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover'
-      );
-    }
-    return () => {
-      if (meta && prev) meta.setAttribute('content', prev);
-    };
-  }, []);
-
-  useEffect(() => {
     try {
       const raw = localStorage.getItem('gdvnc_user');
       if (raw) {
@@ -135,8 +118,6 @@ export default function TimelineApp() {
       if (e.key === 'ArrowRight') {
         setCenter((c) => clampCenter(c + (90 / ppd) * day, window.innerWidth, ppd));
       }
-      if (e.key === '+' || e.key === '=') applyZoom(stepZoom(zoom, 1));
-      if (e.key === '-') applyZoom(stepZoom(zoom, -1));
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -227,18 +208,6 @@ export default function TimelineApp() {
     }
   }
 
-  function zoomLive(next: number, anchorX: number) {
-    stopMotion();
-    const w = rootRef.current?.clientWidth || window.innerWidth;
-    const z = clampZoom(next);
-    setCenter(centerForZoomAnchor(zoomRef.current, z, centerRef.current, w, anchorX));
-    setZoom(z);
-    const index = nearestTierIndex(z);
-    setZoomTip({ index });
-    if (zoomHideRef.current) clearTimeout(zoomHideRef.current);
-    zoomHideRef.current = setTimeout(() => setZoomTip(null), 1000);
-  }
-
   function jumpToToday() {
     panTo(Date.now());
   }
@@ -260,16 +229,14 @@ export default function TimelineApp() {
     });
   }
 
-  function applyZoom(next: number, opts?: { retainCenter?: boolean }) {
+  function applyZoom(next: number) {
     stopMotion();
     const index = nearestTierIndex(next);
     const w = rootRef.current?.clientWidth || window.innerWidth;
     const fromZ = zoomRef.current;
     const fromC = centerRef.current;
     const toC = clampCenter(
-      opts?.retainCenter
-        ? fromC
-        : nearestEventAnchor(eventsRef.current, fromC, index, focusIdRef.current),
+      nearestEventAnchor(eventsRef.current, fromC, index, focusIdRef.current),
       w,
       pxPerDayAt(index)
     );
@@ -353,7 +320,6 @@ export default function TimelineApp() {
       <TimelineBoard
         events={events}
         zoom={zoom}
-        setZoom={(z) => applyZoom(typeof z === 'function' ? z(zoom) : z)}
         center={center}
         setCenter={setCenter}
         expandedIds={expandedIds}
@@ -372,8 +338,6 @@ export default function TimelineApp() {
         canEdit={canEdit}
         ldm={ldm}
         t={t}
-        onZoomLive={zoomLive}
-        onZoomEnd={() => applyZoom(nearestTierIndex(zoomRef.current), { retainCenter: true })}
         onUserGesture={stopMotion}
       />
 
@@ -395,11 +359,8 @@ export default function TimelineApp() {
       </button>
 
       <div className="zoom-dock">
-        <button type="button" onClick={() => applyZoom(stepZoom(zoom, -1))} aria-label={t('timeline.zoom_out')}>
-          −
-        </button>
         <div className="zoom-track-wrap">
-          <div className="zoom-snaps" aria-hidden>
+          <div className="zoom-snaps">
             {TIERS.map((item, i) => (
               <span
                 key={item.id}
@@ -426,12 +387,9 @@ export default function TimelineApp() {
             step="1"
             value={nearestTierIndex(zoom)}
             onInput={(e) => applyZoom(Number((e.target as HTMLInputElement).value))}
-            aria-label={t('timeline.zoom_in')}
+            title={t(`timeline.tier.${TIERS[nearestTierIndex(zoom)].id}` as DictKey)}
           />
         </div>
-        <button type="button" onClick={() => applyZoom(stepZoom(zoom, 1))} aria-label={t('timeline.zoom_in')}>
-          +
-        </button>
       </div>
 
       {open ? (
