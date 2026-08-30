@@ -925,19 +925,27 @@
   position: absolute;
   inset: 0;
   z-index: 50;
-  background: color-mix(in srgb, var(--tl-overlay) 28%, transparent);
+  isolation: isolate;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--bg-page) 38%, transparent) 0%,
+    color-mix(in srgb, var(--bg-page) 70%, transparent) 100%
+  );
+  backdrop-filter: blur(14px) saturate(1.05);
+  -webkit-backdrop-filter: blur(14px) saturate(1.05);
   display: flex;
   justify-content: flex-end;
   overflow: hidden;
-  animation: tl-overlay-in 0.28s ease-out;
+  animation: tl-overlay-in 0.22s ease-out;
 }
 
 .gdvn-timeline .overlay.closing {
-  animation: tl-overlay-out 0.38s ease-in forwards;
+  animation: tl-overlay-out 0.16s ease-in forwards;
 }
 
 .gdvn-timeline .chronicle {
   position: relative;
+  z-index: 1;
   width: min(52vw, 680px);
   height: 100%;
   overflow: auto;
@@ -945,24 +953,24 @@
   border: none;
   border-radius: 24px 0 0 24px;
   padding: 56px 40px 48px 48px;
-  background: color-mix(in srgb, var(--tl-card) 22%, white 18%);
-  backdrop-filter: blur(28px) saturate(1.35);
-  -webkit-backdrop-filter: blur(28px) saturate(1.35);
+  background: color-mix(in srgb, var(--tl-card) 82%, white 8%);
+  backdrop-filter: blur(36px) saturate(1.2);
+  -webkit-backdrop-filter: blur(36px) saturate(1.2);
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 55%, transparent),
-    inset 1px 0 0 color-mix(in srgb, white 22%, transparent);
-  animation: tl-chronicle-in 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+    inset 0 1px 0 color-mix(in srgb, white 50%, transparent),
+    inset 1px 0 0 color-mix(in srgb, white 18%, transparent);
+  animation: tl-chronicle-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html.dark .gdvn-timeline .chronicle {
-  background: color-mix(in srgb, var(--tl-card) 28%, transparent);
+  background: color-mix(in srgb, var(--tl-card) 88%, transparent);
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 28%, transparent),
-    inset 1px 0 0 color-mix(in srgb, white 10%, transparent);
+    inset 0 1px 0 color-mix(in srgb, white 22%, transparent),
+    inset 1px 0 0 color-mix(in srgb, white 8%, transparent);
 }
 
 .gdvn-timeline .chronicle.closing {
-  animation: tl-chronicle-out 0.38s cubic-bezier(0.4, 0, 1, 0.6) forwards;
+  animation: tl-chronicle-out 0.16s cubic-bezier(0.4, 0, 1, 0.6) forwards;
 }
 
 @keyframes tl-overlay-in {

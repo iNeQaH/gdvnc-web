@@ -42,7 +42,7 @@ export default function EventPage({
   const requestClose = () => {
     if (closing) return;
     setClosing(true);
-    window.setTimeout(() => onClose(), 400);
+    window.setTimeout(() => onClose(), 200);
   };
 
   return (
