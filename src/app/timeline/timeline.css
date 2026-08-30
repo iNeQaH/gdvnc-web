@@ -925,41 +925,95 @@
   position: absolute;
   inset: 0;
   z-index: 50;
-  background: linear-gradient(90deg, transparent 0%, var(--tl-overlay) 58%);
+  background: color-mix(in srgb, var(--tl-overlay) 42%, transparent);
   display: flex;
   justify-content: flex-end;
+  overflow: hidden;
+  touch-action: none;
   animation: tl-overlay-in 0.28s ease-out;
 }
 
-.gdvn-timeline .chronicle {
+.gdvn-timeline .overlay.closing {
+  animation: tl-overlay-out 0.38s ease-in forwards;
+}
+
+.gdvn-timeline .chronicle-slide {
+  position: relative;
   width: min(58vw, 720px);
   height: 100%;
-  background: var(--tl-page);
-  position: relative;
-  overflow: auto;
-  color: var(--tl-ink);
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 12% 100%);
+  flex-shrink: 0;
+  overflow: hidden;
   animation: tl-chronicle-in 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.gdvn-timeline .chronicle-slide.closing {
+  animation: tl-chronicle-out 0.38s cubic-bezier(0.4, 0, 1, 0.6) forwards;
+}
+
+.gdvn-timeline .chronicle {
+  position: relative;
+  width: 100%;
+  min-height: 100%;
+  color: var(--tl-ink);
+  background: transparent;
+  overflow: visible;
+  will-change: transform;
+}
+
+.gdvn-timeline .chronicle-glass-wrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  filter:
+    drop-shadow(0 0 12px color-mix(in srgb, white 30%, var(--tl-accent) 45%))
+    drop-shadow(-10px 12px 28px color-mix(in srgb, var(--tl-accent) 40%, transparent))
+    drop-shadow(0 0 40px color-mix(in srgb, white 16%, transparent));
+}
+
+.gdvn-timeline .chronicle-glass {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 12% 100%);
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, white 30%, transparent) 0%,
+      color-mix(in srgb, var(--tl-page) 18%, transparent) 40%,
+      color-mix(in srgb, var(--tl-page) 8%, transparent) 100%
+    );
+  backdrop-filter: blur(22px) saturate(1.45);
+  -webkit-backdrop-filter: blur(22px) saturate(1.45);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 55%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, white 12%, transparent);
+}
+
+.gdvn-timeline .chronicle-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(0 0, 4% 0, 16% 100%, 12% 100%);
+  background: linear-gradient(90deg, color-mix(in srgb, white 55%, transparent), transparent);
+}
+
+.gdvn-timeline .chronicle-glass::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 42%;
+  height: 38%;
+  background: linear-gradient(135deg, color-mix(in srgb, white 24%, transparent), transparent 70%);
+  clip-path: polygon(20% 0, 100% 0, 100% 55%, 0 100%);
+  pointer-events: none;
 }
 
 .gdvn-timeline .chronicle-inner {
   position: relative;
   z-index: 1;
-  padding: 56px 44px 56px 72px;
-  min-height: 100%;
-  transform: skewX(-6.5deg);
-  transform-origin: top center;
-}
-
-.gdvn-timeline .chronicle::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--tl-accent) 35%, transparent), transparent 28%);
+  padding: 56px 44px 64px clamp(52px, 14%, 100px);
 }
 
 @keyframes tl-overlay-in {
@@ -967,15 +1021,26 @@
   to { opacity: 1; }
 }
 
+@keyframes tl-overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
 @keyframes tl-chronicle-in {
   from { transform: translateX(108%); }
   to { transform: translateX(0); }
+}
+
+@keyframes tl-chronicle-out {
+  from { transform: translateX(0); }
+  to { transform: translateX(110%); }
 }
 
 .gdvn-timeline .close-page {
   position: absolute;
   top: 22px;
   right: 22px;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1249,13 +1314,15 @@
     font-size: 14px;
   }
 
-  .gdvn-timeline .chronicle {
+  .gdvn-timeline .chronicle-slide {
     width: min(100vw, 100%);
+  }
+
+  .gdvn-timeline .chronicle-glass {
     clip-path: polygon(0 0, 100% 0, 100% 100%, 8% 100%);
   }
 
   .gdvn-timeline .chronicle-inner {
-    padding: 56px 20px 40px 40px;
-    transform: skewX(-5deg);
+    padding: 56px 20px 48px clamp(40px, 12%, 72px);
   }
 }

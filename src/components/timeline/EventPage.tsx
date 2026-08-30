@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { formatDate } from '@/lib/timeline/time';
 import { sanitizeChronicleHtml } from '@/lib/timeline/sanitize';
+import { useDiagonalScroll } from '@/lib/timeline/useDiagonalScroll';
 import type { ChronicleEvent } from '@/lib/timeline/types';
 import type { DictKey } from '@/lib/dictionaries';
 
@@ -36,46 +38,73 @@ export default function EventPage({
     event.end && event.end > event.start
       ? `${formatDate(event.start)} — ${formatDate(event.end)}`
       : formatDate(event.start);
+  const [closing, setClosing] = useState(false);
+  const { viewportRef, contentRef, offset, shiftX } = useDiagonalScroll();
+
+  const requestClose = () => {
+    if (closing) return;
+    setClosing(true);
+    window.setTimeout(() => onClose(), 400);
+  };
 
   return (
-    <div className="overlay" onClick={onClose}>
-      <aside className="chronicle" onClick={(e) => e.stopPropagation()}>
-        <div className="chronicle-inner">
-          <button className="close-page" onClick={onClose} aria-label={t('timeline.close')}>
-            <span>×</span> {t('timeline.close')}
-          </button>
-          <h2>{event.title}</h2>
-          <div className="chronicle-meta">{range}</div>
-          <div className="chronicle-body">
-            {paras.slice(0, mid).map((p, i) => (
-              <p key={`a-${i}`} dangerouslySetInnerHTML={{ __html: sanitizeChronicleHtml(p) }} />
-            ))}
-            {event.image ? (
-              <figure className="chronicle-figure">
-                <img src={event.image} alt={event.title} />
-              </figure>
-            ) : null}
-            {paras.slice(mid).map((p, i) => (
-              <p key={`b-${i}`} dangerouslySetInnerHTML={{ __html: sanitizeChronicleHtml(p) }} />
-            ))}
+    <div
+      ref={viewportRef}
+      className={`overlay${closing ? ' closing' : ''}`}
+      onClick={requestClose}
+    >
+      <div
+        className={`chronicle-slide${closing ? ' closing' : ''}`}
+        onClick={(e) => e.stopPropagation()}
+        onAnimationEnd={(e) => {
+          if (closing && e.animationName.includes('out')) onClose();
+        }}
+      >
+        <button className="close-page" onClick={requestClose} aria-label={t('timeline.close')}>
+          <span>×</span> {t('timeline.close')}
+        </button>
+        <aside
+          ref={contentRef}
+          className="chronicle"
+          style={{ transform: `translate3d(${-shiftX}px, ${-offset}px, 0)` }}
+        >
+          <div className="chronicle-glass-wrap" aria-hidden>
+            <div className="chronicle-glass" />
           </div>
-          {event.shortDescription ? (
-            <p className="chronicle-meta" style={{ marginTop: 18 }}>
-              {event.shortDescription}
-            </p>
-          ) : null}
-          {canEdit ? (
-            <div className="page-actions">
-              <button className="gold-btn" onClick={() => onEdit(event)}>
-                {t('timeline.edit')}
-              </button>
-              <button className="gold-btn ghost" onClick={() => onDelete(event)}>
-                {t('timeline.delete')}
-              </button>
+          <div className="chronicle-inner">
+            <h2>{event.title}</h2>
+            <div className="chronicle-meta">{range}</div>
+            <div className="chronicle-body">
+              {paras.slice(0, mid).map((p, i) => (
+                <p key={`a-${i}`} dangerouslySetInnerHTML={{ __html: sanitizeChronicleHtml(p) }} />
+              ))}
+              {event.image ? (
+                <figure className="chronicle-figure">
+                  <img src={event.image} alt={event.title} />
+                </figure>
+              ) : null}
+              {paras.slice(mid).map((p, i) => (
+                <p key={`b-${i}`} dangerouslySetInnerHTML={{ __html: sanitizeChronicleHtml(p) }} />
+              ))}
             </div>
-          ) : null}
-        </div>
-      </aside>
+            {event.shortDescription ? (
+              <p className="chronicle-meta" style={{ marginTop: 18 }}>
+                {event.shortDescription}
+              </p>
+            ) : null}
+            {canEdit ? (
+              <div className="page-actions">
+                <button className="gold-btn" onClick={() => onEdit(event)}>
+                  {t('timeline.edit')}
+                </button>
+                <button className="gold-btn ghost" onClick={() => onDelete(event)}>
+                  {t('timeline.delete')}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }
