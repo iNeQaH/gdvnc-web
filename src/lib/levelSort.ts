@@ -10,10 +10,12 @@ export function compareListLevels(
   a: { placement?: number | null; difficultyFace?: number | null; name?: string | null },
   b: { placement?: number | null; difficultyFace?: number | null; name?: string | null }
 ): number {
-  const aRanked = isRankedPlacement(a.placement);
-  const bRanked = isRankedPlacement(b.placement);
+  const aPlace = a.placement;
+  const bPlace = b.placement;
+  const aRanked = isRankedPlacement(aPlace);
+  const bRanked = isRankedPlacement(bPlace);
   if (aRanked && bRanked) {
-    if (a.placement !== b.placement) return a.placement - b.placement;
+    if (aPlace !== bPlace) return aPlace - bPlace;
   } else if (aRanked !== bRanked) {
     return aRanked ? -1 : 1;
   }
