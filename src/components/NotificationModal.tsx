@@ -6,8 +6,11 @@ import { useLanguage } from '@/components/LanguageContext';
 
 interface NotificationItem {
   id: string;
+  kind?: 'inbox' | 'announcement';
   title: string;
   message: string;
+  body?: string;
+  author?: string | null;
   isRead: boolean;
   createdAt: string;
 }
@@ -54,10 +57,14 @@ export const NotificationModal = ({ userId, isOpen, onClose, onUpdateUnreadCount
     setSelectedNotif(notif);
     if (!notif.isRead) {
       try {
+        const payload =
+          notif.kind === 'announcement'
+            ? { announcementId: notif.id }
+            : { notificationId: notif.id };
         await fetch('/api/notifications', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ notificationId: notif.id }),
+          body: JSON.stringify(payload),
         });
         setNotifications((prev) =>
           prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
@@ -194,6 +201,9 @@ export const NotificationModal = ({ userId, isOpen, onClose, onUpdateUnreadCount
                   <p className="text-[11px] ui-dim line-clamp-2 leading-relaxed">
                     {notif.message}
                   </p>
+                  {notif.author ? (
+                    <div className="text-[10px] ui-dim pt-0.5">{notif.author}</div>
+                  ) : null}
                   <div className="text-[10px] ui-dim flex items-center gap-1 pt-1 opacity-70">
                     <Clock className="w-3 h-3" />
                     {new Date(notif.createdAt).toLocaleString(language === 'en' ? 'en-US' : 'vi-VN', {
@@ -246,7 +256,7 @@ export const NotificationModal = ({ userId, isOpen, onClose, onUpdateUnreadCount
               </div>
 
               <div className="p-4 rounded-2xl border text-xs leading-relaxed ui-title whitespace-pre-wrap" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}>
-                {selectedNotif.message}
+                {selectedNotif.body || selectedNotif.message}
               </div>
 
               <button

@@ -15,10 +15,10 @@ import {
   Heart, 
   Menu, 
   X,
-  Globe,
   ZoomIn,
   History,
   Mail,
+  Bell,
 } from 'lucide-react';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { useLanguage } from './LanguageContext';
@@ -96,6 +96,7 @@ export const Sidebar = () => {
   };
 
   const navLinks = [
+    { href: '/announcements', label: t('nav.announcements'), icon: Bell },
     { href: '/', label: t('nav.leaderboard'), icon: Star },
     { href: '/levels', label: t('nav.demonlist'), icon: Folder },
     { href: '/challenges', label: t('nav.challenges'), icon: Goal },
@@ -126,29 +127,11 @@ export const Sidebar = () => {
         </Link>
 
         <div className="flex items-center gap-1.5">
-          {currentUser && (
-            <>
-              <button
-                onClick={() => setIsInboxOpen(true)}
-                className="p-2 rounded-xl border ui-dim hover:opacity-100 transition-colors relative"
-                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
-                aria-label="Inbox"
-              >
-                <Mail className="w-4 h-4 ui-title" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </button>
-            </>
-          )}
-          <ThemeSwitcher />
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="p-2 rounded-xl border ui-dim hover:opacity-100 transition-colors"
             style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
-            aria-label="Inbox"
+            aria-label="Menu"
           >
             {isOpen ? <X className="w-4 h-4 ui-title" /> : <Menu className="w-4 h-4 ui-title" />}
           </button>
@@ -233,16 +216,11 @@ export const Sidebar = () => {
 
         {/* Bottom User Area, Language, Theme & Zoom Controls */}
         <div className="space-y-3 pt-4 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-          {/* Language Selector Dropdown */}
-          <div className="flex items-center justify-between px-1 text-xs">
-            <span className="text-[11px] font-medium ui-dim flex items-center gap-1">
-              <Globe className="w-3.5 h-3.5" />
-              {t('sidebar.language')}
-            </span>
+          <div className="flex items-center gap-2 px-1">
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value as any)}
-              className="px-2 h-7 rounded-lg border text-[11px] font-bold font-sans cursor-pointer focus:outline-none"
+              className="flex-1 min-w-0 px-2 h-9 rounded-lg border text-[11px] font-bold font-sans cursor-pointer focus:outline-none"
               style={{
                 backgroundColor: 'var(--bg-subtle)',
                 borderColor: 'var(--border-ui)',
@@ -252,10 +230,24 @@ export const Sidebar = () => {
               <option value="en">{t('sidebar.lang.en')}</option>
               <option value="vi">{t('sidebar.lang.vi')}</option>
             </select>
+            {currentUser && (
+              <button
+                onClick={() => setIsInboxOpen(true)}
+                className="p-2 h-9 w-9 rounded-xl border relative cursor-pointer hover:opacity-90 flex items-center justify-center shrink-0"
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                title="Inbox"
+              >
+                <Mail className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
 
-          {/* UI Zoom Dropdown */}
-          <div className="flex items-center justify-between px-1 text-xs">
+          <div className="hidden md:flex items-center justify-between px-1 text-xs">
             <span className="text-[11px] font-medium ui-dim flex items-center gap-1">
               <ZoomIn className="w-3.5 h-3.5" />
               {t('sidebar.zoom')}
@@ -282,29 +274,10 @@ export const Sidebar = () => {
             </select>
           </div>
 
-          {/* Theme Row */}
           <div className="flex items-center justify-between px-1 pb-1">
             <span className="text-[11px] font-medium ui-dim">{t('sidebar.theme')}</span>
             <ThemeSwitcher />
           </div>
-
-          {currentUser && (
-            <div className="flex items-center gap-2 px-1">
-              <button
-                onClick={() => setIsInboxOpen(true)}
-                className="flex-1 p-2 rounded-xl border relative cursor-pointer hover:opacity-90 flex items-center justify-center"
-                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                title="Inbox"
-              >
-                <Mail className="w-4 h-4" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </button>
-            </div>
-          )}
 
           {/* User Status Card */}
           {currentUser ? (

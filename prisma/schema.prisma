@@ -25,6 +25,14 @@ enum RecordStatus {
   REJECTED
 }
 
+enum AnnouncementAudience {
+  ALL
+  ADMIN
+  MODERATOR
+  SUPPORTER
+  USERS
+}
+
 model User {
   id            String    @id @default(uuid())
   username      String    @unique
@@ -51,6 +59,8 @@ model User {
   createdLevels   Level[]         @relation("LevelCreator")
   reviewedRecords Record[]        @relation("RecordReviewer")
   notifications   Notification[]
+  authoredAnnouncements SiteAnnouncement[] @relation("AnnouncementAuthor")
+  announcementReads AnnouncementRead[]
   userBadges      UserBadge[]
   creatorWorks    CreatorWork[]   @relation("CreatorWorks")
   reviewedWorks   CreatorWork[]   @relation("WorkReviewer")
@@ -279,6 +289,34 @@ model Image {
   id        String   @id @default(cuid())
   dataUrl   String   @db.Text
   createdAt DateTime @default(now())
+}
+
+model SiteAnnouncement {
+  id            String                 @id @default(uuid())
+  title         String
+  excerpt       String                 @db.Text
+  body          String                 @db.Text
+  audience      AnnouncementAudience   @default(ALL)
+  targetUserIds String[]               @default([])
+  authorId      String
+  author        User                   @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  reads         AnnouncementRead[]
+
+  @@index([createdAt])
+  @@index([audience])
+}
+
+model AnnouncementRead {
+  announcementId String
+  userId         String
+  readAt         DateTime         @default(now())
+  announcement   SiteAnnouncement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([announcementId, userId])
+  @@index([userId])
 }
 
 model TimelineEvent {

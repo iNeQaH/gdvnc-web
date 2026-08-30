@@ -928,17 +928,27 @@
   background: linear-gradient(90deg, transparent 0%, var(--tl-overlay) 58%);
   display: flex;
   justify-content: flex-end;
+  animation: tl-overlay-in 0.28s ease-out;
 }
 
 .gdvn-timeline .chronicle {
-  width: min(52vw, 680px);
+  width: min(58vw, 720px);
   height: 100%;
   background: var(--tl-page);
-  border-left: 1px solid var(--tl-border);
   position: relative;
-  padding: 56px 40px 48px 48px;
   overflow: auto;
   color: var(--tl-ink);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 12% 100%);
+  animation: tl-chronicle-in 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.gdvn-timeline .chronicle-inner {
+  position: relative;
+  z-index: 1;
+  padding: 56px 44px 56px 72px;
+  min-height: 100%;
+  transform: skewX(-6.5deg);
+  transform-origin: top center;
 }
 
 .gdvn-timeline .chronicle::before {
@@ -946,9 +956,20 @@
   position: absolute;
   top: 0;
   left: 0;
-  width: 3px;
+  width: 100%;
   height: 100%;
-  background: linear-gradient(180deg, var(--tl-accent), transparent 70%);
+  pointer-events: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tl-accent) 35%, transparent), transparent 28%);
+}
+
+@keyframes tl-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes tl-chronicle-in {
+  from { transform: translateX(108%); }
+  to { transform: translateX(0); }
 }
 
 .gdvn-timeline .close-page {
@@ -1230,6 +1251,11 @@
 
   .gdvn-timeline .chronicle {
     width: min(100vw, 100%);
-    padding: 56px 20px 32px;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 8% 100%);
+  }
+
+  .gdvn-timeline .chronicle-inner {
+    padding: 56px 20px 40px 40px;
+    transform: skewX(-5deg);
   }
 }
