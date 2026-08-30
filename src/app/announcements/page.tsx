@@ -42,6 +42,7 @@ export default function AnnouncementsPage() {
       const res = await fetch(isAdmin ? '/api/announcements?manage=1' : '/api/announcements');
       const data = await res.json();
       if (data.success) setItems(data.announcements || []);
+      else setItems([]);
     } catch {
       /* ignore */
     } finally {

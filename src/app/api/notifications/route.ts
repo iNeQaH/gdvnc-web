@@ -79,6 +79,29 @@ export async function GET() {
       unreadCount,
     });
   } catch (error: any) {
+    if (error?.code === 'P2021' || String(error?.message || '').includes('SiteAnnouncement')) {
+      const cutoff = notificationRetentionCutoff();
+      const personal = await prisma.notification.findMany({
+        where: { userId: auth.userId, createdAt: { gt: cutoff } },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      });
+      const unreadCount = personal.filter((n) => !n.isRead).length;
+      return NextResponse.json({
+        success: true,
+        notifications: personal.map((n) => ({
+          id: n.id,
+          kind: 'inbox' as const,
+          title: n.title,
+          message: n.message,
+          body: n.message,
+          author: null,
+          isRead: n.isRead,
+          createdAt: n.createdAt.toISOString(),
+        })),
+        unreadCount,
+      });
+    }
     return NextResponse.json({ error: error.message || 'Lỗi lấy thông báo.' }, { status: 500 });
   }
 }
