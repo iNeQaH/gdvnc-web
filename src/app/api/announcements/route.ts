@@ -100,6 +100,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       success: true,
+      unreadCount: viewer ? visible.filter((row) => !readIds.has(row.id)).length : 0,
       announcements: visible.map((row) =>
         serializeAnnouncement(row, {
           includeTargets: manage,
@@ -109,7 +110,7 @@ export async function GET(req: Request) {
     });
   } catch (error: any) {
     if (error?.code === 'P2021' || String(error?.message || '').includes('SiteAnnouncement')) {
-      return NextResponse.json({ success: true, announcements: [] });
+      return NextResponse.json({ success: true, announcements: [], unreadCount: 0 });
     }
     return NextResponse.json({ error: error.message || 'Failed to load announcements.' }, { status: 500 });
   }

@@ -30,6 +30,7 @@ export const Sidebar = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [announceUnread, setAnnounceUnread] = useState(0);
   const [isInboxOpen, setIsInboxOpen] = useState(false);
 
   const loadUserFromStorage = () => {
@@ -44,12 +45,19 @@ export const Sidebar = () => {
             if (data.success) setUnreadCount(data.unreadCount || 0);
           })
           .catch(() => {});
+        fetch('/api/announcements')
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) setAnnounceUnread(data.unreadCount || 0);
+          })
+          .catch(() => {});
       } catch (e) {
         localStorage.removeItem('gdvnc_user');
       }
     } else {
       setCurrentUser(null);
       setUnreadCount(0);
+      setAnnounceUnread(0);
     }
   };
 
@@ -208,6 +216,11 @@ export const Sidebar = () => {
                     <Icon className={`w-4 h-4 ${isActive ? 'scale-110' : 'group-hover:scale-110'} transition-transform ${item.isPink ? 'text-pink-400' : ''}`} />
                     <span>{item.label}</span>
                   </div>
+                  {item.href === '/announcements' && announceUnread > 0 ? (
+                    <span className="min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                      {announceUnread > 9 ? '9+' : announceUnread}
+                    </span>
+                  ) : null}
                 </Link>
               );
             })}

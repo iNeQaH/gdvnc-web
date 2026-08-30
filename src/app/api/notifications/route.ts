@@ -116,17 +116,19 @@ export async function PATCH(req: Request) {
 
   try {
     const body = await req.json();
-    const { notificationId, announcementId, markAll } = body;
+    const { notificationId, announcementId, markAll, markAnnouncements } = body;
 
-    if (markAll) {
+    if (markAll || markAnnouncements) {
       const viewer = await prisma.user.findUnique({
         where: { id: auth.userId },
         select: { id: true, role: true, supporterUntil: true },
       });
-      await prisma.notification.updateMany({
-        where: { userId: auth.userId, isRead: false },
-        data: { isRead: true },
-      });
+      if (markAll) {
+        await prisma.notification.updateMany({
+          where: { userId: auth.userId, isRead: false },
+          data: { isRead: true },
+        });
+      }
       if (viewer) {
         const broadcasts = await prisma.siteAnnouncement.findMany({
           select: { id: true, audience: true, targetUserIds: true },

@@ -43,6 +43,15 @@ export default function AnnouncementsPage() {
       const data = await res.json();
       if (data.success) setItems(data.announcements || []);
       else setItems([]);
+      const userStr = localStorage.getItem('gdvnc_user');
+      if (userStr) {
+        await fetch('/api/notifications', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ markAnnouncements: true }),
+        });
+        window.dispatchEvent(new Event('gdvnc_user_update'));
+      }
     } catch {
       /* ignore */
     } finally {
