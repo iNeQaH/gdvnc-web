@@ -426,8 +426,9 @@ export default function ProfilePage() {
                     style={{ borderColor: 'var(--bg-card)' }}
                   />
                 ) : (
-                  <div 
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50" style={{ backgroundColor: "var(--accent)" }}
+                  <div
+                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl shadow-lg border-4 flex items-center justify-center text-2xl sm:text-3xl font-black text-[color:var(--accent-fg)]"
+                    style={{ backgroundColor: 'var(--accent)', borderColor: 'var(--bg-card)' }}
                   >
                     {data.username[0]}
                   </div>
@@ -615,13 +616,17 @@ export default function ProfilePage() {
                 <div className="text-[9px] font-bold uppercase ui-dim flex items-center justify-center gap-1">
                   <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-500" /> {t("profile.rank_classic")}
                 </div>
-                <div className="text-base font-black ui-title mt-0.5">#{data.classicRank}</div>
+                <div className="text-base font-black ui-title mt-0.5">
+                  {data.classicPp > 0.005 && data.classicRank ? `#${data.classicRank}` : '#-'}
+                </div>
               </div>
               <div className="ui-subtle p-2.5 rounded-xl text-center min-w-24">
                 <div className="text-[9px] font-bold uppercase ui-dim flex items-center justify-center gap-1">
                   <Moon className="w-2.5 h-2.5 text-sky-500 fill-sky-500 -rotate-12" /> {t("profile.rank_plat")}
                 </div>
-                <div className="text-base font-black ui-title mt-0.5">#{data.platformerRank}</div>
+                <div className="text-base font-black ui-title mt-0.5">
+                  {data.platformerPp > 0.005 && data.platformerRank ? `#${data.platformerRank}` : '#-'}
+                </div>
               </div>
             </div>
           </div>

@@ -229,12 +229,12 @@ export const Sidebar = () => {
 
         {/* Bottom User Area, Language, Theme & Zoom Controls */}
         <div className="space-y-3 pt-4 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-          <div className="flex items-center gap-1.5 px-1">
+          <div className="flex items-center gap-1.5 px-1 w-full">
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value as any)}
               aria-label={t('sidebar.language')}
-              className="h-9 w-9 rounded-xl border text-[11px] font-bold font-sans cursor-pointer focus:outline-none text-center appearance-none px-0"
+              className="h-9 flex-1 min-w-0 rounded-xl border text-[11px] font-bold font-sans cursor-pointer focus:outline-none text-center appearance-none"
               style={{
                 backgroundColor: 'var(--bg-subtle)',
                 borderColor: 'var(--border-ui)',
@@ -247,7 +247,7 @@ export const Sidebar = () => {
             {currentUser && (
               <button
                 onClick={() => setIsInboxOpen(true)}
-                className="p-2 h-9 w-9 rounded-xl border relative cursor-pointer hover:opacity-90 flex items-center justify-center shrink-0"
+                className="h-9 flex-1 min-w-0 rounded-xl border relative cursor-pointer hover:opacity-90 flex items-center justify-center"
                 style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                 title="Inbox"
               >

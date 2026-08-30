@@ -199,42 +199,67 @@ function AnnouncementDetail({
   onDelete: () => void;
 }) {
   return (
-    <div className="announce-overlay" onClick={onClose}>
-      <aside className="announce-chronicle" onClick={(e) => e.stopPropagation()}>
-        <div className="announce-chronicle-inner">
-          <button className="announce-close" onClick={onClose} type="button">
-            <X className="w-3.5 h-3.5" /> {t('inbox.close')}
-          </button>
-          <h2>{item.title}</h2>
-          <div className="announce-meta">
-            {t('announce.by')} {item.author} · {audienceLabel(item.audience)} ·{' '}
-            {new Date(item.createdAt).toLocaleString(locale)}
-          </div>
-          <div className="announce-body whitespace-pre-wrap">{item.body}</div>
-          {canEdit ? (
-            <div className="flex gap-2 mt-6">
-              <button
-                type="button"
-                onClick={onEdit}
-                className="px-3 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5"
-                style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-              >
-                <Pencil className="w-3.5 h-3.5" />
-                {t('announce.edit')}
-              </button>
-              <button
-                type="button"
-                onClick={onDelete}
-                className="px-3 py-2 rounded-xl text-xs font-bold border text-red-500 flex items-center gap-1.5"
-                style={{ borderColor: 'var(--border-ui)' }}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                {t('announce.delete')}
-              </button>
+    <div className="fixed inset-0 z-[80] bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="w-full max-w-lg rounded-2xl border p-5 space-y-3 shadow-2xl"
+        style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="font-extrabold ui-title text-base">{item.title}</h2>
+            <div className="text-[11px] ui-dim mt-1">
+              {t('announce.by')} {item.author} · {audienceLabel(item.audience)} ·{' '}
+              {new Date(item.createdAt).toLocaleString(locale)}
             </div>
-          ) : null}
+          </div>
+          <button
+            className="p-1.5 rounded-xl border shrink-0"
+            style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+            onClick={onClose}
+            type="button"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
-      </aside>
+        <div
+          className="p-3.5 rounded-xl border text-sm leading-relaxed ui-title whitespace-pre-wrap max-h-[50vh] overflow-y-auto"
+          style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
+        >
+          {item.body}
+        </div>
+        {canEdit ? (
+          <div className="flex gap-2 justify-end">
+            <button
+              type="button"
+              onClick={onEdit}
+              className="px-3 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5"
+              style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              {t('announce.edit')}
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              className="px-3 py-2 rounded-xl text-xs font-bold border text-red-500 flex items-center gap-1.5"
+              style={{ borderColor: 'var(--border-ui)' }}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {t('announce.delete')}
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full px-3 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)]"
+            style={{ backgroundColor: 'var(--accent)' }}
+          >
+            {t('inbox.close')}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

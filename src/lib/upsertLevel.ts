@@ -104,6 +104,34 @@ async function shiftPlacementsAndRecalcPp(
   return affectedLevelIds;
 }
 
+export async function getOrCreateStubLevel(input: {
+  gdLevelId: number;
+  name?: string;
+  creatorName?: string;
+  isPlatformer?: boolean;
+}) {
+  const existing = await prisma.level.findUnique({ where: { gdLevelId: input.gdLevelId } });
+  if (existing) return existing;
+  const data = {
+    gdLevelId: input.gdLevelId,
+    name: input.name || 'Unknown Level',
+    creatorName: input.creatorName || 'Unknown',
+    mode: input.isPlatformer ? LevelMode.PLATFORMER : LevelMode.CLASSIC,
+    difficulty: 'Unrated',
+    basePp: 0,
+    placement: null as number | null,
+  };
+  try {
+    return await prisma.level.create({ data });
+  } catch (error: any) {
+    if (error?.code === 'P2002') {
+      const raced = await prisma.level.findUnique({ where: { gdLevelId: input.gdLevelId } });
+      if (raced) return raced;
+    }
+    throw error;
+  }
+}
+
 export async function upsertLevelFromForm(input: {
   id?: string;
   gdLevelId: number | string;
@@ -193,9 +221,17 @@ export async function upsertLevelFromForm(input: {
           data: updateData,
         });
       } else {
-        upserted = await tx.level.create({
-          data: { gdLevelId, ...updateData },
-        });
+        try {
+          upserted = await tx.level.create({
+            data: { gdLevelId, ...updateData },
+          });
+        } catch (error: any) {
+          if (error?.code !== 'P2002') throw error;
+          upserted = await tx.level.update({
+            where: { gdLevelId },
+            data: updateData,
+          });
+        }
       }
 
       if (!affectedLevelIds.includes(upserted.id)) {

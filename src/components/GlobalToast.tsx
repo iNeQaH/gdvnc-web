@@ -63,7 +63,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {toast && (
         <div 
           className="fixed bottom-5 right-5 z-[999999] animate-in fade-in slide-in-from-bottom-3 duration-200 cursor-pointer"
-          onClick={() => setToast(null)}
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(toast.message);
+            } catch {
+              /* ignore */
+            }
+            setToast(null);
+          }}
         >
           <div
             className={`px-4 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2 ${

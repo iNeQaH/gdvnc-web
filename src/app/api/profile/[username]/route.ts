@@ -139,16 +139,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       )[0];
     }
 
-    // Calculate National Ranks
-    const allClassicRanks = await prisma.user.count({
+    const classicRank = user.classicPp > 0.005 ? (await prisma.user.count({
       where: { classicPp: { gt: user.classicPp } },
-    });
-    const classicRank = allClassicRanks + 1;
+    })) + 1 : null;
 
-    const allPlatformerRanks = await prisma.user.count({
+    const platformerRank = user.platformerPp > 0.005 ? (await prisma.user.count({
       where: { platformerPp: { gt: user.platformerPp } },
-    });
-    const platformerRank = allPlatformerRanks + 1;
+    })) + 1 : null;
 
     const allCreatorRanks = await prisma.user.count({
       where: { creatorPoints: { gt: user.creatorPoints } },

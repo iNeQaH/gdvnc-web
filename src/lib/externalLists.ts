@@ -238,25 +238,32 @@ export async function syncExternalListToDb(
     const basePp = calculateBasePp(row.placement);
     const cur = byGd.get(row.gdLevelId);
     if (!cur) {
-      const createdLevel = await prisma.level.create({
-        data: {
-          gdLevelId: row.gdLevelId,
-          name: row.name,
-          mode: levelMode,
-          difficulty: 'Demon',
-          difficultyFace: 0,
-          placement: row.placement,
-          basePp,
-          minPercent: row.minPercent,
-          creatorName: row.creatorName,
-          verifierName: row.verifierName,
-          youtubeId: row.youtubeId,
-          description: row.description,
-          isChallenge: false,
-        },
-      });
-      created += 1;
-      affectedIds.push(createdLevel.id);
+      try {
+        const createdLevel = await prisma.level.create({
+          data: {
+            gdLevelId: row.gdLevelId,
+            name: row.name,
+            mode: levelMode,
+            difficulty: 'Demon',
+            difficultyFace: 0,
+            placement: row.placement,
+            basePp,
+            minPercent: row.minPercent,
+            creatorName: row.creatorName,
+            verifierName: row.verifierName,
+            youtubeId: row.youtubeId,
+            description: row.description,
+            isChallenge: false,
+          },
+        });
+        created += 1;
+        affectedIds.push(createdLevel.id);
+        byGd.set(row.gdLevelId, createdLevel);
+      } catch (error: any) {
+        if (error?.code !== 'P2002') throw error;
+        const raced = await prisma.level.findUnique({ where: { gdLevelId: row.gdLevelId } });
+        if (raced) byGd.set(row.gdLevelId, raced);
+      }
       continue;
     }
 

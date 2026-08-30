@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { RecordStatus } from '@prisma/client';
 import { clipText, isHttpsUrl } from '@/lib/validate';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { getOrCreateStubLevel } from '@/lib/upsertLevel';
 
 export async function POST(req: Request) {
   let auth;
@@ -24,23 +25,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Vui lòng điền ID màn chơi và link video HTTPS.' }, { status: 400 });
     }
 
-    let level = await prisma.level.findUnique({
-      where: { gdLevelId: parseInt(gdLevelId, 10) }
+    const level = await getOrCreateStubLevel({
+      gdLevelId: parseInt(gdLevelId, 10),
+      name: clipText(levelName, 120) || 'Unknown Level',
+      creatorName: clipText(creatorName, 80) || 'Unknown',
+      isPlatformer: !!isPlatformer,
     });
-
-    if (!level) {
-      level = await prisma.level.create({
-        data: {
-          gdLevelId: parseInt(gdLevelId, 10),
-          name: clipText(levelName, 120) || 'Unknown Level',
-          creatorName: clipText(creatorName, 80) || 'Unknown',
-          mode: isPlatformer ? 'PLATFORMER' : 'CLASSIC',
-          difficulty: 'Unrated',
-          basePp: 0,
-          placement: null
-        }
-      });
-    }
 
     const record = await prisma.record.create({
       data: {
