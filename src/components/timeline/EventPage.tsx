@@ -54,6 +54,8 @@ export default function EventPage({
           if (closing && String(e.animationName).includes('out')) onClose();
         }}
       >
+        <span className="chronicle-stroke" aria-hidden />
+        <span className="chronicle-corner-glow" aria-hidden />
         <button className="close-page" onClick={requestClose} aria-label={t('timeline.close')}>
           <span>×</span> {t('timeline.close')}
         </button>

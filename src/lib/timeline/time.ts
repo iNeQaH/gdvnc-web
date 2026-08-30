@@ -77,6 +77,22 @@ export function eventTierRank(event: Pick<ChronicleEvent, 'tier'>) {
   return TIERS.find((t) => t.id === event.tier)?.rank ?? 5;
 }
 
+/** Stem + card gap from the timeline line at full size. */
+export const TIMELINE_CARD_LIFT = 58;
+
+/** 1 at view center, 0.5 at the left/right edge. */
+export function viewProximityScale(xPx: number, viewWidthPx: number) {
+  const half = Math.max(1, viewWidthPx / 2);
+  const t = Math.min(1, Math.abs(xPx - half) / half);
+  const eased = t * t * (3 - 2 * t);
+  return 1 - 0.5 * eased;
+}
+
+/** Distance scale times +10% per importance tier (5y = +50%, day = +0%). */
+export function eventSizeScale(tier: ChronicleEvent['tier'], proximity: number) {
+  return proximity * (1 + 0.1 * (5 - eventTierRank({ tier })));
+}
+
 export function eventsAtOrAboveTier(events: ChronicleEvent[], maxRank: number) {
   return events
     .filter((e) => eventTierRank(e) <= maxRank)

@@ -743,6 +743,73 @@
   align-items: stretch;
 }
 
+.gdvn-timeline .card-bolt {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  z-index: 0;
+  pointer-events: none;
+  height: 72%;
+  overflow: visible;
+}
+
+.gdvn-timeline .event-card.pos .card-bolt {
+  bottom: 4%;
+}
+
+.gdvn-timeline .event-card.neg .card-bolt {
+  top: 4%;
+}
+
+.gdvn-timeline .card-bolt span {
+  position: absolute;
+  left: 50%;
+  top: 8%;
+  width: 3px;
+  height: 88%;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in srgb, var(--tl-accent) 90%, white),
+    transparent
+  );
+  box-shadow:
+    0 0 10px color-mix(in srgb, var(--tl-accent) 80%, white),
+    0 0 22px var(--tl-accent);
+  transform-origin: top center;
+  opacity: 0;
+  animation: tl-bolt-flash 5.8s ease-in-out infinite;
+}
+
+.gdvn-timeline .card-bolt span:nth-child(1) {
+  transform: translateX(-50%) rotate(-11deg) skewX(-18deg);
+  animation-delay: 0s;
+}
+
+.gdvn-timeline .card-bolt span:nth-child(2) {
+  left: 38%;
+  width: 2px;
+  transform: rotate(16deg) skewX(22deg);
+  animation-delay: 0.12s;
+}
+
+.gdvn-timeline .card-bolt span:nth-child(3) {
+  left: 62%;
+  width: 2px;
+  height: 62%;
+  top: 22%;
+  transform: rotate(-22deg) skewX(-12deg);
+  animation-delay: 0.2s;
+}
+
+@keyframes tl-bolt-flash {
+  0%, 82%, 100% { opacity: 0; filter: brightness(1); }
+  84% { opacity: 0.95; filter: brightness(1.8); }
+  86% { opacity: 0.12; }
+  88% { opacity: 0.8; filter: brightness(1.5); }
+  91% { opacity: 0; }
+}
+
 .gdvn-timeline .card-frame {
   position: relative;
   z-index: 1;
@@ -798,6 +865,8 @@
 }
 
 .gdvn-timeline .card-title {
+  position: relative;
+  z-index: 1;
   font-size: 15px;
   font-weight: 500;
   color: var(--tl-accent);
@@ -947,20 +1016,64 @@
 .gdvn-timeline .chronicle {
   position: relative;
   z-index: 1;
-  width: min(52vw, 680px);
+  width: min(58vw, 760px);
   height: 100%;
   overflow: auto;
   color: var(--tl-ink);
   border: none;
-  border-radius: 24px 0 0 24px;
-  padding: 56px 40px 48px 48px;
+  border-radius: 0;
+  padding: 56px 44px 52px 56px;
   background: color-mix(in srgb, var(--tl-card) 82%, white 8%);
   backdrop-filter: blur(36px) saturate(1.2);
   -webkit-backdrop-filter: blur(36px) saturate(1.2);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 8% 100%);
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, white 50%, transparent),
     inset 1px 0 0 color-mix(in srgb, white 18%, transparent);
   animation: tl-chronicle-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.gdvn-timeline .chronicle-stroke {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  padding: 2px;
+  background: color-mix(in srgb, var(--tl-accent) 28%, transparent);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0.35;
+}
+
+.gdvn-timeline .chronicle-corner-glow {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 52%;
+  height: 46%;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      to top,
+      color-mix(in srgb, var(--tl-accent) 70%, white) 0%,
+      transparent 14px
+    ),
+    linear-gradient(
+      98deg,
+      color-mix(in srgb, var(--tl-accent) 72%, white) 0%,
+      transparent 16px
+    );
+  opacity: 0.42;
+  filter: blur(5px);
+  mask-image: radial-gradient(ellipse 90% 90% at 6% 96%, #000 0%, transparent 72%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 90% at 6% 96%, #000 0%, transparent 72%);
 }
 
 html.dark .gdvn-timeline .chronicle {
@@ -998,20 +1111,26 @@ html.dark .gdvn-timeline .chronicle {
   position: absolute;
   top: 22px;
   right: 22px;
-  z-index: 2;
+  z-index: 4;
   display: flex;
   align-items: center;
   gap: 8px;
   height: 40px;
   padding: 0 14px 0 10px;
   border-radius: 999px;
-  border: 1px solid var(--tl-border);
-  background: var(--tl-card);
-  color: var(--tl-ink);
+  border: 1px solid color-mix(in srgb, var(--tl-accent) 35%, white);
+  background: var(--tl-accent);
+  color: var(--tl-btn-fg);
   font-size: 11px;
+  font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--tl-accent) 45%, transparent);
+}
+
+.gdvn-timeline .close-page:hover {
+  filter: brightness(1.08);
 }
 
 .gdvn-timeline .chronicle h2 {
@@ -1168,14 +1287,8 @@ html.dark .gdvn-timeline .chronicle {
 }
 
 @keyframes gdvn-tl-cardIn {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @media (max-width: 767px) {
@@ -1274,7 +1387,7 @@ html.dark .gdvn-timeline .chronicle {
 
   .gdvn-timeline .chronicle {
     width: min(100vw, 100%);
-    border-radius: 0;
-    padding: 56px 20px 32px;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 6% 100%);
+    padding: 56px 20px 36px 28px;
   }
 }

@@ -12,6 +12,9 @@ import {
   TIMELINE_ARROW_GUTTER_PX,
   TIMELINE_NOW_INSET_PX,
   neighborEvent,
+  viewProximityScale,
+  eventSizeScale,
+  TIMELINE_CARD_LIFT,
 } from '@/lib/timeline/time';
 import { clusterCollapsed, layoutLane, type LaneItem } from '@/lib/timeline/layout';
 import EventCard from '@/components/timeline/EventCard';
@@ -295,6 +298,25 @@ export default function TimelineBoard({
       });
   }
 
+  function cardLook(item: LaneItem) {
+    const x = item.left + item.width / 2;
+    const lift = viewProximityScale(x, size.w);
+    const scale = eventSizeScale(item.event.tier, lift);
+    return { x, lift, scale };
+  }
+
+  const visibleCards = [...posLayout, ...negLayout].filter((i) => !i.collapsed);
+  let focusCardId: string | null = null;
+  let focusScore = -1;
+  for (const item of visibleCards) {
+    const look = cardLook(item);
+    const score = look.lift * 10 + look.scale;
+    if (score > focusScore) {
+      focusScore = score;
+      focusCardId = item.event.id;
+    }
+  }
+
   return (
     <div
       ref={rootRef}
@@ -363,11 +385,12 @@ export default function TimelineBoard({
         .map((i) => {
           const x = i.left + i.width / 2;
           const neg = i.event.nature === 'negative';
+          const { lift } = cardLook(i);
           return (
             <div
               key={`stem-${i.event.id}`}
               className={`stem ${neg ? 'neg' : 'pos'}`}
-              style={{ left: x }}
+              style={{ left: x, height: TIMELINE_CARD_LIFT * lift }}
             />
           );
         })}
@@ -375,30 +398,44 @@ export default function TimelineBoard({
       <div className="lane pos">
         {posLayout
           .filter((i) => !i.collapsed)
-          .map((item) => (
-            <EventCard
-              key={item.event.id}
-              item={item}
-              side="pos"
-              onOpen={onOpen}
-              onEdit={onEdit}
-              canEdit={canEdit}
-            />
-          ))}
+          .map((item) => {
+            const look = cardLook(item);
+            return (
+              <EventCard
+                key={item.event.id}
+                item={item}
+                side="pos"
+                scale={look.scale}
+                lift={look.lift}
+                focused={item.event.id === focusCardId}
+                ldm={ldm}
+                onOpen={onOpen}
+                onEdit={onEdit}
+                canEdit={canEdit}
+              />
+            );
+          })}
       </div>
       <div className="lane neg">
         {negLayout
           .filter((i) => !i.collapsed)
-          .map((item) => (
-            <EventCard
-              key={item.event.id}
-              item={item}
-              side="neg"
-              onOpen={onOpen}
-              onEdit={onEdit}
-              canEdit={canEdit}
-            />
-          ))}
+          .map((item) => {
+            const look = cardLook(item);
+            return (
+              <EventCard
+                key={item.event.id}
+                item={item}
+                side="neg"
+                scale={look.scale}
+                lift={look.lift}
+                focused={item.event.id === focusCardId}
+                ldm={ldm}
+                onOpen={onOpen}
+                onEdit={onEdit}
+                canEdit={canEdit}
+              />
+            );
+          })}
       </div>
 
       {[...posLayout, ...negLayout]
