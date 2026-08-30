@@ -230,20 +230,20 @@ export const Sidebar = () => {
         {/* Bottom User Area, Language, Theme & Zoom Controls */}
         <div className="space-y-3 pt-4 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
           <div className="flex items-center gap-1.5 px-1 w-full">
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value as any)}
+            <button
+              type="button"
+              onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
               aria-label={t('sidebar.language')}
-              className="h-9 flex-1 min-w-0 rounded-xl border text-[11px] font-bold font-sans cursor-pointer focus:outline-none text-center appearance-none"
+              className="h-9 flex-1 min-w-0 rounded-xl border text-[11px] font-bold font-sans leading-none cursor-pointer focus:outline-none flex items-center justify-center appearance-none p-0"
               style={{
                 backgroundColor: 'var(--bg-subtle)',
                 borderColor: 'var(--border-ui)',
                 color: 'var(--text-title)',
+                WebkitAppearance: 'none',
               }}
             >
-              <option value="en">EN</option>
-              <option value="vi">VI</option>
-            </select>
+              {language === 'en' ? 'EN' : 'VI'}
+            </button>
             {currentUser && (
               <button
                 onClick={() => setIsInboxOpen(true)}
@@ -288,9 +288,11 @@ export const Sidebar = () => {
             </select>
           </div>
 
-          <div className="flex items-center justify-between px-1 pb-1">
-            <span className="text-[11px] font-medium ui-dim">{t('sidebar.theme')}</span>
-            <ThemeSwitcher />
+          <div className="flex items-center gap-2 px-1 pb-1">
+            <span className="text-[11px] font-medium ui-dim shrink-0 leading-none">{t('sidebar.theme')}</span>
+            <div className="min-w-0 flex-1">
+              <ThemeSwitcher />
+            </div>
           </div>
 
           {/* User Status Card */}

@@ -101,7 +101,7 @@
   background: color-mix(in srgb, var(--tl-field) 80%, transparent);
   color: var(--tl-ink);
   text-align: center;
-  font-size: 14px;
+  font-size: 16px;
   font-variant-numeric: tabular-nums;
   border-radius: 6px;
   padding: 4px 0;
@@ -206,7 +206,7 @@
   background: color-mix(in srgb, var(--bg-subtle) 80%, transparent);
   color: var(--text-title);
   text-align: center;
-  font-size: 14px;
+  font-size: 16px;
   font-variant-numeric: tabular-nums;
   border-radius: 6px;
   padding: 4px 5px;

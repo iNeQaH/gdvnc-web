@@ -30,6 +30,20 @@ export function clampZoom(z: number) {
   return Math.min(5, Math.max(0, z));
 }
 
+/** Keep the time under `anchorX` (px from board left) while zoom changes. */
+export function centerForZoomAnchor(
+  fromZoom: number,
+  toZoom: number,
+  fromCenter: number,
+  viewWidthPx: number,
+  anchorX: number
+) {
+  const fromPpd = pxPerDayAt(fromZoom);
+  const toPpd = pxPerDayAt(toZoom);
+  const timeAt = fromCenter + ((anchorX - viewWidthPx / 2) / fromPpd) * DAY_MS;
+  return clampCenter(timeAt - ((anchorX - viewWidthPx / 2) / toPpd) * DAY_MS, viewWidthPx, toPpd);
+}
+
 export function pxPerDayAt(zoom: number) {
   const z = clampZoom(zoom);
   const lo = Math.floor(z);

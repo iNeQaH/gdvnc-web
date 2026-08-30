@@ -79,6 +79,7 @@ export default function TimelineDatePick({
 
   useEffect(() => {
     if (!open || !centered) return;
+    if (window.matchMedia('(pointer: coarse)').matches) return;
     const tmr = window.setTimeout(() => dayRef.current?.focus(), 200);
     return () => clearTimeout(tmr);
   }, [open, centered]);

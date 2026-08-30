@@ -15,11 +15,13 @@ import {
   nearestTierIndex,
   formatDate,
   clampCenter,
+  clampZoom,
   pxPerDayAt,
   stepZoom,
   nearestEventAnchor,
   neighborEvent,
   eventSpan,
+  centerForZoomAnchor,
   TIMELINE_ORIGIN,
 } from '@/lib/timeline/time';
 import '@/app/timeline/timeline.css';
@@ -70,6 +72,20 @@ export default function TimelineApp() {
       if (zoomHideRef.current) clearTimeout(zoomHideRef.current);
       if (panAnim.current != null) cancelAnimationFrame(panAnim.current);
       if (zoomAnim.current != null) cancelAnimationFrame(zoomAnim.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    const meta = document.querySelector('meta[name="viewport"]');
+    const prev = meta?.getAttribute('content') ?? '';
+    if (meta) {
+      meta.setAttribute(
+        'content',
+        'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover'
+      );
+    }
+    return () => {
+      if (meta && prev) meta.setAttribute('content', prev);
     };
   }, []);
 
@@ -184,9 +200,9 @@ export default function TimelineApp() {
   }
 
   function panTo(ms: number) {
+    stopMotion();
     const w = rootRef.current?.clientWidth || window.innerWidth;
-    const target = clampCenter(ms, w, pxPerDayAt(zoom));
-    if (panAnim.current != null) cancelAnimationFrame(panAnim.current);
+    const target = clampCenter(ms, w, pxPerDayAt(zoomRef.current));
     const from = centerRef.current;
     const t0 = performance.now();
     const dur = 560;
@@ -198,6 +214,29 @@ export default function TimelineApp() {
       else panAnim.current = null;
     };
     panAnim.current = requestAnimationFrame(step);
+  }
+
+  function stopMotion() {
+    if (panAnim.current != null) {
+      cancelAnimationFrame(panAnim.current);
+      panAnim.current = null;
+    }
+    if (zoomAnim.current != null) {
+      cancelAnimationFrame(zoomAnim.current);
+      zoomAnim.current = null;
+    }
+  }
+
+  function zoomLive(next: number, anchorX: number) {
+    stopMotion();
+    const w = rootRef.current?.clientWidth || window.innerWidth;
+    const z = clampZoom(next);
+    setCenter(centerForZoomAnchor(zoomRef.current, z, centerRef.current, w, anchorX));
+    setZoom(z);
+    const index = nearestTierIndex(z);
+    setZoomTip({ index });
+    if (zoomHideRef.current) clearTimeout(zoomHideRef.current);
+    zoomHideRef.current = setTimeout(() => setZoomTip(null), 1000);
   }
 
   function jumpToToday() {
@@ -221,13 +260,16 @@ export default function TimelineApp() {
     });
   }
 
-  function applyZoom(next: number) {
+  function applyZoom(next: number, opts?: { retainCenter?: boolean }) {
+    stopMotion();
     const index = nearestTierIndex(next);
     const w = rootRef.current?.clientWidth || window.innerWidth;
     const fromZ = zoomRef.current;
     const fromC = centerRef.current;
     const toC = clampCenter(
-      nearestEventAnchor(eventsRef.current, fromC, index, focusIdRef.current),
+      opts?.retainCenter
+        ? fromC
+        : nearestEventAnchor(eventsRef.current, fromC, index, focusIdRef.current),
       w,
       pxPerDayAt(index)
     );
@@ -330,6 +372,9 @@ export default function TimelineApp() {
         canEdit={canEdit}
         ldm={ldm}
         t={t}
+        onZoomLive={zoomLive}
+        onZoomEnd={() => applyZoom(nearestTierIndex(zoomRef.current), { retainCenter: true })}
+        onUserGesture={stopMotion}
       />
 
       {loaded && events.length === 0 ? (

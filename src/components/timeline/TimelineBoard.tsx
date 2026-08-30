@@ -8,6 +8,7 @@ import {
   eventIsPeriodLine,
   eventSpan,
   clampCenter,
+  clampZoom,
   timelineEnd,
   stepZoom,
   TIMELINE_ARROW_GUTTER_PX,
@@ -49,6 +50,9 @@ export default function TimelineBoard({
   canEdit,
   ldm,
   t,
+  onZoomLive,
+  onZoomEnd,
+  onUserGesture,
 }: {
   events: ChronicleEvent[];
   zoom: number;
@@ -64,11 +68,24 @@ export default function TimelineBoard({
   canEdit: boolean;
   ldm: boolean;
   t: (key: DictKey) => string;
+  onZoomLive: (zoom: number, anchorX: number) => void;
+  onZoomEnd: () => void;
+  onUserGesture: () => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 1200, h: 800 });
   const [grabbing, setGrabbing] = useState(false);
-  const drag = useRef<{ x: number; center: number } | null>(null);
+  const drag = useRef<{
+    pointerId: number;
+    x: number;
+    center: number;
+    lastX: number;
+    lastT: number;
+    vx: number;
+  } | null>(null);
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<{ dist: number; zoom: number } | null>(null);
+  const glide = useRef<number | null>(null);
   const [cluster, setCluster] = useState<(ReturnType<typeof clusterCollapsed>[number] & { side: 'pos' | 'neg' }) | null>(
     null
   );
@@ -84,12 +101,27 @@ export default function TimelineBoard({
     return () => ro.disconnect();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (glide.current != null) cancelAnimationFrame(glide.current);
+    };
+  }, []);
+
   const ppd = pxPerDayAt(zoom);
   const viewStart = center - (size.w / 2 / ppd) * DAY_MS;
   const viewEnd = center + (size.w / 2 / ppd) * DAY_MS;
   const timeToX = (ms: number) => ((ms - viewStart) / DAY_MS) * ppd;
-  const live = useRef({ zoom, center, size, ppd, viewStart, setZoom, setCenter });
-  live.current = { zoom, center, size, ppd, viewStart, setZoom, setCenter };
+  const live = useRef({
+    zoom,
+    center,
+    size,
+    ppd,
+    viewStart,
+    setZoom,
+    setCenter,
+    onUserGesture,
+  });
+  live.current = { zoom, center, size, ppd, viewStart, setZoom, setCenter, onUserGesture };
 
   const prepared: Prepared[] = useMemo(() => {
     return events.map((e) => {
@@ -125,7 +157,9 @@ export default function TimelineBoard({
     if (!el) return;
     const fn = (e: WheelEvent) => {
       e.preventDefault();
+      stopGlide();
       const s = live.current;
+      s.onUserGesture();
       if (e.ctrlKey || e.metaKey) {
         s.setZoom(stepZoom(s.zoom, e.deltaY > 0 ? -1 : 1));
         return;
@@ -137,22 +171,128 @@ export default function TimelineBoard({
     return () => el.removeEventListener('wheel', fn);
   }, []);
 
+  function stopGlide() {
+    if (glide.current != null) {
+      cancelAnimationFrame(glide.current);
+      glide.current = null;
+    }
+  }
+
+  function pinchDist() {
+    const pts = [...pointers.current.values()];
+    if (pts.length < 2) return 0;
+    return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+  }
+
+  function pinchAnchorX() {
+    const el = rootRef.current;
+    const pts = [...pointers.current.values()];
+    if (!el || pts.length < 2) return live.current.size.w / 2;
+    const rect = el.getBoundingClientRect();
+    return (pts[0].x + pts[1].x) / 2 - rect.left;
+  }
+
+  function beginPinch() {
+    const dist = pinchDist();
+    if (dist < 8) return;
+    drag.current = null;
+    setGrabbing(false);
+    pinch.current = { dist, zoom: live.current.zoom };
+  }
+
+  function applyPinch() {
+    const start = pinch.current;
+    const dist = pinchDist();
+    if (!start || dist < 8) return;
+    const next = clampZoom(start.zoom + Math.log2(dist / start.dist) * 1.4);
+    onZoomLive(next, pinchAnchorX());
+  }
+
+  function startGlide(vxPxPerMs: number) {
+    stopGlide();
+    if (Math.abs(vxPxPerMs) < 0.08) return;
+    let vx = vxPxPerMs;
+    let last = performance.now();
+    const friction = 0.0045;
+    const step = (now: number) => {
+      const dt = Math.min(40, now - last);
+      last = now;
+      vx *= Math.exp(-friction * dt);
+      const s = live.current;
+      if (Math.abs(vx) < 0.02) {
+        glide.current = null;
+        return;
+      }
+      s.setCenter((c) => clampCenter(c - (vx * dt / s.ppd) * DAY_MS, s.size.w, s.ppd));
+      glide.current = requestAnimationFrame(step);
+    };
+    glide.current = requestAnimationFrame(step);
+  }
+
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    onUserGesture();
+    stopGlide();
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (pointers.current.size >= 2) {
+      beginPinch();
+      return;
+    }
+
     if ((e.target as HTMLElement).closest('.event-card, .dot, .period, .cluster-pop, button, .lane-nav')) return;
+    if (e.pointerType === 'mouse') {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
     setGrabbing(true);
-    drag.current = { x: e.clientX, center };
-    e.currentTarget.setPointerCapture(e.pointerId);
+    const now = performance.now();
+    drag.current = { pointerId: e.pointerId, x: e.clientX, center, lastX: e.clientX, lastT: now, vx: 0 };
   }
 
   function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
-    if (!drag.current) return;
+    if (!pointers.current.has(e.pointerId) && !drag.current) return;
+    if (pointers.current.has(e.pointerId)) {
+      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    }
+
+    if (pinch.current && pointers.current.size >= 2) {
+      applyPinch();
+      return;
+    }
+
+    if (!drag.current || drag.current.pointerId !== e.pointerId) return;
+    const now = performance.now();
+    const dt = now - drag.current.lastT;
+    if (dt > 0) {
+      const inst = (e.clientX - drag.current.lastX) / dt;
+      drag.current.vx = drag.current.vx * 0.65 + inst * 0.35;
+      drag.current.lastX = e.clientX;
+      drag.current.lastT = now;
+    }
     const dx = e.clientX - drag.current.x;
     setCenter(clampCenter(drag.current.center - (dx / ppd) * DAY_MS, size.w, ppd));
   }
 
-  function onPointerUp() {
-    drag.current = null;
-    setGrabbing(false);
+  function endPointer(e: React.PointerEvent<HTMLDivElement>) {
+    pointers.current.delete(e.pointerId);
+
+    if (pinch.current) {
+      if (pointers.current.size < 2) {
+        pinch.current = null;
+        onZoomEnd();
+      }
+      drag.current = null;
+      setGrabbing(false);
+      return;
+    }
+
+    if (drag.current && drag.current.pointerId === e.pointerId) {
+      let vx = drag.current.vx;
+      const idle = performance.now() - drag.current.lastT;
+      if (idle > 16) vx *= Math.exp(-0.0045 * idle);
+      drag.current = null;
+      setGrabbing(false);
+      startGlide(vx);
+    }
   }
 
   function onDblClick(e: React.MouseEvent<HTMLDivElement>) {
@@ -215,7 +355,8 @@ export default function TimelineBoard({
       className={`timeline-root ${grabbing ? 'is-grabbing' : ''}`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
+      onPointerUp={endPointer}
+      onPointerCancel={endPointer}
       onDoubleClick={onDblClick}
       onClick={() => setCluster(null)}
     >

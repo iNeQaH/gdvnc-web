@@ -50,22 +50,23 @@ export const ThemeSwitcher = () => {
   const ModeIcon = mode === 'system' ? Monitor : mode === 'dark' ? Moon : Sun;
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative w-full">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center justify-between px-2 h-7 rounded-lg border text-[11px] font-bold font-sans cursor-pointer focus:outline-none min-w-[120px] transition-colors"
+        className="flex items-center justify-between gap-1.5 w-full px-2.5 h-9 rounded-xl border text-[11px] font-bold font-sans leading-none cursor-pointer focus:outline-none min-w-0 max-w-full transition-colors appearance-none"
         style={{
           backgroundColor: 'var(--bg-subtle)',
           borderColor: 'var(--border-ui)',
           color: 'var(--text-title)',
+          WebkitAppearance: 'none',
         }}
       >
-        <div className="flex items-center gap-1.5">
-          <ModeIcon className="w-3.5 h-3.5" />
-          <span>{currentTheme.label}</span>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <ModeIcon className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate leading-none">{currentTheme.label}</span>
         </div>
-        <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
