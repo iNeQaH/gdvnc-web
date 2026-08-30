@@ -216,19 +216,20 @@ export const Sidebar = () => {
 
         {/* Bottom User Area, Language, Theme & Zoom Controls */}
         <div className="space-y-3 pt-4 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-          <div className="flex items-center gap-2 px-1">
+          <div className="flex items-center gap-1.5 px-1">
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value as any)}
-              className="flex-1 min-w-0 px-2 h-9 rounded-lg border text-[11px] font-bold font-sans cursor-pointer focus:outline-none"
+              aria-label={t('sidebar.language')}
+              className="h-9 w-9 rounded-xl border text-[11px] font-bold font-sans cursor-pointer focus:outline-none text-center appearance-none px-0"
               style={{
                 backgroundColor: 'var(--bg-subtle)',
                 borderColor: 'var(--border-ui)',
                 color: 'var(--text-title)',
               }}
             >
-              <option value="en">{t('sidebar.lang.en')}</option>
-              <option value="vi">{t('sidebar.lang.vi')}</option>
+              <option value="en">EN</option>
+              <option value="vi">VI</option>
             </select>
             {currentUser && (
               <button

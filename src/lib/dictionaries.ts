@@ -396,7 +396,7 @@ export const en = {
   'inbox.close': 'Got it & Close',
 
   'announce.title': 'Announcements',
-  'announce.desc': 'Official posts from GDVN staff. Only posts you can see are listed.',
+  'announce.desc': 'Announcements from admin.',
   'announce.empty': 'No announcements yet',
   'announce.empty_hint': 'When staff publish a post, it will show up here and in your inbox.',
   'announce.create': 'New announcement',
@@ -1003,7 +1003,7 @@ export const vi: Record<DictKey, string> = {
   'inbox.close': 'Đã hiểu & Đóng',
 
   'announce.title': 'Thông báo',
-  'announce.desc': 'Bài đăng chính thức từ ban quản trị. Chỉ hiện những mục bạn có quyền xem.',
+  'announce.desc': 'Thông báo từ admin.',
   'announce.empty': 'Chưa có thông báo',
   'announce.empty_hint': 'Khi có bài mới, nội dung sẽ xuất hiện ở đây và trong hòm thư.',
   'announce.create': 'Tạo thông báo',
