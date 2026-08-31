@@ -11,6 +11,7 @@ type TimelineRow = {
   approximate: boolean;
   nature: string;
   tier: string;
+  sourceKey?: string | null;
 };
 
 export function toChronicleEvent(row: TimelineRow): ChronicleEvent {

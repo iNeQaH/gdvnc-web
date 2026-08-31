@@ -1,4 +1,4 @@
-export type RatingType = 'NONE' | 'FEATURE' | 'EPIC' | 'LEGENDARY' | 'MYTHIC';
+export type RatingType = 'NONE' | 'RATE' | 'FEATURE' | 'EPIC' | 'LEGENDARY' | 'MYTHIC';
 
 export const DIFFICULTY_FACE_MAP: Record<number, string> = {
   0: 'NA',
@@ -53,7 +53,7 @@ export function getDifficultyFaceUrl(val: number): string {
 }
 
 export function getRatingIconUrl(ratingType: string | null | undefined): string | null {
-  if (!ratingType || ratingType === 'NONE') return null;
+  if (!ratingType || ratingType === 'NONE' || ratingType === 'RATE') return null;
   return `/difficulties/${ratingType}.png`;
 }
 

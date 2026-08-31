@@ -29,7 +29,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
     isVN: false,
     isChallenge: false,
     difficultyFace: 10,
-    ratingType: 'NONE' as 'NONE' | 'FEATURE' | 'EPIC' | 'LEGENDARY' | 'MYTHIC'
+    ratingType: 'NONE' as 'NONE' | 'RATE' | 'FEATURE' | 'EPIC' | 'LEGENDARY' | 'MYTHIC'
   });
   const [saving, setSaving] = useState(false);
   const [fetchingLevel, setFetchingLevel] = useState(false);
@@ -129,7 +129,14 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
   };
 
   const cycleRating = () => {
-    const sequence: Array<'NONE' | 'FEATURE' | 'EPIC' | 'LEGENDARY' | 'MYTHIC'> = ['NONE', 'FEATURE', 'EPIC', 'LEGENDARY', 'MYTHIC'];
+    const sequence: Array<'NONE' | 'RATE' | 'FEATURE' | 'EPIC' | 'LEGENDARY' | 'MYTHIC'> = [
+      'NONE',
+      'RATE',
+      'FEATURE',
+      'EPIC',
+      'LEGENDARY',
+      'MYTHIC',
+    ];
     const idx = sequence.indexOf(form.ratingType);
     setForm({ ...form, ratingType: sequence[(idx + 1) % sequence.length] });
   };

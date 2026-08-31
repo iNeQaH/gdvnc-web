@@ -86,7 +86,7 @@ model Level {
   mode          LevelMode  @default(CLASSIC)
   difficulty    String     // Still keeping this for fallback text if needed
   difficultyFace Int       @default(0) // 0-14 scale
-  ratingType    String     @default("NONE") // NONE, FEATURE, EPIC, LEGENDARY, MYTHIC
+  ratingType    String     @default("NONE") // NONE, RATE, FEATURE, EPIC, LEGENDARY, MYTHIC
   isVN          Boolean    @default(false)
   isChallenge   Boolean    @default(false)
   placement     Int?       // 1, 2, 3...
@@ -330,6 +330,7 @@ model TimelineEvent {
   approximate      Boolean  @default(false)
   nature           String   @default("positive") // positive | negative
   tier             String   @default("1y") // 5y | 1y | 6m | 1m | week | day
+  sourceKey        String?  @unique // e.g. gdvn-sheet:{gdLevelId}
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

@@ -293,6 +293,7 @@ export default function AdminPage() {
   const [siteLocked, setSiteLocked] = useState(false);
   const [siteLockBusy, setSiteLockBusy] = useState(false);
   const [syncingLists, setSyncingLists] = useState(false);
+  const [syncingSheet, setSyncingSheet] = useState(false);
   const [adminToast, setAdminToast] = useState<{ text: string, isError: boolean } | null>(null);
   const [userSortOrder, setUserSortOrder] = useState<'asc' | 'desc'>('asc');
   const [userViewMode, setUserViewMode] = useState<'list' | 'grid'>('list');
@@ -713,6 +714,27 @@ export default function AdminPage() {
         showToast(t('admin.sync_lists_fail'), 'error');
       } finally {
         setSyncingLists(false);
+      }
+    });
+  };
+
+  const handleSyncSheet = () => {
+    showConfirm(t('admin.sync_sheet_confirm'), async () => {
+      setSyncingSheet(true);
+      try {
+        const res = await fetch('/api/admin/lists/sync-sheet', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          showToast(data.error || t('admin.sync_sheet_fail'), 'error');
+          return;
+        }
+        const r = data.result || {};
+        const summary = `${r.fetched || 0} level · +${r.levelsCreated || 0} / ~${r.levelsUpdated || 0} · timeline +${r.timelineCreated || 0} / ~${r.timelineUpdated || 0} · skip ${r.timelineSkipped || 0} ngày`;
+        showToast(t('admin.sync_sheet_ok', { summary }), 'success');
+      } catch {
+        showToast(t('admin.sync_sheet_fail'), 'error');
+      } finally {
+        setSyncingSheet(false);
       }
     });
   };
@@ -1753,6 +1775,18 @@ export default function AdminPage() {
                 {t('admin.sync_lists_plat')}
               </button>
             </div>
+            <hr style={{ borderColor: 'var(--border-subtle)' }} />
+            <p className="text-sm ui-dim">{t('admin.sync_sheet_desc')}</p>
+            <button
+              type="button"
+              disabled={syncingSheet}
+              onClick={handleSyncSheet}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              style={{ backgroundColor: 'var(--accent)' }}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${syncingSheet ? 'animate-spin' : ''}`} />
+              {syncingSheet ? t('admin.sync_sheet_working') : t('admin.sync_sheet')}
+            </button>
             <hr style={{ borderColor: 'var(--border-subtle)' }} />
             <p className="text-sm ui-dim">Bạn có thể quản lý, thêm hoặc cập nhật Level tại đây.</p>
             <button
