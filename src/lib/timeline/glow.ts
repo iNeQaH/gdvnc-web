@@ -35,13 +35,13 @@ export function parseGlowColor(value: unknown): string | null {
 export function glowStyleVars(serialized: string | null | undefined): Record<string, string> | undefined {
   const colors = parseGlowColors(serialized);
   if (!colors.length) return undefined;
-  const loop =
+  const stops =
     colors.length === 1
-      ? `${colors[0]}, color-mix(in srgb, ${colors[0]} 18%, transparent) 24%, color-mix(in srgb, ${colors[0]} 82%, white) 50%, color-mix(in srgb, ${colors[0]} 18%, transparent) 76%, ${colors[0]}`
+      ? `${colors[0]}, color-mix(in srgb, ${colors[0]} 22%, white) 50%, ${colors[0]}`
       : `${colors.join(', ')}, ${colors[0]}`;
   return {
     '--flow-color': colors[0],
-    '--flow-border': `conic-gradient(from var(--tl-spin, 0deg), ${loop})`,
+    '--flow-stops': stops,
   };
 }
 

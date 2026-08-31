@@ -730,6 +730,10 @@
   animation: gdvn-tl-cardIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.gdvn-timeline .event-card.has-glow {
+  isolation: isolate;
+}
+
 .gdvn-timeline .event-card.pos {
   bottom: 58px;
   display: flex;
@@ -746,7 +750,7 @@
 
 @property --tl-spin {
   syntax: "<angle>";
-  inherits: false;
+  inherits: true;
   initial-value: 0deg;
 }
 
@@ -776,26 +780,44 @@
   box-shadow: 0 18px 40px var(--tl-shadow);
 }
 
+.gdvn-timeline .event-card.has-glow:hover .card-frame {
+  box-shadow: none;
+}
+
 .gdvn-timeline .event-card.has-glow .card-frame {
+  overflow: visible;
   border: 2.5px solid transparent;
   background:
     linear-gradient(var(--tl-card), var(--tl-card)) padding-box,
-    var(--flow-border) border-box;
-  box-shadow:
-    0 0 12px color-mix(in srgb, var(--flow-color) 55%, transparent),
-    0 0 28px color-mix(in srgb, var(--flow-color) 30%, transparent),
-    0 12px 32px var(--tl-shadow);
+    conic-gradient(from var(--tl-spin), var(--flow-stops)) border-box;
+  box-shadow: none;
+}
+
+.gdvn-timeline .event-card.has-glow .card-frame::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  z-index: -1;
+  border-radius: 8px;
+  background: conic-gradient(from var(--tl-spin), var(--flow-stops));
+  filter: blur(16px);
+  opacity: 0.78;
+  pointer-events: none;
 }
 
 .gdvn-timeline .event-card.has-flow .card-frame {
   animation: tl-flow-spin 3.2s linear infinite;
 }
 
+.gdvn-timeline .event-card.has-glow:hover .card-frame::before,
+.gdvn-timeline .event-card.has-glow.is-focus .card-frame::before {
+  inset: -12px;
+  opacity: 0.92;
+  filter: blur(20px);
+}
+
 .gdvn-timeline .event-card.has-glow.is-focus .card-frame {
-  box-shadow:
-    0 0 16px color-mix(in srgb, var(--flow-color) 72%, transparent),
-    0 0 36px color-mix(in srgb, var(--flow-color) 40%, transparent),
-    0 14px 36px var(--tl-shadow);
+  box-shadow: none;
 }
 
 .gdvn-timeline .event-card.neg .card-frame {
@@ -812,7 +834,7 @@
 .gdvn-timeline .event-card.neg.has-glow .card-frame {
   background:
     linear-gradient(var(--tl-card), var(--tl-card)) padding-box,
-    var(--flow-border) border-box;
+    conic-gradient(from var(--tl-spin), var(--flow-stops)) border-box;
 }
 
 .gdvn-timeline .card-media {
