@@ -13,7 +13,7 @@ import LevelFiltersModal from '@/components/LevelFiltersModal';
 import FloatingNav from '@/components/FloatingNav';
 import { useToast } from '@/components/GlobalToast';
 import { matchesDifficultyFilter } from '@/lib/gdDifficulty';
-import { compareListLevels } from '@/lib/levelSort';
+import { compareListLevels, isExtendedListPlacement, isLegacyTier, isMainListPlacement } from '@/lib/levelSort';
 import { levelPath } from '@/lib/levelUrl';
 import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
 
@@ -32,8 +32,8 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
   const pageSize = 20;
 
   // Filters
-  const [filterModes, setFilterModes] = useState<string[]>(listKind === 'challenge' ? [] : ['CLASSIC']);
-  const [filterTiers, setFilterTiers] = useState<string[]>(listKind === 'challenge' ? [] : ['MAIN']);
+  const [filterModes, setFilterModes] = useState<string[]>([]);
+  const [filterTiers, setFilterTiers] = useState<string[]>([]);
   const [filterFaces, setFilterFaces] = useState<number[]>([]);
   const [filterVN, setFilterVN] = useState(false);
   const isChallengeList = listKind === 'challenge';
@@ -117,9 +117,9 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
     // 2. Tier filter
     if (filterTiers.length > 0) {
       let tierMatch = false;
-      if (filterTiers.includes('MAIN') && lvl.placement && lvl.placement <= 75) tierMatch = true;
-      if (filterTiers.includes('EXTENDED') && lvl.placement && lvl.placement > 75 && lvl.placement <= 500) tierMatch = true;
-      if (filterTiers.includes('LEGACY') && (!lvl.placement || lvl.placement > 500)) tierMatch = true;
+      if (filterTiers.includes('MAIN') && isMainListPlacement(lvl.placement)) tierMatch = true;
+      if (filterTiers.includes('EXTENDED') && isExtendedListPlacement(lvl.placement)) tierMatch = true;
+      if (filterTiers.includes('LEGACY') && isLegacyTier(lvl.placement)) tierMatch = true;
       if (!tierMatch) return false;
     }
 
@@ -312,8 +312,8 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
             <button
               onClick={() => {
                 setSearch('');
-                setFilterModes(isChallengeList ? [] : ['CLASSIC']);
-                setFilterTiers(isChallengeList ? [] : ['MAIN']);
+                setFilterModes([]);
+                setFilterTiers([]);
                 setFilterFaces([]);
                 setFilterVN(false);
               }}

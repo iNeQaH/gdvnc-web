@@ -1,9 +1,23 @@
+export const LIST_MAIN_MAX = 75;
+export const LIST_EXTENDED_MIN = 75;
+export const LIST_EXTENDED_MAX = 150;
+export const LIST_LEGACY_MIN = 151;
+
 export function isRankedPlacement(placement: number | null | undefined): placement is number {
   return placement != null && placement >= 1;
 }
 
+export function isMainListPlacement(placement: number | null | undefined): boolean {
+  return isRankedPlacement(placement) && placement <= LIST_MAIN_MAX;
+}
+
+export function isExtendedListPlacement(placement: number | null | undefined): boolean {
+  return isRankedPlacement(placement) && placement >= LIST_EXTENDED_MIN && placement <= LIST_EXTENDED_MAX;
+}
+
+/** List filter: 151+ or unranked (PP still uses LIST_SIZE 500). */
 export function isLegacyTier(placement: number | null | undefined): boolean {
-  return !isRankedPlacement(placement) || placement > 500;
+  return !isRankedPlacement(placement) || placement >= LIST_LEGACY_MIN;
 }
 
 export function compareListLevels(

@@ -38,8 +38,8 @@ async function loadDbFallback(mode: string, tier: string | null, challenge: bool
       isChallenge: challenge,
       ...(mode !== 'ALL' ? { mode: mode as LevelMode } : {}),
       ...(tier === 'main' ? { placement: { gte: 1, lte: 75 } }
-        : tier === 'extended' ? { placement: { gte: 76, lte: 500 } }
-        : tier === 'legacy' ? { OR: [{ placement: { gt: 500 } }, { placement: null }] }
+        : tier === 'extended' ? { placement: { gte: 75, lte: 150 } }
+        : tier === 'legacy' ? { OR: [{ placement: { gte: 151 } }, { placement: null }] }
         : {}),
     },
     select: dbLevelSelect,
@@ -130,7 +130,7 @@ export async function GET(req: Request) {
     }
 
     if (tier === 'main') levels = levels.filter((l) => l.placement != null && l.placement >= 1 && l.placement <= 75);
-    else if (tier === 'extended') levels = levels.filter((l) => l.placement != null && l.placement >= 76 && l.placement <= 500);
+    else if (tier === 'extended') levels = levels.filter((l) => l.placement != null && l.placement >= 75 && l.placement <= 150);
     else if (tier === 'legacy') levels = levels.filter((l) => isLegacyTier(l.placement));
 
     levels.sort((a, b) => {
