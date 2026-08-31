@@ -310,10 +310,14 @@ export default function TimelineBoard({
   }
 
   function onBar(x: number) {
-    return x >= 0 && x <= lineEndX - 2;
+    return x >= 2 && x <= lineEndX - 6;
   }
 
-  const visibleCards = [...posLayout, ...negLayout].filter((i) => !i.collapsed && onBar(i.x));
+  function visualX(item: LaneItem) {
+    return item.collapsed ? item.x : item.left + item.width / 2;
+  }
+
+  const visibleCards = [...posLayout, ...negLayout].filter((i) => !i.collapsed && onBar(visualX(i)));
   let focusCardId: string | null = null;
   let focusScore = -1;
   for (const item of visibleCards) {
@@ -343,6 +347,7 @@ export default function TimelineBoard({
           ppd={ppd}
           width={size.w}
           height={size.h}
+          lineEndX={lineEndX}
         />
       )}
       <div className="timeline-clip" style={{ width: lineEndX }}>
@@ -390,7 +395,7 @@ export default function TimelineBoard({
       <div className="gold-line" />
 
       {[...posLayout, ...negLayout]
-        .filter((i) => !i.collapsed && onBar(i.x))
+        .filter((i) => !i.collapsed && onBar(visualX(i)))
         .map((i) => {
           const x = i.left + i.width / 2;
           const neg = i.event.nature === 'negative';
@@ -406,7 +411,7 @@ export default function TimelineBoard({
 
       <div className="lane pos">
         {posLayout
-          .filter((i) => !i.collapsed && onBar(i.x))
+          .filter((i) => !i.collapsed && onBar(visualX(i)))
           .map((item) => {
             const look = cardLook(item);
             return (
@@ -428,7 +433,7 @@ export default function TimelineBoard({
       </div>
       <div className="lane neg">
         {negLayout
-          .filter((i) => !i.collapsed && onBar(i.x))
+          .filter((i) => !i.collapsed && onBar(visualX(i)))
           .map((item) => {
             const look = cardLook(item);
             return (
@@ -450,7 +455,7 @@ export default function TimelineBoard({
       </div>
 
       {[...posLayout, ...negLayout]
-        .filter((i) => !i.collapsed && onBar(i.x))
+        .filter((i) => !i.collapsed && onBar(visualX(i)))
         .map((i) => {
           const expanded = expandedIds.has(i.event.id);
           return (

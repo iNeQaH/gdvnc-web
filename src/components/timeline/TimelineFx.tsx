@@ -126,6 +126,7 @@ export default function TimelineFx({
   ppd,
   width,
   height,
+  lineEndX,
 }: {
   events: ChronicleEvent[];
   zoom: number;
@@ -133,6 +134,7 @@ export default function TimelineFx({
   ppd: number;
   width: number;
   height: number;
+  lineEndX: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particles = useRef<Particle[]>([]);
@@ -170,9 +172,10 @@ export default function TimelineFx({
       const event = pool[Math.floor(pick() * pool.length)];
       const cx = wrap(travel, span) - pad;
       const left = cx - w / 2;
-      const shown = Math.min(left + w, width) - Math.max(left, 0);
+      const shown = Math.min(left + w, lineEndX) - Math.max(left, 0);
       const edge = shown <= 0 ? 0 : Math.min(1, shown / fade);
       const base = slot.large ? 0.55 : 0.4;
+      if (cx > lineEndX + w / 2) return null;
       return {
         key: `ghost-${i}`,
         event,
@@ -184,7 +187,7 @@ export default function TimelineFx({
         opacity: edge * base,
       };
     }).filter((g): g is NonNullable<typeof g> => Boolean(g));
-  }, [events, viewStart, ppd, height, width, zoom]);
+  }, [events, viewStart, ppd, height, width, zoom, lineEndX]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -200,8 +203,9 @@ export default function TimelineFx({
     function spawn(scatter: boolean): Particle {
       const band = Math.min(52, height * 0.08);
       const y = height * 0.5 + (Math.random() - 0.5) * band;
-      const x = scatter ? Math.random() * width : width + 8 + Math.random() * 48;
-      const dist = Math.max(80, width + 56);
+      const cap = Math.max(80, lineEndX);
+      const x = scatter ? Math.random() * cap : cap - 4;
+      const dist = Math.max(80, cap + 56);
       const maxSpeed = dist / 2.8;
       const minSpeed = dist / 18;
       const speed = minSpeed + Math.random() * (maxSpeed - minSpeed);
@@ -227,6 +231,10 @@ export default function TimelineFx({
       last = now;
       const theme = readAccentRgb(surface);
       ctx!.clearRect(0, 0, width, height);
+      ctx!.save();
+      ctx!.beginPath();
+      ctx!.rect(0, 0, Math.max(0, lineEndX), height);
+      ctx!.clip();
       const list = particles.current;
       for (let i = 0; i < list.length; i++) {
         const p = list[i];
@@ -234,7 +242,7 @@ export default function TimelineFx({
         p.x += p.vx * dt;
         p.y += p.vy * dt;
         p.blink += p.blinkSpeed * dt;
-        if (p.life >= p.maxLife || p.x < -24 || p.x > width + 64) {
+        if (p.life >= p.maxLife || p.x < -24 || p.x > lineEndX + 8) {
           list[i] = spawn(false);
           continue;
         }
@@ -262,11 +270,12 @@ export default function TimelineFx({
         ctx!.fillRect(p.x, p.y, p.size, p.size);
         ctx!.restore();
       }
+      ctx!.restore();
       raf = requestAnimationFrame(tick);
     }
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [width, height]);
+  }, [width, height, lineEndX]);
 
   return (
     <div className="timeline-fx" aria-hidden>
