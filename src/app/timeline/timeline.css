@@ -928,7 +928,7 @@
 }
 
 .gdvn-timeline .dot.neg {
-  background: var(--tl-neg);
+  background: var(--tl-accent);
 }
 
 .gdvn-timeline .dot.collapsed {
