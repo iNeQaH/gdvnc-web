@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ShieldCheck, Trash2, 
   Check, 
@@ -36,8 +37,8 @@ import {
   FolderPlus,
   LifeBuoy,
   Lock,
-  FolderOpen,
   Wrench,
+  Plus,
 } from 'lucide-react';
 import * as AllLucideIcons from 'lucide-react';
 import { CUSTOM_ICONS } from '@/components/CustomIcons';
@@ -47,7 +48,6 @@ import { useToast } from '@/components/GlobalToast';
 import ColorPicker from '@/components/ColorPicker';
 import { type DictKey } from '@/lib/dictionaries';
 import ReviewStatusBadge from '@/components/ReviewStatusBadge';
-import AdminFilesTab from '@/components/AdminFilesTab';
 
 const allIconNames = [
   ...Object.keys(CUSTOM_ICONS),
@@ -204,6 +204,36 @@ function AdminListPager({
   );
 }
 
+function FnSection({
+  title,
+  icon,
+  desc,
+  children,
+  danger,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  desc?: string;
+  children: React.ReactNode;
+  danger?: boolean;
+}) {
+  return (
+    <section
+      className="ui-card p-5 space-y-3"
+      style={danger ? { borderColor: 'rgba(220, 38, 38, 0.45)' } : undefined}
+    >
+      <div className="space-y-1">
+        <h3 className="font-bold text-sm ui-title flex items-center gap-2">
+          {icon}
+          {title}
+        </h3>
+        {desc ? <p className="text-xs ui-dim leading-relaxed">{desc}</p> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
 function ReviewerLine({ item, t }: { item: { status: string; reviewer?: { username?: string } | null }; t: (key: DictKey, vars?: Record<string, string | number>) => string }) {
   if (item.status !== 'APPROVED' && item.status !== 'REJECTED') return null;
   return (
@@ -219,16 +249,20 @@ import { formatCp, getDecoBadgeCp, getLayoutBadgeCp, isDecoCategory, isLayoutCat
 export default function AdminPage() {
   const { t, language } = useLanguage();
   const { showToast, showConfirm } = useToast();
+  const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [tab, setTabState] = useState<'records' | 'works' | 'badges' | 'users' | 'levels' | 'levelSubs' | 'helps' | 'files'>('records');
+  const [tab, setTabState] = useState<'records' | 'works' | 'users' | 'levels' | 'levelSubs' | 'helps'>('records');
   
   useEffect(() => {
     const saved = localStorage.getItem('adminTab');
-    if (saved) setTabState(saved as any);
+    if (saved === 'files' || saved === 'badges') {
+      setTabState('levels');
+      localStorage.setItem('adminTab', 'levels');
+    } else if (saved) setTabState(saved as any);
   }, []);
 
   useEffect(() => {
-    if (currentUser && currentUser.role !== 'ADMIN' && (tab === 'badges' || tab === 'levels' || tab === 'files')) {
+    if (currentUser && currentUser.role !== 'ADMIN' && tab === 'levels') {
       setTabState('records');
       localStorage.setItem('adminTab', 'records');
     }
@@ -269,6 +303,8 @@ export default function AdminPage() {
   const [badgeFilterCategory, setBadgeFilterCategory] = useState('ALL');
   const [badgeSort, setBadgeSort] = useState<'quality' | 'name' | 'category'>('quality');
   const [badgesViewMode, setBadgesViewMode] = useState<'list' | 'grid'>('list');
+  const [showBadgeCreate, setShowBadgeCreate] = useState(false);
+  const [badgePage, setBadgePage] = useState(1);
   const [isBadgeEditMode, setIsBadgeEditMode] = useState(false);
   const [isBadgeEditModalOpen, setIsBadgeEditModalOpen] = useState(false);
   const [draggedBadgeId, setDraggedBadgeId] = useState<string | null>(null);
@@ -292,7 +328,6 @@ export default function AdminPage() {
   const [syncingSheet, setSyncingSheet] = useState(false);
   const [adminToast, setAdminToast] = useState<{ text: string, isError: boolean } | null>(null);
   const [userSortOrder, setUserSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [userViewMode, setUserViewMode] = useState<'list' | 'grid'>('list');
   const [userPage, setUserPage] = useState(1);
   const [helpsTotal, setHelpsTotal] = useState(0);
   const [recordDecisions, setRecordDecisions] = useState<Record<string, ReviewDecision>>({});
@@ -513,6 +548,7 @@ export default function AdminPage() {
       if (data.success) {
         showToast(badgeForm.id ? 'Đã cập nhật huy hiệu' : 'Đã tạo huy hiệu', 'success');
         setBadgeForm(emptyBadgeForm);
+        setShowBadgeCreate(false);
         fetchBadges();
       } else {
         showToast(data.error || 'Lỗi', 'error');
@@ -790,6 +826,10 @@ export default function AdminPage() {
     setUserPage(1);
   }, [userQuery, userSort, userSortOrder]);
 
+  useEffect(() => {
+    setBadgePage(1);
+  }, [badgeSearch, badgeFilterCategory, badgeSort]);
+
   if (!currentUser || (currentUser.role !== 'ADMIN' && currentUser.role !== 'MODERATOR')) {
     return (
       <div className="max-w-sm mx-auto py-12 text-center space-y-3">
@@ -899,19 +939,6 @@ export default function AdminPage() {
             <LifeBuoy className="w-3.5 h-3.5" />
             Helps ({helpsTotal})
           </button>
-          {isFullAdmin && (
-          <button
-            onClick={() => setTab('badges')}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
-            style={{
-              backgroundColor: tab === 'badges' ? 'var(--bg-card)' : 'transparent',
-              color: tab === 'badges' ? 'var(--accent)' : 'var(--text-dim)',
-            }}
-          >
-            <Crown className="w-3.5 h-3.5" />
-            Badges
-          </button>
-          )}
           <button
             onClick={() => setTab('users')}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
@@ -924,7 +951,6 @@ export default function AdminPage() {
             Members
           </button>
           {isFullAdmin && (
-            <>
             <button
               onClick={() => setTab('levels')}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
@@ -936,18 +962,6 @@ export default function AdminPage() {
               <Wrench className="w-3.5 h-3.5" />
               {t('admin.tab_levels')}
             </button>
-            <button
-              onClick={() => setTab('files')}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
-              style={{
-                backgroundColor: tab === 'files' ? 'var(--bg-card)' : 'transparent',
-                color: tab === 'files' ? 'var(--accent)' : 'var(--text-dim)',
-              }}
-            >
-              <FolderOpen className="w-3.5 h-3.5" />
-              {t('admin.tab_files')}
-            </button>
-            </>
           )}
         </div>
       </div>
@@ -1451,10 +1465,86 @@ export default function AdminPage() {
         </div>
       )}
 
-            {isFullAdmin && tab === 'badges' && (
+            {isFullAdmin && tab === 'levels' && (
         <div className="space-y-4">
-          <div className="ui-card p-5 space-y-3">
-            <h3 className="font-bold text-sm ui-title">{t('badge.categories')}</h3>
+          <FnSection
+            title={t('admin.sync_lists')}
+            icon={<RefreshCw className="w-4 h-4" />}
+            desc={t('admin.sync_lists_desc')}
+          >
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={syncingLists}
+                onClick={() => handleSyncLists('ALL')}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                style={{ backgroundColor: 'var(--accent)' }}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${syncingLists ? 'animate-spin' : ''}`} />
+                {syncingLists ? t('admin.sync_lists_working') : t('admin.sync_lists')}
+              </button>
+              <button
+                type="button"
+                disabled={syncingLists}
+                onClick={() => handleSyncLists('CLASSIC')}
+                className="px-4 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)', backgroundColor: 'var(--bg-subtle)' }}
+              >
+                {t('admin.sync_lists_classic')}
+              </button>
+              <button
+                type="button"
+                disabled={syncingLists}
+                onClick={() => handleSyncLists('PLATFORMER')}
+                className="px-4 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)', backgroundColor: 'var(--bg-subtle)' }}
+              >
+                {t('admin.sync_lists_plat')}
+              </button>
+            </div>
+          </FnSection>
+
+          <FnSection
+            title={t('admin.sync_sheet')}
+            icon={<RefreshCw className="w-4 h-4" />}
+            desc={t('admin.sync_sheet_desc')}
+          >
+            <button
+              type="button"
+              disabled={syncingSheet}
+              onClick={handleSyncSheet}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              style={{ backgroundColor: 'var(--accent)' }}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${syncingSheet ? 'animate-spin' : ''}`} />
+              {syncingSheet ? t('admin.sync_sheet_working') : t('admin.sync_sheet')}
+            </button>
+          </FnSection>
+
+          <FnSection
+            title={t('admin.fn_level_title')}
+            icon={<Layers className="w-4 h-4" />}
+            desc={t('admin.fn_level_desc')}
+          >
+            <button
+              onClick={() => {
+                setLevelFormInitialData(null);
+                setIsLevelFormOpen(true);
+              }}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs inline-flex items-center justify-center gap-1 cursor-pointer"
+              style={{ backgroundColor: 'var(--accent)' }}
+            >
+              <Plus className="w-3.5 h-3.5" /> {t('admin.fn_add_level')}
+            </button>
+            <p className="text-xs ui-dim">{t('admin.fn_level_note')}</p>
+          </FnSection>
+
+          <FnSection
+            title={t('admin.fn_badges_title')}
+            icon={<Crown className="w-4 h-4" />}
+          >
+          <div className="space-y-3">
+            <h4 className="font-bold text-xs ui-title">{t('badge.categories')}</h4>
             <div className="flex flex-wrap gap-1.5">
               {badgeCategories.map((c) => (
                 <span key={c.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border" style={{ borderColor: 'var(--border-ui)' }}>
@@ -1476,10 +1566,34 @@ export default function AdminPage() {
                 <FolderPlus className="w-3.5 h-3.5" /> {t('badge.add_category')}
               </button>
             </div>
-          </div>
 
-          <div className="ui-card p-5 space-y-4">
-            <h3 className="font-bold text-sm ui-title">Tạo Huy Hiệu Mới</h3>
+            {!showBadgeCreate ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setBadgeForm(emptyBadgeForm);
+                  setShowBadgeCreate(true);
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] inline-flex items-center gap-1.5 cursor-pointer"
+                style={{ backgroundColor: 'var(--accent)' }}
+              >
+                <Plus className="w-3.5 h-3.5" /> {t('badge.create')}
+              </button>
+            ) : (
+            <div className="space-y-4 pt-3 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+            <div className="flex items-center justify-between">
+              <h4 className="font-bold text-xs ui-title">{t('badge.create_title')}</h4>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowBadgeCreate(false);
+                  setBadgeForm(emptyBadgeForm);
+                }}
+                className="text-[11px] font-bold ui-dim hover:opacity-100 cursor-pointer"
+              >
+                {t('badge.cancel_create')}
+              </button>
+            </div>
             <div className="grid grid-cols-1 gap-5 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input type="text" placeholder="Tên huy hiệu" value={badgeForm.name} onChange={e => setBadgeForm({...badgeForm, name: e.target.value})} className="ui-input px-3 py-2 rounded-xl" />
@@ -1546,12 +1660,13 @@ export default function AdminPage() {
             </div>
             <div className="flex gap-2">
               <button onClick={handleSaveBadge} disabled={actionLoading === 'badge'} className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs cursor-pointer" style={{ backgroundColor: 'var(--accent)' }}>
-                Tạo Mới
+                {t('badge.save_create')}
               </button>
             </div>
-          </div>
+            </div>
+            )}
 
-          <div className="ui-card p-4 space-y-3">
+            <div className="space-y-3 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
                 <Search className="w-3.5 h-3.5 ui-dim absolute left-3 top-1/2 -translate-y-1/2" />
@@ -1610,7 +1725,7 @@ export default function AdminPage() {
                 <div className="col-span-full p-6 text-center text-xs ui-dim">{t('admin.loading')}</div>
               ) : filteredBadges.length === 0 ? (
                 <div className="col-span-full p-6 text-center text-xs ui-dim">{t('badge.none_found')}</div>
-              ) : filteredBadges.map((b, idx) => (
+              ) : filteredBadges.slice((badgePage - 1) * 10, badgePage * 10).map((b, idx) => (
                 <div 
                   key={b.id} 
                   draggable={isBadgeEditMode}
@@ -1635,7 +1750,7 @@ export default function AdminPage() {
                   className={`flex ${badgesViewMode === 'grid' ? 'flex-col items-center justify-center text-center' : 'items-center'} gap-3 p-3 rounded-xl border ${isBadgeEditMode ? 'cursor-grab active:cursor-grabbing border-dashed border-[var(--accent)] bg-black/5 dark:bg-white/5' : 'cursor-pointer hover:scale-[1.02] hover:border-[var(--accent)] hover:shadow-md'} transition-all`} 
                   style={{ backgroundColor: 'var(--bg-card)', borderColor: isBadgeEditMode ? 'var(--accent)' : 'var(--border-ui)' }}
                 >
-                  <span className="text-[10px] font-black ui-dim w-6">#{b.sortOrder || idx + 1}</span>
+                  <span className="text-[10px] font-black ui-dim w-6">#{b.sortOrder || (badgePage - 1) * 10 + idx + 1}</span>
                   <BadgeIcon
                     icon={b.icon || 'Star'}
                     color={b.color}
@@ -1652,7 +1767,32 @@ export default function AdminPage() {
                 </div>
               ))}
             </div>
+            <AdminListPager
+              page={badgePage}
+              total={filteredBadges.length}
+              onPage={setBadgePage}
+              t={t}
+            />
+            </div>
           </div>
+          </FnSection>
+
+          <FnSection
+            title={t('admin.lock_title')}
+            icon={<Lock className="w-4 h-4" />}
+            desc={t('admin.lock_desc')}
+            danger
+          >
+            <button
+              type="button"
+              disabled={siteLockBusy}
+              onClick={() => handleSiteLock(true)}
+              className="w-full px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              {siteLockBusy ? t('admin.lock_busy') : t('admin.lock_turn_on')}
+            </button>
+          </FnSection>
         </div>
       )}
 
@@ -1760,78 +1900,6 @@ export default function AdminPage() {
         </div>
       )}
 
-{tab === 'levels' && isFullAdmin && (
-          <div className="ui-card p-6 space-y-4">
-            <p className="text-sm ui-dim">{t('admin.sync_lists_desc')}</p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                disabled={syncingLists}
-                onClick={() => handleSyncLists('ALL')}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                style={{ backgroundColor: 'var(--accent)' }}
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${syncingLists ? 'animate-spin' : ''}`} />
-                {syncingLists ? t('admin.sync_lists_working') : t('admin.sync_lists')}
-              </button>
-              <button
-                type="button"
-                disabled={syncingLists}
-                onClick={() => handleSyncLists('CLASSIC')}
-                className="px-4 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
-                style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)', backgroundColor: 'var(--bg-subtle)' }}
-              >
-                {t('admin.sync_lists_classic')}
-              </button>
-              <button
-                type="button"
-                disabled={syncingLists}
-                onClick={() => handleSyncLists('PLATFORMER')}
-                className="px-4 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
-                style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)', backgroundColor: 'var(--bg-subtle)' }}
-              >
-                {t('admin.sync_lists_plat')}
-              </button>
-            </div>
-            <hr style={{ borderColor: 'var(--border-subtle)' }} />
-            <p className="text-sm ui-dim">{t('admin.sync_sheet_desc')}</p>
-            <button
-              type="button"
-              disabled={syncingSheet}
-              onClick={handleSyncSheet}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-              style={{ backgroundColor: 'var(--accent)' }}
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${syncingSheet ? 'animate-spin' : ''}`} />
-              {syncingSheet ? t('admin.sync_sheet_working') : t('admin.sync_sheet')}
-            </button>
-            <hr style={{ borderColor: 'var(--border-subtle)' }} />
-            <p className="text-sm ui-dim">Bạn có thể quản lý, thêm hoặc cập nhật Level tại đây.</p>
-            <button
-              onClick={() => {
-                setLevelFormInitialData(null);
-                setIsLevelFormOpen(true);
-              }}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs flex items-center justify-center gap-1 cursor-pointer" style={{ backgroundColor: 'var(--accent)' }}
-            >
-              + Thêm Level Mới
-            </button>
-            <p className="text-xs ui-dim">Lưu ý: Bạn cũng có thể sửa Level trực tiếp tại trang Levels.</p>
-            <hr style={{ borderColor: 'var(--border-subtle)' }} />
-            <button
-              type="button"
-              disabled={siteLockBusy}
-              onClick={() => handleSiteLock(true)}
-              className="w-full px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-            >
-              <Lock className="w-3.5 h-3.5" />
-              {siteLockBusy ? t('admin.lock_busy') : t('admin.lock_turn_on')}
-            </button>
-          </div>
-        )}
-
-        {tab === 'files' && isFullAdmin && <AdminFilesTab />}
-
         {tab === 'users' && (
         <div className="space-y-4">
           {/* Filter & Search Bar */}
@@ -1877,14 +1945,6 @@ export default function AdminPage() {
                   {userSortOrder === 'asc' ? t('admin.sort_asc') : t('admin.sort_desc')}
 
                 </button>
-                <button 
-                  onClick={() => setUserViewMode(userViewMode === 'list' ? 'grid' : 'list')} 
-                  className="p-1.5 rounded-xl border transition-all flex items-center justify-center cursor-pointer hover:bg-black/5 dark:hover:bg-white/5"
-                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                  title="Toggle View Mode"
-                >
-                  {userViewMode === 'list' ? <LayoutGrid className="w-4 h-4" /> : <List className="w-4 h-4" />}
-                </button>
               </div>
             </div>
 
@@ -1915,124 +1975,128 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="mt-4">
+          <div className="ui-card overflow-hidden">
             {loadingUsers ? (
-              <div className="ui-card p-8 text-center ui-dim">{t('admin.loading_users')}</div>
+              <div className="p-8 text-center ui-dim text-xs">{t('admin.loading_users')}</div>
             ) : sortedUsers.length === 0 ? (
-              <div className="ui-card p-8 text-center ui-dim">{t('admin.no_users')}</div>
+              <div className="p-8 text-center ui-dim text-xs">{t('admin.no_users')}</div>
             ) : (
-              <div className={userViewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" : "ui-zebra-list flex flex-col"}>
-                {sortedUsers.slice((userPage - 1) * 10, userPage * 10).map((user) => {
-                  const isTargetSuper = user.username === 'iNeQaH';
-                  const isSupporter = user.supporterUntil && new Date(user.supporterUntil) > new Date();
-
-                  return (
-                    <Link
-                      href={`/profile/${user.username}`}
-                      key={user.id} 
-                      className={`ui-card flex items-center justify-between p-3 group ${userViewMode === 'grid' ? 'flex-col gap-3 text-center' : 'flex-row gap-4 hover:border-[var(--accent)] hover:shadow-md transition-all'}`}
-                    >
-                      {/* Left Side: Avatar and Name */}
-                      <div className={`flex ${userViewMode === 'grid' ? 'flex-col items-center' : 'flex-row items-center'} gap-3 min-w-0`}>
-                        {user.avatarUrl ? (
-                          <img src={user.avatarUrl} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0 shadow-sm group-hover:scale-105 transition-transform" />
-                        ) : (
-                          <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-[color:var(--accent-fg)] shrink-0 shadow-sm group-hover:scale-105 transition-transform" style={{ backgroundColor: 'var(--accent)' }}>
-                            {user.username[0]}
-                          </div>
-                        )}
-                        
-                        <div className={`flex ${userViewMode === 'grid' ? 'flex-col items-center text-center' : 'flex-col items-start'} gap-1 min-w-0`}>
-                          <div className={`font-bold ui-title flex items-center gap-1.5 ${userViewMode === 'grid' ? 'justify-center' : ''}`}>
-                            <span className="truncate group-hover:text-[var(--accent)] transition-colors">{user.username}</span>
-                          </div>
-                          
-                          <div className={`flex items-center gap-1.5 flex-wrap ${userViewMode === 'grid' ? 'justify-center' : ''}`}>
-                            {user.role === 'ADMIN' && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
-                                <Crown className="w-3 h-3" /> ADMIN
-                              </span>
-                            )}
-                            {user.role === 'MODERATOR' && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' }}>
-                                <Shield className="w-3 h-3" /> MODERATOR
-                              </span>
-                            )}
-                            {user.role === 'USER' && !isTargetSuper && !isSupporter && (
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-dim)' }}>
-                                USER
-                              </span>
-                            )}
-                            {isTargetSuper && (
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
-                                Super Admin
-                              </span>
-                            )}
-                            {isSupporter && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'rgba(2ec, 72, 153, 0.15)', color: '#ec4899' }}>
-                                <Heart className="w-3 h-3 fill-pink-500" /> Supporter
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right Side: Action/Points */}
-                      <div className={`flex ${userViewMode === 'grid' ? 'w-full flex-col' : 'shrink-0 flex-col items-end'} gap-1`}>
-                        <span className="text-xs font-semibold ui-dim">
-                          {user.classicPp.toFixed(1)} Pts
-                        </span>
-                        {user.gdUsername && (
-                          <span className="text-[10px] ui-dim truncate max-w-[140px]">
-                            {t('admin.gd_name', { name: user.gdUsername })}
-                          </span>
-                        )}
-                        {user.gdVerified ? (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase text-emerald-600 bg-emerald-500/10">
-                            <ShieldCheck className="w-3 h-3" /> {t('admin.verified')}
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={(e) => {
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                  <thead>
+                    <tr className="border-b text-[11px] font-bold uppercase ui-dim" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                      <th className="px-5 py-3">{t('leaderboard.player')}</th>
+                      <th className="px-5 py-3">{t('admin.sort_role')}</th>
+                      <th className="px-5 py-3">GD</th>
+                      <th className="px-5 py-3 text-right">{t('leaderboard.classic')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="ui-zebra">
+                    {sortedUsers.slice((userPage - 1) * 10, userPage * 10).map((user) => {
+                      const isTargetSuper = user.username === 'iNeQaH';
+                      const isSupporter = user.supporterUntil && new Date(user.supporterUntil) > new Date();
+                      return (
+                        <tr
+                          key={user.id}
+                          role="link"
+                          tabIndex={0}
+                          onClick={() => router.push(`/profile/${user.username}`)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
-                              e.stopPropagation();
-                              verifyUser(user.id, user.username);
-                            }}
-                            disabled={actionLoading === user.id}
-                            className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded text-[10px] font-extrabold border cursor-pointer disabled:opacity-50"
-                            style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}
-                          >
-                            <UserCheck className="w-3 h-3" /> {t('admin.verify_gd')}
-                          </button>
-                        )}
-                        {isTargetSuper && (
-                          <div className={`inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/10 text-amber-500 ${userViewMode === 'grid' ? 'w-full mt-2' : ''}`}>
-                            <Crown className="w-3 h-3" /> Protected
-                          </div>
-                        )}
-                      </div>
-                    </Link>
-                  );
-                })}
+                              router.push(`/profile/${user.username}`);
+                            }
+                          }}
+                          className="transition-colors hover:opacity-90 cursor-pointer"
+                        >
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              {user.avatarUrl ? (
+                                <img src={user.avatarUrl} alt="" className="w-8 h-8 rounded-xl object-cover shrink-0" />
+                              ) : (
+                                <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs text-[color:var(--accent-fg)] shrink-0" style={{ backgroundColor: 'var(--accent)' }}>
+                                  {user.username[0]}
+                                </div>
+                              )}
+                              <span className="font-bold ui-title truncate">{user.username}</span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {user.role === 'ADMIN' && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
+                                  <Crown className="w-3 h-3" /> ADMIN
+                                </span>
+                              )}
+                              {user.role === 'MODERATOR' && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' }}>
+                                  <Shield className="w-3 h-3" /> MODERATOR
+                                </span>
+                              )}
+                              {user.role === 'USER' && !isTargetSuper && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-dim)' }}>
+                                  USER
+                                </span>
+                              )}
+                              {isTargetSuper && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
+                                  Super Admin
+                                </span>
+                              )}
+                              {isSupporter && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'rgba(236, 72, 153, 0.15)', color: '#ec4899' }}>
+                                  <Heart className="w-3 h-3 fill-pink-500" /> Supporter
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <div className="flex flex-col gap-1">
+                              {user.gdUsername ? (
+                                <span className="text-[11px] ui-dim truncate max-w-[160px]">{user.gdUsername}</span>
+                              ) : (
+                                <span className="text-[11px] ui-dim">—</span>
+                              )}
+                              {user.gdVerified ? (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase text-emerald-600 bg-emerald-500/10 w-fit">
+                                  <ShieldCheck className="w-3 h-3" /> {t('admin.verified')}
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    verifyUser(user.id, user.username);
+                                  }}
+                                  disabled={actionLoading === user.id}
+                                  className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded text-[10px] font-extrabold border cursor-pointer disabled:opacity-50 w-fit"
+                                  style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}
+                                >
+                                  <UserCheck className="w-3 h-3" /> {t('admin.verify_gd')}
+                                </button>
+                              )}
+                              {isTargetSuper && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-amber-500/10 text-amber-500 w-fit">
+                                  <Crown className="w-3 h-3" /> Protected
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5 text-right font-black" style={{ color: 'var(--accent)' }}>
+                            {user.classicPp.toFixed(1)}
+                            <span className="text-[10px] font-normal ui-dim ml-1">Pts</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
-          
-          {/* Pagination Controls */}
-          {sortedUsers.length > 10 && (
-            <div className="flex justify-center gap-1.5 mt-4">
-              {Array.from({ length: Math.ceil(sortedUsers.length / 10) }).map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setUserPage(i + 1)}
-                  className={`w-8 h-8 rounded-xl text-xs font-bold transition-colors ${userPage === i + 1 ? 'bg-[var(--accent)] text-[color:var(--accent-fg)] shadow-md' : 'hover:bg-black/5 dark:hover:bg-white/5 ui-dim'}`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-          )}
+
+          <AdminListPager page={userPage} total={sortedUsers.length} onPage={setUserPage} t={t} />
         </div>
       )}
 

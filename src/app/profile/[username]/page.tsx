@@ -11,7 +11,47 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import { formatCp } from '@/lib/creatorPoints';
 import { levelPath } from '@/lib/levelUrl';
-import GdUnverifiedNotice from '@/components/GdUnverifiedNotice';
+import { type DictKey } from '@/lib/dictionaries';
+
+const RECORD_PAGE_SIZE = 10;
+
+function RecordPager({
+  page,
+  total,
+  onPage,
+  t,
+}: {
+  page: number;
+  total: number;
+  onPage: (p: number) => void;
+  t: (key: DictKey, vars?: Record<string, string | number>) => string;
+}) {
+  const pages = Math.max(1, Math.ceil(total / RECORD_PAGE_SIZE));
+  if (total <= RECORD_PAGE_SIZE) return null;
+  return (
+    <div className="flex items-center justify-center gap-2 px-5 py-3 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+      <button
+        type="button"
+        disabled={page <= 1}
+        onClick={() => onPage(page - 1)}
+        className="px-3 py-1 rounded-xl text-[11px] font-bold border disabled:opacity-40 cursor-pointer"
+        style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+      >
+        {t('admin.prev')}
+      </button>
+      <span className="text-[11px] ui-dim font-semibold">{t('admin.page_of', { n: page, total: pages })}</span>
+      <button
+        type="button"
+        disabled={page >= pages}
+        onClick={() => onPage(page + 1)}
+        className="px-3 py-1 rounded-xl text-[11px] font-bold border disabled:opacity-40 cursor-pointer"
+        style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+      >
+        {t('admin.next')}
+      </button>
+    </div>
+  );
+}
 
 export default function ProfilePage() {
   const params = useParams();
@@ -22,6 +62,7 @@ export default function ProfilePage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'classic' | 'platformer' | 'creator'>('classic');
+  const [recordPage, setRecordPage] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const isOwner = !!(currentUser && currentUser.username === username);
   const isStaff = currentUser?.role === 'ADMIN' || currentUser?.role === 'MODERATOR';
@@ -357,6 +398,11 @@ export default function ProfilePage() {
   const hardest = data.hardestClassic;
   const breakdown = data.classicBreakdown;
   const classicRecords = data.classicRecords || breakdown?.items || [];
+  const platformerRecords = data.platformerCompletions || [];
+  const createdLevels = data.createdLevels || [];
+  const pagedClassic = classicRecords.slice((recordPage - 1) * RECORD_PAGE_SIZE, recordPage * RECORD_PAGE_SIZE);
+  const pagedPlatformer = platformerRecords.slice((recordPage - 1) * RECORD_PAGE_SIZE, recordPage * RECORD_PAGE_SIZE);
+  const pagedCreated = createdLevels.slice((recordPage - 1) * RECORD_PAGE_SIZE, recordPage * RECORD_PAGE_SIZE);
   const ppByRecordId = new Map<string, any>(
     (breakdown?.items || []).map((item: any) => [item.recordId, item])
   );
@@ -858,7 +904,7 @@ export default function ProfilePage() {
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b pb-px" style={{ borderColor: 'var(--border-ui)' }}>
         <button
-          onClick={() => setActiveTab('classic')}
+          onClick={() => { setActiveTab('classic'); setRecordPage(1); }}
           className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer"
           style={{
             borderColor: activeTab === 'classic' ? 'var(--accent)' : 'transparent',
@@ -869,7 +915,7 @@ export default function ProfilePage() {
           Classic ({classicRecords.length})
         </button>
         <button
-          onClick={() => setActiveTab('platformer')}
+          onClick={() => { setActiveTab('platformer'); setRecordPage(1); }}
           className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer"
           style={{
             borderColor: activeTab === 'platformer' ? 'var(--accent)' : 'transparent',
@@ -880,7 +926,7 @@ export default function ProfilePage() {
           Platformer ({data.platformerCompletions?.length || 0})
         </button>
         <button
-          onClick={() => setActiveTab('creator')}
+          onClick={() => { setActiveTab('creator'); setRecordPage(1); }}
           className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer"
           style={{
             borderColor: activeTab === 'creator' ? 'var(--accent)' : 'transparent',
@@ -896,31 +942,31 @@ export default function ProfilePage() {
       {activeTab === 'classic' && (
         <div className="ui-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b text-[10px] font-bold uppercase ui-dim" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-                  <th className="px-4 py-2.5 w-10 text-center">#</th>
-                  <th className="px-4 py-2.5">{t("profile.col_level")}</th>
-                  <th className="px-4 py-2.5 text-center">{t("profile.col_progress")}</th>
-                  <th className="px-4 py-2.5 text-right">Base Points</th>
-                  <th className="px-4 py-2.5 text-center">{t("profile.col_weight")}</th>
-                  <th className="px-4 py-2.5 text-right">{t("profile.col_pp")}</th>
-                  <th className="px-4 py-2.5 text-center w-20">Video</th>
+                <tr className="border-b text-[11px] font-bold uppercase ui-dim" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                  <th className="px-5 py-3 w-12 text-center">#</th>
+                  <th className="px-5 py-3">{t("profile.col_level")}</th>
+                  <th className="px-5 py-3 text-center">{t("profile.col_progress")}</th>
+                  <th className="px-5 py-3 text-right">Base Points</th>
+                  <th className="px-5 py-3 text-center">{t("profile.col_weight")}</th>
+                  <th className="px-5 py-3 text-right">{t("profile.col_pp")}</th>
+                  <th className="px-5 py-3 text-center w-24">Video</th>
                 </tr>
               </thead>
               <tbody className="ui-zebra">
                 {classicRecords.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center ui-dim italic">
+                    <td colSpan={7} className="px-5 py-8 text-center ui-dim italic">
                       {t('profile.no_records')}
                     </td>
                   </tr>
-                ) : classicRecords.map((item: any, idx: number) => {
+                ) : pagedClassic.map((item: any, idx: number) => {
                   const pp = ppByRecordId.get(item.recordId);
                   return (
                   <tr key={item.recordId || item.id || `breakdown-${idx}`} className="hover:opacity-90">
-                    <td className="px-4 py-2.5 text-center font-bold ui-dim">{pp?.rankInProfile ?? idx + 1}</td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-5 py-3.5 text-center font-bold ui-dim">{pp?.rankInProfile ?? (recordPage - 1) * RECORD_PAGE_SIZE + idx + 1}</td>
+                    <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1.5">
                         {item.placement != null ? (
                           <span className="px-1 py-0.2 rounded text-[9px] font-bold ui-subtle">#{item.placement}</span>
@@ -936,15 +982,15 @@ export default function ProfilePage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-2.5 text-center font-semibold ui-title">
+                    <td className="px-5 py-3.5 text-center font-semibold ui-title">
                       {item.progress != null ? `${item.progress}%` : '—'}
                     </td>
-                    <td className="px-4 py-2.5 text-right ui-dim">
+                    <td className="px-5 py-3.5 text-right ui-dim">
                       {item.awardedPp != null && item.progress != null && item.progress < 100
                         ? `${Number(item.awardedPp).toFixed(2)} / ${item.basePp.toFixed(2)}`
                         : item.basePp.toFixed(2)}
                     </td>
-                    <td className="px-4 py-2.5 text-center">
+                    <td className="px-5 py-3.5 text-center">
                       {pp ? (
                         <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
                           {pp.weightPercent}%
@@ -953,10 +999,10 @@ export default function ProfilePage() {
                         <span className="text-[10px] ui-dim">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 text-right font-black" style={{ color: pp ? 'var(--accent)' : 'var(--text-dim)' }}>
+                    <td className="px-5 py-3.5 text-right font-black" style={{ color: pp ? 'var(--accent)' : 'var(--text-dim)' }}>
                       {pp ? pp.weightedPp.toFixed(2) : '—'}
                     </td>
-                    <td className="px-4 py-2.5 text-center">
+                    <td className="px-5 py-3.5 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <a href={item.videoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold hover:underline" style={{ color: 'var(--accent)' }}>
                           <Play className="w-3 h-3" /> {t("profile.watch")}
@@ -977,25 +1023,26 @@ export default function ProfilePage() {
               </tbody>
             </table>
           </div>
+          <RecordPager page={recordPage} total={classicRecords.length} onPage={setRecordPage} t={t} />
         </div>
       )}
 
       {activeTab === 'platformer' && (
         <div className="ui-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b text-[10px] font-bold uppercase ui-dim" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-                  <th className="px-4 py-2.5">{t("profile.col_level")}</th>
-                  <th className="px-4 py-2.5 text-center">{t("profile.col_time")}</th>
-                  <th className="px-4 py-2.5 text-right">Base Points</th>
-                  <th className="px-4 py-2.5 text-center">Video</th>
+                <tr className="border-b text-[11px] font-bold uppercase ui-dim" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                  <th className="px-5 py-3">{t("profile.col_level")}</th>
+                  <th className="px-5 py-3 text-center">{t("profile.col_time")}</th>
+                  <th className="px-5 py-3 text-right">Base Points</th>
+                  <th className="px-5 py-3 text-center">Video</th>
                 </tr>
               </thead>
               <tbody className="ui-zebra">
-                {data.platformerCompletions?.map((rec: any, idx: number) => (
+                {pagedPlatformer.map((rec: any, idx: number) => (
                   <tr key={rec.recordId || rec.id || `plat-${idx}`} className="hover:opacity-90">
-                    <td className="px-4 py-2.5">
+                    <td className="px-5 py-3.5">
                       {rec.gdLevelId ? (
                         <Link href={levelPath({ gdLevelId: rec.gdLevelId })} className="font-bold ui-title hover:underline" style={{ color: 'var(--accent)' }}>
                           {rec.name}
@@ -1004,11 +1051,11 @@ export default function ProfilePage() {
                         <span className="font-bold ui-title">{rec.name}</span>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 text-center font-mono font-bold" style={{ color: 'var(--badge-green-text)' }}>
+                    <td className="px-5 py-3.5 text-center font-mono font-bold" style={{ color: 'var(--badge-green-text)' }}>
                       {(rec.timeMs / 1000).toFixed(3)}s
                     </td>
-                    <td className="px-4 py-2.5 text-right ui-dim">{rec.basePp.toFixed(2)}</td>
-                    <td className="px-4 py-2.5 text-center">
+                    <td className="px-5 py-3.5 text-right ui-dim">{rec.basePp.toFixed(2)}</td>
+                    <td className="px-5 py-3.5 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <a href={rec.videoUrl} target="_blank" rel="noreferrer" className="font-semibold hover:underline flex items-center gap-1" style={{ color: 'var(--accent)' }}>
                           <Play className="w-3 h-3" /> {t("profile.watch")}
@@ -1029,25 +1076,26 @@ export default function ProfilePage() {
               </tbody>
             </table>
           </div>
+          <RecordPager page={recordPage} total={platformerRecords.length} onPage={setRecordPage} t={t} />
         </div>
       )}
 
       {activeTab === 'creator' && (
         <div className="ui-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b text-[10px] font-bold uppercase ui-dim" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-                  <th className="px-4 py-2.5">Level Name</th>
-                  <th className="px-4 py-2.5 text-center">Base Points</th>
-                  <th className="px-4 py-2.5 text-center">Rating</th>
-                  <th className="px-4 py-2.5 text-center">Mode</th>
+                <tr className="border-b text-[11px] font-bold uppercase ui-dim" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                  <th className="px-5 py-3">Level Name</th>
+                  <th className="px-5 py-3 text-center">Base Points</th>
+                  <th className="px-5 py-3 text-center">Rating</th>
+                  <th className="px-5 py-3 text-center">Mode</th>
                 </tr>
               </thead>
               <tbody className="ui-zebra">
-                {data.createdLevels?.map((level: any, idx: number) => (
+                {pagedCreated.map((level: any, idx: number) => (
                   <tr key={level.id || `created-${idx}`} className="hover:opacity-90">
-                    <td className="px-4 py-2.5">
+                    <td className="px-5 py-3.5">
                       {level.gdLevelId ? (
                         <Link href={levelPath(level)} className="font-bold ui-title hover:underline" style={{ color: 'var(--accent)' }}>
                           {level.name}
@@ -1056,10 +1104,10 @@ export default function ProfilePage() {
                         <span className="font-bold ui-title">{level.name}</span>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 text-center ui-dim">
+                    <td className="px-5 py-3.5 text-center ui-dim">
                       {level.basePp.toFixed(2)}
                     </td>
-                    <td className="px-4 py-2.5 text-center font-bold">
+                    <td className="px-5 py-3.5 text-center font-bold">
                       <span className="px-2 py-0.5 rounded text-[10px]" style={{
                         backgroundColor: level.ratingType === 'MYTHIC' ? 'rgba(168, 85, 247, 0.15)' : 
                                          level.ratingType === 'LEGENDARY' ? 'rgba(236, 72, 153, 0.15)' : 
@@ -1075,7 +1123,7 @@ export default function ProfilePage() {
                         {level.ratingType !== 'NONE' ? level.ratingType : 'UNRATED'}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 text-center">
+                    <td className="px-5 py-3.5 text-center">
                       <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-black/5 dark:bg-white/5 ui-dim">
                         {level.mode}
                       </span>
@@ -1092,6 +1140,7 @@ export default function ProfilePage() {
               </tbody>
             </table>
           </div>
+          <RecordPager page={recordPage} total={createdLevels.length} onPage={setRecordPage} t={t} />
         </div>
       )}
 
