@@ -791,20 +791,19 @@
 
 .gdvn-timeline .event-card.has-glow .card-glow {
   position: absolute;
-  inset: -18px;
+  inset: calc(var(--glow-scale, 0.38) * -28px);
   z-index: 0;
-  border-radius: 12px;
+  border-radius: 10px;
   background: conic-gradient(from var(--tl-spin), var(--flow-stops));
-  filter: blur(18px);
-  opacity: 0.7;
+  filter: blur(calc(var(--glow-scale, 0.38) * 20px));
+  opacity: var(--glow-alpha, 0.4);
   pointer-events: none;
 }
 
 .gdvn-timeline .event-card.has-glow:hover .card-glow,
 .gdvn-timeline .event-card.has-glow.is-focus .card-glow {
-  inset: -22px;
-  opacity: 0.82;
-  filter: blur(22px);
+  inset: calc(var(--glow-scale, 0.38) * -34px);
+  filter: blur(calc(var(--glow-scale, 0.38) * 24px));
 }
 
 .gdvn-timeline .event-card.has-glow .card-frame {

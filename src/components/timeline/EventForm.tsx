@@ -128,6 +128,8 @@ export default function EventForm({
             offLabel={t('timeline.glow_off')}
             addLabel={t('timeline.glow_add')}
             hint={t('timeline.glow_hint')}
+            alphaLabel={t('timeline.glow_alpha')}
+            scaleLabel={t('timeline.glow_scale')}
           />
         </div>
         <div className="row-2">
