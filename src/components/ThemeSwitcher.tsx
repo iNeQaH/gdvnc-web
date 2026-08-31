@@ -2,10 +2,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useTheme, ThemeType, ModeType } from './ThemeProvider';
-import { Palette, ChevronDown, Check, Sun, Moon, Leaf, Monitor, Cloud, Sparkles, Flower2 } from 'lucide-react';
+import { Palette, ChevronDown, ChevronUp, Check, Sun, Moon, Monitor, Cloud, Sparkles, Flower2, Rainbow, Blend } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 
-export const ThemeSwitcher = () => {
+export const ThemeSwitcher = ({ dropUp = false }: { dropUp?: boolean }) => {
   const { t } = useLanguage();
   const { theme, setTheme, mode, setMode, resolvedMode } = useTheme();
   const [open, setOpen] = useState(false);
@@ -38,8 +38,8 @@ export const ThemeSwitcher = () => {
 
   const THEMES: { id: ThemeType; label: string; icon: typeof Sun; color: string }[] = [
     { id: 'sky', label: 'Sky (Default)', icon: Cloud, color: 'bg-sky-500' },
-    { id: 'mint', label: t('theme.mint'), icon: Leaf, color: 'bg-emerald-500' },
-    { id: 'peach', label: t('theme.peach'), icon: Sun, color: 'bg-orange-500' },
+    { id: 'mint', label: t('theme.mint'), icon: Rainbow, color: 'gdvn-swatch-rgb' },
+    { id: 'peach', label: t('theme.peach'), icon: Blend, color: 'gdvn-swatch-pastel' },
     { id: 'lavender', label: t('theme.lavender'), icon: Sparkles, color: 'bg-purple-500' },
     { id: 'sakura', label: t('theme.sakura'), icon: Flower2, color: 'bg-pink-400' },
     { id: 'mono', label: 'Mono', icon: Palette, color: 'bg-zinc-500' },
@@ -66,12 +66,18 @@ export const ThemeSwitcher = () => {
           <ModeIcon className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate leading-none">{currentTheme.label}</span>
         </div>
-        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        {dropUp ? (
+          <ChevronUp className={`w-3 h-3 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        ) : (
+          <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        )}
       </button>
 
       {open && (
         <div
-          className="absolute right-0 top-full mt-2 w-48 rounded-2xl border shadow-2xl py-1.5 z-[100] text-xs backdrop-blur-md sm:top-auto sm:bottom-full sm:mt-0 sm:mb-2"
+          className={`absolute right-0 w-48 rounded-2xl border shadow-2xl py-1.5 z-[100] text-xs backdrop-blur-md ${
+            dropUp ? 'bottom-full mb-2' : 'top-full mt-2'
+          }`}
           style={{
             backgroundColor: 'var(--bg-card)',
             borderColor: 'var(--border-ui)',

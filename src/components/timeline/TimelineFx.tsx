@@ -194,13 +194,12 @@ export default function TimelineFx({
 
     function spawn(scatter: boolean): Particle {
       const band = Math.min(52, height * 0.08);
-      const cap = Math.max(80, lineEndX);
-      const dist = Math.max(80, cap + 56);
+      const dist = Math.max(80, width + 56);
       const maxSpeed = dist / 2.8;
       const minSpeed = dist / 18;
       const speed = minSpeed + Math.random() * (maxSpeed - minSpeed);
       return {
-        x: scatter ? Math.random() * cap : cap - 4,
+        x: scatter ? Math.random() * width : width - 4,
         y: height * 0.5 + (Math.random() - 0.5) * band,
         vx: -speed,
         vy: (Math.random() - 0.5) * 1.4,
@@ -222,7 +221,6 @@ export default function TimelineFx({
       const theme = readAccentRgb(surface);
       const mid = height * 0.5;
       const half = Math.min(52, height * 0.08) / 2;
-      const cap = Math.max(80, lineEndX);
       ctx!.clearRect(0, 0, width, height);
       const list = particles.current;
       for (let i = 0; i < list.length; i++) {
@@ -232,7 +230,7 @@ export default function TimelineFx({
         p.y += p.vy * dt;
         p.blink += p.blinkSpeed * dt;
         if (p.y < mid - half || p.y > mid + half) p.vy *= -1;
-        if (p.x < -12 || p.x > cap + 8 || p.life >= p.maxLife) {
+        if (p.x < -12 || p.x > width + 8 || p.life >= p.maxLife) {
           list[i] = spawn(false);
           continue;
         }
@@ -264,7 +262,7 @@ export default function TimelineFx({
     }
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [width, height, lineEndX]);
+  }, [width, height]);
 
   return (
     <div className="timeline-fx" aria-hidden>

@@ -84,10 +84,8 @@ async function ensureLevelFromExternal(gdLevelId: number) {
       isChallenge: false,
     },
     update: {
-      name: ext.name,
       placement: ext.placement,
       basePp: calculateBasePp(ext.placement),
-      ...(ext.youtubeId ? { youtubeId: ext.youtubeId } : {}),
     },
     include: levelInclude,
   });
@@ -105,6 +103,8 @@ export async function resolvePublicLevel(id: string) {
     } else if (!level.isChallenge) {
       const ext = await findExternalLevel(gdLevelId).catch(() => null);
       if (ext) {
+        const hadYoutube = Boolean(level.youtubeId);
+        const nextYoutube = preferYoutubeId(ext.youtubeId, level.youtubeId);
         level = {
           ...level,
           name: ext.name,
@@ -113,19 +113,15 @@ export async function resolvePublicLevel(id: string) {
           minPercent: preferMinPercent(ext.minPercent, level.minPercent),
           creatorName: preferText(ext.creatorName, level.creatorName),
           verifierName: preferText(ext.verifierName, level.verifierName),
-          youtubeId: preferYoutubeId(ext.youtubeId, level.youtubeId),
+          youtubeId: nextYoutube,
         };
         void prisma.level
           .update({
             where: { id: level.id },
             data: {
-              name: ext.name,
               placement: ext.placement,
               basePp: calculateBasePp(ext.placement),
-              minPercent: preferMinPercent(ext.minPercent, level.minPercent),
-              creatorName: preferText(ext.creatorName, level.creatorName),
-              verifierName: preferText(ext.verifierName, level.verifierName),
-              ...(ext.youtubeId ? { youtubeId: ext.youtubeId } : {}),
+              ...(!hadYoutube && nextYoutube ? { youtubeId: nextYoutube } : {}),
             },
           })
           .catch(() => {});

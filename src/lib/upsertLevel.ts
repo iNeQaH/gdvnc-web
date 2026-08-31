@@ -22,12 +22,12 @@ export function extractYoutubeId(videoUrl?: string | null): string | null {
   return ytMatch ? ytMatch[1] : null;
 }
 
-/** Keep a stored video when upstream list has none. */
+/** Keep stored video; fill from upstream only when local is empty. */
 export function preferYoutubeId(
   incoming?: string | null,
   existing?: string | null
 ): string | null {
-  return incoming || existing || null;
+  return existing || incoming || null;
 }
 
 /** Keep admin min-percent; AREDL always sends 100 and must not clobber it. */

@@ -293,7 +293,7 @@ export const Sidebar = () => {
           <div className="flex items-center gap-2 px-1 pb-1">
             <span className="text-[11px] font-medium ui-dim shrink-0 leading-none">{t('sidebar.theme')}</span>
             <div className="min-w-0 flex-1">
-              <ThemeSwitcher />
+              <ThemeSwitcher dropUp />
             </div>
           </div>
 

@@ -153,22 +153,22 @@ async function fetchAredl(mode: 'CLASSIC' | 'PLATFORMER'): Promise<ExternalListL
 
 async function fetchClassicListed(): Promise<ExternalListLevel[]> {
   try {
-    const listed = await fetchAredl('CLASSIC');
+    const listed = await fetchPointercrateListed();
     if (listed.length >= 10) return listed;
   } catch (error) {
-    console.error('AREDL classic failed, falling back to Pointercrate', error);
+    console.error('Pointercrate classic failed, falling back to AREDL', error);
   }
-  return fetchPointercrateListed();
+  return fetchAredl('CLASSIC');
 }
 
 async function fetchPlatformerListed(): Promise<ExternalListLevel[]> {
   try {
-    const listed = await fetchAredl('PLATFORMER');
+    const listed = await fetchPemonlist();
     if (listed.length >= 10) return listed;
   } catch (error) {
-    console.error('AREDL platformer failed, falling back to Pemonlist', error);
+    console.error('Pemonlist failed, falling back to AREDL', error);
   }
-  return fetchPemonlist();
+  return fetchAredl('PLATFORMER');
 }
 
 export function clearExternalListCache(mode?: 'CLASSIC' | 'PLATFORMER') {
@@ -206,7 +206,7 @@ export async function findExternalLevel(gdLevelId: number): Promise<ExternalList
   );
 }
 
-/** Sync ranking from API. Keeps difficultyFace / ratingType / isVN / isChallenge / difficulty / youtubeId / minPercent / names. */
+/** Sync rank from Pointercrate / Pemonlist. Only placement/PP on update; fill empty youtubeId; create new levels. */
 export async function syncExternalListToDb(
   mode: 'CLASSIC' | 'PLATFORMER',
   opts?: { force?: boolean }
@@ -273,29 +273,18 @@ export async function syncExternalListToDb(
     }
 
     const nextYoutube = preferYoutubeId(row.youtubeId, cur.youtubeId);
-    const nextMin = preferMinPercent(row.minPercent, cur.minPercent);
-    const nextCreator = preferText(row.creatorName, cur.creatorName);
-    const nextVerifier = preferText(row.verifierName, cur.verifierName);
     const needsUpdate =
       cur.placement !== row.placement ||
-      cur.name !== row.name ||
-      cur.creatorName !== nextCreator ||
-      cur.verifierName !== nextVerifier ||
-      cur.youtubeId !== nextYoutube ||
-      cur.minPercent !== nextMin ||
-      Math.abs(cur.basePp - basePp) > 0.01;
+      Math.abs(cur.basePp - basePp) > 0.01 ||
+      cur.youtubeId !== nextYoutube;
 
     if (needsUpdate) {
       await prisma.level.update({
         where: { id: cur.id },
         data: {
-          name: row.name,
           placement: row.placement,
           basePp,
-          minPercent: nextMin,
-          creatorName: nextCreator,
-          verifierName: nextVerifier,
-          youtubeId: nextYoutube,
+          ...(nextYoutube && nextYoutube !== cur.youtubeId ? { youtubeId: nextYoutube } : {}),
         },
       });
       updated += 1;
