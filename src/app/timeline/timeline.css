@@ -784,9 +784,33 @@
   box-shadow: none;
 }
 
-.gdvn-timeline .event-card.has-glow .card-frame {
-  overflow: visible;
+.gdvn-timeline .card-shell {
+  position: relative;
   isolation: isolate;
+}
+
+.gdvn-timeline .event-card.has-glow .card-glow {
+  position: absolute;
+  inset: -18px;
+  z-index: 0;
+  border-radius: 12px;
+  background: conic-gradient(from var(--tl-spin), var(--flow-stops));
+  filter: blur(18px);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.gdvn-timeline .event-card.has-glow:hover .card-glow,
+.gdvn-timeline .event-card.has-glow.is-focus .card-glow {
+  inset: -22px;
+  opacity: 0.82;
+  filter: blur(22px);
+}
+
+.gdvn-timeline .event-card.has-glow .card-frame {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
   border: 2.5px solid transparent;
   background:
     linear-gradient(var(--tl-card), var(--tl-card)) padding-box,
@@ -794,43 +818,8 @@
   box-shadow: none;
 }
 
-.gdvn-timeline .event-card.has-glow .card-frame::before {
-  content: "";
-  position: absolute;
-  inset: -12px;
-  z-index: 0;
-  border-radius: 10px;
-  background: conic-gradient(from var(--tl-spin), var(--flow-stops));
-  filter: blur(16px);
-  opacity: 0.78;
-  pointer-events: none;
-  padding: 18px;
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
-}
-
-.gdvn-timeline .event-card.has-glow .card-frame > * {
-  position: relative;
-  z-index: 1;
-  background: var(--tl-card);
-}
-
-.gdvn-timeline .event-card.has-flow .card-frame {
+.gdvn-timeline .event-card.has-flow .card-shell {
   animation: tl-flow-spin 3.2s linear infinite;
-}
-
-.gdvn-timeline .event-card.has-glow:hover .card-frame::before,
-.gdvn-timeline .event-card.has-glow.is-focus .card-frame::before {
-  inset: -14px;
-  padding: 20px;
-  opacity: 0.9;
-  filter: blur(18px);
 }
 
 .gdvn-timeline .event-card.has-glow.is-focus .card-frame {

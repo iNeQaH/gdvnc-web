@@ -102,8 +102,11 @@ export default function EventCard({
       }}
     >
       {side === 'pos' && <div className="card-title">{event.title}</div>}
-      <div className="card-frame">
-        <Media event={event} t={t} />
+      <div className="card-shell">
+        {glow ? <div className="card-glow" aria-hidden /> : null}
+        <div className="card-frame">
+          <Media event={event} t={t} />
+        </div>
       </div>
       {side === 'neg' && <div className="card-title">{event.title}</div>}
     </article>
