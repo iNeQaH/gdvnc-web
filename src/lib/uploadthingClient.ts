@@ -3,7 +3,9 @@
 import { genUploader } from 'uploadthing/client';
 import type { GdvnFileRouter } from '@/app/api/uploadthing/core';
 
-const { uploadFiles } = genUploader<GdvnFileRouter>();
+const { uploadFiles } = genUploader<GdvnFileRouter>({
+  url: '/api/uploadthing',
+});
 
 export async function uploadImagesToUt(
   files: File[],

@@ -5,11 +5,19 @@ const UT_HOST = /(^|\.)((utfs\.io)|(ufs\.sh))$/i;
 
 let cached: UTApi | null = null;
 
+/** Read at request time so Next does not inline an empty value at build. */
+export function getUploadthingToken() {
+  const env = process.env;
+  const raw = String(env['UPLOADTHING_TOKEN'] || env['UPLOADTHING_SECRET'] || '').trim();
+  return raw.replace(/^['"]|['"]$/g, '');
+}
+
 export function utapi() {
-  if (!process.env.UPLOADTHING_TOKEN) {
+  const token = getUploadthingToken();
+  if (!token) {
     throw new Error('UPLOADTHING_TOKEN is not set.');
   }
-  if (!cached) cached = new UTApi();
+  if (!cached) cached = new UTApi({ token });
   return cached;
 }
 
