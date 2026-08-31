@@ -40,24 +40,17 @@ import {
 } from 'lucide-react';
 import * as AllLucideIcons from 'lucide-react';
 import { CUSTOM_ICONS } from '@/components/CustomIcons';
-
-// Kết hợp cả icon của Lucide và icon tuỳ chỉnh của bạn
-const allIconNames = [
-  ...Object.keys(CUSTOM_ICONS),
-  ...Object.keys(AllLucideIcons).filter(name => /^[A-Z]/.test(name) && name !== 'LucideProps' && name !== 'IconNode')
-];
-
-const IconRender = ({ icon, className }: { icon: string, className?: string }) => {
-  // Ưu tiên tìm trong CUSTOM_ICONS trước, nếu không có mới tìm trong AllLucideIcons
-  const Comp = (CUSTOM_ICONS as any)[icon] || (AllLucideIcons as any)[icon] || AllLucideIcons.Star;
-  return <Comp className={className} />;
-};
-
+import BadgeIcon, { IconGlyph } from '@/components/BadgeIcon';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import ColorPicker from '@/components/ColorPicker';
 import { type DictKey } from '@/lib/dictionaries';
 import ReviewStatusBadge from '@/components/ReviewStatusBadge';
+
+const allIconNames = [
+  ...Object.keys(CUSTOM_ICONS),
+  ...Object.keys(AllLucideIcons).filter(name => /^[A-Z]/.test(name) && name !== 'LucideProps' && name !== 'IconNode')
+];
 
 type QueueStatus = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED';
 type QueueCounts = { pending: number; approved: number; rejected: number };
@@ -1498,7 +1491,7 @@ export default function AdminPage() {
                 >
                   {badgeForm.imageUrl ? (
                     <>
-                      <IconRender icon={badgeForm.imageUrl} className="w-4 h-4" />
+                      <IconGlyph icon={badgeForm.imageUrl} className="w-4 h-4" />
                       {badgeForm.imageUrl}
                     </>
                   ) : (
@@ -1521,15 +1514,12 @@ export default function AdminPage() {
                       size={40}
                       round
                     />
-                    <div 
-                      className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all" 
-                      style={{ 
-                        backgroundColor: badgeForm.color || 'var(--accent)', 
-                        boxShadow: badgeForm.glow ? `0 0 15px ${badgeForm.color}` : 'none' 
-                      }}
-                    >
-                      {badgeForm.imageUrl ? <IconRender icon={badgeForm.imageUrl} className="w-6 h-6 text-white" /> : <Star className="w-6 h-6 text-white" />}
-                    </div>
+                    <BadgeIcon
+                      icon={badgeForm.imageUrl || 'Star'}
+                      color={badgeForm.color}
+                      glow={badgeForm.glow}
+                      className="w-8 h-8"
+                    />
                   </div>
                 </div>
                 
@@ -1631,9 +1621,12 @@ export default function AdminPage() {
                   style={{ backgroundColor: 'var(--bg-card)', borderColor: isBadgeEditMode ? 'var(--accent)' : 'var(--border-ui)' }}
                 >
                   <span className="text-[10px] font-black ui-dim w-6">#{b.sortOrder || idx + 1}</span>
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-lg" style={{ backgroundColor: b.color || 'var(--accent)', boxShadow: b.glowColor ? `0 0 10px ${b.color}` : 'none' }}>
-                    <IconRender icon={b.icon || 'Star'} className="w-5 h-5 text-white" />
-                  </div>
+                  <BadgeIcon
+                    icon={b.icon || 'Star'}
+                    color={b.color}
+                    glow={b.glowColor}
+                    className="w-7 h-7"
+                  />
                   <div className={`min-w-0 flex-1 ${badgesViewMode === 'grid' ? 'w-full' : ''}`}>
                     <div className="font-bold ui-title text-xs truncate">{b.name}</div>
                     <div className="text-[10px] ui-dim truncate">
@@ -1686,7 +1679,7 @@ export default function AdminPage() {
                 >
                   {badgeForm.imageUrl ? (
                     <>
-                      <IconRender icon={badgeForm.imageUrl} className="w-4 h-4" />
+                      <IconGlyph icon={badgeForm.imageUrl} className="w-4 h-4" />
                       {badgeForm.imageUrl}
                     </>
                   ) : (
@@ -1709,15 +1702,12 @@ export default function AdminPage() {
                       size={40}
                       round
                     />
-                    <div 
-                      className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all" 
-                      style={{ 
-                        backgroundColor: badgeForm.color || 'var(--accent)', 
-                        boxShadow: badgeForm.glow ? `0 0 15px ${badgeForm.color}` : 'none' 
-                      }}
-                    >
-                      {badgeForm.imageUrl ? <IconRender icon={badgeForm.imageUrl} className="w-6 h-6 text-white" /> : <Star className="w-6 h-6 text-white" />}
-                    </div>
+                    <BadgeIcon
+                      icon={badgeForm.imageUrl || 'Star'}
+                      color={badgeForm.color}
+                      glow={badgeForm.glow}
+                      className="w-8 h-8"
+                    />
                   </div>
                 </div>
                 
@@ -2086,7 +2076,7 @@ export default function AdminPage() {
                   className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-xl border hover:bg-[var(--accent)] hover:text-[color:var(--accent-fg)] hover:border-[var(--accent)] transition-colors group ui-subtle"
                   style={{ borderColor: 'var(--border-subtle)' }}
                 >
-                  <IconRender icon={iconName} className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                  <IconGlyph icon={iconName} className="w-6 h-6 group-hover:scale-110 transition-transform" />
                   <span className="text-[9px] font-medium truncate w-full text-center opacity-70 group-hover:opacity-100">{iconName}</span>
                 </button>
               ))}

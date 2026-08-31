@@ -3,20 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Star, Moon, Wrench, Search, CheckCircle2, User, Trash2 } from 'lucide-react';
-import * as AllLucideIcons from 'lucide-react';
-import { CUSTOM_ICONS } from '@/components/CustomIcons';
 import { useLanguage } from '@/components/LanguageContext';
 import { formatCp } from '@/lib/creatorPoints';
 import { levelPath } from '@/lib/levelUrl';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/GlobalToast';
+import BadgeIcon from '@/components/BadgeIcon';
 
 import FloatingNav from '@/components/FloatingNav';
-
-const IconRender = ({ icon, className }: { icon: string; className?: string }) => {
-  const Comp = (CUSTOM_ICONS as any)[icon] || (AllLucideIcons as any)[icon] || AllLucideIcons.Star;
-  return <Comp className={className} />;
-};
 
 export default function HomePage() {
   const { t } = useLanguage();
@@ -365,18 +359,14 @@ export default function HomePage() {
                             {player.qualityBadges?.deco || player.qualityBadges?.layout ? (
                               <div className="flex items-center gap-1.5">
                                 {[player.qualityBadges.deco, player.qualityBadges.layout].filter(Boolean).map((badge: any) => (
-                                  <span
+                                  <BadgeIcon
                                     key={badge.id}
+                                    icon={badge.icon || 'Star'}
+                                    color={badge.color}
+                                    glow={badge.glowColor}
+                                    className="w-5 h-5"
                                     title={badge.name}
-                                    className="w-7 h-7 flex items-center justify-center rounded-full shadow-sm"
-                                    style={{
-                                      backgroundColor: badge.color || 'var(--accent)',
-                                      color: '#fff',
-                                      boxShadow: badge.glowColor ? `0 0 8px ${badge.color}` : 'none',
-                                    }}
-                                  >
-                                    <IconRender icon={badge.icon || 'Star'} className="w-3.5 h-3.5" />
-                                  </span>
+                                  />
                                 ))}
                               </div>
                             ) : (

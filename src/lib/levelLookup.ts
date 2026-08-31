@@ -6,7 +6,7 @@ import { dedupeRecordsByUser } from '@/lib/recordUtils';
 import { calculateBasePp } from '@/lib/ScoringEngine';
 import { findExternalLevel } from '@/lib/externalLists';
 import { formatDifficultyLabel, mapDifficultyFace } from '@/lib/gdDifficulty';
-import { fetchGdBrowser } from '@/lib/upsertLevel';
+import { fetchGdBrowser, preferYoutubeId } from '@/lib/upsertLevel';
 
 const levelInclude = {
   records: {
@@ -90,7 +90,7 @@ async function ensureLevelFromExternal(gdLevelId: number) {
       minPercent: ext.minPercent,
       creatorName: ext.creatorName,
       verifierName: ext.verifierName,
-      youtubeId: ext.youtubeId,
+      ...(ext.youtubeId ? { youtubeId: ext.youtubeId } : {}),
     },
     include: levelInclude,
   });
@@ -116,7 +116,7 @@ export async function resolvePublicLevel(id: string) {
           minPercent: ext.minPercent,
           creatorName: ext.creatorName ?? level.creatorName,
           verifierName: ext.verifierName ?? level.verifierName,
-          youtubeId: ext.youtubeId ?? level.youtubeId,
+          youtubeId: preferYoutubeId(ext.youtubeId, level.youtubeId),
         };
         void prisma.level
           .update({
@@ -128,7 +128,7 @@ export async function resolvePublicLevel(id: string) {
               minPercent: ext.minPercent,
               creatorName: ext.creatorName,
               verifierName: ext.verifierName,
-              youtubeId: ext.youtubeId,
+              ...(ext.youtubeId ? { youtubeId: ext.youtubeId } : {}),
             },
           })
           .catch(() => {});

@@ -107,6 +107,7 @@ export async function GET(req: Request) {
           isChallenge: l.isChallenge,
           description: l.description,
           victorCount: l._count.records,
+          youtubeId: l.youtubeId,
         },
       ])
     );

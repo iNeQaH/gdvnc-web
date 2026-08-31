@@ -4,20 +4,14 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Star, Moon, Medal, Play, Globe, MessageSquare, Gamepad2, ArrowLeft, Camera, Check, X, Pencil, ShieldCheck, Heart, Trash2, Hammer, User as UserIcon, Shield, Crown, Trophy, Award, Zap, Flame, Diamond, StarHalf, CheckCircle, ChevronDown, RotateCcw, UserCheck } from 'lucide-react';
-import * as AllLucideIcons from 'lucide-react';
-import { CUSTOM_ICONS } from '@/components/CustomIcons';
 import ImageEditorModal from '@/components/ImageEditorModal';
 import BadgePickerModal from '@/components/BadgePickerModal';
+import BadgeIcon from '@/components/BadgeIcon';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import { formatCp } from '@/lib/creatorPoints';
 import { levelPath } from '@/lib/levelUrl';
 import GdUnverifiedNotice from '@/components/GdUnverifiedNotice';
-
-const IconRender = ({ icon, className }: { icon: string, className?: string }) => {
-  const Comp = (CUSTOM_ICONS as any)[icon] || (AllLucideIcons as any)[icon] || AllLucideIcons.Star;
-  return <Comp className={className} />;
-};
 
 export default function ProfilePage() {
   const params = useParams();
@@ -462,9 +456,14 @@ export default function ProfilePage() {
                     </span>
                   )}
                   {data.badges?.slice(0, 2).map((b: any) => (
-                    <span key={b.id} title={b.name + (b.description ? `: ${b.description}` : '')} className="w-6 h-6 flex items-center justify-center rounded-full shadow-sm" style={{ backgroundColor: b.color || 'var(--accent)', color: '#fff', boxShadow: b.glowColor ? `0 0 8px ${b.color}` : 'none' }}>
-                      <IconRender icon={b.icon || 'Star'} className="w-3.5 h-3.5" />
-                    </span>
+                    <BadgeIcon
+                      key={b.id}
+                      icon={b.icon || 'Star'}
+                      color={b.color}
+                      glow={b.glowColor}
+                      className="w-5 h-5"
+                      title={b.name + (b.description ? `: ${b.description}` : '')}
+                    />
                   ))}
                 </div>
                 <div className="flex flex-wrap items-center gap-3 text-[11px] font-medium ui-dim">
@@ -707,12 +706,12 @@ export default function ProfilePage() {
                       className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border ui-subtle"
                       title={b.description || ''}
                     >
-                      <div 
-                        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 shadow-sm" 
-                        style={{ backgroundColor: b.color || 'var(--accent)', color: '#fff', boxShadow: b.glowColor ? `0 0 6px ${b.color}` : 'none' }}
-                      >
-                        <IconRender icon={b.icon || 'Star'} className="w-3 h-3" />
-                      </div>
+                      <BadgeIcon
+                        icon={b.icon || 'Star'}
+                        color={b.color}
+                        glow={b.glowColor}
+                        className="w-4 h-4"
+                      />
                       <span className="text-[10px] font-bold">{b.name}</span>
                     </div>
                   ))}
@@ -1287,14 +1286,14 @@ export default function ProfilePage() {
                 {selectedBadgeIds.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {badgesList.filter((b: any) => selectedBadgeIds.includes(b.id)).map((b: any) => (
-                      <span
+                      <BadgeIcon
                         key={b.id}
-                        className="w-6 h-6 rounded-full flex items-center justify-center"
+                        icon={b.icon || 'Star'}
+                        color={b.color}
+                        glow={b.glowColor}
+                        className="w-5 h-5"
                         title={b.name}
-                        style={{ backgroundColor: b.color || 'var(--accent)', color: '#fff', boxShadow: b.glowColor ? `0 0 6px ${b.color}` : 'none' }}
-                      >
-                        <IconRender icon={b.icon || 'Star'} className="w-3 h-3" />
-                      </span>
+                      />
                     ))}
                   </div>
                 )}

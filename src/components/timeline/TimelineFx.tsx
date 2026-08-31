@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CARD_W } from '@/lib/timeline/layout';
-import { DAY_MS, TIMELINE_ORIGIN, eventTierRank } from '@/lib/timeline/time';
+import { DAY_MS, TIMELINE_ORIGIN } from '@/lib/timeline/time';
 import type { ChronicleEvent } from '@/lib/timeline/types';
 
 const GRID = 48;
@@ -48,6 +48,7 @@ const PARTICLE_COUNT = 28;
 type Particle = {
   x: number;
   y: number;
+  vx: number;
   vy: number;
   size: number;
   life: number;
@@ -122,7 +123,6 @@ function shiftHue(rgb: [number, number, number], deg: number): [number, number, 
 
 export default function TimelineFx({
   events,
-  zoom,
   viewStart,
   ppd,
   width,
@@ -147,17 +147,8 @@ export default function TimelineFx({
     if (!events.length || width < 8 || height < 8) return [];
     const panDays = (viewStart - TIMELINE_ORIGIN) / DAY_MS;
     const fade = 96;
-    const zoomRank = Math.round(zoom);
-    const highPool = events.filter((e) => eventTierRank(e) <= 2);
-    const lowPool = events.filter((e) => eventTierRank(e) >= 3);
+    const pool = events;
     return GHOST_SLOTS.map((slot, i) => {
-      const pool = slot.large
-        ? zoomRank <= 2
-          ? highPool
-          : []
-        : zoomRank >= 3
-          ? lowPool
-          : [];
       if (!pool.length) return null;
       const rand = mulberry32(0x6d764e31 ^ (i + 1) * 0x9e3779b9);
       const u = slot.u + (rand() - 0.5) * 0.05;
@@ -188,7 +179,7 @@ export default function TimelineFx({
         opacity: edge * base,
       };
     }).filter((g): g is NonNullable<typeof g> => Boolean(g));
-  }, [events, viewStart, ppd, height, width, zoom, lineEndX]);
+  }, [events, viewStart, ppd, height, width, lineEndX]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -203,13 +194,19 @@ export default function TimelineFx({
 
     function spawn(scatter: boolean): Particle {
       const band = Math.min(52, height * 0.08);
+      const cap = Math.max(80, lineEndX);
+      const dist = Math.max(80, cap + 56);
+      const maxSpeed = dist / 2.8;
+      const minSpeed = dist / 18;
+      const speed = minSpeed + Math.random() * (maxSpeed - minSpeed);
       return {
-        x: Math.random() * width,
+        x: scatter ? Math.random() * cap : cap - 4,
         y: height * 0.5 + (Math.random() - 0.5) * band,
-        vy: (Math.random() - 0.5) * 0.8,
+        vx: -speed,
+        vy: (Math.random() - 0.5) * 1.4,
         size: 2 + Math.random() * 4,
-        life: scatter ? Math.random() * 8 : 0,
-        maxLife: 8 + Math.random() * 10,
+        life: scatter ? Math.random() * 6 : 0,
+        maxLife: 10 + Math.random() * 8,
         blink: Math.random() * Math.PI * 2,
         blinkSpeed: 3.2 + Math.random() * 6.5,
         hueShift: (Math.random() - 0.5) * 16,
@@ -225,15 +222,17 @@ export default function TimelineFx({
       const theme = readAccentRgb(surface);
       const mid = height * 0.5;
       const half = Math.min(52, height * 0.08) / 2;
+      const cap = Math.max(80, lineEndX);
       ctx!.clearRect(0, 0, width, height);
       const list = particles.current;
       for (let i = 0; i < list.length; i++) {
         const p = list[i];
         p.life += dt;
+        p.x += p.vx * dt;
         p.y += p.vy * dt;
         p.blink += p.blinkSpeed * dt;
         if (p.y < mid - half || p.y > mid + half) p.vy *= -1;
-        if (p.life >= p.maxLife) {
+        if (p.x < -12 || p.x > cap + 8 || p.life >= p.maxLife) {
           list[i] = spawn(false);
           continue;
         }
@@ -265,7 +264,7 @@ export default function TimelineFx({
     }
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [width, height]);
+  }, [width, height, lineEndX]);
 
   return (
     <div className="timeline-fx" aria-hidden>

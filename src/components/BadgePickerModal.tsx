@@ -2,14 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Check, Search, X, Medal } from 'lucide-react';
-import * as AllLucideIcons from 'lucide-react';
-import { CUSTOM_ICONS } from '@/components/CustomIcons';
+import BadgeIcon from '@/components/BadgeIcon';
 import { useLanguage } from '@/components/LanguageContext';
-
-const IconRender = ({ icon, className }: { icon: string; className?: string }) => {
-  const Comp = (CUSTOM_ICONS as any)[icon] || (AllLucideIcons as any)[icon] || AllLucideIcons.Star;
-  return <Comp className={className} />;
-};
 
 type BadgeItem = {
   id: string;
@@ -156,12 +150,12 @@ export default function BadgePickerModal({
                     style={{ backgroundColor: selected ? 'var(--accent-bg)' : 'transparent' }}
                   >
                     <span className="text-[10px] font-black ui-dim w-6 shrink-0">#{b.sortOrder || idx + 1}</span>
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: b.color || 'var(--accent)', color: '#fff', boxShadow: b.glowColor ? `0 0 8px ${b.color}` : 'none' }}
-                    >
-                      <IconRender icon={b.icon || 'Star'} className="w-4 h-4" />
-                    </div>
+                    <BadgeIcon
+                      icon={b.icon || 'Star'}
+                      color={b.color}
+                      glow={b.glowColor}
+                      className="w-5 h-5"
+                    />
                     <div className="min-w-0 flex-1">
                       <div className="text-xs font-bold ui-title truncate">{b.name}</div>
                       <div className="text-[10px] ui-dim truncate">

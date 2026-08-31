@@ -1,7 +1,7 @@
 import { LevelMode } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { calculateBasePp } from '@/lib/ScoringEngine';
-import { extractYoutubeId } from '@/lib/upsertLevel';
+import { extractYoutubeId, preferYoutubeId } from '@/lib/upsertLevel';
 
 export type ExternalListLevel = {
   gdLevelId: number;
@@ -126,13 +126,18 @@ function mapAredlRows(data: unknown, mode: 'CLASSIC' | 'PLATFORMER'): ExternalLi
     if (!Number.isFinite(gdLevelId) || gdLevelId <= 0) continue;
     const placement = Number(demon.position);
     if (!Number.isFinite(placement) || placement < 1) continue;
+    const videoRaw =
+      (typeof demon.video === 'string' && demon.video) ||
+      (typeof demon.video_url === 'string' && demon.video_url) ||
+      (typeof demon.verification_video === 'string' && demon.verification_video) ||
+      null;
     all.push({
       gdLevelId,
       name: String(demon.name || `Level ${gdLevelId}`),
       placement,
       creatorName: null,
       verifierName: null,
-      youtubeId: null,
+      youtubeId: extractYoutubeId(videoRaw),
       minPercent: 100,
       mode,
       description: typeof demon.description === 'string' ? demon.description : null,
@@ -201,7 +206,7 @@ export async function findExternalLevel(gdLevelId: number): Promise<ExternalList
   );
 }
 
-/** Sync API list fields into DB. Keeps difficultyFace / ratingType / isVN / isChallenge / difficulty. */
+/** Sync API list fields into DB. Keeps difficultyFace / ratingType / isVN / isChallenge / difficulty / existing youtubeId. */
 export async function syncExternalListToDb(
   mode: 'CLASSIC' | 'PLATFORMER',
   opts?: { force?: boolean }
@@ -267,12 +272,13 @@ export async function syncExternalListToDb(
       continue;
     }
 
+    const nextYoutube = preferYoutubeId(row.youtubeId, cur.youtubeId);
     const needsUpdate =
       cur.placement !== row.placement ||
       cur.name !== row.name ||
       cur.creatorName !== row.creatorName ||
       cur.verifierName !== row.verifierName ||
-      cur.youtubeId !== row.youtubeId ||
+      cur.youtubeId !== nextYoutube ||
       cur.minPercent !== row.minPercent ||
       Math.abs(cur.basePp - basePp) > 0.01;
 
@@ -286,7 +292,7 @@ export async function syncExternalListToDb(
           minPercent: row.minPercent,
           creatorName: row.creatorName,
           verifierName: row.verifierName,
-          youtubeId: row.youtubeId,
+          youtubeId: nextYoutube,
         },
       });
       updated += 1;
@@ -327,6 +333,7 @@ export function mergeExternalWithDb(
       isChallenge: boolean;
       description: string | null;
       victorCount: number;
+      youtubeId?: string | null;
     }
   >
 ) {
@@ -346,7 +353,7 @@ export function mergeExternalWithDb(
       basePp: calculateBasePp(ext.placement),
       minPercent: ext.minPercent,
       creatorName: ext.creatorName,
-      youtubeId: ext.youtubeId,
+      youtubeId: preferYoutubeId(ext.youtubeId, local?.youtubeId),
       description: local?.description ?? ext.description,
       victorCount: local?.victorCount || 0,
     };

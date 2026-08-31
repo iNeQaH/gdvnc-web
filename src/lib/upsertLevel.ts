@@ -14,10 +14,20 @@ export async function triggerBackgroundPpRecalc(levelIds: string[], mode: LevelM
 
 export function extractYoutubeId(videoUrl?: string | null): string | null {
   if (!videoUrl) return null;
-  const ytMatch = String(videoUrl).match(
-    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/
+  const raw = String(videoUrl).trim();
+  if (/^[\w-]{11}$/.test(raw)) return raw;
+  const ytMatch = raw.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|shorts\/|live\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/
   );
   return ytMatch ? ytMatch[1] : null;
+}
+
+/** Keep a stored video when upstream list has none. */
+export function preferYoutubeId(
+  incoming?: string | null,
+  existing?: string | null
+): string | null {
+  return incoming || existing || null;
 }
 
 export async function fetchGdBrowser(gdLevelId: number): Promise<any | null> {
