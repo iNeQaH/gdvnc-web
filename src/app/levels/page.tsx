@@ -437,6 +437,11 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
                       <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-black/60 backdrop-blur-sm border border-white/20">
                         {placement}
                       </span>
+                      {lvl.minPercent && lvl.minPercent < 100 && (
+                        <span className="px-2 py-1 rounded-lg text-[10px] font-black bg-black/60 backdrop-blur-sm border border-white/20">
+                          {t('levelslist.min_percent_val', { n: lvl.minPercent })}
+                        </span>
+                      )}
                       {lvl.isVN && (
                         <span className="px-2 py-0.5 rounded-lg text-[10px] font-black bg-red-600/90 text-white backdrop-blur-sm border border-red-400/30">
                           🇻🇳 VN

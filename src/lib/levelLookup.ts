@@ -103,14 +103,16 @@ export async function resolvePublicLevel(id: string) {
     } else if (!level.isChallenge) {
       const ext = await findExternalLevel(gdLevelId).catch(() => null);
       if (ext) {
-        const hadYoutube = Boolean(level.youtubeId);
         const nextYoutube = preferYoutubeId(ext.youtubeId, level.youtubeId);
+        const nextMin = preferMinPercent(ext.minPercent, level.minPercent);
+        const fillYoutube = nextYoutube && nextYoutube !== level.youtubeId;
+        const fillMin = nextMin !== level.minPercent;
         level = {
           ...level,
           name: ext.name,
           placement: ext.placement,
           basePp: calculateBasePp(ext.placement),
-          minPercent: preferMinPercent(ext.minPercent, level.minPercent),
+          minPercent: nextMin,
           creatorName: preferText(ext.creatorName, level.creatorName),
           verifierName: preferText(ext.verifierName, level.verifierName),
           youtubeId: nextYoutube,
@@ -121,7 +123,8 @@ export async function resolvePublicLevel(id: string) {
             data: {
               placement: ext.placement,
               basePp: calculateBasePp(ext.placement),
-              ...(!hadYoutube && nextYoutube ? { youtubeId: nextYoutube } : {}),
+              ...(fillYoutube ? { youtubeId: nextYoutube } : {}),
+              ...(fillMin ? { minPercent: nextMin } : {}),
             },
           })
           .catch(() => {});
