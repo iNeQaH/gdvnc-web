@@ -43,10 +43,11 @@ function GhostMedia({ event }: { event: ChronicleEvent }) {
   );
 }
 
+const PARTICLE_COUNT = 28;
+
 type Particle = {
   x: number;
   y: number;
-  vx: number;
   vy: number;
   size: number;
   life: number;
@@ -202,21 +203,13 @@ export default function TimelineFx({
 
     function spawn(scatter: boolean): Particle {
       const band = Math.min(52, height * 0.08);
-      const y = height * 0.5 + (Math.random() - 0.5) * band;
-      const cap = Math.max(80, lineEndX);
-      const x = scatter ? Math.random() * cap : cap - 4;
-      const dist = Math.max(80, cap + 56);
-      const maxSpeed = dist / 2.8;
-      const minSpeed = dist / 18;
-      const speed = minSpeed + Math.random() * (maxSpeed - minSpeed);
       return {
-        x,
-        y,
-        vx: -speed,
-        vy: (Math.random() - 0.5) * 1.4,
+        x: Math.random() * width,
+        y: height * 0.5 + (Math.random() - 0.5) * band,
+        vy: (Math.random() - 0.5) * 0.8,
         size: 2 + Math.random() * 4,
-        life: scatter ? Math.random() * 6 : 0,
-        maxLife: 10 + Math.random() * 8,
+        life: scatter ? Math.random() * 8 : 0,
+        maxLife: 8 + Math.random() * 10,
         blink: Math.random() * Math.PI * 2,
         blinkSpeed: 3.2 + Math.random() * 6.5,
         hueShift: (Math.random() - 0.5) * 16,
@@ -224,25 +217,23 @@ export default function TimelineFx({
     }
 
     particles.current = [];
-    for (let i = 0; i < 52; i++) particles.current.push(spawn(true));
+    for (let i = 0; i < PARTICLE_COUNT; i++) particles.current.push(spawn(true));
 
     function tick(now: number) {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const theme = readAccentRgb(surface);
+      const mid = height * 0.5;
+      const half = Math.min(52, height * 0.08) / 2;
       ctx!.clearRect(0, 0, width, height);
-      ctx!.save();
-      ctx!.beginPath();
-      ctx!.rect(0, 0, Math.max(0, lineEndX), height);
-      ctx!.clip();
       const list = particles.current;
       for (let i = 0; i < list.length; i++) {
         const p = list[i];
         p.life += dt;
-        p.x += p.vx * dt;
         p.y += p.vy * dt;
         p.blink += p.blinkSpeed * dt;
-        if (p.life >= p.maxLife || p.x < -24 || p.x > lineEndX + 8) {
+        if (p.y < mid - half || p.y > mid + half) p.vy *= -1;
+        if (p.life >= p.maxLife) {
           list[i] = spawn(false);
           continue;
         }
@@ -270,12 +261,11 @@ export default function TimelineFx({
         ctx!.fillRect(p.x, p.y, p.size, p.size);
         ctx!.restore();
       }
-      ctx!.restore();
       raf = requestAnimationFrame(tick);
     }
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [width, height, lineEndX]);
+  }, [width, height]);
 
   return (
     <div className="timeline-fx" aria-hidden>
