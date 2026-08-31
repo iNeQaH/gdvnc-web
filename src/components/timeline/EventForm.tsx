@@ -5,6 +5,7 @@ import { TIERS } from '@/lib/timeline/tiers';
 import { toDateInput, fromDateInput, TIMELINE_ORIGIN, timelineEnd } from '@/lib/timeline/time';
 import type { ChronicleEvent, TimelineNature, TimelineTierId } from '@/lib/timeline/types';
 import type { DictKey } from '@/lib/dictionaries';
+import GlowStopsField from '@/components/GlowStopsField';
 
 const TIER_KEYS: Record<TimelineTierId, DictKey> = {
   '5y': 'timeline.tier.5y',
@@ -121,22 +122,13 @@ export default function EventForm({
         </div>
         <div className="field">
           <label>{t('timeline.glow_color')}</label>
-          <div className="glow-pick">
-            <input
-              type="color"
-              value={form.glowColor || '#f59e0b'}
-              onChange={(e) => set('glowColor', e.target.value)}
-              aria-label={t('timeline.glow_color')}
-            />
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={!form.glowColor}
-                onChange={(e) => set('glowColor', e.target.checked ? '' : '#f59e0b')}
-              />
-              {t('timeline.glow_off')}
-            </label>
-          </div>
+          <GlowStopsField
+            value={form.glowColor}
+            onChange={(next) => set('glowColor', next)}
+            offLabel={t('timeline.glow_off')}
+            addLabel={t('timeline.glow_add')}
+            hint={t('timeline.glow_hint')}
+          />
         </div>
         <div className="row-2">
           <div className="field">

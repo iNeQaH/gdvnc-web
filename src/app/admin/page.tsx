@@ -55,6 +55,7 @@ const IconRender = ({ icon, className }: { icon: string, className?: string }) =
 
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
+import ColorPicker from '@/components/ColorPicker';
 import { type DictKey } from '@/lib/dictionaries';
 import ReviewStatusBadge from '@/components/ReviewStatusBadge';
 
@@ -1513,7 +1514,13 @@ export default function AdminPage() {
                 <div>
                   <label className="text-[11px] font-bold uppercase ui-dim mb-2 block">Màu sắc & Preview</label>
                   <div className="flex items-center gap-4">
-                    <input type="color" value={badgeForm.color} onChange={e => setBadgeForm({...badgeForm, color: e.target.value})} className="w-10 h-10 rounded-full overflow-hidden p-0 cursor-pointer border-0 bg-transparent" />
+                    <ColorPicker
+                      value={badgeForm.color || '#FFD700'}
+                      onChange={(color) => setBadgeForm({ ...badgeForm, color })}
+                      ariaLabel="Badge color"
+                      size={40}
+                      round
+                    />
                     <div 
                       className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all" 
                       style={{ 
@@ -1695,7 +1702,13 @@ export default function AdminPage() {
                 <div>
                   <label className="text-[11px] font-bold uppercase ui-dim mb-2 block">Màu sắc & Preview</label>
                   <div className="flex items-center gap-4">
-                    <input type="color" value={badgeForm.color} onChange={e => setBadgeForm({...badgeForm, color: e.target.value})} className="w-10 h-10 rounded-full overflow-hidden p-0 cursor-pointer border-0 bg-transparent" />
+                    <ColorPicker
+                      value={badgeForm.color || '#FFD700'}
+                      onChange={(color) => setBadgeForm({ ...badgeForm, color })}
+                      ariaLabel="Badge color"
+                      size={40}
+                      round
+                    />
                     <div 
                       className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all" 
                       style={{ 

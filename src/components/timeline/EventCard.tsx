@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import type { ChronicleEvent } from '@/lib/timeline/types';
 import type { LaneItem } from '@/lib/timeline/layout';
 import { TIMELINE_CARD_LIFT, formatDate } from '@/lib/timeline/time';
 import { sheetEventMeta } from '@/lib/timeline/sheetEvent';
+import { glowStyleVars } from '@/lib/timeline/glow';
 import type { DictKey } from '@/lib/dictionaries';
 
 function SheetCardDesc({
@@ -76,6 +77,7 @@ export default function EventCard({
   const gap = TIMELINE_CARD_LIFT * lift;
   const glow = event.glowColor || '';
   const flow = Boolean(glow) && !ldm;
+  const glowVars = glowStyleVars(glow);
 
   return (
     <article
@@ -87,7 +89,7 @@ export default function EventCard({
         transformOrigin: side === 'pos' ? 'bottom center' : 'top center',
         ...(side === 'pos' ? { bottom: gap } : { top: gap }),
         zIndex: 6,
-        ['--flow-color' as string]: glow || undefined,
+        ...(glowVars as CSSProperties),
       }}
       onClick={(e) => {
         e.stopPropagation();

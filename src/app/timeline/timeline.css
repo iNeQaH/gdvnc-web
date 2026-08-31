@@ -780,14 +780,7 @@
   border: 2.5px solid transparent;
   background:
     linear-gradient(var(--tl-card), var(--tl-card)) padding-box,
-    conic-gradient(
-      from var(--tl-spin, 0deg),
-      var(--flow-color),
-      color-mix(in srgb, var(--flow-color) 18%, transparent) 24%,
-      color-mix(in srgb, var(--flow-color) 82%, white) 50%,
-      color-mix(in srgb, var(--flow-color) 18%, transparent) 76%,
-      var(--flow-color)
-    ) border-box;
+    var(--flow-border) border-box;
   box-shadow:
     0 0 12px color-mix(in srgb, var(--flow-color) 55%, transparent),
     0 0 28px color-mix(in srgb, var(--flow-color) 30%, transparent),
@@ -814,6 +807,12 @@
       var(--tl-neg) 50%,
       color-mix(in srgb, var(--tl-neg) 55%, #ff8a4c)
     ) border-box;
+}
+
+.gdvn-timeline .event-card.neg.has-glow .card-frame {
+  background:
+    linear-gradient(var(--tl-card), var(--tl-card)) padding-box,
+    var(--flow-border) border-box;
 }
 
 .gdvn-timeline .card-media {
@@ -1262,19 +1261,6 @@ html.dark .gdvn-timeline .chronicle {
 .gdvn-timeline .field textarea {
   min-height: 110px;
   resize: vertical;
-}
-
-.gdvn-timeline .glow-pick {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.gdvn-timeline .glow-pick input[type="color"] {
-  width: 44px;
-  height: 32px;
-  padding: 2px;
-  cursor: pointer;
 }
 
 .gdvn-timeline .row-2 {
