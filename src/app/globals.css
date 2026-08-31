@@ -51,18 +51,7 @@
   --accent-fg: #ffffff;
 }
 
-/* 2. RGB THEME (was mint) */
-@property --accent-h {
-  syntax: '<number>';
-  inherits: true;
-  initial-value: 200;
-}
-
-@keyframes gdvn-rgb-h {
-  from { --accent-h: 0; }
-  to { --accent-h: 360; }
-}
-
+/* 2. RGB THEME (was mint) — accent cycle is painted in ThemeProvider */
 [data-theme="mint"] {
   --bg-page: #f4f4f5;
   --bg-card: #ffffff;
@@ -75,12 +64,11 @@
   --text-dim: #71717a;
 
   --accent-h: 0;
-  --accent: hsl(var(--accent-h) 85% 45%);
-  --accent-hover: hsl(var(--accent-h) 85% 38%);
-  --accent-bg: hsl(var(--accent-h) 90% 92%);
-  --accent-text: hsl(var(--accent-h) 75% 32%);
+  --accent: #e11d48;
+  --accent-hover: #be123c;
+  --accent-bg: #ffe4e6;
+  --accent-text: #9f1239;
   --accent-fg: #ffffff;
-  animation: gdvn-rgb-h 12s linear infinite;
 }
 .dark[data-theme="mint"] {
   --bg-page: #0c0c10;
@@ -93,10 +81,10 @@
   --text-body: #d4d4d8;
   --text-dim: #a1a1aa;
 
-  --accent: hsl(var(--accent-h) 80% 62%);
-  --accent-hover: hsl(var(--accent-h) 80% 70%);
-  --accent-bg: hsl(var(--accent-h) 45% 22%);
-  --accent-text: hsl(var(--accent-h) 85% 82%);
+  --accent: #fb7185;
+  --accent-hover: #fda4af;
+  --accent-bg: #881337;
+  --accent-text: #fecdd3;
   --accent-fg: #0a0a0a;
 }
 
@@ -113,12 +101,11 @@
   --text-dim: #78716c;
 
   --accent-h: 20;
-  --accent: hsl(var(--accent-h) 48% 62%);
-  --accent-hover: hsl(var(--accent-h) 48% 54%);
-  --accent-bg: hsl(var(--accent-h) 55% 93%);
-  --accent-text: hsl(var(--accent-h) 40% 38%);
+  --accent: #fb7185;
+  --accent-hover: #f472b6;
+  --accent-bg: #ffe4e6;
+  --accent-text: #9f1239;
   --accent-fg: #ffffff;
-  animation: gdvn-rgb-h 16s linear infinite;
 }
 .dark[data-theme="peach"] {
   --bg-page: #141210;
@@ -131,21 +118,11 @@
   --text-body: #e7e5e4;
   --text-dim: #a8a29e;
 
-  --accent: hsl(var(--accent-h) 42% 72%);
-  --accent-hover: hsl(var(--accent-h) 42% 80%);
-  --accent-bg: hsl(var(--accent-h) 28% 24%);
-  --accent-text: hsl(var(--accent-h) 50% 88%);
+  --accent: #fda4af;
+  --accent-hover: #fecdd3;
+  --accent-bg: #4c1d25;
+  --accent-text: #ffe4e6;
   --accent-fg: #1c1917;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  [data-theme="mint"],
-  [data-theme="peach"],
-  .dark[data-theme="mint"],
-  .dark[data-theme="peach"] {
-    animation: none;
-    --accent-h: 200;
-  }
 }
 
 /* 4. LAVENDER THEME */

@@ -2,6 +2,7 @@ import { LevelMode } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { calculateBasePp } from '@/lib/ScoringEngine';
 import { extractYoutubeId, preferMinPercent, preferText, preferYoutubeId } from '@/lib/upsertLevel';
+import classicMedia from '@/lib/data/pointercrateClassicMedia.json';
 
 export type ExternalListLevel = {
   gdLevelId: number;
@@ -154,11 +155,11 @@ async function fetchAredl(mode: 'CLASSIC' | 'PLATFORMER'): Promise<ExternalListL
 async function fetchClassicListed(): Promise<ExternalListLevel[]> {
   try {
     const listed = await fetchPointercrateListed();
-    if (listed.length >= 10) return listed;
+    if (listed.length >= 10) return applyClassicMedia(listed);
   } catch (error) {
-    console.error('Pointercrate classic failed, falling back to AREDL', error);
+    console.error('Pointercrate classic failed, falling back to AREDL + snapshot', error);
   }
-  return fetchAredl('CLASSIC');
+  return applyClassicMedia(await fetchAredl('CLASSIC'));
 }
 
 async function fetchPlatformerListed(): Promise<ExternalListLevel[]> {
@@ -169,6 +170,21 @@ async function fetchPlatformerListed(): Promise<ExternalListLevel[]> {
     console.error('Pemonlist failed, falling back to AREDL', error);
   }
   return fetchAredl('PLATFORMER');
+}
+
+type ClassicMedia = { youtubeId: string | null; minPercent: number };
+
+function applyClassicMedia(levels: ExternalListLevel[]): ExternalListLevel[] {
+  const table = classicMedia as Record<string, ClassicMedia>;
+  return levels.map((level) => {
+    const extra = table[String(level.gdLevelId)];
+    if (!extra) return level;
+    return {
+      ...level,
+      youtubeId: level.youtubeId || extra.youtubeId,
+      minPercent: preferMinPercent(extra.minPercent, level.minPercent),
+    };
+  });
 }
 
 export function clearExternalListCache(mode?: 'CLASSIC' | 'PLATFORMER') {
@@ -273,10 +289,12 @@ export async function syncExternalListToDb(
     }
 
     const nextYoutube = preferYoutubeId(row.youtubeId, cur.youtubeId);
+    const nextMin = preferMinPercent(row.minPercent, cur.minPercent);
     const needsUpdate =
       cur.placement !== row.placement ||
       Math.abs(cur.basePp - basePp) > 0.01 ||
-      cur.youtubeId !== nextYoutube;
+      cur.youtubeId !== nextYoutube ||
+      cur.minPercent !== nextMin;
 
     if (needsUpdate) {
       await prisma.level.update({
@@ -285,6 +303,7 @@ export async function syncExternalListToDb(
           placement: row.placement,
           basePp,
           ...(nextYoutube && nextYoutube !== cur.youtubeId ? { youtubeId: nextYoutube } : {}),
+          ...(nextMin !== cur.minPercent ? { minPercent: nextMin } : {}),
         },
       });
       updated += 1;

@@ -30,12 +30,15 @@ export function preferYoutubeId(
   return existing || incoming || null;
 }
 
-/** Keep admin min-percent; AREDL always sends 100 and must not clobber it. */
+/** Keep custom min-percent; replace dummy 100 with Pointercrate requirement. */
 export function preferMinPercent(incoming?: number | null, existing?: number | null): number {
-  const ex = Number(existing);
-  if (Number.isFinite(ex) && ex >= 1 && ex <= 100) return Math.round(ex);
   const inc = Number(incoming);
-  if (Number.isFinite(inc) && inc >= 1 && inc <= 100) return Math.round(inc);
+  const ex = Number(existing);
+  const incOk = Number.isFinite(inc) && inc >= 1 && inc <= 100;
+  const exOk = Number.isFinite(ex) && ex >= 1 && ex <= 100;
+  if (exOk && ex !== 100) return Math.round(ex);
+  if (incOk) return Math.round(inc);
+  if (exOk) return Math.round(ex);
   return 100;
 }
 
