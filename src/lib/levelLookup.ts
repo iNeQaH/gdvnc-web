@@ -6,7 +6,7 @@ import { dedupeRecordsByUser } from '@/lib/recordUtils';
 import { calculateBasePp } from '@/lib/ScoringEngine';
 import { findExternalLevel } from '@/lib/externalLists';
 import { formatDifficultyLabel, mapDifficultyFace } from '@/lib/gdDifficulty';
-import { fetchGdBrowser, preferYoutubeId } from '@/lib/upsertLevel';
+import { fetchGdBrowser, preferMinPercent, preferText, preferYoutubeId } from '@/lib/upsertLevel';
 
 const levelInclude = {
   records: {
@@ -87,9 +87,6 @@ async function ensureLevelFromExternal(gdLevelId: number) {
       name: ext.name,
       placement: ext.placement,
       basePp: calculateBasePp(ext.placement),
-      minPercent: ext.minPercent,
-      creatorName: ext.creatorName,
-      verifierName: ext.verifierName,
       ...(ext.youtubeId ? { youtubeId: ext.youtubeId } : {}),
     },
     include: levelInclude,
@@ -113,9 +110,9 @@ export async function resolvePublicLevel(id: string) {
           name: ext.name,
           placement: ext.placement,
           basePp: calculateBasePp(ext.placement),
-          minPercent: ext.minPercent,
-          creatorName: ext.creatorName ?? level.creatorName,
-          verifierName: ext.verifierName ?? level.verifierName,
+          minPercent: preferMinPercent(ext.minPercent, level.minPercent),
+          creatorName: preferText(ext.creatorName, level.creatorName),
+          verifierName: preferText(ext.verifierName, level.verifierName),
           youtubeId: preferYoutubeId(ext.youtubeId, level.youtubeId),
         };
         void prisma.level
@@ -125,9 +122,9 @@ export async function resolvePublicLevel(id: string) {
               name: ext.name,
               placement: ext.placement,
               basePp: calculateBasePp(ext.placement),
-              minPercent: ext.minPercent,
-              creatorName: ext.creatorName,
-              verifierName: ext.verifierName,
+              minPercent: preferMinPercent(ext.minPercent, level.minPercent),
+              creatorName: preferText(ext.creatorName, level.creatorName),
+              verifierName: preferText(ext.verifierName, level.verifierName),
               ...(ext.youtubeId ? { youtubeId: ext.youtubeId } : {}),
             },
           })

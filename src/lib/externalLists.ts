@@ -1,7 +1,7 @@
 import { LevelMode } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { calculateBasePp } from '@/lib/ScoringEngine';
-import { extractYoutubeId, preferYoutubeId } from '@/lib/upsertLevel';
+import { extractYoutubeId, preferMinPercent, preferText, preferYoutubeId } from '@/lib/upsertLevel';
 
 export type ExternalListLevel = {
   gdLevelId: number;
@@ -206,7 +206,7 @@ export async function findExternalLevel(gdLevelId: number): Promise<ExternalList
   );
 }
 
-/** Sync API list fields into DB. Keeps difficultyFace / ratingType / isVN / isChallenge / difficulty / existing youtubeId. */
+/** Sync ranking from API. Keeps difficultyFace / ratingType / isVN / isChallenge / difficulty / youtubeId / minPercent / names. */
 export async function syncExternalListToDb(
   mode: 'CLASSIC' | 'PLATFORMER',
   opts?: { force?: boolean }
@@ -273,13 +273,16 @@ export async function syncExternalListToDb(
     }
 
     const nextYoutube = preferYoutubeId(row.youtubeId, cur.youtubeId);
+    const nextMin = preferMinPercent(row.minPercent, cur.minPercent);
+    const nextCreator = preferText(row.creatorName, cur.creatorName);
+    const nextVerifier = preferText(row.verifierName, cur.verifierName);
     const needsUpdate =
       cur.placement !== row.placement ||
       cur.name !== row.name ||
-      cur.creatorName !== row.creatorName ||
-      cur.verifierName !== row.verifierName ||
+      cur.creatorName !== nextCreator ||
+      cur.verifierName !== nextVerifier ||
       cur.youtubeId !== nextYoutube ||
-      cur.minPercent !== row.minPercent ||
+      cur.minPercent !== nextMin ||
       Math.abs(cur.basePp - basePp) > 0.01;
 
     if (needsUpdate) {
@@ -289,9 +292,9 @@ export async function syncExternalListToDb(
           name: row.name,
           placement: row.placement,
           basePp,
-          minPercent: row.minPercent,
-          creatorName: row.creatorName,
-          verifierName: row.verifierName,
+          minPercent: nextMin,
+          creatorName: nextCreator,
+          verifierName: nextVerifier,
           youtubeId: nextYoutube,
         },
       });
@@ -334,6 +337,8 @@ export function mergeExternalWithDb(
       description: string | null;
       victorCount: number;
       youtubeId?: string | null;
+      minPercent?: number | null;
+      creatorName?: string | null;
     }
   >
 ) {
@@ -351,8 +356,8 @@ export function mergeExternalWithDb(
       isChallenge: false,
       placement: ext.placement,
       basePp: calculateBasePp(ext.placement),
-      minPercent: ext.minPercent,
-      creatorName: ext.creatorName,
+      minPercent: preferMinPercent(ext.minPercent, local?.minPercent),
+      creatorName: preferText(ext.creatorName, local?.creatorName),
       youtubeId: preferYoutubeId(ext.youtubeId, local?.youtubeId),
       description: local?.description ?? ext.description,
       victorCount: local?.victorCount || 0,

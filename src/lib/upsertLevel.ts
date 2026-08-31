@@ -30,6 +30,23 @@ export function preferYoutubeId(
   return incoming || existing || null;
 }
 
+/** Keep admin min-percent; AREDL always sends 100 and must not clobber it. */
+export function preferMinPercent(incoming?: number | null, existing?: number | null): number {
+  const ex = Number(existing);
+  if (Number.isFinite(ex) && ex >= 1 && ex <= 100) return Math.round(ex);
+  const inc = Number(incoming);
+  if (Number.isFinite(inc) && inc >= 1 && inc <= 100) return Math.round(inc);
+  return 100;
+}
+
+export function preferText(incoming?: string | null, existing?: string | null): string | null {
+  const a = String(incoming ?? '').trim();
+  if (a) return a;
+  const b = String(existing ?? '').trim();
+  if (b) return b;
+  return null;
+}
+
 export async function fetchGdBrowser(gdLevelId: number): Promise<any | null> {
   try {
     const controller = new AbortController();

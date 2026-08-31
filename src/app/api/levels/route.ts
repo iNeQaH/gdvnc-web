@@ -108,6 +108,8 @@ export async function GET(req: Request) {
           description: l.description,
           victorCount: l._count.records,
           youtubeId: l.youtubeId,
+          minPercent: l.minPercent,
+          creatorName: l.creatorName,
         },
       ])
     );
