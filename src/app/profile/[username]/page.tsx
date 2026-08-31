@@ -12,6 +12,7 @@ import { useToast } from '@/components/GlobalToast';
 import { formatCp } from '@/lib/creatorPoints';
 import { levelPath } from '@/lib/levelUrl';
 import { type DictKey } from '@/lib/dictionaries';
+import GdUnverifiedNotice from '@/components/GdUnverifiedNotice';
 
 const RECORD_PAGE_SIZE = 10;
 
