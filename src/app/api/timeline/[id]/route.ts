@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireFullAdmin } from '@/lib/auth';
 import { clipText } from '@/lib/validate';
-import { isAllowedImageRef } from '@/lib/uploadthing';
+import { deleteUploadthingKeys, isAllowedImageRef, uploadthingKeysFromRef } from '@/lib/uploadthing';
 import { toChronicleEvent } from '@/lib/timeline/serialize';
 import { sanitizeChronicleHtml } from '@/lib/timeline/sanitize';
 import { isNature, isTierId } from '@/lib/timeline/types';
@@ -37,6 +37,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: 'Image must be an HTTPS URL.' }, { status: 400 });
     }
 
+    const current = await prisma.timelineEvent.findUnique({
+      where: { id },
+      select: { image: true },
+    });
+    const staleKeys =
+      image !== (current?.image || '') ? uploadthingKeysFromRef(current?.image) : [];
+
     const row = await prisma.timelineEvent.update({
       where: { id },
       data: {
@@ -52,6 +59,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         glowColor: parseGlowColor(body?.glowColor),
       },
     });
+    if (staleKeys.length > 0) {
+      void deleteUploadthingKeys(staleKeys).catch(() => {});
+    }
     return NextResponse.json({ success: true, event: toChronicleEvent(row) });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Failed to update event.' }, { status: 500 });
@@ -69,7 +79,14 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
   try {
+    const current = await prisma.timelineEvent.findUnique({
+      where: { id },
+      select: { image: true },
+    });
     await prisma.timelineEvent.delete({ where: { id } });
+    if (current?.image) {
+      void deleteUploadthingKeys(uploadthingKeysFromRef(current.image)).catch(() => {});
+    }
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Failed to delete event.' }, { status: 500 });

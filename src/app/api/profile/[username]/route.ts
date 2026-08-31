@@ -9,7 +9,7 @@ import {
 } from '@/lib/recordUtils';
 import { requireAuth } from '@/lib/auth';
 import { clipText } from '@/lib/validate';
-import { isAllowedImageRef } from '@/lib/uploadthing';
+import { deleteUploadthingKeys, isAllowedImageRef, uploadthingKeysFromRef } from '@/lib/uploadthing';
 
 export async function GET(req: Request, { params }: { params: Promise<{ username: string }> }) {
   try {
@@ -206,7 +206,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
 
     const current = await prisma.user.findUnique({
       where: { username },
-      select: { gdVerified: true, gdUsername: true },
+      select: { gdVerified: true, gdUsername: true, avatarUrl: true, coverUrl: true },
     });
     if (!current) {
       return NextResponse.json({ error: 'Không tìm thấy người chơi.' }, { status: 404 });
@@ -230,12 +230,25 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
       return NextResponse.json({ error: 'Cover URL không hợp lệ.' }, { status: 400 });
     }
 
+    const nextAvatar =
+      body.avatarUrl !== undefined ? clipText(body.avatarUrl, 500) : undefined;
+    const nextCover =
+      body.coverUrl !== undefined ? clipText(body.coverUrl, 500) : undefined;
+    const staleKeys = [
+      ...(nextAvatar !== undefined && nextAvatar !== (current.avatarUrl || '')
+        ? uploadthingKeysFromRef(current.avatarUrl)
+        : []),
+      ...(nextCover !== undefined && nextCover !== (current.coverUrl || '')
+        ? uploadthingKeysFromRef(current.coverUrl)
+        : []),
+    ];
+
     const updated = await prisma.user.update({
       where: { username },
       data: {
         bio: body.bio !== undefined ? clipText(body.bio, 2000) : undefined,
-        avatarUrl: body.avatarUrl !== undefined ? clipText(body.avatarUrl, 500) : undefined,
-        coverUrl: body.coverUrl !== undefined ? clipText(body.coverUrl, 500) : undefined,
+        avatarUrl: nextAvatar,
+        coverUrl: nextCover,
         country: body.country !== undefined ? clipText(body.country, 80) : undefined,
         gdUsername: nextGdUsername,
         gdVerified: nextGdVerified,
@@ -251,6 +264,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         discordTag: true,
       }
     });
+
+    if (staleKeys.length > 0) {
+      void deleteUploadthingKeys(staleKeys).catch(() => {});
+    }
 
     return NextResponse.json({ success: true, updated });
   } catch (error: any) {

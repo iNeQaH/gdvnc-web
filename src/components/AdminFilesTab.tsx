@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FolderOpen, RefreshCw, Trash2 } from 'lucide-react';
+import { FolderOpen, RefreshCw, Trash2, Database } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 
@@ -27,6 +27,7 @@ export default function AdminFilesTab() {
   const [usage, setUsage] = useState<{ totalBytes?: number; limitBytes?: number; filesUploaded?: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [migrating, setMigrating] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -72,6 +73,53 @@ export default function AdminFilesTab() {
     });
   };
 
+  const migrateBlobs = () => {
+    showConfirm(t('admin.files_migrate_confirm'), async () => {
+      setMigrating(true);
+      try {
+        let remaining = 1;
+        let total = 0;
+        const leftover: { kind?: string; id?: string; error?: string }[] = [];
+        for (let i = 0; i < 12 && remaining > 0; i++) {
+          const res = await fetch('/api/admin/files', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ batch: 20 }),
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            showToast(data.error || t('admin.files_migrate_fail'), 'error');
+            return;
+          }
+          total += Number(data.migrated || 0);
+          remaining = Number(data.remaining || 0);
+          leftover.push(...(data.leftover || []));
+          if (Number(data.migrated || 0) === 0) break;
+        }
+        if (leftover.length > 0) {
+          showToast(
+            t('admin.files_migrate_partial', {
+              n: String(total),
+              left: String(remaining),
+              fail: String(leftover.length),
+            }),
+            remaining > 0 ? 'error' : 'success'
+          );
+        } else {
+          showToast(
+            t('admin.files_migrate_ok', { n: String(total), left: String(remaining) }),
+            remaining > 0 ? 'error' : 'success'
+          );
+        }
+        await load();
+      } catch {
+        showToast(t('admin.files_migrate_fail'), 'error');
+      } finally {
+        setMigrating(false);
+      }
+    });
+  };
+
   return (
     <div className="ui-card p-6 space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -81,6 +129,7 @@ export default function AdminFilesTab() {
             {t('admin.files_title')}
           </h2>
           <p className="text-xs ui-dim mt-1 max-w-xl">{t('admin.files_desc')}</p>
+          <p className="text-[11px] ui-dim mt-1 max-w-xl">{t('admin.files_migrate_desc')}</p>
           {usage && (
             <p className="text-[11px] ui-dim mt-2">
               {t('admin.files_usage', {
@@ -91,16 +140,28 @@ export default function AdminFilesTab() {
             </p>
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => void load()}
-          disabled={loading}
-          className="px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-          style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          {t('admin.files_refresh')}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={migrateBlobs}
+            disabled={loading || migrating}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+          >
+            <Database className={`w-3.5 h-3.5 ${migrating ? 'animate-pulse' : ''}`} />
+            {migrating ? t('admin.files_migrate_working') : t('admin.files_migrate')}
+          </button>
+          <button
+            type="button"
+            onClick={() => void load()}
+            disabled={loading || migrating}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            {t('admin.files_refresh')}
+          </button>
+        </div>
       </div>
 
       {loading ? (

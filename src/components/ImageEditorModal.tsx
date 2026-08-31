@@ -196,7 +196,9 @@ export default function ImageEditorModal({
     try {
       let file: File;
       if (isGifSource && gifFileRef.current) {
-        file = gifFileRef.current;
+        const orig = gifFileRef.current;
+        const ext = (orig.name.split('.').pop() || 'gif').replace(/[^a-z0-9]/gi, '') || 'gif';
+        file = new File([orig], `${type}-${Date.now()}.${ext}`, { type: orig.type || 'image/gif' });
       } else {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -204,7 +206,7 @@ export default function ImageEditorModal({
           canvas.toBlob(resolve, 'image/jpeg', 0.88)
         );
         if (!blob) throw new Error('Could not encode image');
-        file = new File([blob], `${type}.jpg`, { type: 'image/jpeg' });
+        file = new File([blob], `${type}-${Date.now()}.jpg`, { type: 'image/jpeg' });
       }
 
       const [url] = await uploadImagesToUt([file]);

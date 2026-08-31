@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { requireFullAdmin } from '@/lib/auth';
+import { migrateMediaToUt } from '@/lib/migrateMediaToUt';
 import { publicUrlForKey, utapi } from '@/lib/uploadthing';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 export async function GET() {
   try {
@@ -53,5 +58,25 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ success: true, deleted: keys.length });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Failed to delete files.' }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    await requireFullAdmin();
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const body = await req.json().catch(() => ({}));
+    const batch = Math.min(30, Math.max(1, Number(body?.batch) || 20));
+    const result = await migrateMediaToUt(batch);
+    return NextResponse.json({ success: true, ...result });
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error.message || 'Failed to migrate images.' },
+      { status: 500 }
+    );
   }
 }
