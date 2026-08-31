@@ -90,11 +90,8 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
     const dark = resolvedMode === 'dark';
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) {
-      paintRgb(root, theme, dark, 200);
-      return;
-    }
+    // RGB / RGB Pastel are an explicit color-cycle choice — keep moving even if
+    // the OS has "reduce motion" on (Windows often maps that to a frozen accent).
     const speed = theme === 'peach' ? 22.5 : 30;
     let hue = 0;
     let last = performance.now();
