@@ -18,3 +18,6 @@ export const TIERS: TimelineTier[] = [
 export const TIER_BY_LOOKUP: Record<string, TimelineTier> = Object.fromEntries(
   TIERS.map((t) => [t.id, t])
 );
+
+/** Default timeline zoom: Tuần / Week. */
+export const DEFAULT_ZOOM_INDEX = TIERS.findIndex((t) => t.id === 'week');

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { formatDate } from '@/lib/timeline/time';
 import { sanitizeChronicleHtml } from '@/lib/timeline/sanitize';
+import { sheetEventMeta } from '@/lib/timeline/sheetEvent';
 import type { ChronicleEvent } from '@/lib/timeline/types';
 import type { DictKey } from '@/lib/dictionaries';
 
@@ -29,9 +30,13 @@ export default function EventPage({
   onEdit: (event: ChronicleEvent) => void;
   onDelete: (event: ChronicleEvent) => void;
   canEdit: boolean;
-  t: (key: DictKey) => string;
+  t: (key: DictKey, vars?: Record<string, string | number>) => string;
 }) {
-  const paras = splitParagraphs(event.fullDescription);
+  const sheet = sheetEventMeta(event);
+  const paras = splitParagraphs(event.fullDescription).filter((p) => {
+    if (!sheet) return true;
+    return !/^ID\s+\d+$/i.test(p.replace(/<[^>]+>/g, '').trim());
+  });
   const mid = Math.max(1, Math.ceil(paras.length / 2));
   const range =
     event.end && event.end > event.start
@@ -61,6 +66,15 @@ export default function EventPage({
         </button>
         <h2>{event.title}</h2>
         <div className="chronicle-meta">{range}</div>
+        {sheet ? (
+          <p className="chronicle-meta sheet-meta">
+            {t('timeline.sheet_creator', { name: sheet.creator })}
+            {'\n'}
+            {t('timeline.sheet_id', { id: sheet.id })}
+            {'\n'}
+            {t('timeline.sheet_rated', { date: formatDate(event.start) })}
+          </p>
+        ) : null}
         <div className="chronicle-body">
           {paras.slice(0, mid).map((p, i) => (
             <p key={`a-${i}`} dangerouslySetInnerHTML={{ __html: sanitizeChronicleHtml(p) }} />
@@ -74,7 +88,7 @@ export default function EventPage({
             <p key={`b-${i}`} dangerouslySetInnerHTML={{ __html: sanitizeChronicleHtml(p) }} />
           ))}
         </div>
-        {event.shortDescription ? (
+        {event.shortDescription && !sheet ? (
           <p className="chronicle-meta" style={{ marginTop: 18 }}>
             {event.shortDescription}
           </p>

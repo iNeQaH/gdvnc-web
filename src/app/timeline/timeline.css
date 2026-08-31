@@ -726,6 +726,7 @@
   position: absolute;
   width: 200px;
   z-index: 6;
+  cursor: pointer;
   animation: gdvn-tl-cardIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -864,6 +865,14 @@
   min-height: 72px;
 }
 
+.gdvn-timeline .card-desc.is-sheet {
+  white-space: pre-line;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.45;
+  min-height: 0;
+}
+
 .gdvn-timeline .card-title {
   position: relative;
   z-index: 1;
@@ -907,7 +916,7 @@
   padding: 0;
   border-radius: 50%;
   background: var(--tl-accent);
-  z-index: 8;
+  z-index: 12;
   transform: translate(-50%, -50%);
   border: 0;
   cursor: pointer;
@@ -925,7 +934,7 @@
 .gdvn-timeline .dot.collapsed {
   width: 9px;
   height: 9px;
-  z-index: 9;
+  z-index: 13;
 }
 
 .gdvn-timeline .dot.collapsed.has-many {
@@ -935,17 +944,24 @@
 
 .gdvn-timeline .cluster-pop {
   position: absolute;
-  z-index: 16;
-  min-width: 180px;
+  z-index: 80;
+  min-width: 196px;
+  max-width: 260px;
+  max-height: min(280px, 42vh);
+  overflow-y: auto;
   background: var(--tl-card);
   border: 1px solid var(--tl-border);
   padding: 8px;
   border-radius: 8px;
   box-shadow: 0 16px 40px var(--tl-shadow);
+  pointer-events: auto;
 }
 
 .gdvn-timeline .cluster-pop button {
-  display: block;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
   width: 100%;
   text-align: left;
   background: transparent;
@@ -957,7 +973,14 @@
   cursor: pointer;
 }
 
-.gdvn-timeline .cluster-pop button:hover {
+.gdvn-timeline .cluster-pop button span {
+  opacity: 0.55;
+  flex-shrink: 0;
+  font-size: 11px;
+}
+
+.gdvn-timeline .cluster-pop button:hover,
+.gdvn-timeline .cluster-pop button.is-on {
   background: var(--tl-accent-soft);
 }
 
@@ -1145,6 +1168,12 @@ html.dark .gdvn-timeline .chronicle {
   font-size: 15px;
   font-style: italic;
   margin-bottom: 22px;
+}
+
+.gdvn-timeline .chronicle-meta.sheet-meta {
+  white-space: pre-line;
+  font-style: normal;
+  line-height: 1.5;
 }
 
 .gdvn-timeline .chronicle-body {

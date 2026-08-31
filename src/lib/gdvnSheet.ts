@@ -1,11 +1,13 @@
 import { mapDifficultyFace } from '@/lib/gdDifficulty';
+import { gdvnSheetSourceKey, SHEET_SOURCE_PREFIX } from '@/lib/timeline/sheetEvent';
 import type { TimelineTierId } from '@/lib/timeline/types';
 
 export const GDVN_SHEET_ID_DEFAULT = '14ndp96aM0OesMp9TmAHXEAWDyLqZ2c3R1aRnJjMRZec';
 /** Tab "List of Vietnamese Level" only. */
 export const GDVN_SHEET_GID_DEFAULT = '904139984';
 
-export const GDVN_SHEET_SOURCE_PREFIX = 'gdvn-sheet:';
+export const GDVN_SHEET_SOURCE_PREFIX = SHEET_SOURCE_PREFIX;
+export { gdvnSheetSourceKey };
 
 export type GdvnSheetRating = 'RATE' | 'FEATURE' | 'EPIC' | 'LEGENDARY' | 'MYTHIC';
 
@@ -29,10 +31,6 @@ const RATING_MAP: Record<string, { type: GdvnSheetRating; label: string; tier: T
   legendary: { type: 'LEGENDARY', label: 'Legendary', tier: '6m' },
   mythic: { type: 'MYTHIC', label: 'Mythic', tier: '1y' },
 };
-
-export function gdvnSheetSourceKey(gdLevelId: number) {
-  return `${GDVN_SHEET_SOURCE_PREFIX}${gdLevelId}`;
-}
 
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];

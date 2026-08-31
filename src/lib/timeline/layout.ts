@@ -13,13 +13,8 @@ export type LaneItem = {
   collapsed: boolean;
 };
 
-function overlaps(aLeft: number, aRight: number, bLeft: number, bRight: number) {
-  return aLeft < bRight && aRight > bLeft;
-}
-
 export function layoutLane({
   events,
-  zoomIndex,
   timeToX,
   expandedIds,
   cardWidth = CARD_W,
@@ -30,7 +25,6 @@ export function layoutLane({
   expandedIds: Set<string>;
   cardWidth?: number;
 }): LaneItem[] {
-  const minShowRank = Math.round(zoomIndex);
   const items: LaneItem[] = events.map((event) => {
     const x = timeToX(event.anchor);
     return {
@@ -52,26 +46,15 @@ export function layoutLane({
 
   const placed: LaneItem[] = [];
   for (const item of items) {
-    const rank = TIERS.find((t) => t.id === item.event.tier)?.rank ?? 5;
     const forced = expandedIds.has(item.event.id);
-    const visibleAtZoom = rank <= minShowRank;
     const left = item.desiredLeft;
-    const right = left + cardWidth;
 
-    if (!visibleAtZoom && !forced) {
+    if (!forced) {
       placed.push({ ...item, collapsed: true, left: item.x - 7, width: 14 });
       continue;
     }
 
-    const hit = placed.some(
-      (p) => !p.collapsed && overlaps(left, right, p.left, p.left + p.width + CARD_GAP)
-    );
-
-    if (hit && !forced) {
-      placed.push({ ...item, collapsed: true, left: item.x - 7, width: 14 });
-    } else {
-      placed.push({ ...item, collapsed: false, left, width: cardWidth });
-    }
+    placed.push({ ...item, collapsed: false, left, width: cardWidth });
   }
 
   resolvePushes(placed, expandedIds, cardWidth);

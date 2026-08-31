@@ -64,7 +64,7 @@ export default function TimelineBoard({
   onEdit: (event: ChronicleEvent) => void;
   canEdit: boolean;
   ldm: boolean;
-  t: (key: DictKey) => string;
+  t: (key: DictKey, vars?: Record<string, string | number>) => string;
   onUserGesture: () => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -249,15 +249,19 @@ export default function TimelineBoard({
     }
   }
 
-  function toggleExpand(item: LaneItem) {
-    onFocusEvent(item.event.id);
+  function toggleEvent(event: ChronicleEvent, closeCluster = true) {
+    onFocusEvent(event.id);
     setExpandedIds((s) => {
       const n = new Set(s);
-      if (n.has(item.event.id)) n.delete(item.event.id);
-      else n.add(item.event.id);
+      if (n.has(event.id)) n.delete(event.id);
+      else n.add(event.id);
       return n;
     });
-    setCluster(null);
+    if (closeCluster) setCluster(null);
+  }
+
+  function toggleExpand(item: LaneItem, closeCluster = true) {
+    toggleEvent(item.event, closeCluster);
   }
 
   function openCluster(cl: ReturnType<typeof clusterCollapsed>[number], side: 'pos' | 'neg', ev: React.MouseEvent) {
@@ -412,6 +416,7 @@ export default function TimelineBoard({
                 onOpen={onOpen}
                 onEdit={onEdit}
                 canEdit={canEdit}
+                t={t}
               />
             );
           })}
@@ -433,6 +438,7 @@ export default function TimelineBoard({
                 onOpen={onOpen}
                 onEdit={onEdit}
                 canEdit={canEdit}
+                t={t}
               />
             );
           })}
@@ -449,8 +455,7 @@ export default function TimelineBoard({
               style={{ left: i.left + i.width / 2, top: lineY }}
               onClick={(ev) => {
                 ev.stopPropagation();
-                if (expanded) toggleExpand(i);
-                else onOpen(i.event);
+                toggleExpand(i);
               }}
             />
           );
@@ -474,27 +479,31 @@ export default function TimelineBoard({
           onClick={(e) => openCluster(cl, 'neg', e)}
         />
       ))}
-
+      </div>
       {cluster ? (
         <div
           className="cluster-pop"
           style={{
-            left: Math.min(cluster.x + 12, size.w - 200),
-            top: cluster.side === 'pos' ? lineY - 120 : lineY + 16,
+            left: Math.min(Math.max(12, cluster.x + 14), size.w - 220),
+            top: cluster.side === 'pos' ? lineY - 132 : lineY + 18,
           }}
           onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
         >
           {cluster.items.map((item) => (
-            <button key={item.event.id} onClick={() => toggleExpand(item)}>
+            <button
+              key={item.event.id}
+              className={expandedIds.has(item.event.id) ? 'is-on' : ''}
+              onClick={() => toggleExpand(item, false)}
+            >
               {item.event.title}
-              <span style={{ opacity: 0.55, marginLeft: 8 }}>
+              <span>
                 {t(TIER_KEYS[item.event.tier])}
               </span>
             </button>
           ))}
         </div>
       ) : null}
-      </div>
       <div className="line-arrow" style={{ left: lineEndX, top: lineY }} />
       <button
         type="button"

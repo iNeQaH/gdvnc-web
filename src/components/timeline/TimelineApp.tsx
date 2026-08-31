@@ -10,7 +10,7 @@ import { useToast } from '@/components/GlobalToast';
 import TimelineDatePick from '@/components/timeline/TimelineDatePick';
 import type { ChronicleEvent } from '@/lib/timeline/types';
 import type { DictKey } from '@/lib/dictionaries';
-import { TIERS } from '@/lib/timeline/tiers';
+import { TIERS, DEFAULT_ZOOM_INDEX } from '@/lib/timeline/tiers';
 import {
   nearestTierIndex,
   formatDate,
@@ -32,7 +32,7 @@ export default function TimelineApp() {
   const { showToast, showConfirm } = useToast();
   const [events, setEvents] = useState<ChronicleEvent[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(DEFAULT_ZOOM_INDEX);
   const [center, setCenter] = useState(TIMELINE_ORIGIN);
   const [expandedIds, setExpandedIds] = useState(() => new Set<string>());
   const [open, setOpen] = useState<ChronicleEvent | null>(null);

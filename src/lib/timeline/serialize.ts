@@ -26,5 +26,6 @@ export function toChronicleEvent(row: TimelineRow): ChronicleEvent {
     approximate: row.approximate,
     nature: isNature(row.nature) ? row.nature : 'positive',
     tier: isTierId(row.tier) ? row.tier : '1y',
+    sourceKey: row.sourceKey || null,
   };
 }

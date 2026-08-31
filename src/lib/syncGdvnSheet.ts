@@ -140,7 +140,7 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
     const key = gdvnSheetSourceKey(row.gdLevelId);
     const cur = eventByKey.get(key);
     const title = clipText(row.name, 160);
-    const shortDescription = clipText(`${row.creatorName} · ${row.ratingLabel}`, 400);
+    const shortDescription = clipText(row.creatorName, 80);
     if (!cur) {
       toCreateEvents.push(row);
       continue;
@@ -162,7 +162,7 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
       data: chunk.map((row) => ({
         sourceKey: gdvnSheetSourceKey(row.gdLevelId),
         title: clipText(row.name, 160),
-        shortDescription: clipText(`${row.creatorName} · ${row.ratingLabel}`, 400),
+        shortDescription: clipText(row.creatorName, 80),
         fullDescription: clipText(`ID ${row.gdLevelId}`, 200),
         startAt: row.ratedAt!,
         endAt: row.ratedAt!,
@@ -183,7 +183,8 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
           where: { id },
           data: {
             title: clipText(row.name, 160),
-            shortDescription: clipText(`${row.creatorName} · ${row.ratingLabel}`, 400),
+            shortDescription: clipText(row.creatorName, 80),
+            fullDescription: clipText(`ID ${row.gdLevelId}`, 200),
             startAt: row.ratedAt!,
             endAt: row.ratedAt!,
             tier: row.timelineTier,

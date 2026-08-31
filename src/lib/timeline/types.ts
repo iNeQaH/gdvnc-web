@@ -15,6 +15,7 @@ export type ChronicleEvent = {
   approximate: boolean;
   nature: TimelineNature;
   tier: TimelineTierId;
+  sourceKey?: string | null;
 };
 
 export function isTierId(value: string): value is TimelineTierId {
