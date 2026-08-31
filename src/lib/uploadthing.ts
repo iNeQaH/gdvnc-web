@@ -69,7 +69,9 @@ export async function uploadBufferToUt(
   mime = 'image/jpeg',
   filename?: string
 ): Promise<{ url: string; key: string }> {
-  const file = new File([buffer], filename || mimeToName(mime), { type: mime });
+  const bytes = new Uint8Array(buffer.byteLength);
+  bytes.set(buffer);
+  const file = new File([bytes], filename || mimeToName(mime), { type: mime });
   const result = await utapi().uploadFiles(file);
   if (result.error || !result.data) {
     throw new Error(result.error?.message || 'UploadThing upload failed.');

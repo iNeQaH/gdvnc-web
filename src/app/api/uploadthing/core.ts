@@ -11,7 +11,7 @@ export const gdvnFileRouter = {
     .middleware(async () => {
       const user = await getAuthUser();
       if (!user) throw new UploadThingError('Unauthorized');
-      return { userId: user.id };
+      return { userId: user.userId };
     })
     .onUploadComplete(async ({ file }) => {
       return { url: file.ufsUrl, key: file.key };
@@ -24,7 +24,7 @@ export const gdvnFileRouter = {
       if (!user || !isFullAdminRole(user.role)) {
         throw new UploadThingError('Unauthorized');
       }
-      return { userId: user.id };
+      return { userId: user.userId };
     })
     .onUploadComplete(async ({ file }) => {
       return { url: file.ufsUrl, key: file.key };
