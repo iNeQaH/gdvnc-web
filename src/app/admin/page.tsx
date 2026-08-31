@@ -924,6 +924,7 @@ export default function AdminPage() {
             Members
           </button>
           {isFullAdmin && (
+            <>
             <button
               onClick={() => setTab('levels')}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
@@ -946,6 +947,7 @@ export default function AdminPage() {
               <FolderOpen className="w-3.5 h-3.5" />
               {t('admin.tab_files')}
             </button>
+            </>
           )}
         </div>
       </div>
