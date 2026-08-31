@@ -2136,31 +2136,6 @@ function AdminHelpsTab({
       .catch(() => setLoading(false));
   };
 
-  const handleSiteLock = (locked: boolean) => {
-    showConfirm(locked ? t('admin.lock_confirm_on') : t('admin.lock_confirm_off'), async () => {
-      setSiteLockBusy(true);
-      try {
-        const res = await fetch('/api/site-lock', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ locked }),
-        });
-        const data = await res.json();
-        if (!res.ok || !data.success) {
-          showToast(data.error || t('admin.lock_fail'), 'error');
-          return;
-        }
-        setSiteLocked(!!data.locked);
-        showToast(data.locked ? t('admin.lock_on_ok') : t('admin.lock_off_ok'), 'success');
-        if (data.locked) window.location.href = '/';
-      } catch {
-        showToast(t('admin.lock_fail'), 'error');
-      } finally {
-        setSiteLockBusy(false);
-      }
-    });
-  };
-
   useEffect(() => {
     loadHelps(1);
   }, []);
