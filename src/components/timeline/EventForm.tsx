@@ -20,6 +20,7 @@ const empty = {
   shortDescription: '',
   fullDescription: '',
   image: '',
+  glowColor: '',
   start: '',
   end: '',
   approximate: false,
@@ -49,6 +50,7 @@ export default function EventForm({
         shortDescription: event.shortDescription ?? '',
         fullDescription: event.fullDescription ?? '',
         image: event.image ?? '',
+        glowColor: event.glowColor ?? '',
         start: toDateInput(event.start),
         end: toDateInput(event.end ?? event.start),
         approximate: Boolean(event.approximate),
@@ -76,6 +78,7 @@ export default function EventForm({
       shortDescription: form.shortDescription.trim(),
       fullDescription: form.fullDescription,
       image: form.image.trim(),
+      glowColor: form.glowColor.trim() || null,
       start,
       end: end != null && end < start ? start : (end ?? start),
       approximate: form.approximate,
@@ -115,6 +118,25 @@ export default function EventForm({
             onChange={(e) => set('image', e.target.value)}
             placeholder="https://…"
           />
+        </div>
+        <div className="field">
+          <label>{t('timeline.glow_color')}</label>
+          <div className="glow-pick">
+            <input
+              type="color"
+              value={form.glowColor || '#f59e0b'}
+              onChange={(e) => set('glowColor', e.target.value)}
+              aria-label={t('timeline.glow_color')}
+            />
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={!form.glowColor}
+                onChange={(e) => set('glowColor', e.target.checked ? '' : '#f59e0b')}
+              />
+              {t('timeline.glow_off')}
+            </label>
+          </div>
         </div>
         <div className="row-2">
           <div className="field">

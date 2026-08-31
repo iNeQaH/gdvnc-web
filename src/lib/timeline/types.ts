@@ -16,6 +16,7 @@ export type ChronicleEvent = {
   nature: TimelineNature;
   tier: TimelineTierId;
   sourceKey?: string | null;
+  glowColor?: string | null;
 };
 
 export function isTierId(value: string): value is TimelineTierId {

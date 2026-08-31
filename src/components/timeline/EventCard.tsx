@@ -37,15 +37,15 @@ function Media({
   t: (key: DictKey, vars?: Record<string, string | number>) => string;
 }) {
   const [failed, setFailed] = useState(false);
-  if (sheetEventMeta(event)) return <SheetCardDesc event={event} t={t} />;
-  if (!event.image || failed) {
-    return <div className="card-desc">{event.shortDescription}</div>;
+  if (event.image && !failed) {
+    return (
+      <div className="card-media">
+        <img src={event.image} alt="" onError={() => setFailed(true)} />
+      </div>
+    );
   }
-  return (
-    <div className="card-media">
-      <img src={event.image} alt="" onError={() => setFailed(true)} />
-    </div>
-  );
+  if (sheetEventMeta(event)) return <SheetCardDesc event={event} t={t} />;
+  return <div className="card-desc">{event.shortDescription}</div>;
 }
 
 export default function EventCard({
@@ -74,10 +74,12 @@ export default function EventCard({
   const { event } = item;
   const tone = event.nature === 'negative' ? 'neg' : 'pos';
   const gap = TIMELINE_CARD_LIFT * lift;
+  const glow = event.glowColor || '';
+  const flow = Boolean(glow) && !ldm;
 
   return (
     <article
-      className={`event-card ${tone}${focused ? ' is-focus' : ''}`}
+      className={`event-card ${tone}${focused ? ' is-focus' : ''}${glow ? ' has-glow' : ''}${flow ? ' has-flow' : ''}`}
       style={{
         left: item.left,
         width: item.width,
@@ -85,6 +87,7 @@ export default function EventCard({
         transformOrigin: side === 'pos' ? 'bottom center' : 'top center',
         ...(side === 'pos' ? { bottom: gap } : { top: gap }),
         zIndex: 6,
+        ['--flow-color' as string]: glow || undefined,
       }}
       onClick={(e) => {
         e.stopPropagation();
@@ -96,13 +99,6 @@ export default function EventCard({
         onEdit(event);
       }}
     >
-      {focused && !ldm ? (
-        <div className="card-bolt" aria-hidden>
-          <span />
-          <span />
-          <span />
-        </div>
-      ) : null}
       {side === 'pos' && <div className="card-title">{event.title}</div>}
       <div className="card-frame">
         <Media event={event} t={t} />

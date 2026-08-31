@@ -1,0 +1,1 @@
+ALTER TABLE "TimelineEvent" ADD COLUMN IF NOT EXISTS "glowColor" TEXT;

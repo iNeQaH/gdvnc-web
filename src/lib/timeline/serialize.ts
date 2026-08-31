@@ -12,6 +12,7 @@ type TimelineRow = {
   nature: string;
   tier: string;
   sourceKey?: string | null;
+  glowColor?: string | null;
 };
 
 export function toChronicleEvent(row: TimelineRow): ChronicleEvent {
@@ -27,5 +28,6 @@ export function toChronicleEvent(row: TimelineRow): ChronicleEvent {
     nature: isNature(row.nature) ? row.nature : 'positive',
     tier: isTierId(row.tier) ? row.tier : '1y',
     sourceKey: row.sourceKey || null,
+    glowColor: row.glowColor || null,
   };
 }

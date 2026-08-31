@@ -1,14 +1,23 @@
 import { LevelMode } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { clipText } from '@/lib/validate';
+import { fetchGdBrowser } from '@/lib/upsertLevel';
 import {
   fetchGdvnSheetRows,
   gdvnSheetSourceKey,
   type GdvnSheetRow,
 } from '@/lib/gdvnSheet';
+import {
+  glowForRating,
+  isYoutubeThumb,
+  parseYoutubeVideoField,
+  youtubeThumbUrl,
+} from '@/lib/timeline/glow';
 
 const CREATE_CHUNK = 80;
 const UPDATE_CHUNK = 40;
+const EPIC_PLUS = new Set(['EPIC', 'LEGENDARY', 'MYTHIC']);
+const GDB_FETCH_CAP = 24;
 
 export type GdvnSheetSyncResult = {
   fetched: number;
@@ -27,6 +36,35 @@ async function chunked<T>(items: T[], size: number, fn: (chunk: T[]) => Promise<
   for (let i = 0; i < items.length; i += size) {
     await fn(items.slice(i, i + size));
   }
+}
+
+async function resolveEpicYoutubeIds(rows: GdvnSheetRow[]) {
+  const epicIds = rows.filter((r) => EPIC_PLUS.has(r.ratingType)).map((r) => r.gdLevelId);
+  const byGd = new Map<number, string>();
+  if (!epicIds.length) return byGd;
+
+  const levels = await prisma.level.findMany({
+    where: { gdLevelId: { in: epicIds } },
+    select: { id: true, gdLevelId: true, youtubeId: true },
+  });
+  for (const level of levels) {
+    if (level.youtubeId) byGd.set(level.gdLevelId, level.youtubeId);
+  }
+
+  const missing = levels.filter((l) => !l.youtubeId).slice(0, GDB_FETCH_CAP);
+  await chunked(missing, 6, async (chunk) => {
+    await Promise.all(
+      chunk.map(async (level) => {
+        const gdb = await fetchGdBrowser(level.gdLevelId);
+        const yt = parseYoutubeVideoField(gdb?.video) || parseYoutubeVideoField(gdb?.youtube);
+        if (!yt) return;
+        await prisma.level.update({ where: { id: level.id }, data: { youtubeId: yt } });
+        byGd.set(level.gdLevelId, yt);
+      })
+    );
+  });
+
+  return byGd;
 }
 
 function levelChanged(cur: {
@@ -116,6 +154,8 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
     levelsUpdated += chunk.length;
   });
 
+  const ytByGd = await resolveEpicYoutubeIds(rows);
+
   const dated = rows.filter((r) => r.ratedAt);
   const sourceKeys = dated.map((r) => gdvnSheetSourceKey(r.gdLevelId));
   const existingEvents = sourceKeys.length
@@ -129,10 +169,19 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
           startAt: true,
           endAt: true,
           tier: true,
+          image: true,
+          glowColor: true,
         },
       })
     : [];
   const eventByKey = new Map(existingEvents.map((e) => [e.sourceKey!, e]));
+
+  function extrasFor(row: GdvnSheetRow) {
+    return {
+      glowColor: glowForRating(row.ratingType),
+      image: youtubeThumbUrl(ytByGd.get(row.gdLevelId)),
+    };
+  }
 
   const toCreateEvents: GdvnSheetRow[] = [];
   const toUpdateEvents: Array<{ id: string; row: GdvnSheetRow }> = [];
@@ -145,12 +194,18 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
       toCreateEvents.push(row);
       continue;
     }
+    const extras = extrasFor(row);
+    const nextImage =
+      !cur.image || isYoutubeThumb(cur.image) ? extras.image : cur.image;
+    const nextGlow = cur.glowColor || extras.glowColor;
     if (
       cur.title !== title ||
       cur.shortDescription !== shortDescription ||
       cur.tier !== row.timelineTier ||
       !sameDay(cur.startAt, row.ratedAt!) ||
-      !sameDay(cur.endAt, row.ratedAt!)
+      !sameDay(cur.endAt, row.ratedAt!) ||
+      (cur.image || null) !== (nextImage || null) ||
+      (cur.glowColor || null) !== (nextGlow || null)
     ) {
       toUpdateEvents.push({ id: cur.id, row });
     }
@@ -159,17 +214,22 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
   let timelineCreated = 0;
   await chunked(toCreateEvents, CREATE_CHUNK, async (chunk) => {
     const result = await prisma.timelineEvent.createMany({
-      data: chunk.map((row) => ({
-        sourceKey: gdvnSheetSourceKey(row.gdLevelId),
-        title: clipText(row.name, 160),
-        shortDescription: clipText(row.creatorName, 80),
-        fullDescription: clipText(`ID ${row.gdLevelId}`, 200),
-        startAt: row.ratedAt!,
-        endAt: row.ratedAt!,
-        approximate: false,
-        nature: 'negative',
-        tier: row.timelineTier,
-      })),
+      data: chunk.map((row) => {
+        const extras = extrasFor(row);
+        return {
+          sourceKey: gdvnSheetSourceKey(row.gdLevelId),
+          title: clipText(row.name, 160),
+          shortDescription: clipText(row.creatorName, 80),
+          fullDescription: clipText(`ID ${row.gdLevelId}`, 200),
+          image: extras.image,
+          glowColor: extras.glowColor,
+          startAt: row.ratedAt!,
+          endAt: row.ratedAt!,
+          approximate: false,
+          nature: 'negative',
+          tier: row.timelineTier,
+        };
+      }),
       skipDuplicates: true,
     });
     timelineCreated += result.count;
@@ -178,19 +238,26 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
   let timelineUpdated = 0;
   await chunked(toUpdateEvents, UPDATE_CHUNK, async (chunk) => {
     await Promise.all(
-      chunk.map(({ id, row }) =>
-        prisma.timelineEvent.update({
+      chunk.map(({ id, row }) => {
+        const extras = extrasFor(row);
+        const cur = eventByKey.get(gdvnSheetSourceKey(row.gdLevelId));
+        const nextImage =
+          !cur?.image || isYoutubeThumb(cur.image) ? extras.image : cur.image;
+        const nextGlow = cur?.glowColor || extras.glowColor;
+        return prisma.timelineEvent.update({
           where: { id },
           data: {
             title: clipText(row.name, 160),
             shortDescription: clipText(row.creatorName, 80),
             fullDescription: clipText(`ID ${row.gdLevelId}`, 200),
+            image: nextImage,
+            glowColor: nextGlow,
             startAt: row.ratedAt!,
             endAt: row.ratedAt!,
             tier: row.timelineTier,
           },
-        })
-      )
+        });
+      })
     );
     timelineUpdated += chunk.length;
   });

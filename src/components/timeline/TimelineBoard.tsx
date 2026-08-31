@@ -16,7 +16,7 @@ import {
   eventSizeScale,
   TIMELINE_CARD_LIFT,
 } from '@/lib/timeline/time';
-import { clusterCollapsed, layoutLane, type LaneItem } from '@/lib/timeline/layout';
+import { clusterCollapsed, clusterLeadTier, layoutLane, type LaneItem } from '@/lib/timeline/layout';
 import EventCard from '@/components/timeline/EventCard';
 import TimelineFx from '@/components/timeline/TimelineFx';
 import type { ChronicleEvent, TimelineTierId } from '@/lib/timeline/types';
@@ -309,7 +309,11 @@ export default function TimelineBoard({
     return { x, lift, scale };
   }
 
-  const visibleCards = [...posLayout, ...negLayout].filter((i) => !i.collapsed);
+  function onBar(x: number) {
+    return x >= 0 && x <= lineEndX - 2;
+  }
+
+  const visibleCards = [...posLayout, ...negLayout].filter((i) => !i.collapsed && onBar(i.x));
   let focusCardId: string | null = null;
   let focusScore = -1;
   for (const item of visibleCards) {
@@ -334,6 +338,7 @@ export default function TimelineBoard({
       {ldm ? null : (
         <TimelineFx
           events={events}
+          zoom={zoom}
           viewStart={viewStart}
           ppd={ppd}
           width={size.w}
@@ -385,7 +390,7 @@ export default function TimelineBoard({
       <div className="gold-line" />
 
       {[...posLayout, ...negLayout]
-        .filter((i) => !i.collapsed)
+        .filter((i) => !i.collapsed && onBar(i.x))
         .map((i) => {
           const x = i.left + i.width / 2;
           const neg = i.event.nature === 'negative';
@@ -401,7 +406,7 @@ export default function TimelineBoard({
 
       <div className="lane pos">
         {posLayout
-          .filter((i) => !i.collapsed)
+          .filter((i) => !i.collapsed && onBar(i.x))
           .map((item) => {
             const look = cardLook(item);
             return (
@@ -423,7 +428,7 @@ export default function TimelineBoard({
       </div>
       <div className="lane neg">
         {negLayout
-          .filter((i) => !i.collapsed)
+          .filter((i) => !i.collapsed && onBar(i.x))
           .map((item) => {
             const look = cardLook(item);
             return (
@@ -445,13 +450,13 @@ export default function TimelineBoard({
       </div>
 
       {[...posLayout, ...negLayout]
-        .filter((i) => !i.collapsed)
+        .filter((i) => !i.collapsed && onBar(i.x))
         .map((i) => {
           const expanded = expandedIds.has(i.event.id);
           return (
             <button
               key={`dot-${i.event.id}`}
-              className={`dot ${i.event.nature === 'negative' ? 'neg' : ''} ${expanded ? 'is-open' : ''}`}
+              className={`dot tier-${i.event.tier} ${i.event.nature === 'negative' ? 'neg' : ''} ${expanded ? 'is-open' : ''}`}
               style={{ left: i.left + i.width / 2, top: lineY }}
               onClick={(ev) => {
                 ev.stopPropagation();
@@ -461,19 +466,19 @@ export default function TimelineBoard({
           );
         })}
 
-      {posClusters.map((cl, idx) => (
+      {posClusters.filter((cl) => onBar(cl.x)).map((cl, idx) => (
         <button
           key={`pc-${idx}`}
-          className={`dot collapsed ${cl.items.length > 1 ? 'has-many' : ''}`}
+          className={`dot collapsed tier-${clusterLeadTier(cl.items)} ${cl.items.length > 1 ? 'has-many' : ''}`}
           style={{ left: cl.x, top: lineY }}
           title={cl.items.map((i) => i.event.title).join(', ')}
           onClick={(e) => openCluster(cl, 'pos', e)}
         />
       ))}
-      {negClusters.map((cl, idx) => (
+      {negClusters.filter((cl) => onBar(cl.x)).map((cl, idx) => (
         <button
           key={`nc-${idx}`}
-          className={`dot collapsed neg ${cl.items.length > 1 ? 'has-many' : ''}`}
+          className={`dot collapsed neg tier-${clusterLeadTier(cl.items)} ${cl.items.length > 1 ? 'has-many' : ''}`}
           style={{ left: cl.x, top: lineY }}
           title={cl.items.map((i) => i.event.title).join(', ')}
           onClick={(e) => openCluster(cl, 'neg', e)}

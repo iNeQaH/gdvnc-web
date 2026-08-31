@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { DAY_MS, TIMELINE_ORIGIN } from '@/lib/timeline/time';
 import { CARD_W } from '@/lib/timeline/layout';
+import { DAY_MS, TIMELINE_ORIGIN, eventTierRank } from '@/lib/timeline/time';
 import type { ChronicleEvent } from '@/lib/timeline/types';
 
 const GRID = 48;
@@ -121,12 +121,14 @@ function shiftHue(rgb: [number, number, number], deg: number): [number, number, 
 
 export default function TimelineFx({
   events,
+  zoom,
   viewStart,
   ppd,
   width,
   height,
 }: {
   events: ChronicleEvent[];
+  zoom: number;
   viewStart: number;
   ppd: number;
   width: number;
@@ -142,7 +144,18 @@ export default function TimelineFx({
     if (!events.length || width < 8 || height < 8) return [];
     const panDays = (viewStart - TIMELINE_ORIGIN) / DAY_MS;
     const fade = 96;
+    const zoomRank = Math.round(zoom);
+    const highPool = events.filter((e) => eventTierRank(e) <= 2);
+    const lowPool = events.filter((e) => eventTierRank(e) >= 3);
     return GHOST_SLOTS.map((slot, i) => {
+      const pool = slot.large
+        ? zoomRank <= 2
+          ? highPool
+          : []
+        : zoomRank >= 3
+          ? lowPool
+          : [];
+      if (!pool.length) return null;
       const rand = mulberry32(0x6d764e31 ^ (i + 1) * 0x9e3779b9);
       const u = slot.u + (rand() - 0.5) * 0.05;
       const v = slot.v + (rand() - 0.5) * 0.05;
@@ -154,7 +167,7 @@ export default function TimelineFx({
       const travel = u * width - panDays * ppd * slot.parallax;
       const cycle = Math.floor(travel / span);
       const pick = mulberry32(((i + 7) * 0x85ebca6b) ^ (cycle * 0xc2b2ae35));
-      const event = events[Math.floor(pick() * events.length)];
+      const event = pool[Math.floor(pick() * pool.length)];
       const cx = wrap(travel, span) - pad;
       const left = cx - w / 2;
       const shown = Math.min(left + w, width) - Math.max(left, 0);
@@ -170,8 +183,8 @@ export default function TimelineFx({
         h,
         opacity: edge * base,
       };
-    });
-  }, [events, viewStart, ppd, height, width]);
+    }).filter((g): g is NonNullable<typeof g> => Boolean(g));
+  }, [events, viewStart, ppd, height, width, zoom]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

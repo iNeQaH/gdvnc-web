@@ -33,7 +33,12 @@ export const metadata: Metadata = {
     description: "Trang web chính thức của cộng đồng GDVN",
   },
   icons: {
-    icon: "/favicon.svg",
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/gdvn-logo.png', type: 'image/png' },
+    ],
+    apple: '/gdvn-logo.png',
+    shortcut: '/favicon.ico',
   },
 };
 

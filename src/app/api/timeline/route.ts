@@ -8,6 +8,7 @@ import { toChronicleEvent } from '@/lib/timeline/serialize';
 import { sanitizeChronicleHtml } from '@/lib/timeline/sanitize';
 import { isNature, isTierId } from '@/lib/timeline/types';
 import { fromDateInput } from '@/lib/timeline/time';
+import { parseGlowColor } from '@/lib/timeline/glow';
 
 function allowedImage(url: string) {
   if (!url) return true;
@@ -36,6 +37,7 @@ function parseEventBody(body: any) {
       approximate: Boolean(body?.approximate),
       nature,
       tier,
+      glowColor: parseGlowColor(body?.glowColor),
     },
   };
 }

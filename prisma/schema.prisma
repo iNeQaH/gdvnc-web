@@ -331,6 +331,7 @@ model TimelineEvent {
   nature           String   @default("positive") // positive | negative
   tier             String   @default("1y") // 5y | 1y | 6m | 1m | week | day
   sourceKey        String?  @unique // e.g. gdvn-sheet:{gdLevelId}
+  glowColor        String?  // hex #rrggbb animated card border; auto for Epic+
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

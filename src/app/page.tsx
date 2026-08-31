@@ -41,18 +41,6 @@ export default function HomePage() {
     }
     fetchLeaderboard(mode);
     setCurrentPage(1); // Reset page on mode change
-
-    // Dynamically update favicon based on selected mode
-    const favicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
-    if (favicon) {
-      if (mode === 'CLASSIC') {
-        favicon.href = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23eab308'><polygon points='12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26'/></svg>`;
-      } else if (mode === 'PLATFORMER') {
-        favicon.href = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8' transform='rotate(-15)'><path d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/></svg>`;
-      } else {
-        favicon.href = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ec4899'><path d='M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z'/></svg>`;
-      }
-    }
   }, [mode]);
 
   useEffect(() => {

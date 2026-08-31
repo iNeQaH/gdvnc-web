@@ -6,6 +6,7 @@ import { toChronicleEvent } from '@/lib/timeline/serialize';
 import { sanitizeChronicleHtml } from '@/lib/timeline/sanitize';
 import { isNature, isTierId } from '@/lib/timeline/types';
 import { fromDateInput } from '@/lib/timeline/time';
+import { parseGlowColor } from '@/lib/timeline/glow';
 
 function allowedImage(url: string) {
   if (!url) return true;
@@ -49,6 +50,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         approximate: Boolean(body?.approximate),
         nature: isNature(String(body?.nature || 'positive')) ? body.nature : 'positive',
         tier: isTierId(String(body?.tier || '1y')) ? body.tier : '1y',
+        glowColor: parseGlowColor(body?.glowColor),
       },
     });
     return NextResponse.json({ success: true, event: toChronicleEvent(row) });

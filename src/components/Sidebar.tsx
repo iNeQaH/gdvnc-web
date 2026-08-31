@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { useLanguage } from './LanguageContext';
+import BrandMark from '@/components/BrandMark';
 import { NotificationModal } from './NotificationModal';
 
 export const Sidebar = () => {
@@ -131,9 +132,7 @@ export const Sidebar = () => {
         }}
       >
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center font-bold" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 3 21 21 21 3 3 3"/><polygon points="3 21 21 21 3 21 3 21"/></svg>
-          </div>
+          <BrandMark size={28} className="rounded-lg" />
           <span className="font-black text-sm tracking-tight ui-title">
             GD<span style={{ color: 'var(--accent)' }}>VN</span>
           </span>
@@ -173,9 +172,7 @@ export const Sidebar = () => {
           {/* Brand Header */}
           <div className="flex items-center justify-between px-2 pt-2">
             <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold shadow-xs" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 3 21 21 21 3 3 3"/><polygon points="3 21 21 21 3 21 3 21"/></svg>
-              </div>
+              <BrandMark size={36} />
               <div>
                 <div className="font-extrabold text-base tracking-tight ui-title leading-tight">
                   GD<span style={{ color: 'var(--accent)' }}>VN</span>

@@ -744,71 +744,14 @@
   align-items: stretch;
 }
 
-.gdvn-timeline .card-bolt {
-  position: absolute;
-  left: 8%;
-  right: 8%;
-  z-index: 0;
-  pointer-events: none;
-  height: 72%;
-  overflow: visible;
+@property --tl-spin {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
 }
 
-.gdvn-timeline .event-card.pos .card-bolt {
-  bottom: 4%;
-}
-
-.gdvn-timeline .event-card.neg .card-bolt {
-  top: 4%;
-}
-
-.gdvn-timeline .card-bolt span {
-  position: absolute;
-  left: 50%;
-  top: 8%;
-  width: 3px;
-  height: 88%;
-  background: linear-gradient(
-    180deg,
-    transparent,
-    color-mix(in srgb, var(--tl-accent) 90%, white),
-    transparent
-  );
-  box-shadow:
-    0 0 10px color-mix(in srgb, var(--tl-accent) 80%, white),
-    0 0 22px var(--tl-accent);
-  transform-origin: top center;
-  opacity: 0;
-  animation: tl-bolt-flash 5.8s ease-in-out infinite;
-}
-
-.gdvn-timeline .card-bolt span:nth-child(1) {
-  transform: translateX(-50%) rotate(-11deg) skewX(-18deg);
-  animation-delay: 0s;
-}
-
-.gdvn-timeline .card-bolt span:nth-child(2) {
-  left: 38%;
-  width: 2px;
-  transform: rotate(16deg) skewX(22deg);
-  animation-delay: 0.12s;
-}
-
-.gdvn-timeline .card-bolt span:nth-child(3) {
-  left: 62%;
-  width: 2px;
-  height: 62%;
-  top: 22%;
-  transform: rotate(-22deg) skewX(-12deg);
-  animation-delay: 0.2s;
-}
-
-@keyframes tl-bolt-flash {
-  0%, 82%, 100% { opacity: 0; filter: brightness(1); }
-  84% { opacity: 0.95; filter: brightness(1.8); }
-  86% { opacity: 0.12; }
-  88% { opacity: 0.8; filter: brightness(1.5); }
-  91% { opacity: 0; }
+@keyframes tl-flow-spin {
+  to { --tl-spin: 360deg; }
 }
 
 .gdvn-timeline .card-frame {
@@ -831,6 +774,35 @@
 
 .gdvn-timeline .event-card:hover .card-frame {
   box-shadow: 0 18px 40px var(--tl-shadow);
+}
+
+.gdvn-timeline .event-card.has-glow .card-frame {
+  border: 2.5px solid transparent;
+  background:
+    linear-gradient(var(--tl-card), var(--tl-card)) padding-box,
+    conic-gradient(
+      from var(--tl-spin, 0deg),
+      var(--flow-color),
+      color-mix(in srgb, var(--flow-color) 18%, transparent) 24%,
+      color-mix(in srgb, var(--flow-color) 82%, white) 50%,
+      color-mix(in srgb, var(--flow-color) 18%, transparent) 76%,
+      var(--flow-color)
+    ) border-box;
+  box-shadow:
+    0 0 12px color-mix(in srgb, var(--flow-color) 55%, transparent),
+    0 0 28px color-mix(in srgb, var(--flow-color) 30%, transparent),
+    0 12px 32px var(--tl-shadow);
+}
+
+.gdvn-timeline .event-card.has-flow .card-frame {
+  animation: tl-flow-spin 3.2s linear infinite;
+}
+
+.gdvn-timeline .event-card.has-glow.is-focus .card-frame {
+  box-shadow:
+    0 0 16px color-mix(in srgb, var(--flow-color) 72%, transparent),
+    0 0 36px color-mix(in srgb, var(--flow-color) 40%, transparent),
+    0 14px 36px var(--tl-shadow);
 }
 
 .gdvn-timeline .event-card.neg .card-frame {
@@ -922,24 +894,58 @@
   cursor: pointer;
 }
 
+.gdvn-timeline .dot.tier-5y {
+  width: 14px;
+  height: 14px;
+  box-shadow:
+    0 0 8px var(--tl-accent),
+    0 0 16px color-mix(in srgb, var(--tl-accent) 55%, transparent);
+}
+
+.gdvn-timeline .dot.tier-1y {
+  width: 14px;
+  height: 14px;
+}
+
+.gdvn-timeline .dot.tier-6m {
+  width: 12px;
+  height: 12px;
+  background: color-mix(in srgb, var(--tl-accent) 78%, #94a3b8);
+}
+
+.gdvn-timeline .dot.tier-1m {
+  width: 10px;
+  height: 10px;
+  background: color-mix(in srgb, var(--tl-accent) 58%, #94a3b8);
+}
+
+.gdvn-timeline .dot.tier-week {
+  width: 8px;
+  height: 8px;
+  background: color-mix(in srgb, var(--tl-accent) 42%, #94a3b8);
+}
+
+.gdvn-timeline .dot.tier-day {
+  width: 7px;
+  height: 7px;
+  background: color-mix(in srgb, var(--tl-accent) 28%, #94a3b8);
+}
+
 .gdvn-timeline .dot:hover,
 .gdvn-timeline .dot.is-open {
   transform: translate(-50%, -50%) scale(1.28);
 }
 
 .gdvn-timeline .dot.neg {
-  background: var(--tl-accent);
+  filter: hue-rotate(20deg);
 }
 
 .gdvn-timeline .dot.collapsed {
-  width: 9px;
-  height: 9px;
   z-index: 13;
 }
 
 .gdvn-timeline .dot.collapsed.has-many {
-  width: 12px;
-  height: 12px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--tl-accent) 45%, transparent);
 }
 
 .gdvn-timeline .cluster-pop {
@@ -1256,6 +1262,19 @@ html.dark .gdvn-timeline .chronicle {
 .gdvn-timeline .field textarea {
   min-height: 110px;
   resize: vertical;
+}
+
+.gdvn-timeline .glow-pick {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gdvn-timeline .glow-pick input[type="color"] {
+  width: 44px;
+  height: 32px;
+  padding: 2px;
+  cursor: pointer;
 }
 
 .gdvn-timeline .row-2 {

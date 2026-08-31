@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Trophy, Folder, Goal, ClipboardList, ShieldCheck, User as UserIcon, LogOut } from 'lucide-react';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { useLanguage } from './LanguageContext';
+import BrandMark from '@/components/BrandMark';
 
 export const Navbar = () => {
   const pathname = usePathname();
@@ -48,9 +49,7 @@ export const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 3 21 21 21 3 3 3"/><polygon points="3 21 21 21 3 21 3 21"/></svg>
-          </div>
+          <BrandMark size={32} className="rounded-lg" />
           <div>
             <span className="font-extrabold text-base tracking-tight ui-title">
               GDVN
