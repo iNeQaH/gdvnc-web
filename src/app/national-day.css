@@ -1,0 +1,140 @@
+.qk-lock-body {
+  margin: 0;
+  min-height: 100vh;
+  background: #f4f1ea;
+  color: #111;
+  color-scheme: light;
+}
+
+.qk-paper {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 28px 22px 64px;
+  font-family: 'Times New Roman', Times, Georgia, serif;
+  background: #fff;
+  min-height: 100vh;
+  box-shadow: 0 0 0 1px #ddd, 0 12px 40px rgba(0, 0, 0, 0.06);
+}
+
+.qk-masthead {
+  text-align: center;
+  border-bottom: 3px double #111;
+  padding-bottom: 16px;
+  margin-bottom: 22px;
+}
+
+.qk-kicker {
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #333;
+  margin: 0 0 6px;
+}
+
+.qk-masthead h1 {
+  font-size: clamp(28px, 6vw, 48px);
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: 0.04em;
+}
+
+.qk-sub {
+  margin: 8px 0 0;
+  font-size: 15px;
+  font-style: italic;
+}
+
+.qk-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: #444;
+  margin-top: 12px;
+  border-top: 1px solid #111;
+  padding-top: 8px;
+}
+
+.qk-lead {
+  font-size: 19px;
+  line-height: 1.45;
+  font-weight: 600;
+}
+
+.qk-paper p {
+  font-size: 17px;
+  line-height: 1.7;
+  margin: 0 0 1em;
+}
+
+.qk-paper h2 {
+  font-size: 22px;
+  margin: 1.6em 0 0.6em;
+  font-weight: 800;
+}
+
+.qk-figure {
+  margin: 22px 0;
+}
+
+.qk-figure img {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  background: #eee;
+}
+
+.qk-figure figcaption {
+  font-size: 12px;
+  color: #555;
+  font-style: italic;
+  margin-top: 6px;
+}
+
+.qk-flag {
+  max-height: 180px !important;
+  object-fit: contain !important;
+  background: #fff !important;
+}
+
+.qk-source {
+  margin-top: 36px;
+  padding-top: 14px;
+  border-top: 1px solid #ccc;
+  font-size: 12px;
+  color: #555;
+}
+
+.qk-source a {
+  color: #111;
+}
+
+.qk-admin {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #111;
+  color: #fff;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+}
+
+.qk-admin button {
+  border: 1px solid #fff;
+  background: #fff;
+  color: #111;
+  font-weight: 800;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.qk-admin button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

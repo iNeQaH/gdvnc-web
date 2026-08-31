@@ -34,7 +34,9 @@ import {
   ChevronUp,
   Layers,
   FolderPlus,
-  LifeBuoy
+  LifeBuoy,
+  Lock,
+  Wrench,
 } from 'lucide-react';
 import * as AllLucideIcons from 'lucide-react';
 import { CUSTOM_ICONS } from '@/components/CustomIcons';
@@ -230,7 +232,7 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (currentUser && currentUser.role !== 'ADMIN' && tab === 'badges') {
+    if (currentUser && currentUser.role !== 'ADMIN' && (tab === 'badges' || tab === 'levels')) {
       setTabState('records');
       localStorage.setItem('adminTab', 'records');
     }
@@ -288,6 +290,8 @@ export default function AdminPage() {
 
   const [isLevelFormOpen, setIsLevelFormOpen] = useState(false);
   const [levelFormInitialData, setLevelFormInitialData] = useState<any>(null);
+  const [siteLocked, setSiteLocked] = useState(false);
+  const [siteLockBusy, setSiteLockBusy] = useState(false);
   const [syncingLists, setSyncingLists] = useState(false);
   const [adminToast, setAdminToast] = useState<{ text: string, isError: boolean } | null>(null);
   const [userSortOrder, setUserSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -312,6 +316,12 @@ export default function AdminPage() {
     fetchBadges();
     fetchBadgeCategories();
     fetchLevelSubs('PENDING', 1);
+    fetch('/api/site-lock')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setSiteLocked(!!data.locked);
+      })
+      .catch(() => {});
     fetch('/api/admin/helps?page=1')
       .then((res) => res.json())
       .then((data) => {
@@ -707,6 +717,31 @@ export default function AdminPage() {
     });
   };
 
+  const handleSiteLock = (locked: boolean) => {
+    showConfirm(locked ? t('admin.lock_confirm_on') : t('admin.lock_confirm_off'), async () => {
+      setSiteLockBusy(true);
+      try {
+        const res = await fetch('/api/site-lock', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ locked }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          showToast(data.error || t('admin.lock_fail'), 'error');
+          return;
+        }
+        setSiteLocked(!!data.locked);
+        showToast(data.locked ? t('admin.lock_on_ok') : t('admin.lock_off_ok'), 'success');
+        if (data.locked) window.location.href = '/';
+      } catch {
+        showToast(t('admin.lock_fail'), 'error');
+      } finally {
+        setSiteLockBusy(false);
+      }
+    });
+  };
+
   const filteredBadges = badgesList
     .filter((b) => {
       const q = badgeSearch.trim().toLowerCase();
@@ -870,6 +905,7 @@ export default function AdminPage() {
             <Users className="w-3.5 h-3.5" />
             Members
           </button>
+          {isFullAdmin && (
             <button
               onClick={() => setTab('levels')}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
@@ -878,9 +914,10 @@ export default function AdminPage() {
                 color: tab === 'levels' ? 'var(--accent)' : 'var(--text-dim)',
               }}
             >
-              <FolderPlus className="w-3.5 h-3.5" />
+              <Wrench className="w-3.5 h-3.5" />
               {t('admin.tab_levels')}
             </button>
+          )}
         </div>
       </div>
 
@@ -1683,8 +1720,29 @@ export default function AdminPage() {
         </div>
       )}
 
-{tab === 'levels' && (
+{tab === 'levels' && isFullAdmin && (
           <div className="ui-card p-6 space-y-4">
+            <div className="space-y-2">
+              <h2 className="text-sm font-bold ui-title flex items-center gap-2">
+                <Lock className="w-4 h-4" />
+                {t('admin.lock_title')}
+              </h2>
+              <p className="text-sm ui-dim">{t('admin.lock_desc')}</p>
+              <p className="text-xs font-bold" style={{ color: siteLocked ? 'var(--badge-red-text)' : 'var(--text-title)' }}>
+                {siteLocked ? t('admin.lock_status_on') : t('admin.lock_status_off')}
+              </p>
+              <button
+                type="button"
+                disabled={siteLockBusy}
+                onClick={() => handleSiteLock(!siteLocked)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                style={{ backgroundColor: siteLocked ? 'var(--badge-red-bg)' : 'var(--accent)', color: siteLocked ? 'var(--badge-red-text)' : 'var(--accent-fg)' }}
+              >
+                <Lock className="w-3.5 h-3.5" />
+                {siteLockBusy ? t('admin.lock_busy') : siteLocked ? t('admin.lock_turn_off') : t('admin.lock_turn_on')}
+              </button>
+            </div>
+            <hr style={{ borderColor: 'var(--border-subtle)' }} />
             <p className="text-sm ui-dim">{t('admin.sync_lists_desc')}</p>
             <div className="flex flex-wrap gap-2">
               <button
@@ -2076,6 +2134,31 @@ function AdminHelpsTab({
         setLoading(false);
       })
       .catch(() => setLoading(false));
+  };
+
+  const handleSiteLock = (locked: boolean) => {
+    showConfirm(locked ? t('admin.lock_confirm_on') : t('admin.lock_confirm_off'), async () => {
+      setSiteLockBusy(true);
+      try {
+        const res = await fetch('/api/site-lock', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ locked }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          showToast(data.error || t('admin.lock_fail'), 'error');
+          return;
+        }
+        setSiteLocked(!!data.locked);
+        showToast(data.locked ? t('admin.lock_on_ok') : t('admin.lock_off_ok'), 'success');
+        if (data.locked) window.location.href = '/';
+      } catch {
+        showToast(t('admin.lock_fail'), 'error');
+      } finally {
+        setSiteLockBusy(false);
+      }
+    });
   };
 
   useEffect(() => {
