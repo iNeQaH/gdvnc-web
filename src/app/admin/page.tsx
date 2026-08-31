@@ -1722,27 +1722,6 @@ export default function AdminPage() {
 
 {tab === 'levels' && isFullAdmin && (
           <div className="ui-card p-6 space-y-4">
-            <div className="space-y-2">
-              <h2 className="text-sm font-bold ui-title flex items-center gap-2">
-                <Lock className="w-4 h-4" />
-                {t('admin.lock_title')}
-              </h2>
-              <p className="text-sm ui-dim">{t('admin.lock_desc')}</p>
-              <p className="text-xs font-bold" style={{ color: siteLocked ? 'var(--badge-red-text)' : 'var(--text-title)' }}>
-                {siteLocked ? t('admin.lock_status_on') : t('admin.lock_status_off')}
-              </p>
-              <button
-                type="button"
-                disabled={siteLockBusy}
-                onClick={() => handleSiteLock(!siteLocked)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                style={{ backgroundColor: siteLocked ? 'var(--badge-red-bg)' : 'var(--accent)', color: siteLocked ? 'var(--badge-red-text)' : 'var(--accent-fg)' }}
-              >
-                <Lock className="w-3.5 h-3.5" />
-                {siteLockBusy ? t('admin.lock_busy') : siteLocked ? t('admin.lock_turn_off') : t('admin.lock_turn_on')}
-              </button>
-            </div>
-            <hr style={{ borderColor: 'var(--border-subtle)' }} />
             <p className="text-sm ui-dim">{t('admin.sync_lists_desc')}</p>
             <div className="flex flex-wrap gap-2">
               <button
@@ -1786,6 +1765,16 @@ export default function AdminPage() {
               + Thêm Level Mới
             </button>
             <p className="text-xs ui-dim">Lưu ý: Bạn cũng có thể sửa Level trực tiếp tại trang Levels.</p>
+            <hr style={{ borderColor: 'var(--border-subtle)' }} />
+            <button
+              type="button"
+              disabled={siteLockBusy}
+              onClick={() => handleSiteLock(true)}
+              className="w-full px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              {siteLockBusy ? t('admin.lock_busy') : t('admin.lock_turn_on')}
+            </button>
           </div>
         )}
 
