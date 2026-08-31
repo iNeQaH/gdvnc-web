@@ -36,6 +36,7 @@ import {
   FolderPlus,
   LifeBuoy,
   Lock,
+  FolderOpen,
   Wrench,
 } from 'lucide-react';
 import * as AllLucideIcons from 'lucide-react';
@@ -46,6 +47,7 @@ import { useToast } from '@/components/GlobalToast';
 import ColorPicker from '@/components/ColorPicker';
 import { type DictKey } from '@/lib/dictionaries';
 import ReviewStatusBadge from '@/components/ReviewStatusBadge';
+import AdminFilesTab from '@/components/AdminFilesTab';
 
 const allIconNames = [
   ...Object.keys(CUSTOM_ICONS),
@@ -218,7 +220,7 @@ export default function AdminPage() {
   const { t, language } = useLanguage();
   const { showToast, showConfirm } = useToast();
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [tab, setTabState] = useState<'records' | 'works' | 'badges' | 'users' | 'levels' | 'levelSubs' | 'helps'>('records');
+  const [tab, setTabState] = useState<'records' | 'works' | 'badges' | 'users' | 'levels' | 'levelSubs' | 'helps' | 'files'>('records');
   
   useEffect(() => {
     const saved = localStorage.getItem('adminTab');
@@ -226,7 +228,7 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (currentUser && currentUser.role !== 'ADMIN' && (tab === 'badges' || tab === 'levels')) {
+    if (currentUser && currentUser.role !== 'ADMIN' && (tab === 'badges' || tab === 'levels' || tab === 'files')) {
       setTabState('records');
       localStorage.setItem('adminTab', 'records');
     }
@@ -932,6 +934,17 @@ export default function AdminPage() {
             >
               <Wrench className="w-3.5 h-3.5" />
               {t('admin.tab_levels')}
+            </button>
+            <button
+              onClick={() => setTab('files')}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              style={{
+                backgroundColor: tab === 'files' ? 'var(--bg-card)' : 'transparent',
+                color: tab === 'files' ? 'var(--accent)' : 'var(--text-dim)',
+              }}
+            >
+              <FolderOpen className="w-3.5 h-3.5" />
+              {t('admin.tab_files')}
             </button>
           )}
         </div>
@@ -1814,6 +1827,8 @@ export default function AdminPage() {
             </button>
           </div>
         )}
+
+        {tab === 'files' && isFullAdmin && <AdminFilesTab />}
 
         {tab === 'users' && (
         <div className="space-y-4">

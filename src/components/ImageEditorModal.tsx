@@ -16,6 +16,7 @@ import {
   Droplet
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
+import { uploadImagesToUt } from '@/lib/uploadthingClient';
 
 interface ImageEditorModalProps {
   isOpen: boolean;
@@ -50,6 +51,7 @@ export default function ImageEditorModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
+  const gifFileRef = useRef<File | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -63,6 +65,7 @@ export default function ImageEditorModal({
       setBlurAmount(0);
       setIsGifSource(false);
       setFileError('');
+      gifFileRef.current = null;
     }
   }, [isOpen, currentImage]);
 
@@ -158,6 +161,7 @@ export default function ImageEditorModal({
 
     const isGif = file.type === 'image/gif';
     setIsGifSource(isGif);
+    gifFileRef.current = isGif ? file : null;
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -190,29 +194,21 @@ export default function ImageEditorModal({
 
     setIsSaving(true);
     try {
-      let dataUrl: string;
-      if (isGifSource && imageSrc.startsWith('data:image/gif')) {
-        dataUrl = imageSrc;
+      let file: File;
+      if (isGifSource && gifFileRef.current) {
+        file = gifFileRef.current;
       } else {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        const blob = await new Promise<Blob | null>((resolve) =>
+          canvas.toBlob(resolve, 'image/jpeg', 0.88)
+        );
+        if (!blob) throw new Error('Could not encode image');
+        file = new File([blob], `${type}.jpg`, { type: 'image/jpeg' });
       }
 
-      const res = await fetch('/api/images', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dataUrl, kind: type }),
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'Upload failed (Server ' + res.status + ')');
-      }
-      const data = await res.json();
-      const localUrl = data.url;
-
-      await onSave(localUrl);
+      const [url] = await uploadImagesToUt([file]);
+      await onSave(url);
       onClose();
     } catch (e) {
       alert(t('editor.save_error', { msg: (e as any).message }));

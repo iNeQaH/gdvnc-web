@@ -9,6 +9,7 @@ import {
 } from '@/lib/recordUtils';
 import { requireAuth } from '@/lib/auth';
 import { clipText } from '@/lib/validate';
+import { isAllowedImageRef } from '@/lib/uploadthing';
 
 export async function GET(req: Request, { params }: { params: Promise<{ username: string }> }) {
   try {
@@ -222,12 +223,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
       }
     }
 
+    if (body.avatarUrl !== undefined && !isAllowedImageRef(body.avatarUrl)) {
+      return NextResponse.json({ error: 'Avatar URL không hợp lệ.' }, { status: 400 });
+    }
+    if (body.coverUrl !== undefined && !isAllowedImageRef(body.coverUrl)) {
+      return NextResponse.json({ error: 'Cover URL không hợp lệ.' }, { status: 400 });
+    }
+
     const updated = await prisma.user.update({
       where: { username },
       data: {
         bio: body.bio !== undefined ? clipText(body.bio, 2000) : undefined,
-        avatarUrl: body.avatarUrl !== undefined ? clipText(body.avatarUrl, 400) : undefined,
-        coverUrl: body.coverUrl !== undefined ? clipText(body.coverUrl, 400) : undefined,
+        avatarUrl: body.avatarUrl !== undefined ? clipText(body.avatarUrl, 500) : undefined,
+        coverUrl: body.coverUrl !== undefined ? clipText(body.coverUrl, 500) : undefined,
         country: body.country !== undefined ? clipText(body.country, 80) : undefined,
         gdUsername: nextGdUsername,
         gdVerified: nextGdVerified,

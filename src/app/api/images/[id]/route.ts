@@ -12,7 +12,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       return new NextResponse('Not found', { status: 404 });
     }
 
-    const dataUrl = image.dataUrl; // "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
+    const dataUrl = image.dataUrl;
+    if (dataUrl.startsWith('http://') || dataUrl.startsWith('https://')) {
+      return NextResponse.redirect(dataUrl, 302);
+    }
     const parts = dataUrl.split(',');
     if (parts.length !== 2) {
       return new NextResponse('Invalid image data', { status: 500 });

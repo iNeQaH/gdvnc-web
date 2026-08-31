@@ -7,6 +7,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import LevelFormModal from '@/components/LevelFormModal';
 import ReviewStatusBadge from '@/components/ReviewStatusBadge';
 import GdUnverifiedNotice from '@/components/GdUnverifiedNotice';
+import { uploadImagesToUt } from '@/lib/uploadthingClient';
 
 function SubmitForm() {
   const router = useRouter();
@@ -38,9 +39,10 @@ function SubmitForm() {
   const [workLevelName, setWorkLevelName] = useState(''); // Level Name
   const [workLevelId, setWorkLevelId] = useState('');
   const [workVideoUrl, setWorkVideoUrl] = useState('');
-  const [workImagesBase64, setWorkImagesBase64] = useState<string[]>([]);
+  const [workImageUrls, setWorkImageUrls] = useState<string[]>([]);
   const [workDesc, setWorkDesc] = useState('');
   const [imageError, setImageError] = useState('');
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -117,50 +119,33 @@ function SubmitForm() {
     };
   }, [gdLevelIdStr, t]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    e.target.value = '';
     if (!files.length) return;
 
     setImageError('');
-    const MAX_TOTAL = 20 * 1024 * 1024;
-    const estimateBase64Size = (b64: string) => {
-      const base64 = b64.includes(',') ? b64.split(',')[1] : b64;
-      return Math.ceil(base64.length * 3 / 4);
-    };
-
-    const currentTotal = workImagesBase64.reduce((sum, img) => sum + estimateBase64Size(img), 0);
-    const incomingTotal = files.reduce((sum, file) => sum + file.size, 0);
-    if (currentTotal + incomingTotal > MAX_TOTAL) {
-      setImageError('Tổng dung lượng ảnh minh họa tối đa là 20MB.');
-      e.target.value = '';
+    const room = 3 - workImageUrls.length;
+    if (room <= 0) {
+      setImageError('Tối đa 3 ảnh minh họa.');
+      return;
+    }
+    const incoming = files.slice(0, room);
+    const tooBig = incoming.find((file) => file.size > 16 * 1024 * 1024);
+    if (tooBig) {
+      setImageError('Mỗi ảnh tối đa 16MB.');
       return;
     }
 
-    let loaded = 0;
-    const newImages: string[] = [];
-
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const result = ev.target?.result as string;
-        if (result) newImages.push(result);
-        loaded += 1;
-        if (loaded === files.length) {
-          setWorkImagesBase64((prev) => {
-            const combined = [...prev, ...newImages];
-            const total = combined.reduce((sum, img) => sum + estimateBase64Size(img), 0);
-            if (total > MAX_TOTAL) {
-              setImageError('Tổng dung lượng ảnh minh họa tối đa là 20MB.');
-              return prev;
-            }
-            return combined;
-          });
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-
-    e.target.value = '';
+    setUploadingImages(true);
+    try {
+      const urls = await uploadImagesToUt(incoming);
+      setWorkImageUrls((prev) => [...prev, ...urls].slice(0, 3));
+    } catch (err: any) {
+      setImageError(err?.message || 'Không tải được ảnh lên UploadThing.');
+    } finally {
+      setUploadingImages(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -219,8 +204,8 @@ function SubmitForm() {
           levelName: workLevelName.trim(),
           gdLevelId: workLevelId.trim(),
           videoUrl: workVideoUrl.trim(),
-          imageUrl: workImagesBase64.length > 0 ? workImagesBase64[0] : '', // for backward compatibility
-          imageUrls: workImagesBase64, // pass array of images
+          imageUrl: workImageUrls[0] || '',
+          imageUrls: workImageUrls,
           description: workDesc.trim(),
         };
       }
@@ -538,33 +523,40 @@ function SubmitForm() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold ui-title">Ảnh Minh Họa (Tổng tối đa 20MB, Tùy chọn)</label>
+                <label className="text-xs font-bold ui-title">Ảnh Minh Họa (tối đa 3 ảnh, 16MB/ảnh)</label>
                 <div className="relative border-2 border-dashed rounded-xl p-6 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-center group" style={{ borderColor: 'var(--border-ui)' }}>
                   <input
                     type="file"
                     accept="image/*"
                     multiple
+                    disabled={uploadingImages}
                     onChange={handleImageUpload}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-wait"
                   />
                   <div className="flex flex-col items-center gap-2 pointer-events-none">
-                    <ImageIcon className="w-8 h-8 text-[var(--accent)] group-hover:scale-110 transition-transform" />
-                    <span className="text-sm font-bold ui-title">Nhấn để chọn nhiều ảnh</span>
-                    <span className="text-[10px] ui-dim">Có thể tải nhiều ảnh — tổng dung lượng tối đa 20MB</span>
+                    {uploadingImages ? (
+                      <Loader2 className="w-8 h-8 text-[var(--accent)] animate-spin" />
+                    ) : (
+                      <ImageIcon className="w-8 h-8 text-[var(--accent)] group-hover:scale-110 transition-transform" />
+                    )}
+                    <span className="text-sm font-bold ui-title">
+                      {uploadingImages ? 'Đang tải lên UploadThing…' : 'Nhấn để chọn nhiều ảnh'}
+                    </span>
+                    <span className="text-[10px] ui-dim">Ảnh lưu trên UploadThing, không lưu trong database</span>
                   </div>
                 </div>
                 {imageError && <p className="text-[10px] text-red-500 pt-1">{imageError}</p>}
                 
-                {workImagesBase64.length > 0 && (
+                {workImageUrls.length > 0 && (
                   <div className="mt-3">
-                    <p className="text-[11px] font-bold mb-2">Đã chọn {workImagesBase64.length} ảnh:</p>
+                    <p className="text-[11px] font-bold mb-2">Đã chọn {workImageUrls.length} ảnh:</p>
                     <div className="flex gap-2 overflow-x-auto pb-2">
-                      {workImagesBase64.map((img, i) => (
-                        <div key={i} className="relative shrink-0">
+                      {workImageUrls.map((img, i) => (
+                        <div key={img} className="relative shrink-0">
                           <img src={img} alt={`Preview ${i+1}`} className="h-20 w-32 rounded-xl object-cover border ui-border" />
                           <button 
                             type="button"
-                            onClick={() => setWorkImagesBase64(prev => prev.filter((_, idx) => idx !== i))}
+                            onClick={() => setWorkImageUrls(prev => prev.filter((_, idx) => idx !== i))}
                             className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600"
                           >
                             <X className="w-3 h-3" />
@@ -591,7 +583,7 @@ function SubmitForm() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || uploadingImages}
             className="w-full py-3 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
             style={{ backgroundColor: "var(--accent)" }}
           >

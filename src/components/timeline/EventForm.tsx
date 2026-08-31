@@ -6,6 +6,7 @@ import { toDateInput, fromDateInput, TIMELINE_ORIGIN, timelineEnd } from '@/lib/
 import type { ChronicleEvent, TimelineNature, TimelineTierId } from '@/lib/timeline/types';
 import type { DictKey } from '@/lib/dictionaries';
 import GlowStopsField from '@/components/GlowStopsField';
+import { uploadImagesToUt } from '@/lib/uploadthingClient';
 
 const TIER_KEYS: Record<TimelineTierId, DictKey> = {
   '5y': 'timeline.tier.5y',
@@ -41,6 +42,7 @@ export default function EventForm({
   t: (key: DictKey) => string;
 }) {
   const [form, setForm] = useState(empty);
+  const [uploading, setUploading] = useState(false);
   const minDate = toDateInput(TIMELINE_ORIGIN);
   const maxDate = toDateInput(timelineEnd());
 
@@ -119,6 +121,30 @@ export default function EventForm({
             onChange={(e) => set('image', e.target.value)}
             placeholder="https://…"
           />
+          <input
+            type="file"
+            accept="image/*"
+            disabled={uploading}
+            className="mt-2"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (!file) return;
+              setUploading(true);
+              try {
+                const [url] = await uploadImagesToUt([file], 'adminImage');
+                set('image', url);
+              } catch (err) {
+                alert((err as Error).message || 'Upload failed');
+              } finally {
+                setUploading(false);
+              }
+            }}
+          />
+          {uploading && <p className="text-[11px] ui-dim mt-1">{t('timeline.image_uploading')}</p>}
+          {form.image ? (
+            <img src={form.image} alt="" className="mt-2 max-h-28 rounded-lg object-cover" />
+          ) : null}
         </div>
         <div className="field">
           <label>{t('timeline.glow_color')}</label>

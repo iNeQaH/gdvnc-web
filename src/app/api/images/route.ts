@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
 import { estimateDataUrlBytes } from '@/lib/profileEmbed';
 import { requireAuth } from '@/lib/auth';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { uploadDataUrlToUt } from '@/lib/uploadthing';
 
 const MAX_AVATAR_BYTES = 4 * 1024 * 1024;
 const MAX_COVER_BYTES = 8 * 1024 * 1024;
@@ -37,11 +37,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const image = await (prisma as any).image.create({
-      data: { dataUrl },
-    });
-
-    return NextResponse.json({ success: true, url: `/api/images/${image.id}` });
+    const url = await uploadDataUrlToUt(dataUrl, kind === 'cover' ? 'cover.jpg' : 'avatar.jpg');
+    return NextResponse.json({ success: true, url });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Server Error' }, { status: 500 });
   }
