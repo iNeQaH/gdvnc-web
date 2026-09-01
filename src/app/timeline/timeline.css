@@ -1051,13 +1051,15 @@
   inset: 0;
   z-index: 50;
   isolation: isolate;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--bg-page) 38%, transparent) 0%,
-    color-mix(in srgb, var(--bg-page) 70%, transparent) 100%
-  );
-  backdrop-filter: blur(14px) saturate(1.05);
-  -webkit-backdrop-filter: blur(14px) saturate(1.05);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.22) 0%,
+      rgba(0, 0, 0, 0.52) 42%,
+      rgba(0, 0, 0, 0.72) 100%
+    );
+  backdrop-filter: blur(10px) saturate(1.05);
+  -webkit-backdrop-filter: blur(10px) saturate(1.05);
   display: flex;
   justify-content: flex-end;
   overflow: hidden;
@@ -1077,11 +1079,12 @@
   color: var(--tl-ink);
   border: none;
   border-radius: 0;
-  padding: 56px 44px 52px 56px;
-  background: color-mix(in srgb, var(--tl-card) 82%, white 8%);
+  padding: 56px 44px 52px 72px;
+  background: color-mix(in srgb, var(--tl-card) 88%, black 10%);
   backdrop-filter: blur(36px) saturate(1.2);
   -webkit-backdrop-filter: blur(36px) saturate(1.2);
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 8% 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 72px);
+  mask-image: linear-gradient(to right, transparent 0%, #000 72px);
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, white 50%, transparent),
     inset 1px 0 0 color-mix(in srgb, white 18%, transparent);
@@ -1129,6 +1132,16 @@
   filter: blur(5px);
   mask-image: radial-gradient(ellipse 90% 90% at 6% 96%, #000 0%, transparent 72%);
   -webkit-mask-image: radial-gradient(ellipse 90% 90% at 6% 96%, #000 0%, transparent 72%);
+}
+
+html.dark .gdvn-timeline .overlay {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.28) 0%,
+      rgba(0, 0, 0, 0.58) 42%,
+      rgba(0, 0, 0, 0.78) 100%
+    );
 }
 
 html.dark .gdvn-timeline .chronicle {
@@ -1459,7 +1472,8 @@ html.dark .gdvn-timeline .chronicle {
 
   .gdvn-timeline .chronicle {
     width: min(100vw, 100%);
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 6% 100%);
-    padding: 56px 20px 36px 28px;
+    padding: 56px 20px 36px 48px;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 40px);
+    mask-image: linear-gradient(to right, transparent 0%, #000 40px);
   }
 }

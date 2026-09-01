@@ -1,6 +1,7 @@
 import { clipText } from '@/lib/validate';
 import { formatDifficultyLabel } from '@/lib/gdDifficulty';
 import { sanitizeChronicleHtml } from '@/lib/timeline/sanitize';
+import { formatDate } from '@/lib/timeline/time';
 
 export const LEVEL_COPY_MARK = '<!--gdvn-level-->';
 
@@ -18,13 +19,6 @@ function escapeHtml(value: string) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
-}
-
-function ymd(date: Date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
 }
 
 function ratingLabel(ratingType: string | null | undefined) {
@@ -74,7 +68,7 @@ export function levelChronicleHtml(input: {
     `<p><strong>ID:</strong> ${input.gdLevelId}</p>`,
   ];
   if (input.ratedAt) {
-    lines.push(`<p><strong>Ngày rate:</strong> ${ymd(input.ratedAt)}</p>`);
+    lines.push(`<p><strong>Ngày rate:</strong> ${formatDate(input.ratedAt.getTime())}</p>`);
   }
   if (desc) {
     lines.push(`<p><strong>Mô tả:</strong><br>${escapeHtml(desc).replace(/\n/g, '<br>')}</p>`);

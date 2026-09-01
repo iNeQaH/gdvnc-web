@@ -54,6 +54,65 @@ export function pad(n: number) {
   return String(n).padStart(2, '0');
 }
 
+const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
+
+export type DateLocale = 'vi' | 'en';
+
+export function formatDate(
+  ms: number,
+  { withDay = true, locale = 'vi' }: { withDay?: boolean; locale?: DateLocale } = {}
+) {
+  const d = new Date(ms);
+  const day = d.getDate();
+  const month = d.getMonth();
+  const year = d.getFullYear();
+  if (locale === 'en') {
+    const mon = MONTHS_EN[month];
+    if (!withDay) return `${mon} ${year}`;
+    return `${mon} ${day}, ${year}`;
+  }
+  if (!withDay) return `${pad(month + 1)}/${year}`;
+  return `${pad(day)}/${pad(month + 1)}/${year}`;
+}
+
+/** Rewrite ISO (YYYY-MM-DD) or numeric DD/MM/YYYY dates inside stored copy. */
+export function localizeDateText(text: string, locale: DateLocale = 'vi') {
+  return String(text || '')
+    .replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, (_, y, m, d) =>
+      formatDate(new Date(Number(y), Number(m) - 1, Number(d)).getTime(), { locale })
+    )
+    .replace(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/g, (_, d, m, y) =>
+      formatDate(new Date(Number(y), Number(m) - 1, Number(d)).getTime(), { locale })
+    );
+}
+
+export function formatRange(
+  start: number,
+  end: number,
+  zoomIndex: number,
+  locale: DateLocale = 'vi'
+) {
+  const tier = (['5y', '1y', '6m', '1m', 'week', 'day'] as TimelineTierId[])[nearestTierIndex(zoomIndex)];
+  if (start === end || end - start < DAY_MS) {
+    if (tier === '1y' || tier === '5y') return `${new Date(start).getFullYear()}`;
+    if (tier === '1m' || tier === '6m') return formatDate(start, { withDay: false, locale });
+    return formatDate(start, { locale });
+  }
+  const a = new Date(start);
+  const b = new Date(end - 1);
+  if (tier === '5y' || tier === '1y') {
+    if (a.getFullYear() === b.getFullYear()) return String(a.getFullYear());
+    return `${a.getFullYear()} — ${b.getFullYear()}`;
+  }
+  if (tier === '6m' || tier === '1m') {
+    return `${formatDate(start, { withDay: false, locale })} — ${formatDate(end - 1, { withDay: false, locale })}`;
+  }
+  if (a.getFullYear() === b.getFullYear() && locale === 'vi') {
+    return `${pad(a.getDate())}/${pad(a.getMonth() + 1)} — ${pad(b.getDate())}/${pad(b.getMonth() + 1)}/${b.getFullYear()}`;
+  }
+  return `${formatDate(start, { locale })} — ${formatDate(end - 1, { locale })}`;
+}
+
 export function toDateInput(ms: number | null | undefined) {
   if (ms == null) return '';
   const d = new Date(ms);
@@ -140,37 +199,6 @@ export function neighborEvent(
   return next.length ? next[0] : null;
 }
 
-export function formatDate(ms: number, { withDay = true }: { withDay?: boolean } = {}) {
-  const d = new Date(ms);
-  const day = pad(d.getDate());
-  const month = pad(d.getMonth() + 1);
-  const year = d.getFullYear();
-  if (!withDay) return `${month}/${year}`;
-  return `${day}/${month}/${year}`;
-}
-
-export function formatRange(start: number, end: number, zoomIndex: number) {
-  const tier = (['5y', '1y', '6m', '1m', 'week', 'day'] as TimelineTierId[])[nearestTierIndex(zoomIndex)];
-  if (start === end || end - start < DAY_MS) {
-    if (tier === '1y' || tier === '5y') return `${new Date(start).getFullYear()}`;
-    if (tier === '1m' || tier === '6m') return formatDate(start, { withDay: false });
-    return formatDate(start);
-  }
-  const a = new Date(start);
-  const b = new Date(end - 1);
-  if (tier === '5y' || tier === '1y') {
-    if (a.getFullYear() === b.getFullYear()) return String(a.getFullYear());
-    return `${a.getFullYear()} — ${b.getFullYear()}`;
-  }
-  if (tier === '6m' || tier === '1m') {
-    return `${pad(a.getMonth() + 1)}/${a.getFullYear()} — ${pad(b.getMonth() + 1)}/${b.getFullYear()}`;
-  }
-  if (a.getFullYear() === b.getFullYear()) {
-    return `${pad(a.getDate())}/${pad(a.getMonth() + 1)} — ${pad(b.getDate())}/${pad(b.getMonth() + 1)}/${b.getFullYear()}`;
-  }
-  return `${formatDate(start)} — ${formatDate(end - 1)}`;
-}
-
 function startOfDay(ms: number) {
   const d = new Date(ms);
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -190,7 +218,12 @@ function startOfWeekMonday(ms: number) {
   return d.getTime();
 }
 
-export function generateTicks(viewStart: number, viewEnd: number, zoomIndex: number) {
+export function generateTicks(
+  viewStart: number,
+  viewEnd: number,
+  zoomIndex: number,
+  locale: DateLocale = 'vi'
+) {
   const tier = (['5y', '1y', '6m', '1m', 'week', 'day'] as TimelineTierId[])[nearestTierIndex(zoomIndex)];
   const ticks: { start: number; end: number; label: string }[] = [];
   const padMs = (viewEnd - viewStart) * 0.08;
@@ -218,11 +251,10 @@ export function generateTicks(viewStart: number, viewEnd: number, zoomIndex: num
     while (new Date(y, h, 1).getTime() <= to) {
       const start = new Date(y, h, 1).getTime();
       const end = new Date(y, h + 6, 1).getTime();
-      const endLabel = new Date(end - DAY_MS);
       ticks.push({
         start,
         end,
-        label: `${pad(h + 1)}/${y} — ${pad(endLabel.getMonth() + 1)}/${endLabel.getFullYear()}`,
+        label: `${formatDate(start, { withDay: false, locale })} — ${formatDate(end - DAY_MS, { withDay: false, locale })}`,
       });
       h += 6;
       if (h >= 12) {
@@ -235,11 +267,10 @@ export function generateTicks(viewStart: number, viewEnd: number, zoomIndex: num
     while (cursor <= to) {
       const start = cursor;
       const end = addMonths(start, 1);
-      const dt = new Date(start);
       ticks.push({
         start,
         end,
-        label: `${dt.getMonth() + 1}/${dt.getFullYear()}`,
+        label: formatDate(start, { withDay: false, locale }),
       });
       cursor = end;
     }
@@ -248,7 +279,7 @@ export function generateTicks(viewStart: number, viewEnd: number, zoomIndex: num
     while (cursor <= to) {
       const start = cursor;
       const end = start + 7 * DAY_MS;
-      ticks.push({ start, end, label: formatRange(start, end, 4) });
+      ticks.push({ start, end, label: formatRange(start, end, 4, locale) });
       cursor = end;
     }
   } else {
@@ -256,7 +287,7 @@ export function generateTicks(viewStart: number, viewEnd: number, zoomIndex: num
     while (cursor <= to) {
       const start = cursor;
       const end = start + DAY_MS;
-      ticks.push({ start, end, label: formatDate(start) });
+      ticks.push({ start, end, label: formatDate(start, { locale }) });
       cursor = end;
     }
   }

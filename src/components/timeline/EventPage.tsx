@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { formatDate } from '@/lib/timeline/time';
+import { formatDate, localizeDateText } from '@/lib/timeline/time';
 import { sanitizeChronicleHtml } from '@/lib/timeline/sanitize';
+import { useLanguage } from '@/components/LanguageContext';
 import type { ChronicleEvent } from '@/lib/timeline/types';
 import type { DictKey } from '@/lib/dictionaries';
 
@@ -21,12 +22,14 @@ export default function EventPage({
   canEdit: boolean;
   t: (key: DictKey, vars?: Record<string, string | number>) => string;
 }) {
-  const html = sanitizeChronicleHtml(event.fullDescription || '');
+  const { language } = useLanguage();
+  const locale = language === 'en' ? 'en' : 'vi';
+  const html = localizeDateText(sanitizeChronicleHtml(event.fullDescription || ''), locale);
   const hasEmbed = /<iframe|youtube\.com\/embed/i.test(html);
   const range =
     event.end && event.end > event.start
-      ? `${formatDate(event.start)} — ${formatDate(event.end)}`
-      : formatDate(event.start);
+      ? `${formatDate(event.start, { locale })} — ${formatDate(event.end, { locale })}`
+      : formatDate(event.start, { locale });
   const [closing, setClosing] = useState(false);
 
   const requestClose = () => {

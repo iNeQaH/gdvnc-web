@@ -28,7 +28,7 @@ function isFullAdmin(role?: string | null) {
 }
 
 export default function TimelineApp() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { showToast, showConfirm } = useToast();
   const [events, setEvents] = useState<ChronicleEvent[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -123,7 +123,10 @@ export default function TimelineApp() {
     return () => window.removeEventListener('keydown', onKey);
   }, [zoom]);
 
-  const viewLabel = useMemo(() => formatDate(center), [center]);
+  const viewLabel = useMemo(
+    () => formatDate(center, { locale: language === 'en' ? 'en' : 'vi' }),
+    [center, language]
+  );
 
   async function saveEvent(next: ChronicleEvent) {
     if (saving) return;
