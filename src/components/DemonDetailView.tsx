@@ -3,13 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, CheckCircle, Video, Clock, Trash2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Video, Clock, Trash2, Pencil } from 'lucide-react';
 import LevelTagChips from '@/components/LevelTagChips';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import LevelNeighborNav from '@/components/LevelNeighborNav';
 import { awardedPpForProgress } from '@/lib/ScoringEngine';
-import { formatDifficultyLabel } from '@/lib/gdDifficulty';
+import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
+import LevelFormModal from '@/components/LevelFormModal';
 
 const PAGE_SIZE = 5;
 
@@ -31,6 +32,7 @@ export default function DemonDetailView({
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [editOpen, setEditOpen] = useState(false);
   const isStaff = currentUser?.role === 'ADMIN' || currentUser?.role === 'MODERATOR';
 
   useEffect(() => {
@@ -93,9 +95,11 @@ export default function DemonDetailView({
                 </span>
               )}
               <LevelTagChips level={level} contrast="onDark" />
-              <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-black/50 text-white backdrop-blur-md border border-white/10 shadow-lg">
-                {formatDifficultyLabel(level.difficultyFace ?? 0, level.difficulty)}
-              </span>
+              <DifficultyRatingIcon
+                difficultyFace={level.difficultyFace}
+                ratingType={level.ratingType}
+                className="w-10 h-10 drop-shadow-lg"
+              />
               <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-red-500/80 text-white backdrop-blur-md shadow-lg">
                 {level.minPercent && level.minPercent < 100
                   ? t('levelslist.points_range', {
@@ -118,15 +122,32 @@ export default function DemonDetailView({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-4 md:col-span-1">
             <div className="ui-card p-5 space-y-4">
-              <h3 className="font-bold ui-title text-sm border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>{t('levelslist.info')}</h3>
+              <div className="flex items-center justify-between gap-2 border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
+                <h3 className="font-bold ui-title text-sm">{t('levelslist.info')}</h3>
+                {isStaff && (
+                  <button
+                    type="button"
+                    onClick={() => setEditOpen(true)}
+                    className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 ui-dim hover:text-sky-500 cursor-pointer"
+                    title={t('levelslist.edit_level')}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
               <div className="space-y-3">
                 <div>
                   <div className="text-[10px] uppercase font-bold ui-dim">{t('levelslist.level_id')}</div>
                   <div className="font-semibold text-sm ui-title">{level.gdLevelId}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] uppercase font-bold ui-dim">{t('levelslist.difficulty')}</div>
-                  <div className="font-semibold text-sm ui-title">{formatDifficultyLabel(level.difficultyFace ?? 0, level.difficulty)}</div>
+                  <div className="text-[10px] uppercase font-bold ui-dim mb-2">{t('levelslist.difficulty')}</div>
+                  <DifficultyRatingIcon
+                    stacked
+                    difficultyFace={level.difficultyFace}
+                    ratingType={level.ratingType}
+                    className="w-16 h-16"
+                  />
                 </div>
                 <div>
                   <div className="text-[10px] uppercase font-bold ui-dim">{t('leaderboard.points')}</div>
@@ -301,6 +322,16 @@ export default function DemonDetailView({
           </div>
         </div>
       </div>
+
+      <LevelFormModal
+        isOpen={editOpen}
+        onClose={() => setEditOpen(false)}
+        initialData={level}
+        onSaved={() => {
+          setEditOpen(false);
+          router.refresh();
+        }}
+      />
 
       <LevelNeighborNav
         currentPlacement={level.placement}

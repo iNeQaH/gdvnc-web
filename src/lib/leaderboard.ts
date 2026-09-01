@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { LevelMode, RecordStatus } from '@prisma/client';
-import { pickDecoAndLayoutBadges } from '@/lib/creatorPoints';
+import { pickDecoAndLayoutBadges, cpFromVnLevels } from '@/lib/creatorPoints';
 import { calculateModePp, pickHardestLevel } from '@/lib/recordUtils';
 
 export const publicUser = {
@@ -149,7 +149,7 @@ export async function getCreatorLeaderboard() {
         creatorPoints: true,
         createdLevels: {
           where: { isVN: true },
-          select: { name: true, difficulty: true, gdLevelId: true },
+          select: { name: true, difficulty: true, gdLevelId: true, ratingType: true },
           orderBy: [{ vnPlacement: 'asc' }, { name: 'asc' }],
         },
         userBadges: {
@@ -161,19 +161,24 @@ export async function getCreatorLeaderboard() {
     }),
     prisma.level.findMany({
       where: { isVN: true, creatorName: { not: null } },
-      select: { creatorName: true, name: true, difficulty: true, gdLevelId: true },
+      select: { creatorName: true, name: true, difficulty: true, gdLevelId: true, ratingType: true },
       orderBy: [{ vnPlacement: 'asc' }, { name: 'asc' }],
     }),
   ]);
 
-  type VnLevel = { name: string; difficulty: string; gdLevelId: number };
+  type VnLevel = { name: string; difficulty: string; gdLevelId: number; ratingType: string };
   const levelsByCreator = new Map<string, VnLevel[]>();
   for (const row of vnLevels) {
     const key = (row.creatorName || '').trim().toLowerCase();
     if (!key) continue;
     const list = levelsByCreator.get(key) || [];
     if (!list.some((l) => l.gdLevelId === row.gdLevelId)) {
-      list.push({ name: row.name, difficulty: row.difficulty, gdLevelId: row.gdLevelId });
+      list.push({
+        name: row.name,
+        difficulty: row.difficulty,
+        gdLevelId: row.gdLevelId,
+        ratingType: row.ratingType,
+      });
     }
     levelsByCreator.set(key, list);
   }
@@ -196,12 +201,15 @@ export async function getCreatorLeaderboard() {
       const byId = new Map<number, VnLevel>();
       for (const lvl of createdLevels) byId.set(lvl.gdLevelId, lvl);
       for (const lvl of fromSheet) if (!byId.has(lvl.gdLevelId)) byId.set(lvl.gdLevelId, lvl);
+      const merged = Array.from(byId.values());
+      const vnCp = cpFromVnLevels(merged);
       return {
         ...rest,
+        creatorPoints: vnCp > 0 ? vnCp : creator.creatorPoints || 0,
         displayName: playerDisplayName(creator),
         isLegacy: false as const,
         unverified: !creator.gdVerified,
-        createdLevels: Array.from(byId.values()),
+        createdLevels: merged,
         qualityBadges: pickDecoAndLayoutBadges(
           userBadges.map((ub) => ({
             ...ub.badge,
@@ -225,7 +233,7 @@ export async function getCreatorLeaderboard() {
       country: null as string | null,
       supporterUntil: null as Date | null,
       gdVerified: false,
-      creatorPoints: 0,
+      creatorPoints: cpFromVnLevels(levels),
       createdLevels: levels,
       isLegacy: true as const,
       unverified: true,

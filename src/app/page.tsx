@@ -381,20 +381,19 @@ export default function HomePage() {
                                 </span>
                               )}
                               {player.createdLevels?.length ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {player.createdLevels.slice(0, 6).map((lvl: { gdLevelId: number; name: string }) => (
-                                    <Link
-                                      key={lvl.gdLevelId}
-                                      href={levelPath(lvl)}
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="px-1.5 py-0.5 rounded text-[10px] font-bold hover:underline"
-                                      style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-title)' }}
-                                    >
-                                      {lvl.name}
-                                    </Link>
-                                  ))}
-                                  {player.createdLevels.length > 6 && (
-                                    <span className="text-[10px] ui-dim">+{player.createdLevels.length - 6}</span>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <Link
+                                    href={levelPath(player.createdLevels[0])}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="px-1.5 py-0.5 rounded text-[10px] font-bold hover:underline"
+                                    style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-title)' }}
+                                  >
+                                    {player.createdLevels[0].name}
+                                  </Link>
+                                  {player.createdLevels.length > 1 && (
+                                    <span className="text-[10px] font-bold ui-dim">
+                                      +{player.createdLevels.length - 1}
+                                    </span>
                                   )}
                                 </div>
                               ) : (

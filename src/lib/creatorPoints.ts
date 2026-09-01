@@ -123,6 +123,29 @@ function roundCp(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
+/** CP from a level's GD rating (same scale as deco badges). */
+export function cpFromLevelRating(ratingType: string | null | undefined): number {
+  const key = String(ratingType || '').trim().toLowerCase();
+  if (!key || key === 'none' || key === 'unrated') return 0;
+  if (key === 'mythic') return 5;
+  if (key === 'legendary') return 4;
+  if (key === 'epic') return 3;
+  if (key === 'feature' || key === 'featured') return 2;
+  if (key === 'rate' || key === 'rated' || key === 'star') return 1;
+  return getDecoBadgeCp(key) ?? 0;
+}
+
+export function cpFromVnLevels(
+  levels: Array<{ ratingType?: string | null }>
+): number {
+  return roundCp(
+    levels.reduce((sum, lvl) => {
+      const fromRating = cpFromLevelRating(lvl.ratingType);
+      return sum + (fromRating > 0 ? fromRating : 1);
+    }, 0)
+  );
+}
+
 export function computeCreatorPointsFromBadges(
   badgeNames: string[],
   extraCp = 0
