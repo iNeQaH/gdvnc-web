@@ -369,8 +369,6 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
             />
           </div>
 
-          </div>
-
           {creatorSubmit && (
             <>
               <div className="space-y-1.5">
