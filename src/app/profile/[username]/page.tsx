@@ -110,10 +110,10 @@ export default function ProfilePage() {
     }
   }, [username]);
 
-  const fetchProfile = async () => {
-    setLoading(true);
+  const fetchProfile = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true);
     try {
-      const res = await fetch(`/api/profile/${username}`);
+      const res = await fetch(`/api/profile/${username}`, { cache: 'no-store' });
       const json = await res.json();
       if (json.success) {
         setData(json.user);
@@ -195,7 +195,7 @@ export default function ProfilePage() {
         const resData = await res.json();
         if (resData.success) {
           showToast('Xóa thành công!', 'success');
-          fetchProfile(); // Refresh profile data
+          void fetchProfile({ silent: true });
         } else {
           showToast('Lỗi: ' + resData.error, 'error');
         }
@@ -229,7 +229,16 @@ export default function ProfilePage() {
           }
         }
         showToast('Xóa thành công!', 'success');
-        fetchProfile();
+        setData((prev: any) => {
+          if (!prev) return prev;
+          const nextLevels = (prev.createdLevels || []).filter((row: any) => {
+            if (item.workId && row.workId === item.workId) return false;
+            if (item.id && row.id === item.id) return false;
+            return true;
+          });
+          return { ...prev, createdLevels: nextLevels };
+        });
+        void fetchProfile({ silent: true });
       } catch {
         showToast('Lỗi kết nối khi xóa tác phẩm.', 'error');
       }

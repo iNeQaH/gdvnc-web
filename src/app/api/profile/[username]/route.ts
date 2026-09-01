@@ -11,6 +11,8 @@ import { requireAuth } from '@/lib/auth';
 import { clipText } from '@/lib/validate';
 import { deleteUploadthingKeys, isAllowedImageRef, uploadthingKeysFromRef } from '@/lib/uploadthing';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request, { params }: { params: Promise<{ username: string }> }) {
   try {
     const { username } = await params;
@@ -143,36 +145,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       )[0];
     }
 
-    const submittedRows = await prisma.levelSubmission.findMany({
-      where: { userId: user.id, status: RecordStatus.APPROVED },
-      select: { gdLevelId: true },
-    });
-    const submittedIds = submittedRows.map((s) => s.gdLevelId);
-    const submittedLevels =
-      submittedIds.length > 0
-        ? await prisma.level.findMany({
-            where: { gdLevelId: { in: submittedIds } },
-            select: {
-              id: true,
-              gdLevelId: true,
-              name: true,
-              mode: true,
-              placement: true,
-              basePp: true,
-              difficulty: true,
-              ratingType: true,
-              youtubeId: true,
-              difficultyFace: true,
-              isVN: true,
-              isChallenge: true,
-            },
-          })
-        : [];
-
     const createdById = new Map(user.createdLevels.map((l) => [l.id, { ...l, workId: null as string | null }]));
-    for (const lvl of submittedLevels) {
-      createdById.set(lvl.id, { ...lvl, workId: null });
-    }
     const workByGd = new Map(
       user.creatorWorks
         .filter((w) => w.gdLevelId)
@@ -219,7 +192,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
     });
     const creatorRank = allCreatorRanks + 1;
 
-    return NextResponse.json({
+    return NextResponse.json(
+      {
       success: true,
       user: {
         id: user.id,
@@ -252,7 +226,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
           .sort((a: any, b: any) => (a.badge.sortOrder ?? 0) - (b.badge.sortOrder ?? 0))
           .map((ub: any) => ub.badge),
       },
-    });
+    },
+      { headers: { 'Cache-Control': 'no-store' } }
+    );
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Lỗi truy vấn thông tin người chơi.' }, { status: 500 });
   }
