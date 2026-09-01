@@ -160,7 +160,7 @@ async function fetchClassicListed(): Promise<ExternalListLevel[]> {
     const listed = await fetchPointercrateListed();
     if (listed.length >= 10) return applyClassicMedia(listed);
   } catch (error) {
-    console.error('Pointercrate classic failed, falling back to AREDL + snapshot', error);
+    console.warn('Pointercrate classic failed, falling back to AREDL + snapshot', error);
   }
   return applyClassicMedia(await fetchAredl('CLASSIC'));
 }
