@@ -24,6 +24,8 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
   
   const [form, setForm] = useState({
     gdLevelId: '',
+    name: '',
+    creatorName: '',
     videoUrl: '',
     minPercent: '100',
     placement: '',
@@ -57,8 +59,12 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
         setFetchedLevelName(String(data.level.name || ''));
         setForm((prev) => {
           if (prev.gdLevelId.trim() !== id) return prev;
+          const nextName = String(data.level.name || '').trim();
+          const nextCreator = String(data.level.creatorName || '').trim();
           return {
             ...prev,
+            name: nextName || prev.name,
+            creatorName: nextCreator || prev.creatorName,
             difficultyFace: data.level.difficultyFace ?? prev.difficultyFace,
             ratingType: data.level.ratingType || prev.ratingType,
             mode: data.level.isPlatformer ? 'PLATFORMER' : 'CLASSIC',
@@ -83,6 +89,8 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
       const gdId = initialData.gdLevelId?.toString() || '';
       setForm({
         gdLevelId: gdId,
+        name: initialData.name || '',
+        creatorName: initialData.creatorName || '',
         videoUrl: initialData.videoUrl || (initialData.youtubeId ? `https://youtube.com/watch?v=${initialData.youtubeId}` : ''),
         minPercent: initialData.minPercent?.toString() || '100',
         placement: initialData.placement?.toString() || '',
@@ -93,6 +101,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
         difficultyFace: initialData.difficultyFace ?? 10,
         ratingType: initialData.ratingType || 'NONE',
       });
+      setFetchedLevelName(initialData.name || '');
       if (gdId && /^\d+$/.test(gdId)) {
         skipNextFetchRef.current = true;
         void fetchGdLevel(gdId);
@@ -100,6 +109,8 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
     } else {
       setForm({
         gdLevelId: '',
+        name: '',
+        creatorName: '',
         videoUrl: '',
         minPercent: '100',
         placement: '',
@@ -206,7 +217,8 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
             ? {
                 description: workDesc.trim(),
                 imageUrls: workImageUrls,
-                levelName: fetchedLevelName || workDesc.trim().slice(0, 80),
+                levelName: form.name.trim() || fetchedLevelName || workDesc.trim().slice(0, 80),
+                creatorName: form.creatorName.trim() || undefined,
               }
             : {}),
           ...(initialData?.id ? { id: initialData.id } : {}),
@@ -258,7 +270,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
             {/* Difficulty + Rating cycler */}
             <div className="relative shrink-0 flex flex-col items-center gap-2">
               <div
-                className="w-16 h-16 relative cursor-pointer hover:scale-105 transition-transform"
+                className="w-16 h-16 relative cursor-pointer"
                 onClick={cycleRating}
                 title="Click để đổi Rating (Feature, Epic...)"
               >
@@ -299,6 +311,31 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
                   onChange={e => setForm({...form, gdLevelId: e.target.value})}
                   className="w-full ui-input px-3 py-2 rounded-xl text-xs font-bold focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                   placeholder="VD: 10565740"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase ui-dim">{t('admin.level_name')}</label>
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={(e) => {
+                    setForm({ ...form, name: e.target.value });
+                    setFetchedLevelName(e.target.value);
+                  }}
+                  className="w-full ui-input px-3 py-2 rounded-xl text-xs font-bold focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+                  placeholder={t('admin.level_name_ph')}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase ui-dim">{t('admin.creator_name')}</label>
+                <input
+                  type="text"
+                  value={form.creatorName}
+                  onChange={(e) => setForm({ ...form, creatorName: e.target.value })}
+                  className="w-full ui-input px-3 py-2 rounded-xl text-xs font-bold focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+                  placeholder={t('admin.creator_name_ph')}
                 />
               </div>
 

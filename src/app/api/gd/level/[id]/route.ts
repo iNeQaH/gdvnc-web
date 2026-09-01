@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { mapDifficultyFace, mapRatingType } from '@/lib/gdDifficulty';
+import { mapDifficultyFace, mapRatingType, pickGdCreatorName, pickGdLevelName } from '@/lib/gdDifficulty';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
@@ -26,8 +26,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       success: true,
       level: {
         gdLevelId: data.id,
-        name: data.name,
-        creatorName: data.author,
+        name: pickGdLevelName(data),
+        creatorName: pickGdCreatorName(data) || null,
         difficulty: data.difficulty,
         difficultyFace: mapDifficultyFace(data.difficulty),
         ratingType: mapRatingType(data),

@@ -61,6 +61,25 @@ export function getRatingIconUrl(ratingType: string | null | undefined): string 
   return `/difficulties/${ratingType}.png`;
 }
 
+function clipGdField(value: unknown): string {
+  const s = String(value ?? '').trim();
+  if (!s || s === '-' || /^unknown$/i.test(s)) return '';
+  return s;
+}
+
+export function pickGdLevelName(data: any): string {
+  return clipGdField(data?.name) || clipGdField(data?.levelName);
+}
+
+export function pickGdCreatorName(data: any): string {
+  return (
+    clipGdField(data?.author) ||
+    clipGdField(data?.creator) ||
+    clipGdField(data?.username) ||
+    clipGdField(data?.player)
+  );
+}
+
 const DIFFICULTY_NAME_TO_FACE: Record<string, number> = {
   unrated: 0,
   'n/a': 0,

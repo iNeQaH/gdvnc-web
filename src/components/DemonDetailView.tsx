@@ -143,7 +143,6 @@ export default function DemonDetailView({
                 <div>
                   <div className="text-[10px] uppercase font-bold ui-dim mb-2">{t('levelslist.difficulty')}</div>
                   <DifficultyRatingIcon
-                    stacked
                     difficultyFace={level.difficultyFace}
                     ratingType={level.ratingType}
                     className="w-20 h-20"

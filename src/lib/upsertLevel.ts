@@ -3,6 +3,7 @@ import { LevelMode, RecordStatus } from '@prisma/client';
 import { calculateBasePp } from '@/lib/ScoringEngine';
 import { recalculateUserPp as recalcUserPp } from '@/lib/recordUtils';
 import { persistLocalListSnapshot } from '@/lib/listSnapshot';
+import { pickGdCreatorName, pickGdLevelName } from '@/lib/gdDifficulty';
 
 export async function triggerBackgroundPpRecalc(levelIds: string[], mode: LevelMode) {
   const records = await prisma.record.findMany({
@@ -214,6 +215,8 @@ export async function getOrCreateStubLevel(input: {
 export async function upsertLevelFromForm(input: {
   id?: string;
   gdLevelId: number | string;
+  name?: string;
+  creatorName?: string;
   videoUrl?: string;
   minPercent?: number | string;
   placement?: number | string | null;
@@ -242,14 +245,17 @@ export async function upsertLevelFromForm(input: {
     }
   }
 
-  const idChanged = !existingLevel || existingLevel.gdLevelId !== gdLevelId;
-  const gdbData = idChanged ? await fetchGdBrowser(gdLevelId) : null;
-  if (!existingLevel && !gdbData) {
-    throw new Error('Không thể lấy thông tin Level từ máy chủ GD. ID có đúng không?');
+  const gdbData = await fetchGdBrowser(gdLevelId);
+  const formName = preferText(input.name, null);
+  const formCreator = preferText(input.creatorName, null);
+  const namedForm = formName && !/^unknown$/i.test(formName) ? formName : null;
+  const creatorForm = formCreator && !/^unknown$/i.test(formCreator) ? formCreator : null;
+  if (!existingLevel && !gdbData && (!namedForm || !creatorForm)) {
+    throw new Error('Không thể lấy thông tin Level từ máy chủ GD. Điền tên level và tên creator, hoặc kiểm tra lại ID.');
   }
 
-  const name = gdbData?.name || existingLevel?.name || 'Unknown';
-  const creatorName = gdbData?.author || existingLevel?.creatorName || 'Unknown';
+  const name = namedForm || pickGdLevelName(gdbData) || existingLevel?.name || 'Unknown';
+  const creatorName = creatorForm || pickGdCreatorName(gdbData) || existingLevel?.creatorName || 'Unknown';
   const difficulty = gdbData?.difficulty || existingLevel?.difficulty || 'Demon';
   const description =
     gdbData?.description !== undefined && gdbData?.description !== null
