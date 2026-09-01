@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { calculateBasePp } from '@/lib/ScoringEngine';
 import { upsertLevelFromForm, triggerBackgroundPpRecalc } from '@/lib/upsertLevel';
+import { persistLocalListSnapshot } from '@/lib/listSnapshot';
+import { LevelMode } from '@prisma/client';
 
 export async function POST(req: Request) {
   try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
@@ -79,6 +81,12 @@ export async function DELETE(req: Request) {
     }, { maxWait: 15000, timeout: 30000 });
 
     triggerBackgroundPpRecalc([id, ...affectedLevelIds], mode);
+
+    if (!level.isChallenge) {
+      void persistLocalListSnapshot(mode === LevelMode.PLATFORMER ? 'PLATFORMER' : 'CLASSIC').catch((err) =>
+        console.error('Failed to persist local list snapshot', err)
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

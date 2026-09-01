@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { LevelMode, RecordStatus } from '@prisma/client';
 import { calculateBasePp } from '@/lib/ScoringEngine';
 import { recalculateUserPp as recalcUserPp } from '@/lib/recordUtils';
+import { persistLocalListSnapshot } from '@/lib/listSnapshot';
 
 export async function triggerBackgroundPpRecalc(levelIds: string[], mode: LevelMode) {
   const records = await prisma.record.findMany({
@@ -356,6 +357,12 @@ export async function upsertLevelFromForm(input: {
       }
     })
     .catch(console.error);
+
+  if (!isChallengeLevel) {
+    void persistLocalListSnapshot(pMode === LevelMode.PLATFORMER ? 'PLATFORMER' : 'CLASSIC').catch((err) =>
+      console.error('Failed to persist local list snapshot', err)
+    );
+  }
 
   return { name, creatorName, gdLevelId };
 }

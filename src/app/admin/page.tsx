@@ -737,8 +737,8 @@ export default function AdminPage() {
         }
         const summary = (data.results || [])
           .map(
-            (r: { mode: string; synced: number; created: number; updated: number; stale: number }) =>
-              `${r.mode}: ${r.synced} (${r.created}+ / ${r.updated}~ / ${r.stale}-)`
+            (r: { mode: string; synced: number; created: number; updated: number; stale: number; source?: string }) =>
+              `${r.mode}: ${r.synced} (${r.created}+ / ${r.updated}~ / ${r.stale}-${r.source === 'uploadthing' ? ' snapshot' : ''})`
           )
           .join(' · ');
         showToast(t('admin.sync_lists_ok', { summary }), 'success');

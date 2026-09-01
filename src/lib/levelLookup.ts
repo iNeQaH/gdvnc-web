@@ -1,12 +1,10 @@
 import { notFound, permanentRedirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { isAllDigitsId, UUID_RE } from '@/lib/levelUrl';
-import { LevelMode, RecordStatus } from '@prisma/client';
+import { RecordStatus } from '@prisma/client';
 import { dedupeRecordsByUser } from '@/lib/recordUtils';
-import { calculateBasePp } from '@/lib/ScoringEngine';
-import { findExternalLevel } from '@/lib/externalLists';
 import { formatDifficultyLabel, mapDifficultyFace } from '@/lib/gdDifficulty';
-import { fetchGdBrowser, preferMinPercent, preferText, preferYoutubeId } from '@/lib/upsertLevel';
+import { fetchGdBrowser } from '@/lib/upsertLevel';
 
 const levelInclude = {
   records: {
@@ -58,78 +56,13 @@ async function refreshDifficultyFromGd<T extends { id: string; gdLevelId: number
   return { ...level, difficulty, difficultyFace };
 }
 
-async function ensureLevelFromExternal(gdLevelId: number) {
-  const ext = await findExternalLevel(gdLevelId);
-  if (!ext) return null;
-  const levelMode = ext.mode === 'PLATFORMER' ? LevelMode.PLATFORMER : LevelMode.CLASSIC;
-  const gdb = await fetchGdBrowser(gdLevelId);
-  const difficulty = gdb?.difficulty ? String(gdb.difficulty) : 'Demon';
-  const difficultyFace = gdb?.difficulty ? mapDifficultyFace(gdb.difficulty) : 0;
-
-  return prisma.level.upsert({
-    where: { gdLevelId },
-    create: {
-      gdLevelId: ext.gdLevelId,
-      name: ext.name,
-      mode: levelMode,
-      difficulty,
-      difficultyFace,
-      placement: ext.placement,
-      basePp: calculateBasePp(ext.placement),
-      minPercent: ext.minPercent,
-      creatorName: ext.creatorName,
-      verifierName: ext.verifierName,
-      youtubeId: ext.youtubeId,
-      description: ext.description,
-      isChallenge: false,
-    },
-    update: {
-      placement: ext.placement,
-      basePp: calculateBasePp(ext.placement),
-    },
-    include: levelInclude,
-  });
-}
-
 export async function resolvePublicLevel(id: string) {
   if (isAllDigitsId(id)) {
     const gdLevelId = Number(id);
-    let level = await prisma.level.findUnique({
+    const level = await prisma.level.findUnique({
       where: { gdLevelId },
       include: levelInclude,
     });
-    if (!level) {
-      level = await ensureLevelFromExternal(gdLevelId);
-    } else if (!level.isChallenge) {
-      const ext = await findExternalLevel(gdLevelId).catch(() => null);
-      if (ext) {
-        const nextYoutube = preferYoutubeId(ext.youtubeId, level.youtubeId);
-        const nextMin = preferMinPercent(ext.minPercent, level.minPercent);
-        const fillYoutube = nextYoutube && nextYoutube !== level.youtubeId;
-        const fillMin = nextMin !== level.minPercent;
-        level = {
-          ...level,
-          name: ext.name,
-          placement: ext.placement,
-          basePp: calculateBasePp(ext.placement),
-          minPercent: nextMin,
-          creatorName: preferText(ext.creatorName, level.creatorName),
-          verifierName: preferText(ext.verifierName, level.verifierName),
-          youtubeId: nextYoutube,
-        };
-        void prisma.level
-          .update({
-            where: { id: level.id },
-            data: {
-              placement: ext.placement,
-              basePp: calculateBasePp(ext.placement),
-              ...(fillYoutube ? { youtubeId: nextYoutube } : {}),
-              ...(fillMin ? { minPercent: nextMin } : {}),
-            },
-          })
-          .catch(() => {});
-      }
-    }
     if (!level) notFound();
     return refreshDifficultyFromGd(level);
   }

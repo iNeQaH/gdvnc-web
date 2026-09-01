@@ -44,6 +44,7 @@ export async function POST(req: Request) {
         created: result.created,
         updated: result.updated,
         stale: result.stale,
+        source: result.source,
       });
     }
 

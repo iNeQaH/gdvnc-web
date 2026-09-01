@@ -2,6 +2,7 @@ import { LevelMode } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { calculateBasePp } from '@/lib/ScoringEngine';
 import { extractYoutubeId, preferMinPercent, preferText, preferYoutubeId } from '@/lib/upsertLevel';
+import { loadListSnapshot, persistLocalListSnapshot } from '@/lib/listSnapshot';
 import classicMedia from '@/lib/data/pointercrateClassicMedia.json';
 
 export type ExternalListLevel = {
@@ -35,7 +36,9 @@ async function fetchJson(url: string) {
       headers: {
         Accept: 'application/json',
         'Accept-Language': 'en',
-        'User-Agent': 'GDVNC/1.0 (+https://gdvnc-web.vercel.app)',
+        'User-Agent':
+          'Mozilla/5.0 (compatible; GDVNC/1.0; +https://gdvnc-web.vercel.app) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        Referer: 'https://pointercrate.com/',
       },
       cache: 'no-store',
     });
@@ -211,28 +214,36 @@ export async function getExternalList(
 }
 
 export async function findExternalLevel(gdLevelId: number): Promise<ExternalListLevel | null> {
-  const [classic, platformer] = await Promise.all([
-    getExternalList('CLASSIC').catch(() => [] as ExternalListLevel[]),
-    getExternalList('PLATFORMER').catch(() => [] as ExternalListLevel[]),
-  ]);
-  return (
-    classic.find((l) => l.gdLevelId === gdLevelId) ||
-    platformer.find((l) => l.gdLevelId === gdLevelId) ||
-    null
-  );
+  const row = await prisma.level.findUnique({
+    where: { gdLevelId },
+    select: {
+      gdLevelId: true,
+      name: true,
+      placement: true,
+      creatorName: true,
+      verifierName: true,
+      youtubeId: true,
+      minPercent: true,
+      mode: true,
+      description: true,
+      isChallenge: true,
+    },
+  });
+  if (!row || row.isChallenge || row.placement == null) return null;
+  return {
+    gdLevelId: row.gdLevelId,
+    name: row.name,
+    placement: row.placement,
+    creatorName: row.creatorName,
+    verifierName: row.verifierName,
+    youtubeId: row.youtubeId,
+    minPercent: row.minPercent,
+    mode: row.mode === LevelMode.PLATFORMER ? 'PLATFORMER' : 'CLASSIC',
+    description: row.description,
+  };
 }
 
-/** Sync rank from Pointercrate / Pemonlist. Only placement/PP on update; fill empty youtubeId; create new levels. */
-export async function syncExternalListToDb(
-  mode: 'CLASSIC' | 'PLATFORMER',
-  opts?: { force?: boolean }
-) {
-  const external = await getExternalList(mode, opts);
-  // Never wipe DB ranks from a failed/empty upstream response.
-  if (external.length < 10) {
-    throw new Error(`Refusing sync for ${mode}: only ${external.length} upstream levels`);
-  }
-
+async function applyListedLevelsToDb(mode: 'CLASSIC' | 'PLATFORMER', external: ExternalListLevel[]) {
   const levelMode = mode === 'PLATFORMER' ? LevelMode.PLATFORMER : LevelMode.CLASSIC;
   const existing = await prisma.level.findMany({
     where: { isChallenge: false, mode: levelMode },
@@ -327,6 +338,52 @@ export async function syncExternalListToDb(
     updated,
     stale: staleIds.length,
     affectedIds,
+  };
+}
+
+/** Sync rank from Pointercrate / Pemonlist. Only placement/PP on update; fill empty youtubeId; create new levels. */
+export async function syncExternalListToDb(
+  mode: 'CLASSIC' | 'PLATFORMER',
+  opts?: { force?: boolean }
+) {
+  let external: ExternalListLevel[] = [];
+  let source: 'upstream' | 'uploadthing' = 'upstream';
+
+  try {
+    external = await getExternalList(mode, opts);
+  } catch (error) {
+    const ranked = await prisma.level.count({
+      where: {
+        mode: mode === 'PLATFORMER' ? LevelMode.PLATFORMER : LevelMode.CLASSIC,
+        isChallenge: false,
+        placement: { not: null },
+      },
+    });
+    if (ranked >= 10) throw error;
+    const snapshot = await loadListSnapshot(mode);
+    if (!snapshot || snapshot.length < 10) throw error;
+    console.warn(`${mode} upstream failed; restoring ${snapshot.length} levels from UploadThing snapshot`);
+    external = snapshot;
+    source = 'uploadthing';
+  }
+
+  if (external.length < 10) {
+    throw new Error(`Refusing sync for ${mode}: only ${external.length} upstream levels`);
+  }
+
+  const result = await applyListedLevelsToDb(mode, external);
+  const snapshot =
+    source === 'upstream'
+      ? await persistLocalListSnapshot(mode).catch((err) => {
+          console.error(`Failed to persist ${mode} list snapshot`, err);
+          return null;
+        })
+      : null;
+
+  return {
+    ...result,
+    source,
+    snapshotCount: snapshot?.count ?? result.synced,
   };
 }
 
