@@ -49,7 +49,7 @@ export default function GlowStopsField({
       <div className="gdvn-glow-preview" style={{ background: preview, opacity: off ? 1 : alpha }} />
       <div className="gdvn-glow-row">
         {stops.map((color, i) => (
-          <div key={`${color}-${i}`} className="gdvn-glow-stop">
+          <div key={`stop-${i}`} className="gdvn-glow-stop">
             <ColorPicker
               value={color}
               onChange={(hex) => {

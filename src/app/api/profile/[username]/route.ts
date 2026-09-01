@@ -52,6 +52,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
             difficulty: true,
             ratingType: true,
             youtubeId: true,
+            difficultyFace: true,
+            isVN: true,
+            isChallenge: true,
           },
         },
         creatorWorks: {
@@ -140,6 +143,38 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       )[0];
     }
 
+    const submittedRows = await prisma.levelSubmission.findMany({
+      where: { userId: user.id, status: RecordStatus.APPROVED },
+      select: { gdLevelId: true },
+    });
+    const submittedIds = submittedRows.map((s) => s.gdLevelId);
+    const submittedLevels =
+      submittedIds.length > 0
+        ? await prisma.level.findMany({
+            where: { gdLevelId: { in: submittedIds } },
+            select: {
+              id: true,
+              gdLevelId: true,
+              name: true,
+              mode: true,
+              placement: true,
+              basePp: true,
+              difficulty: true,
+              ratingType: true,
+              youtubeId: true,
+              difficultyFace: true,
+              isVN: true,
+              isChallenge: true,
+            },
+          })
+        : [];
+
+    const createdById = new Map(user.createdLevels.map((l) => [l.id, l]));
+    for (const lvl of submittedLevels) createdById.set(lvl.id, lvl);
+    const createdLevels = Array.from(createdById.values()).sort((a, b) =>
+      String(a.name).localeCompare(String(b.name), undefined, { sensitivity: 'base' })
+    );
+
     const classicRank = user.classicPp > 0.005 ? (await prisma.user.count({
       where: { classicPp: { gt: user.classicPp } },
     })) + 1 : null;
@@ -178,7 +213,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         classicBreakdown,
         classicRecords,
         platformerCompletions,
-        createdLevels: user.createdLevels,
+        createdLevels,
         creatorWorks: user.creatorWorks,
         totalRecordsCount: dedupedRecords.length,
         badges: user.userBadges

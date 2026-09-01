@@ -26,6 +26,8 @@ export type GdvnSheetSyncResult = {
   timelineCreated: number;
   timelineUpdated: number;
   timelineSkipped: number;
+  usersUnverified: number;
+  creatorsQueued: number;
 };
 
 function sameDay(a: Date, b: Date) {
@@ -262,6 +264,12 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
     timelineUpdated += chunk.length;
   });
 
+  const unverified = await prisma.user.updateMany({
+    data: { gdVerified: false },
+  });
+
+  const creatorNames = [...new Set(rows.map((r) => r.creatorName.trim()).filter(Boolean))];
+
   return {
     fetched: rows.length,
     levelsCreated,
@@ -269,5 +277,7 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
     timelineCreated,
     timelineUpdated,
     timelineSkipped: rows.length - dated.length,
+    usersUnverified: unverified.count,
+    creatorsQueued: creatorNames.length,
   };
 }

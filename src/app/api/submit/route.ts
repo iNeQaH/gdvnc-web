@@ -28,7 +28,7 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, username: true },
+      select: { id: true, username: true, gdUsername: true },
     });
     if (!user) return NextResponse.json({ error: 'Không tìm thấy tài khoản người dùng.' }, { status: 404 });
 
@@ -91,10 +91,11 @@ export async function POST(req: Request) {
       }
       storedImage = refs.length > 0 ? [...new Set(refs)].join(',') : null;
 
+      const submittedGd = clipText(data.username, 80) || user.gdUsername || user.username;
       const work = await prisma.creatorWork.create({
         data: {
           userId,
-          username: user.username,
+          username: submittedGd,
           levelName: clipText(levelName, 120),
           gdLevelId: gdLevelId ? parseInt(gdLevelId, 10) : null,
           videoUrl: isHttpsUrl(videoUrl) ? clipText(videoUrl, 500) : null,

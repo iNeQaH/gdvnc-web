@@ -1,26 +1,14 @@
 import prisma from '@/lib/prisma';
 import { RecordStatus } from '@prisma/client';
-import { computeCreatorPointsFromBadges } from '@/lib/creatorPoints';
 
+/** CP comes only from manual awards (approved works' cpGranted + admin set). Badges never add CP. */
 export async function recalculateCreatorPoints(userId: string): Promise<number> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    include: {
-      userBadges: { include: { badge: true } },
-      creatorWorks: {
-        where: { status: RecordStatus.APPROVED },
-        select: { cpGranted: true },
-      },
-    },
+  const works = await prisma.creatorWork.findMany({
+    where: { userId, status: RecordStatus.APPROVED },
+    select: { cpGranted: true },
   });
 
-  if (!user) return 0;
-
-  const extraCp = user.creatorWorks.reduce((sum, work) => sum + (work.cpGranted || 0), 0);
-  const total = computeCreatorPointsFromBadges(
-    user.userBadges.map((ub) => ub.badge.name),
-    extraCp
-  );
+  const total = Math.round(works.reduce((sum, work) => sum + (work.cpGranted || 0), 0) * 10) / 10;
 
   await prisma.user.update({
     where: { id: userId },

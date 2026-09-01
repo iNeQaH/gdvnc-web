@@ -61,6 +61,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       ratingType: submission.ratingType,
     });
 
+    await prisma.level.update({
+      where: { gdLevelId: submission.gdLevelId },
+      data: { creatorId: submission.userId },
+    });
+
     const updated = await prisma.levelSubmission.update({
       where: { id },
       data: {

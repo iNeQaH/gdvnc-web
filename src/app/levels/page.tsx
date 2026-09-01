@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   Search, Plus, Trash2, Pencil, ExternalLink, 
-  Play, Video, Target, Trophy, Clock, Flag, 
+  Play, Video, Target, Trophy, Clock, 
   LayoutGrid, List, Settings, CheckCircle, Sparkles 
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
@@ -12,8 +12,8 @@ import LevelFormModal from '@/components/LevelFormModal';
 import LevelFiltersModal from '@/components/LevelFiltersModal';
 import FloatingNav from '@/components/FloatingNav';
 import { useToast } from '@/components/GlobalToast';
-import { matchesDifficultyFilter } from '@/lib/gdDifficulty';
-import { compareListLevels, isExtendedListPlacement, isLegacyTier, isMainListPlacement } from '@/lib/levelSort';
+import { isDemonDifficultyFace, matchesDifficultyFilter } from '@/lib/gdDifficulty';
+import { compareListLevels, isExtendedListPlacement, isLegacyTier, isMainListPlacement, isMainOrExtendedPlacement } from '@/lib/levelSort';
 import { levelPath } from '@/lib/levelUrl';
 import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
 
@@ -26,6 +26,8 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
 
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [listTab, setListTab] = useState<'featured' | 'demonlist' | 'pemonlist' | 'vn'>('featured');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -56,12 +58,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
     const timer = setTimeout(() => {
       const q = searchInput.trim();
       setSearch(q);
-      if (q) {
-        setFilterModes([]);
-        setFilterTiers([]);
-        setFilterFaces([]);
-        setFilterVN(false);
-      }
+      if (q) setSearchOpen(true);
       setCurrentPage(1);
     }, 1000);
     return () => clearTimeout(timer);
@@ -108,13 +105,14 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
     return 'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
   };
 
+  const searching = Boolean(search.trim());
+  const vnRanking = !isChallengeList && (listTab === 'vn' || listTab === 'featured' || filterVN);
+
   const filtered = levels.filter((lvl) => {
-    // 1. Mode filter
     if (filterModes.length > 0 && !filterModes.includes(lvl.mode)) {
       return false;
     }
 
-    // 2. Tier filter
     if (filterTiers.length > 0) {
       let tierMatch = false;
       if (filterTiers.includes('MAIN') && isMainListPlacement(lvl.placement)) tierMatch = true;
@@ -123,15 +121,24 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
       if (!tierMatch) return false;
     }
 
-    // 3. Difficulty face filter
     if (!matchesDifficultyFilter(lvl.difficultyFace ?? 10, filterFaces)) {
       return false;
     }
 
-    // 4. VN tag filter
     if (filterVN && !lvl.isVN) return false;
 
-    // 5. Search
+    if (!isChallengeList && !searching) {
+      if (listTab === 'featured') {
+        if (!lvl.isVN || !isDemonDifficultyFace(lvl.difficultyFace ?? 0)) return false;
+      } else if (listTab === 'demonlist') {
+        if (lvl.mode !== 'CLASSIC' || !isMainOrExtendedPlacement(lvl.placement)) return false;
+      } else if (listTab === 'pemonlist') {
+        if (lvl.mode !== 'PLATFORMER' || !isMainOrExtendedPlacement(lvl.placement)) return false;
+      } else if (listTab === 'vn') {
+        if (!lvl.isVN || lvl.isChallenge) return false;
+      }
+    }
+
     if (search.trim()) {
       const q = search.toLowerCase();
       const matchName = lvl.name?.toLowerCase().includes(q);
@@ -183,32 +190,70 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
 
       {/* Controls */}
       <div className="flex flex-col gap-3">
+        {!isChallengeList && (
+          <div className="flex items-center gap-1 p-0.5 rounded-xl border w-fit max-w-full overflow-x-auto" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+            {(['featured', 'demonlist', 'pemonlist', 'vn'] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => {
+                  setListTab(tab);
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-2 rounded-lg text-xs font-bold cursor-pointer transition-all shrink-0"
+                style={{
+                  backgroundColor: listTab === tab ? 'var(--bg-card)' : 'transparent',
+                  color: listTab === tab ? 'var(--accent)' : 'var(--text-dim)',
+                  boxShadow: listTab === tab ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                }}
+              >
+                {t(`levelslist.tab_${tab}` as 'levelslist.tab_featured')}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="flex flex-col lg:flex-row justify-between gap-3 items-stretch lg:items-center">
-          {/* Search and Filters */}
           <div className="flex flex-1 flex-wrap sm:flex-nowrap items-center gap-2">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ui-dim" />
-              <input
-                type="text"
-                placeholder={t('levelslist.search_demon')}
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-9 pr-14 py-2 rounded-xl text-xs font-semibold ui-input focus:ring-2 focus:ring-red-500/20"
-              />
-              {searchInput && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchInput('');
-                    setSearch('');
-                    setCurrentPage(1);
+            {searchOpen || searchInput ? (
+              <div className="relative flex-1 min-w-[180px] max-w-md">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ui-dim" />
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder={t('levelslist.search_demon')}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onBlur={() => {
+                    if (!searchInput.trim()) setSearchOpen(false);
                   }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-bold ui-dim hover:opacity-100 px-1.5 py-0.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10"
-                >
-                  {t('common.clear')}
-                </button>
-              )}
-            </div>
+                  className="w-full pl-9 pr-14 py-2 rounded-xl text-xs font-semibold ui-input focus:ring-2 focus:ring-red-500/20"
+                />
+                {searchInput && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchInput('');
+                      setSearch('');
+                      setSearchOpen(false);
+                      setCurrentPage(1);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-bold ui-dim hover:opacity-100 px-1.5 py-0.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10"
+                  >
+                    {t('common.clear')}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setSearchOpen(true)}
+                className="p-2 rounded-xl border ui-subtle hover:bg-black/5 dark:hover:bg-white/5 shrink-0 cursor-pointer"
+                style={{ borderColor: 'var(--border-ui)' }}
+                title={t('levelslist.search_demon')}
+              >
+                <Search className="w-4 h-4" />
+              </button>
+            )}
 
             <button
               onClick={() => setIsFilterModalOpen(true)}
@@ -221,70 +266,8 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
                 <span className="w-2 h-2 rounded-full bg-red-500 ml-0.5"></span>
               )}
             </button>
-
-            {/* Quick Toggle Buttons: Classic, Platformer, VN */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                onClick={() => {
-                  setFilterModes((prev) =>
-                    prev.includes('CLASSIC') ? [] : ['CLASSIC']
-                  );
-                  setCurrentPage(1);
-                }}
-                className={'px-3 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 cursor-pointer ' + (
-                  filterModes.includes('CLASSIC')
-                    ? 'shadow-sm'
-                    : 'ui-subtle hover:bg-black/5 dark:hover:bg-white/5 opacity-70'
-                )}
-                style={
-                  filterModes.includes('CLASSIC')
-                    ? { backgroundColor: 'var(--accent)', color: 'var(--accent-fg)', borderColor: 'var(--accent)' }
-                    : { borderColor: 'var(--border-ui)' }
-                }
-              >
-                Classic
-              </button>
-
-              <button
-                onClick={() => {
-                  setFilterModes((prev) =>
-                    prev.includes('PLATFORMER') ? [] : ['PLATFORMER']
-                  );
-                  setCurrentPage(1);
-                }}
-                className={'px-3 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 cursor-pointer ' + (
-                  filterModes.includes('PLATFORMER')
-                    ? 'shadow-sm'
-                    : 'ui-subtle hover:bg-black/5 dark:hover:bg-white/5 opacity-70'
-                )}
-                style={
-                  filterModes.includes('PLATFORMER')
-                    ? { backgroundColor: 'var(--accent)', color: 'var(--accent-fg)', borderColor: 'var(--accent)' }
-                    : { borderColor: 'var(--border-ui)' }
-                }
-              >
-                Platformer
-              </button>
-
-              <button
-                onClick={() => {
-                  setFilterVN(!filterVN);
-                  setCurrentPage(1);
-                }}
-                className={'px-3 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 flex items-center gap-1.5 cursor-pointer ' + (
-                  filterVN
-                    ? 'bg-red-500 text-white border-red-500 shadow-sm'
-                    : 'ui-subtle hover:bg-black/5 dark:hover:bg-white/5 opacity-70'
-                )}
-                style={!filterVN ? { borderColor: 'var(--border-ui)' } : {}}
-              >
-                <Flag className="w-3.5 h-3.5" />
-                VN
-              </button>
-            </div>
           </div>
 
-          {/* View Mode Toggle */}
           <div className="flex items-center justify-end gap-2 shrink-0">
             <button
               onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
@@ -316,6 +299,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
                 setFilterTiers([]);
                 setFilterFaces([]);
                 setFilterVN(false);
+                setListTab('featured');
               }}
               className="text-xs font-bold underline cursor-pointer text-sky-500"
             >
@@ -323,8 +307,11 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
             </button>
           </div>
         ) : (
-          paginatedData.map((lvl) => {
-            const placement = lvl.placement ? '#' + lvl.placement : '-';
+          paginatedData.map((lvl, idx) => {
+            const listRank = (currentPage - 1) * pageSize + idx + 1;
+            const placement = vnRanking || searching || isChallengeList
+              ? '#' + listRank
+              : (lvl.placement ? '#' + lvl.placement : '#' + listRank);
             if (viewMode === 'list') {
               return (
                 <div

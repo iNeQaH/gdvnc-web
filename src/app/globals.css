@@ -375,7 +375,7 @@ input[type="number"] {
 
 .gdvn-color-pop {
   position: fixed;
-  z-index: 200;
+  z-index: 2147483000;
   width: 252px;
   padding: 10px;
   border-radius: 16px;

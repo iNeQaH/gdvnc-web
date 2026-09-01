@@ -21,3 +21,6 @@ export const TIER_BY_LOOKUP: Record<string, TimelineTier> = Object.fromEntries(
 
 /** Default timeline zoom: Tuần / Week. */
 export const DEFAULT_ZOOM_INDEX = TIERS.findIndex((t) => t.id === 'week');
+
+/** 6m and coarser (5y, 1y, 6m) always keep markers on the bar. */
+export const ALWAYS_SHOW_MARKER_MAX_RANK = TIERS.find((t) => t.id === '6m')?.rank ?? 2;

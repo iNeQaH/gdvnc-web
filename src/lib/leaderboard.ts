@@ -137,36 +137,89 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER') {
 }
 
 export async function getCreatorLeaderboard() {
-  const creators = await prisma.user.findMany({
-    where: { creatorPoints: { gt: 0 } },
-    orderBy: { creatorPoints: 'desc' },
-    select: {
-      ...publicUser,
-      creatorPoints: true,
-      createdLevels: {
-        select: { name: true, difficulty: true },
+  const [creators, vnCreators] = await Promise.all([
+    prisma.user.findMany({
+      where: {
+        OR: [{ creatorPoints: { gt: 0 } }, { gdUsername: { not: null } }],
       },
-      userBadges: {
-        include: {
-          badge: { include: { badgeCategory: true } },
+      orderBy: { creatorPoints: 'desc' },
+      select: {
+        ...publicUser,
+        creatorPoints: true,
+        createdLevels: {
+          select: { name: true, difficulty: true },
+        },
+        userBadges: {
+          include: {
+            badge: { include: { badgeCategory: true } },
+          },
         },
       },
-    },
-  });
+    }),
+    prisma.level.findMany({
+      where: { isVN: true, creatorName: { not: null } },
+      select: { creatorName: true },
+    }),
+  ]);
 
-  return creators.map((creator) => {
-    const { userBadges, ...rest } = creator;
-    return {
-      ...rest,
-      displayName: playerDisplayName(creator),
-      isLegacy: false,
-      qualityBadges: pickDecoAndLayoutBadges(
-        userBadges.map((ub) => ({
-          ...ub.badge,
-          badgeCategory: ub.badge.badgeCategory,
-        }))
-      ),
-    };
+  const sheetKeys = new Set(
+    vnCreators
+      .map((r) => (r.creatorName || '').trim().toLowerCase())
+      .filter(Boolean)
+  );
+
+  const claimedGd = new Set(
+    creators
+      .map((c) => c.gdUsername?.trim().toLowerCase())
+      .filter((n): n is string => Boolean(n))
+  );
+
+  const registered = creators
+    .filter((creator) => {
+      const gd = creator.gdUsername?.trim().toLowerCase() || '';
+      return (creator.creatorPoints || 0) > 0 || (gd && sheetKeys.has(gd));
+    })
+    .map((creator) => {
+      const { userBadges, ...rest } = creator;
+      return {
+        ...rest,
+        displayName: playerDisplayName(creator),
+        isLegacy: false as const,
+        qualityBadges: pickDecoAndLayoutBadges(
+          userBadges.map((ub) => ({
+            ...ub.badge,
+            badgeCategory: ub.badge.badgeCategory,
+          }))
+        ),
+      };
+    });
+
+  const legacy = [];
+  for (const row of vnCreators) {
+    const name = (row.creatorName || '').trim();
+    const key = name.toLowerCase();
+    if (!name || claimedGd.has(key)) continue;
+    claimedGd.add(key);
+    legacy.push({
+      id: `legacy-creator:${key}`,
+      username: null as string | null,
+      displayName: name,
+      gdUsername: name,
+      avatarUrl: null as string | null,
+      role: 'USER' as const,
+      country: null as string | null,
+      supporterUntil: null as Date | null,
+      creatorPoints: 0,
+      createdLevels: [] as { name: string; difficulty: string }[],
+      isLegacy: true as const,
+      qualityBadges: { deco: null, layout: null },
+    });
+  }
+
+  return [...registered, ...legacy].sort((a, b) => {
+    const cp = (b.creatorPoints || 0) - (a.creatorPoints || 0);
+    if (cp !== 0) return cp;
+    return String(a.displayName).localeCompare(String(b.displayName), undefined, { sensitivity: 'base' });
   });
 }
 

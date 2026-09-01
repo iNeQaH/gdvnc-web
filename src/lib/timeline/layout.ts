@@ -1,4 +1,4 @@
-import { TIERS } from '@/lib/timeline/tiers';
+import { ALWAYS_SHOW_MARKER_MAX_RANK, TIERS } from '@/lib/timeline/tiers';
 import type { ChronicleEvent } from '@/lib/timeline/types';
 
 export const CARD_W = 200;
@@ -55,10 +55,12 @@ export function layoutLane({
     const rank = TIERS.find((t) => t.id === item.event.tier)?.rank ?? 5;
     const forced = expandedIds.has(item.event.id);
     const visibleAtZoom = rank <= minShowRank;
+    const alwaysMark = rank <= ALWAYS_SHOW_MARKER_MAX_RANK;
     const left = item.desiredLeft;
     const right = left + cardWidth;
 
     if (!visibleAtZoom && !forced) {
+      if (!alwaysMark) continue;
       placed.push({ ...item, collapsed: true, left: item.x - 7, width: 14 });
       continue;
     }

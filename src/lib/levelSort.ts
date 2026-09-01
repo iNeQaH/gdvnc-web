@@ -37,3 +37,7 @@ export function compareListLevels(
   if (face !== 0) return face;
   return String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' });
 }
+
+export function isMainOrExtendedPlacement(placement: number | null | undefined): boolean {
+  return isRankedPlacement(placement) && placement <= LIST_EXTENDED_MAX;
+}

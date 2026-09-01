@@ -41,6 +41,10 @@ export function canonicalizeDifficultyFace(val: number): number {
   return val;
 }
 
+export function isDemonDifficultyFace(face: number | null | undefined): boolean {
+  return (face ?? 0) >= 10;
+}
+
 export function matchesDifficultyFilter(face: number, selected: number[]): boolean {
   if (!selected.length) return true;
   const group = canonicalizeDifficultyFace(face);

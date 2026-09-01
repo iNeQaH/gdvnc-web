@@ -2,10 +2,10 @@ import { requireAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { RecordStatus } from '@prisma/client';
-import { recalculateCreatorPoints } from '@/lib/recalculateCreatorPoints';
 import { extractYoutubeId, upsertLevelFromForm } from '@/lib/upsertLevel';
 import { purgeWorkImages } from '@/lib/workImages';
 import { clipReviewNote, notifyWithNote } from '@/lib/reviewNote';
+import { gdNamesEqual } from '@/lib/gdName';
 
 async function finalizeWorkImages(workId: string, imageUrl: string | null | undefined) {
   await purgeWorkImages(imageUrl);
@@ -33,11 +33,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       select: {
         id: true,
         userId: true,
+        username: true,
         gdLevelId: true,
         videoUrl: true,
         imageUrl: true,
         levelName: true,
         status: true,
+        user: { select: { gdUsername: true, creatorPoints: true } },
       },
     });
 
@@ -94,8 +96,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
     }
 
-    const badgeIds = typeof badgeId === 'string' ? badgeId.split(',').filter(Boolean) : [];
-    const extraCp = Number.parseFloat(cpAwarded || '0') || 0;
+    const ownWork = gdNamesEqual(work.username, work.user.gdUsername);
+    const badgeIds = ownWork && typeof badgeId === 'string' ? badgeId.split(',').filter(Boolean) : [];
+    const extraCp = ownWork ? Number.parseFloat(cpAwarded || '0') || 0 : 0;
 
     const updated = await prisma.creatorWork.update({
       where: { id },
@@ -123,7 +126,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
     }
 
-    const totalCp = await recalculateCreatorPoints(work.userId);
+    let totalCp = work.user.creatorPoints || 0;
+    if (extraCp) {
+      const bumped = await prisma.user.update({
+        where: { id: work.userId },
+        data: { creatorPoints: { increment: extraCp } },
+        select: { creatorPoints: true },
+      });
+      totalCp = bumped.creatorPoints;
+    }
 
     const grantedBadges = badgeIds.length
       ? await prisma.badge.findMany({ where: { id: { in: badgeIds } } })

@@ -40,19 +40,16 @@ import {
   Wrench,
   Plus,
 } from 'lucide-react';
-import * as AllLucideIcons from 'lucide-react';
-import { CUSTOM_ICONS } from '@/components/CustomIcons';
 import BadgeIcon, { IconGlyph } from '@/components/BadgeIcon';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import ColorPicker from '@/components/ColorPicker';
 import { type DictKey } from '@/lib/dictionaries';
 import ReviewStatusBadge from '@/components/ReviewStatusBadge';
+import { BADGE_ICON_NAMES } from '@/lib/badgeIconCatalog';
+import { gdNamesEqual } from '@/lib/gdName';
 
-const allIconNames = [
-  ...Object.keys(CUSTOM_ICONS),
-  ...Object.keys(AllLucideIcons).filter(name => /^[A-Z]/.test(name) && name !== 'LucideProps' && name !== 'IconNode')
-];
+const allIconNames = BADGE_ICON_NAMES;
 
 type QueueStatus = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED';
 type QueueCounts = { pending: number; approved: number; rejected: number };
@@ -171,14 +168,16 @@ function AdminListPager({
   total,
   onPage,
   t,
+  pageSize = 10,
 }: {
   page: number;
   total: number;
   onPage: (p: number) => void;
   t: (key: DictKey, vars?: Record<string, string | number>) => string;
+  pageSize?: number;
 }) {
-  const pages = Math.max(1, Math.ceil(total / 10));
-  if (total <= 10) return null;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  if (total <= pageSize) return null;
   return (
     <div className="flex items-center justify-center gap-2 pt-1">
       <button
@@ -244,7 +243,7 @@ function ReviewerLine({ item, t }: { item: { status: string; reviewer?: { userna
 }
 
 import LevelFormModal from '@/components/LevelFormModal';
-import { formatCp, getDecoBadgeCp, getLayoutBadgeCp, isDecoCategory, isLayoutCategory } from '@/lib/creatorPoints';
+import { getDecoBadgeCp, getLayoutBadgeCp, isDecoCategory, isLayoutCategory } from '@/lib/creatorPoints';
 
 export default function AdminPage() {
   const { t, language } = useLanguage();
@@ -590,7 +589,7 @@ export default function AdminPage() {
     }
   };
 
-  const handleDropBadge = async (targetId: string) => {
+  const handleDropBadge = (targetId: string) => {
     if (!draggedBadgeId || draggedBadgeId === targetId) return;
     const sourceIndex = badgesList.findIndex(b => b.id === draggedBadgeId);
     const targetIndex = badgesList.findIndex(b => b.id === targetId);
@@ -599,16 +598,17 @@ export default function AdminPage() {
     const newBadges = [...badgesList];
     const [movedItem] = newBadges.splice(sourceIndex, 1);
     newBadges.splice(targetIndex, 0, movedItem);
-    
-    setBadgesList(newBadges);
+    setBadgesList(newBadges.map((b, i) => ({ ...b, sortOrder: i + 1 })));
     setDraggedBadgeId(null);
-    
+  };
+
+  const persistBadgeOrder = async () => {
     try {
-      const orderedIds = newBadges.map(b => b.id);
+      const orderedIds = badgesList.map((b) => b.id);
       await fetch('/api/admin/badges', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderedIds })
+        body: JSON.stringify({ orderedIds }),
       });
       fetchBadges();
     } catch (e) {
@@ -761,7 +761,7 @@ export default function AdminPage() {
           return;
         }
         const r = data.result || {};
-        const summary = `${r.fetched || 0} level · +${r.levelsCreated || 0} / ~${r.levelsUpdated || 0} · timeline +${r.timelineCreated || 0} / ~${r.timelineUpdated || 0} · skip ${r.timelineSkipped || 0} ngày`;
+        const summary = `${r.fetched || 0} level · +${r.levelsCreated || 0} / ~${r.levelsUpdated || 0} · timeline +${r.timelineCreated || 0} / ~${r.timelineUpdated || 0} · skip ${r.timelineSkipped || 0} ngày · ${r.creatorsQueued || 0} creator · unverify ${r.usersUnverified || 0}`;
         showToast(t('admin.sync_sheet_ok', { summary }), 'success');
       } catch {
         showToast(t('admin.sync_sheet_fail'), 'error');
@@ -1214,6 +1214,7 @@ export default function AdminPage() {
                         </Link>
                         <div className="text-[11px] ui-dim">
                           Tác phẩm: {work.levelName} {work.gdLevelId ? `(ID: ${work.gdLevelId})` : ''}
+                          {work.username ? ` · GD: ${work.username}` : ''}
                         </div>
                       </div>
                     </div>
@@ -1268,6 +1269,7 @@ export default function AdminPage() {
 
                   {work.status === 'PENDING' && (
                   <div className="pt-2 flex flex-col gap-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                    {gdNamesEqual(work.username, work.user?.gdUsername) ? (
                     <div className="flex items-center gap-2 flex-wrap">
                       <select
                         value={workReviewData[work.id]?.decoBadgeId || ''}
@@ -1278,7 +1280,7 @@ export default function AdminPage() {
                         <option value="">-- Deco Badge --</option>
                         {decoBadges.map(b => (
                           <option key={b.id} value={b.id}>
-                            {b.name} (+{formatCp(getDecoBadgeCp(b.name) || 0)})
+                            {b.name}
                           </option>
                         ))}
                       </select>
@@ -1291,7 +1293,7 @@ export default function AdminPage() {
                         <option value="">-- Layout Badge --</option>
                         {layoutBadges.map(b => (
                           <option key={b.id} value={b.id}>
-                            {b.name} (+{formatCp(getLayoutBadgeCp(b.name) || 0)})
+                            {b.name}
                           </option>
                         ))}
                       </select>
@@ -1302,9 +1304,12 @@ export default function AdminPage() {
                         onChange={(e) => setWorkReviewData({ ...workReviewData, [work.id]: { ...workReviewData[work.id], cpAwarded: e.target.value } })}
                         className="w-20 px-2 py-1.5 rounded-xl text-xs border focus:outline-none"
                         style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                        title="Điểm cộng thêm cho work (ngoài điểm từ badge)"
+                        title="Cộng CP thủ công (huy hiệu không cộng điểm)"
                       />
                     </div>
+                    ) : (
+                      <p className="text-[11px] ui-dim">GD username nộp không trùng profile — không trao huy hiệu / CP.</p>
+                    )}
                     <input
                       type="text"
                       placeholder={t('admin.review_note_ph')}
@@ -1702,7 +1707,14 @@ export default function AdminPage() {
               </select>
 
               <button
-                onClick={() => setIsBadgeEditMode(!isBadgeEditMode)}
+                onClick={async () => {
+                  if (isBadgeEditMode) {
+                    await persistBadgeOrder();
+                    setIsBadgeEditMode(false);
+                  } else {
+                    setIsBadgeEditMode(true);
+                  }
+                }}
                 className={`px-3 py-2 rounded-xl text-[11px] font-bold border transition-colors ${isBadgeEditMode ? 'bg-[var(--accent)] text-[color:var(--accent-fg)] border-[var(--accent)]' : 'hover:opacity-80'}`}
                 style={!isBadgeEditMode ? { backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' } : {}}
                 title="Chế độ kéo thả"
@@ -1725,7 +1737,7 @@ export default function AdminPage() {
                 <div className="col-span-full p-6 text-center text-xs ui-dim">{t('admin.loading')}</div>
               ) : filteredBadges.length === 0 ? (
                 <div className="col-span-full p-6 text-center text-xs ui-dim">{t('badge.none_found')}</div>
-              ) : filteredBadges.slice((badgePage - 1) * 10, badgePage * 10).map((b, idx) => (
+              ) : filteredBadges.slice((badgePage - 1) * 5, badgePage * 5).map((b, idx) => (
                 <div 
                   key={b.id} 
                   draggable={isBadgeEditMode}
@@ -1750,7 +1762,7 @@ export default function AdminPage() {
                   className={`flex ${badgesViewMode === 'grid' ? 'flex-col items-center justify-center text-center' : 'items-center'} gap-3 p-3 rounded-xl border ${isBadgeEditMode ? 'cursor-grab active:cursor-grabbing border-dashed border-[var(--accent)] bg-black/5 dark:bg-white/5' : 'cursor-pointer hover:scale-[1.02] hover:border-[var(--accent)] hover:shadow-md'} transition-all`} 
                   style={{ backgroundColor: 'var(--bg-card)', borderColor: isBadgeEditMode ? 'var(--accent)' : 'var(--border-ui)' }}
                 >
-                  <span className="text-[10px] font-black ui-dim w-6">#{b.sortOrder || (badgePage - 1) * 10 + idx + 1}</span>
+                  <span className="text-[10px] font-black ui-dim w-6">#{b.sortOrder || (badgePage - 1) * 5 + idx + 1}</span>
                   <BadgeIcon
                     icon={b.icon || 'Star'}
                     color={b.color}
@@ -1772,6 +1784,7 @@ export default function AdminPage() {
               total={filteredBadges.length}
               onPage={setBadgePage}
               t={t}
+              pageSize={5}
             />
             </div>
           </div>

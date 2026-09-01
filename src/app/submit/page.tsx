@@ -71,6 +71,7 @@ function SubmitForm() {
           .then((data) => {
             if (data.success && data.user) {
               setCurrentUser(data.user);
+              if (data.user.gdUsername) setWorkName(data.user.gdUsername);
             }
           })
           .catch(() => {});
@@ -486,6 +487,13 @@ function SubmitForm() {
                   placeholder="Ví dụ: Viprin, Zobros..."
                   className="w-full px-3 py-2 rounded-xl text-xs ui-input"
                 />
+                {currentUser?.gdUsername && workName.trim() ? (
+                  <p className="text-[10px] ui-dim">
+                    {workName.trim().toLowerCase() === String(currentUser.gdUsername).trim().toLowerCase()
+                      ? t('submit.work_gd_match')
+                      : t('submit.work_gd_mismatch')}
+                  </p>
+                ) : null}
               </div>
 
               <div className="space-y-1">

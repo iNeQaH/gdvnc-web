@@ -1,7 +1,6 @@
 import { requireAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { recalculateCreatorPoints } from '@/lib/recalculateCreatorPoints';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   let actor;
@@ -42,9 +41,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       ),
     ]);
 
-    const creatorPoints = await recalculateCreatorPoints(id);
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: { creatorPoints: true },
+    });
 
-    return NextResponse.json({ success: true, creatorPoints });
+    return NextResponse.json({ success: true, creatorPoints: user?.creatorPoints ?? 0 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Lỗi cập nhật huy hiệu.' }, { status: 500 });
   }
