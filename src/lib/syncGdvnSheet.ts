@@ -13,6 +13,7 @@ import {
   parseYoutubeVideoField,
   youtubeThumbUrl,
 } from '@/lib/timeline/glow';
+import { isGeneratedLevelCopy, levelChronicleHtml, levelChronicleShort } from '@/lib/timeline/levelCopy';
 
 const CREATE_CHUNK = 80;
 const UPDATE_CHUNK = 40;
@@ -102,6 +103,9 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
       difficultyFace: true,
       ratingType: true,
       isVN: true,
+      description: true,
+      youtubeId: true,
+      mode: true,
     },
   });
   const levelByGd = new Map(existingLevels.map((l) => [l.gdLevelId, l]));
@@ -173,6 +177,7 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
           tier: true,
           image: true,
           glowColor: true,
+          fullDescription: true,
         },
       })
     : [];
@@ -185,13 +190,32 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
     };
   }
 
+  function copyFor(row: GdvnSheetRow) {
+    const local = levelByGd.get(row.gdLevelId);
+    return {
+      title: clipText(row.name, 160),
+      shortDescription: levelChronicleShort(row.name, row.creatorName),
+      fullDescription: levelChronicleHtml({
+        name: row.name,
+        creatorName: row.creatorName,
+        difficulty: row.difficulty,
+        difficultyFace: row.difficultyFace,
+        ratingType: row.ratingType,
+        mode: local?.mode || 'CLASSIC',
+        gdLevelId: row.gdLevelId,
+        description: local?.description,
+        ratedAt: row.ratedAt,
+        youtubeId: ytByGd.get(row.gdLevelId) || local?.youtubeId,
+      }),
+    };
+  }
+
   const toCreateEvents: GdvnSheetRow[] = [];
   const toUpdateEvents: Array<{ id: string; row: GdvnSheetRow }> = [];
   for (const row of dated) {
     const key = gdvnSheetSourceKey(row.gdLevelId);
     const cur = eventByKey.get(key);
-    const title = clipText(row.name, 160);
-    const shortDescription = clipText(row.creatorName, 80);
+    const copy = copyFor(row);
     if (!cur) {
       toCreateEvents.push(row);
       continue;
@@ -200,9 +224,11 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
     const nextImage =
       !cur.image || isYoutubeThumb(cur.image) ? extras.image : cur.image;
     const nextGlow = cur.glowColor || extras.glowColor;
+    const nextFull = isGeneratedLevelCopy(cur.fullDescription) ? copy.fullDescription : cur.fullDescription;
     if (
-      cur.title !== title ||
-      cur.shortDescription !== shortDescription ||
+      cur.title !== copy.title ||
+      cur.shortDescription !== copy.shortDescription ||
+      cur.fullDescription !== nextFull ||
       cur.tier !== row.timelineTier ||
       !sameDay(cur.startAt, row.ratedAt!) ||
       !sameDay(cur.endAt, row.ratedAt!) ||
@@ -218,11 +244,12 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
     const result = await prisma.timelineEvent.createMany({
       data: chunk.map((row) => {
         const extras = extrasFor(row);
+        const copy = copyFor(row);
         return {
           sourceKey: gdvnSheetSourceKey(row.gdLevelId),
-          title: clipText(row.name, 160),
-          shortDescription: clipText(row.creatorName, 80),
-          fullDescription: clipText(`ID ${row.gdLevelId}`, 200),
+          title: copy.title,
+          shortDescription: copy.shortDescription,
+          fullDescription: copy.fullDescription,
           image: extras.image,
           glowColor: extras.glowColor,
           startAt: row.ratedAt!,
@@ -243,15 +270,17 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
       chunk.map(({ id, row }) => {
         const extras = extrasFor(row);
         const cur = eventByKey.get(gdvnSheetSourceKey(row.gdLevelId));
+        const copy = copyFor(row);
         const nextImage =
           !cur?.image || isYoutubeThumb(cur.image) ? extras.image : cur.image;
         const nextGlow = cur?.glowColor || extras.glowColor;
+        const nextFull = isGeneratedLevelCopy(cur?.fullDescription) ? copy.fullDescription : cur?.fullDescription;
         return prisma.timelineEvent.update({
           where: { id },
           data: {
-            title: clipText(row.name, 160),
-            shortDescription: clipText(row.creatorName, 80),
-            fullDescription: clipText(`ID ${row.gdLevelId}`, 200),
+            title: copy.title,
+            shortDescription: copy.shortDescription,
+            fullDescription: nextFull,
             image: nextImage,
             glowColor: nextGlow,
             startAt: row.ratedAt!,

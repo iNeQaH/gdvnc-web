@@ -325,6 +325,8 @@ export default function AdminPage() {
   const [siteLockBusy, setSiteLockBusy] = useState(false);
   const [syncingLists, setSyncingLists] = useState(false);
   const [syncingSheet, setSyncingSheet] = useState(false);
+  const [refreshingCreators, setRefreshingCreators] = useState(false);
+  const [refreshingTimelineCopy, setRefreshingTimelineCopy] = useState(false);
   const [adminToast, setAdminToast] = useState<{ text: string, isError: boolean } | null>(null);
   const [userSortOrder, setUserSortOrder] = useState<'asc' | 'desc'>('asc');
   const [userPage, setUserPage] = useState(1);
@@ -767,6 +769,71 @@ export default function AdminPage() {
         showToast(t('admin.sync_sheet_fail'), 'error');
       } finally {
         setSyncingSheet(false);
+      }
+    });
+  };
+
+  const runPagedAdminJob = async (url: string) => {
+    let cursor: string | undefined;
+    let scanned = 0;
+    let updated = 0;
+    let failed = 0;
+    let skipped = 0;
+    for (;;) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cursor ? { cursor } : {}),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Job failed');
+      }
+      scanned += data.scanned || 0;
+      updated += data.updated || 0;
+      failed += data.failed || 0;
+      skipped += data.skipped || 0;
+      if (data.done) break;
+      cursor = data.nextCursor;
+      if (!cursor) break;
+    }
+    return { scanned, updated, failed, skipped };
+  };
+
+  const handleRefreshCreators = () => {
+    showConfirm(t('admin.refresh_creators_confirm'), async () => {
+      setRefreshingCreators(true);
+      try {
+        const r = await runPagedAdminJob('/api/admin/levels/refresh-creators');
+        showToast(
+          t('admin.refresh_creators_ok', {
+            summary: `${r.updated} · scan ${r.scanned} · skip ${r.skipped} · fail ${r.failed}`,
+          }),
+          'success'
+        );
+      } catch (err: any) {
+        showToast(err?.message || t('admin.refresh_creators_fail'), 'error');
+      } finally {
+        setRefreshingCreators(false);
+      }
+    });
+  };
+
+  const handleRefreshTimelineCopy = () => {
+    showConfirm(t('admin.refresh_timeline_copy_confirm'), async () => {
+      setRefreshingTimelineCopy(true);
+      try {
+        const r = await runPagedAdminJob('/api/admin/timeline/refresh-level-copy');
+        showToast(
+          t('admin.refresh_timeline_copy_ok', {
+            summary: `${r.updated} · scan ${r.scanned} · fail ${r.failed}`,
+          }),
+          'success'
+        );
+      } catch (err: any) {
+        showToast(err?.message || t('admin.refresh_timeline_copy_fail'), 'error');
+      } finally {
+        setRefreshingTimelineCopy(false);
       }
     });
   };
@@ -1523,6 +1590,40 @@ export default function AdminPage() {
             >
               <RefreshCw className={`w-3.5 h-3.5 ${syncingSheet ? 'animate-spin' : ''}`} />
               {syncingSheet ? t('admin.sync_sheet_working') : t('admin.sync_sheet')}
+            </button>
+          </FnSection>
+
+          <FnSection
+            title={t('admin.refresh_creators')}
+            icon={<RefreshCw className="w-4 h-4" />}
+            desc={t('admin.refresh_creators_desc')}
+          >
+            <button
+              type="button"
+              disabled={refreshingCreators}
+              onClick={handleRefreshCreators}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              style={{ backgroundColor: 'var(--accent)' }}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshingCreators ? 'animate-spin' : ''}`} />
+              {refreshingCreators ? t('admin.refresh_creators_working') : t('admin.refresh_creators')}
+            </button>
+          </FnSection>
+
+          <FnSection
+            title={t('admin.refresh_timeline_copy')}
+            icon={<RefreshCw className="w-4 h-4" />}
+            desc={t('admin.refresh_timeline_copy_desc')}
+          >
+            <button
+              type="button"
+              disabled={refreshingTimelineCopy}
+              onClick={handleRefreshTimelineCopy}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              style={{ backgroundColor: 'var(--accent)' }}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshingTimelineCopy ? 'animate-spin' : ''}`} />
+              {refreshingTimelineCopy ? t('admin.refresh_timeline_copy_working') : t('admin.refresh_timeline_copy')}
             </button>
           </FnSection>
 

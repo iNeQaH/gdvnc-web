@@ -1218,6 +1218,17 @@ html.dark .gdvn-timeline .chronicle {
   margin: 0 0 1em;
 }
 
+.gdvn-timeline .chronicle-body iframe {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  border: 0;
+  border-radius: 12px;
+  margin: 8px 0 16px;
+}
+
 .gdvn-timeline .chronicle-figure {
   margin: 28px auto;
   max-width: 92%;

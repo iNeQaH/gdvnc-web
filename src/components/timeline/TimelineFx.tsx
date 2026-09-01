@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CARD_W } from '@/lib/timeline/layout';
 import { DAY_MS, TIMELINE_ORIGIN } from '@/lib/timeline/time';
+import { ALWAYS_SHOW_MARKER_MAX_RANK, TIER_BY_LOOKUP } from '@/lib/timeline/tiers';
 import type { ChronicleEvent } from '@/lib/timeline/types';
 
 const GRID = 48;
@@ -147,8 +148,10 @@ export default function TimelineFx({
     if (!events.length || width < 8 || height < 8) return [];
     const panDays = (viewStart - TIMELINE_ORIGIN) / DAY_MS;
     const fade = 96;
-    const pool = events;
+    const high = events.filter((event) => (TIER_BY_LOOKUP[event.tier]?.rank ?? 5) <= ALWAYS_SHOW_MARKER_MAX_RANK);
+    const low = events.filter((event) => (TIER_BY_LOOKUP[event.tier]?.rank ?? 5) > ALWAYS_SHOW_MARKER_MAX_RANK);
     return GHOST_SLOTS.map((slot, i) => {
+      const pool = slot.large ? high : low;
       if (!pool.length) return null;
       const rand = mulberry32(0x6d764e31 ^ (i + 1) * 0x9e3779b9);
       const u = slot.u + (rand() - 0.5) * 0.05;

@@ -25,12 +25,17 @@ export type GdvnSheetRow = {
 
 const RATING_MAP: Record<string, { type: GdvnSheetRating; label: string; tier: TimelineTierId }> = {
   rate: { type: 'RATE', label: 'Rate', tier: 'day' },
-  feature: { type: 'FEATURE', label: 'Feature', tier: 'week' },
-  featured: { type: 'FEATURE', label: 'Feature', tier: 'week' },
+  feature: { type: 'FEATURE', label: 'Feature', tier: 'day' },
+  featured: { type: 'FEATURE', label: 'Feature', tier: 'day' },
   epic: { type: 'EPIC', label: 'Epic', tier: '1m' },
   legendary: { type: 'LEGENDARY', label: 'Legendary', tier: '6m' },
   mythic: { type: 'MYTHIC', label: 'Mythic', tier: '1y' },
 };
+
+export function timelineTierForRating(ratingType: string | null | undefined): TimelineTierId {
+  const key = String(ratingType || '').trim().toLowerCase();
+  return RATING_MAP[key]?.tier ?? 'day';
+}
 
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];

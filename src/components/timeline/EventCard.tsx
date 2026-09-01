@@ -3,40 +3,11 @@
 import { useState, type CSSProperties } from 'react';
 import type { ChronicleEvent } from '@/lib/timeline/types';
 import { CARD_STACK, type LaneItem } from '@/lib/timeline/layout';
-import { TIMELINE_CARD_LIFT, formatDate } from '@/lib/timeline/time';
-import { sheetEventMeta } from '@/lib/timeline/sheetEvent';
+import { TIMELINE_CARD_LIFT } from '@/lib/timeline/time';
 import { glowStyleVars } from '@/lib/timeline/glow';
 import type { DictKey } from '@/lib/dictionaries';
 
-function SheetCardDesc({
-  event,
-  t,
-}: {
-  event: ChronicleEvent;
-  t: (key: DictKey, vars?: Record<string, string | number>) => string;
-}) {
-  const meta = sheetEventMeta(event);
-  if (!meta) {
-    return <div className="card-desc">{event.shortDescription}</div>;
-  }
-  return (
-    <div className="card-desc is-sheet">
-      {t('timeline.sheet_creator', { name: meta.creator })}
-      {'\n'}
-      {t('timeline.sheet_id', { id: meta.id })}
-      {'\n'}
-      {t('timeline.sheet_rated', { date: formatDate(event.start) })}
-    </div>
-  );
-}
-
-function Media({
-  event,
-  t,
-}: {
-  event: ChronicleEvent;
-  t: (key: DictKey, vars?: Record<string, string | number>) => string;
-}) {
+function Media({ event }: { event: ChronicleEvent }) {
   const [failed, setFailed] = useState(false);
   if (event.image && !failed) {
     return (
@@ -45,7 +16,6 @@ function Media({
       </div>
     );
   }
-  if (sheetEventMeta(event)) return <SheetCardDesc event={event} t={t} />;
   return <div className="card-desc">{event.shortDescription}</div>;
 }
 
@@ -59,7 +29,6 @@ export default function EventCard({
   onOpen,
   onEdit,
   canEdit,
-  t,
 }: {
   item: LaneItem;
   side: 'pos' | 'neg';
@@ -105,7 +74,7 @@ export default function EventCard({
       <div className="card-shell">
         {glow ? <div className="card-glow" aria-hidden /> : null}
         <div className="card-frame">
-          <Media event={event} t={t} />
+          <Media event={event} />
         </div>
       </div>
       {side === 'neg' && <div className="card-title">{event.title}</div>}
