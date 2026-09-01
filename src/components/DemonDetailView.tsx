@@ -146,7 +146,7 @@ export default function DemonDetailView({
                     stacked
                     difficultyFace={level.difficultyFace}
                     ratingType={level.ratingType}
-                    className="w-16 h-16"
+                    className="w-20 h-20"
                   />
                 </div>
                 <div>

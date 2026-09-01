@@ -16,9 +16,20 @@ export function DifficultyRatingIcon({
 
   if (stacked) {
     return (
-      <span className="inline-flex flex-col items-center gap-1 shrink-0">
-        <img src={face} alt="" className={`object-contain ${className}`} />
-        {rating ? <img src={rating} alt="" className={`object-contain ${className}`} /> : null}
+      <span className="inline-flex flex-col items-center gap-2 shrink-0">
+        <span className={`relative block overflow-hidden ${className}`}>
+          <img src={face} alt="" className="absolute inset-0 size-full object-contain" />
+        </span>
+        {rating ? (
+          <span className={`relative block overflow-hidden ${className}`}>
+            <img
+              src={rating}
+              alt=""
+              className="absolute inset-0 size-full object-contain origin-center"
+              style={{ transform: 'scale(1.72)' }}
+            />
+          </span>
+        ) : null}
       </span>
     );
   }
