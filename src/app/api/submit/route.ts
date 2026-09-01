@@ -65,16 +65,15 @@ export async function POST(req: Request) {
 
       return NextResponse.json({ success: true, record });
     } else if (type === 'CREATOR') {
-      const { levelName, gdLevelId, videoUrl, imageUrl, description } = data;
-
-      if (!levelName) {
-        return NextResponse.json({ error: 'Vui lòng điền tên Work / Tác phẩm.' }, { status: 400 });
-      }
+      const gdIdRaw = parseInt(String(data.gdLevelId ?? ''), 10);
+      const hasId = Number.isFinite(gdIdRaw) && gdIdRaw > 0;
+      const description = clipText(data.description, 4000);
+      const levelName = clipText(data.levelName, 120);
 
       let storedImage: string | null = null;
       const refs: string[] = [];
       const incoming = [
-        ...(typeof imageUrl === 'string' ? [imageUrl] : []),
+        ...(typeof data.imageUrl === 'string' ? [data.imageUrl] : []),
         ...(Array.isArray(data.imageUrls) ? data.imageUrls : []),
       ];
       for (const item of incoming) {
@@ -91,22 +90,50 @@ export async function POST(req: Request) {
       }
       storedImage = refs.length > 0 ? [...new Set(refs)].join(',') : null;
 
+      if (!hasId && !description && !storedImage) {
+        return NextResponse.json(
+          { error: 'Cần Level ID, hoặc mô tả / ảnh minh họa.' },
+          { status: 400 }
+        );
+      }
+
+      let submission = null;
+      if (hasId) {
+        submission = await prisma.levelSubmission.create({
+          data: {
+            userId,
+            gdLevelId: gdIdRaw,
+            videoUrl: isHttpsUrl(data.videoUrl) ? clipText(data.videoUrl, 500) : null,
+            minPercent: data.minPercent ? parseInt(String(data.minPercent), 10) : 100,
+            placement: data.placement ? parseInt(String(data.placement), 10) : null,
+            vnPlacement: data.vnPlacement ? parseInt(String(data.vnPlacement), 10) : null,
+            mode: data.mode || 'CLASSIC',
+            isVN: !!data.isVN,
+            isChallenge: !!data.isChallenge,
+            difficultyFace: data.difficultyFace !== undefined ? parseInt(String(data.difficultyFace), 10) : 10,
+            ratingType: data.ratingType || 'NONE',
+            status: RecordStatus.PENDING,
+            prioritySp: 0,
+          },
+        });
+      }
+
       const submittedGd = clipText(data.username, 80) || user.gdUsername || user.username;
       const work = await prisma.creatorWork.create({
         data: {
           userId,
           username: submittedGd,
-          levelName: clipText(levelName, 120),
-          gdLevelId: gdLevelId ? parseInt(gdLevelId, 10) : null,
-          videoUrl: isHttpsUrl(videoUrl) ? clipText(videoUrl, 500) : null,
+          levelName: levelName || (hasId ? `Level ${gdIdRaw}` : description?.slice(0, 80) || 'Work'),
+          gdLevelId: hasId ? gdIdRaw : null,
+          videoUrl: isHttpsUrl(data.videoUrl) ? clipText(data.videoUrl, 500) : null,
           imageUrl: storedImage,
-          description: clipText(description, 4000) || null,
+          description: description || null,
           status: RecordStatus.PENDING,
           prioritySp: 0,
         }
       });
 
-      return NextResponse.json({ success: true, work });
+      return NextResponse.json({ success: true, work, submission });
     } else if (type === 'LEVEL') {
       const { gdLevelId, videoUrl, minPercent, placement, vnPlacement, mode, isVN, isChallenge, difficultyFace, ratingType } = data;
       if (!gdLevelId) {

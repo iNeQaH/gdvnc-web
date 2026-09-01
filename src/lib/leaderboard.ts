@@ -11,6 +11,7 @@ export const publicUser = {
   role: true,
   country: true,
   supporterUntil: true,
+  gdVerified: true,
 } as const;
 
 export function playerDisplayName(player: {
@@ -137,7 +138,7 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER') {
 }
 
 export async function getCreatorLeaderboard() {
-  const [creators, vnCreators] = await Promise.all([
+  const [creators, vnLevels] = await Promise.all([
     prisma.user.findMany({
       where: {
         OR: [{ creatorPoints: { gt: 0 } }, { gdUsername: { not: null } }],
@@ -147,7 +148,9 @@ export async function getCreatorLeaderboard() {
         ...publicUser,
         creatorPoints: true,
         createdLevels: {
-          select: { name: true, difficulty: true },
+          where: { isVN: true },
+          select: { name: true, difficulty: true, gdLevelId: true },
+          orderBy: [{ vnPlacement: 'asc' }, { name: 'asc' }],
         },
         userBadges: {
           include: {
@@ -158,15 +161,22 @@ export async function getCreatorLeaderboard() {
     }),
     prisma.level.findMany({
       where: { isVN: true, creatorName: { not: null } },
-      select: { creatorName: true },
+      select: { creatorName: true, name: true, difficulty: true, gdLevelId: true },
+      orderBy: [{ vnPlacement: 'asc' }, { name: 'asc' }],
     }),
   ]);
 
-  const sheetKeys = new Set(
-    vnCreators
-      .map((r) => (r.creatorName || '').trim().toLowerCase())
-      .filter(Boolean)
-  );
+  type VnLevel = { name: string; difficulty: string; gdLevelId: number };
+  const levelsByCreator = new Map<string, VnLevel[]>();
+  for (const row of vnLevels) {
+    const key = (row.creatorName || '').trim().toLowerCase();
+    if (!key) continue;
+    const list = levelsByCreator.get(key) || [];
+    if (!list.some((l) => l.gdLevelId === row.gdLevelId)) {
+      list.push({ name: row.name, difficulty: row.difficulty, gdLevelId: row.gdLevelId });
+    }
+    levelsByCreator.set(key, list);
+  }
 
   const claimedGd = new Set(
     creators
@@ -177,14 +187,21 @@ export async function getCreatorLeaderboard() {
   const registered = creators
     .filter((creator) => {
       const gd = creator.gdUsername?.trim().toLowerCase() || '';
-      return (creator.creatorPoints || 0) > 0 || (gd && sheetKeys.has(gd));
+      return (creator.creatorPoints || 0) > 0 || (gd && levelsByCreator.has(gd));
     })
     .map((creator) => {
-      const { userBadges, ...rest } = creator;
+      const { userBadges, createdLevels, ...rest } = creator;
+      const gd = creator.gdUsername?.trim().toLowerCase() || '';
+      const fromSheet = levelsByCreator.get(gd) || [];
+      const byId = new Map<number, VnLevel>();
+      for (const lvl of createdLevels) byId.set(lvl.gdLevelId, lvl);
+      for (const lvl of fromSheet) if (!byId.has(lvl.gdLevelId)) byId.set(lvl.gdLevelId, lvl);
       return {
         ...rest,
         displayName: playerDisplayName(creator),
         isLegacy: false as const,
+        unverified: !creator.gdVerified,
+        createdLevels: Array.from(byId.values()),
         qualityBadges: pickDecoAndLayoutBadges(
           userBadges.map((ub) => ({
             ...ub.badge,
@@ -195,11 +212,9 @@ export async function getCreatorLeaderboard() {
     });
 
   const legacy = [];
-  for (const row of vnCreators) {
-    const name = (row.creatorName || '').trim();
-    const key = name.toLowerCase();
-    if (!name || claimedGd.has(key)) continue;
-    claimedGd.add(key);
+  for (const [key, levels] of levelsByCreator) {
+    if (!key || claimedGd.has(key)) continue;
+    const name = (vnLevels.find((r) => (r.creatorName || '').trim().toLowerCase() === key)?.creatorName || key).trim();
     legacy.push({
       id: `legacy-creator:${key}`,
       username: null as string | null,
@@ -209,9 +224,11 @@ export async function getCreatorLeaderboard() {
       role: 'USER' as const,
       country: null as string | null,
       supporterUntil: null as Date | null,
+      gdVerified: false,
       creatorPoints: 0,
-      createdLevels: [] as { name: string; difficulty: string }[],
+      createdLevels: levels,
       isLegacy: true as const,
+      unverified: true,
       qualityBadges: { deco: null, layout: null },
     });
   }
@@ -219,6 +236,8 @@ export async function getCreatorLeaderboard() {
   return [...registered, ...legacy].sort((a, b) => {
     const cp = (b.creatorPoints || 0) - (a.creatorPoints || 0);
     if (cp !== 0) return cp;
+    const ln = (b.createdLevels?.length || 0) - (a.createdLevels?.length || 0);
+    if (ln !== 0) return ln;
     return String(a.displayName).localeCompare(String(b.displayName), undefined, { sensitivity: 'base' });
   });
 }

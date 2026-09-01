@@ -66,8 +66,22 @@ export default function HomePage() {
   };
 
   const filtered = leaderboard.filter((item) => {
-    const pts =
-      mode === 'CREATOR' ? item.creatorPoints : mode === 'PLATFORMER' ? item.platformerPp : item.classicPp;
+    if (mode === 'CREATOR') {
+      const q = search.toLowerCase();
+      if (!q) return true;
+      const levelHit = (item.createdLevels || []).some((lvl: { name?: string }) =>
+        String(lvl.name || '')
+          .toLowerCase()
+          .includes(q)
+      );
+      return (
+        levelHit ||
+        [item.displayName, item.gdUsername, item.username]
+          .filter(Boolean)
+          .some((name: string) => name.toLowerCase().includes(q))
+      );
+    }
+    const pts = mode === 'PLATFORMER' ? item.platformerPp : item.classicPp;
     if (!(pts > 0.005)) return false;
     const q = search.toLowerCase();
     if (!q) return true;
@@ -265,6 +279,7 @@ export default function HomePage() {
                   <th className="px-5 py-3">{t('leaderboard.player')}</th>
                   {mode === 'CREATOR' ? (
                     <>
+                      <th className="px-5 py-3">{t('leaderboard.created_levels')}</th>
                       <th className="px-5 py-3">{t('leaderboard.tier')}</th>
                       <th className="px-5 py-3 text-right">{t('leaderboard.creator_points')}</th>
                     </>
@@ -356,6 +371,38 @@ export default function HomePage() {
                       {mode === 'CREATOR' ? (
                         <>
                           <td className="px-5 py-3.5">
+                            <div className="flex flex-col gap-1 min-w-40">
+                              {(player.unverified || player.isLegacy || player.gdVerified === false) && (
+                                <span
+                                  className="self-start px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase"
+                                  style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#d97706' }}
+                                >
+                                  {t('leaderboard.unverified')}
+                                </span>
+                              )}
+                              {player.createdLevels?.length ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {player.createdLevels.slice(0, 6).map((lvl: { gdLevelId: number; name: string }) => (
+                                    <Link
+                                      key={lvl.gdLevelId}
+                                      href={levelPath(lvl)}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="px-1.5 py-0.5 rounded text-[10px] font-bold hover:underline"
+                                      style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-title)' }}
+                                    >
+                                      {lvl.name}
+                                    </Link>
+                                  ))}
+                                  {player.createdLevels.length > 6 && (
+                                    <span className="text-[10px] ui-dim">+{player.createdLevels.length - 6}</span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-[11px] ui-dim italic">{t('leaderboard.no_levels')}</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5">
                             {player.qualityBadges?.deco || player.qualityBadges?.layout ? (
                               <div className="flex items-center gap-1.5">
                                 {[player.qualityBadges.deco, player.qualityBadges.layout].filter(Boolean).map((badge: any) => (
@@ -399,7 +446,6 @@ export default function HomePage() {
                           </td>
                           <td className="px-5 py-3.5 text-right font-black text-sm" style={{ color: 'var(--accent)' }}>
                             {(mode === 'CLASSIC' ? (player.classicPp || 0) : (player.platformerPp || 0)).toFixed(2)}
-                            <span className="text-[10px] font-normal ui-dim ml-1">Points</span>
                           </td>
                         </>
                       )}

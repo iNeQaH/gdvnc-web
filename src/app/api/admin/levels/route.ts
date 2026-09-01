@@ -19,6 +19,24 @@ export async function POST(req: Request) {
   }
 }
 
+export async function PATCH(req: Request) {
+  try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
+
+  try {
+    const body = await req.json();
+    if (body?.unlinkCreator && body.id) {
+      await prisma.level.update({
+        where: { id: body.id },
+        data: { creatorId: null },
+      });
+      return NextResponse.json({ success: true });
+    }
+    return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || 'Lỗi server' }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: Request) {
   try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
 

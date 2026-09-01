@@ -2,12 +2,11 @@
 
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send, CheckCircle, AlertCircle, Gamepad2, Hammer, Image as ImageIcon, X, Layers, Loader2 } from 'lucide-react';
+import { Send, CheckCircle, AlertCircle, Gamepad2, Hammer, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import LevelFormModal from '@/components/LevelFormModal';
 import ReviewStatusBadge from '@/components/ReviewStatusBadge';
 import GdUnverifiedNotice from '@/components/GdUnverifiedNotice';
-import { uploadImagesToUt } from '@/lib/uploadthingClient';
 
 function SubmitForm() {
   const router = useRouter();
@@ -17,7 +16,7 @@ function SubmitForm() {
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   // Tabs
-  const [tab, setTab] = useState<'PLAYER' | 'CREATOR' | 'LEVEL'>('PLAYER');
+  const [tab, setTab] = useState<'PLAYER' | 'CREATOR'>('PLAYER');
 
 
   // Player state
@@ -33,16 +32,6 @@ function SubmitForm() {
   const [fps, setFps] = useState('240');
   const [device, setDevice] = useState('PC');
   const [comment, setComment] = useState('');
-
-  // Creator state
-  const [workName, setWorkName] = useState(''); // GD Username
-  const [workLevelName, setWorkLevelName] = useState(''); // Level Name
-  const [workLevelId, setWorkLevelId] = useState('');
-  const [workVideoUrl, setWorkVideoUrl] = useState('');
-  const [workImageUrls, setWorkImageUrls] = useState<string[]>([]);
-  const [workDesc, setWorkDesc] = useState('');
-  const [imageError, setImageError] = useState('');
-  const [uploadingImages, setUploadingImages] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -71,7 +60,6 @@ function SubmitForm() {
           .then((data) => {
             if (data.success && data.user) {
               setCurrentUser(data.user);
-              if (data.user.gdUsername) setWorkName(data.user.gdUsername);
             }
           })
           .catch(() => {});
@@ -120,35 +108,6 @@ function SubmitForm() {
     };
   }, [gdLevelIdStr, t]);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    e.target.value = '';
-    if (!files.length) return;
-
-    setImageError('');
-    const room = 3 - workImageUrls.length;
-    if (room <= 0) {
-      setImageError('Tối đa 3 ảnh minh họa.');
-      return;
-    }
-    const incoming = files.slice(0, room);
-    const tooBig = incoming.find((file) => file.size > 16 * 1024 * 1024);
-    if (tooBig) {
-      setImageError('Mỗi ảnh tối đa 16MB.');
-      return;
-    }
-
-    setUploadingImages(true);
-    try {
-      const urls = await uploadImagesToUt(incoming);
-      setWorkImageUrls((prev) => [...prev, ...urls].slice(0, 3));
-    } catch (err: any) {
-      setImageError(err?.message || 'Không tải được ảnh lên UploadThing.');
-    } finally {
-      setUploadingImages(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
@@ -187,28 +146,6 @@ function SubmitForm() {
         } else {
           payload.progress = parseInt(progress, 10);
         }
-      } else {
-        if (!workName) {
-          setError('Vui lòng điền GD Username.');
-          setLoading(false);
-          return;
-        }
-        if (!workLevelName) {
-          setError('Vui lòng điền Tên tác phẩm.');
-          setLoading(false);
-          return;
-        }
-        
-        payload = {
-          ...payload,
-          username: workName.trim(), 
-          levelName: workLevelName.trim(),
-          gdLevelId: workLevelId.trim(),
-          videoUrl: workVideoUrl.trim(),
-          imageUrl: workImageUrls[0] || '',
-          imageUrls: workImageUrls,
-          description: workDesc.trim(),
-        };
       }
 
       const res = await fetch('/api/submit', {
@@ -274,13 +211,6 @@ function SubmitForm() {
         >
           <Hammer className="w-4 h-4" /> {t('submit.tab_creator')}
         </button>
-        <button
-          onClick={() => setTab('LEVEL')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${tab === 'LEVEL' ? 'shadow-sm' : 'ui-dim hover:opacity-80'}`}
-          style={tab === 'LEVEL' ? { backgroundColor: 'var(--bg-card)', color: 'var(--text-title)' } : {}}
-        >
-          <Layers className="w-4 h-4" /> {t('submit.tab_level')}
-        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
@@ -310,19 +240,24 @@ function SubmitForm() {
             </button>
           </div>
         </div>
-      ) : tab === 'LEVEL' ? (
+      ) : tab === 'CREATOR' ? (
         <div className="space-y-4">
           <LevelFormModal
             isOpen
             embedded
+            creatorSubmit
             onClose={() => {}}
             onSaved={() => {
               setSuccess(true);
-              void loadRecent('LEVEL');
+              void loadRecent('CREATOR');
             }}
             submitUrl="/api/submit"
-            extraPayload={{ type: 'LEVEL', userId: currentUser.id }}
-            title={t('submit.tab_level')}
+            extraPayload={{
+              type: 'CREATOR',
+              userId: currentUser.id,
+              username: currentUser.gdUsername || currentUser.username,
+            }}
+            title={t('submit.tab_creator')}
           />
         </div>
       ) : (
@@ -334,8 +269,7 @@ function SubmitForm() {
             </div>
           )}
 
-          {tab === 'PLAYER' && (
-            <div className="space-y-5">
+          <div className="space-y-5">
               <div className="p-3 rounded-xl border flex items-start gap-2 ui-subtle ui-border">
                 <AlertCircle className="w-4 h-4 text-sky-500 shrink-0 mt-0.5" />
                 <ul className="text-[11px] ui-dim list-disc list-inside space-y-0.5">
@@ -473,125 +407,10 @@ function SubmitForm() {
                 </div>
               </div>
             </div>
-          )}
-
-          {tab === 'CREATOR' && (
-            <div className="space-y-5">
-              <div className="space-y-1">
-                <label className="text-xs font-bold ui-title">GD Username *</label>
-                <input
-                  type="text"
-                  required
-                  value={workName}
-                  onChange={(e) => setWorkName(e.target.value)}
-                  placeholder="Ví dụ: Viprin, Zobros..."
-                  className="w-full px-3 py-2 rounded-xl text-xs ui-input"
-                />
-                {currentUser?.gdUsername && workName.trim() ? (
-                  <p className="text-[10px] ui-dim">
-                    {workName.trim().toLowerCase() === String(currentUser.gdUsername).trim().toLowerCase()
-                      ? t('submit.work_gd_match')
-                      : t('submit.work_gd_mismatch')}
-                  </p>
-                ) : null}
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold ui-title">Tên tác phẩm *</label>
-                <input
-                  type="text"
-                  required
-                  value={workLevelName}
-                  onChange={(e) => setWorkLevelName(e.target.value)}
-                  placeholder="Ví dụ: Bloodbath, Nine Circles..."
-                  className="w-full px-3 py-2 rounded-xl text-xs ui-input"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold ui-title">Level ID (Tùy chọn)</label>
-                <input
-                  type="text"
-                  value={workLevelId}
-                  onChange={(e) => setWorkLevelId(e.target.value)}
-                  placeholder="10565740"
-                  className="w-full px-3 py-2 rounded-xl text-xs ui-input"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold ui-title">Link Video Showcase (Tùy chọn)</label>
-                <input
-                  type="url"
-                  value={workVideoUrl}
-                  onChange={(e) => setWorkVideoUrl(e.target.value)}
-                  placeholder="https://youtu.be/..."
-                  className="w-full px-3 py-2 rounded-xl text-xs ui-input"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold ui-title">Ảnh Minh Họa (tối đa 3 ảnh, 16MB/ảnh)</label>
-                <div className="relative border-2 border-dashed rounded-xl p-6 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-center group" style={{ borderColor: 'var(--border-ui)' }}>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    disabled={uploadingImages}
-                    onChange={handleImageUpload}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-wait"
-                  />
-                  <div className="flex flex-col items-center gap-2 pointer-events-none">
-                    {uploadingImages ? (
-                      <Loader2 className="w-8 h-8 text-[var(--accent)] animate-spin" />
-                    ) : (
-                      <ImageIcon className="w-8 h-8 text-[var(--accent)] group-hover:scale-110 transition-transform" />
-                    )}
-                    <span className="text-sm font-bold ui-title">
-                      {uploadingImages ? 'Đang tải lên UploadThing…' : 'Nhấn để chọn nhiều ảnh'}
-                    </span>
-                    <span className="text-[10px] ui-dim">Ảnh lưu trên UploadThing, không lưu trong database</span>
-                  </div>
-                </div>
-                {imageError && <p className="text-[10px] text-red-500 pt-1">{imageError}</p>}
-                
-                {workImageUrls.length > 0 && (
-                  <div className="mt-3">
-                    <p className="text-[11px] font-bold mb-2">Đã chọn {workImageUrls.length} ảnh:</p>
-                    <div className="flex gap-2 overflow-x-auto pb-2">
-                      {workImageUrls.map((img, i) => (
-                        <div key={img} className="relative shrink-0">
-                          <img src={img} alt={`Preview ${i+1}`} className="h-20 w-32 rounded-xl object-cover border ui-border" />
-                          <button 
-                            type="button"
-                            onClick={() => setWorkImageUrls(prev => prev.filter((_, idx) => idx !== i))}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold ui-title">Mô tả thêm</label>
-                <textarea
-                  rows={3}
-                  value={workDesc}
-                  onChange={(e) => setWorkDesc(e.target.value)}
-                  placeholder="Quá trình tạo, cảm hứng, collab..."
-                  className="w-full px-3 py-2 rounded-xl text-xs ui-input resize-none"
-                ></textarea>
-              </div>
-            </div>
-          )}
 
           <button
             type="submit"
-            disabled={loading || uploadingImages}
+            disabled={loading}
             className="w-full py-3 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
             style={{ backgroundColor: "var(--accent)" }}
           >
