@@ -16,7 +16,7 @@ import {
   eventSizeScale,
   TIMELINE_CARD_LIFT,
 } from '@/lib/timeline/time';
-import { clusterCollapsed, clusterLeadTier, layoutLane, type LaneItem } from '@/lib/timeline/layout';
+import { CARD_STACK, clusterCollapsed, clusterLeadTier, layoutLane, type LaneItem } from '@/lib/timeline/layout';
 import EventCard from '@/components/timeline/EventCard';
 import TimelineFx from '@/components/timeline/TimelineFx';
 import type { ChronicleEvent, TimelineTierId } from '@/lib/timeline/types';
@@ -303,10 +303,9 @@ export default function TimelineBoard({
   }
 
   function cardLook(item: LaneItem) {
-    const x = item.left + item.width / 2;
-    const lift = viewProximityScale(x, size.w);
+    const lift = viewProximityScale(item.x, size.w);
     const scale = eventSizeScale(item.event.tier, lift);
-    return { x, lift, scale };
+    return { lift, scale };
   }
 
   function onBar(x: number) {
@@ -314,7 +313,11 @@ export default function TimelineBoard({
   }
 
   function visualX(item: LaneItem) {
-    return item.collapsed ? item.x : item.left + item.width / 2;
+    return item.x;
+  }
+
+  function cardLiftPx(item: LaneItem) {
+    return TIMELINE_CARD_LIFT * cardLook(item).lift + item.stack * CARD_STACK;
   }
 
   const visibleCards = [...posLayout, ...negLayout].filter((i) => !i.collapsed && onBar(visualX(i)));
@@ -397,14 +400,12 @@ export default function TimelineBoard({
       {[...posLayout, ...negLayout]
         .filter((i) => !i.collapsed && onBar(visualX(i)))
         .map((i) => {
-          const x = i.left + i.width / 2;
           const neg = i.event.nature === 'negative';
-          const { lift } = cardLook(i);
           return (
             <div
               key={`stem-${i.event.id}`}
               className={`stem ${neg ? 'neg' : 'pos'}`}
-              style={{ left: x, height: TIMELINE_CARD_LIFT * lift }}
+              style={{ left: i.x, height: cardLiftPx(i) }}
             />
           );
         })}
@@ -462,7 +463,7 @@ export default function TimelineBoard({
             <button
               key={`dot-${i.event.id}`}
               className={`dot tier-${i.event.tier} ${i.event.nature === 'negative' ? 'neg' : ''} ${expanded ? 'is-open' : ''}`}
-              style={{ left: i.left + i.width / 2, top: lineY }}
+              style={{ left: i.x, top: lineY, zIndex: 12 + i.stack }}
               onClick={(ev) => {
                 ev.stopPropagation();
                 toggleExpand(i);
