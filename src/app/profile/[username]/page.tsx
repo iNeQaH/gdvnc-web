@@ -205,6 +205,37 @@ export default function ProfilePage() {
     });
   };
 
+  const handleDeleteWork = async (item: { id?: string; workId?: string | null; name?: string }) => {
+    showConfirm(t('profile.delete_work_confirm'), async () => {
+      try {
+        if (item.workId) {
+          const res = await fetch(`/api/admin/works/${item.workId}`, { method: 'DELETE' });
+          const resData = await res.json();
+          if (!res.ok || !resData.success) {
+            showToast(resData.error || t('admin.action_fail'), 'error');
+            return;
+          }
+        }
+        if (item.id && !String(item.id).startsWith('work:')) {
+          const res = await fetch('/api/admin/levels', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: item.id, unlinkCreator: true }),
+          });
+          const resData = await res.json();
+          if (!res.ok || !resData.success) {
+            showToast(resData.error || t('admin.action_fail'), 'error');
+            return;
+          }
+        }
+        showToast('Xóa thành công!', 'success');
+        fetchProfile();
+      } catch {
+        showToast('Lỗi kết nối khi xóa tác phẩm.', 'error');
+      }
+    });
+  };
+
   const handleOpenManageModal = async () => {
     if (!currentUser || !isStaff) return;
     setSelectedRole(data.role);
@@ -1091,6 +1122,7 @@ export default function ProfilePage() {
                   <th className="px-5 py-3 text-center">Base Points</th>
                   <th className="px-5 py-3 text-center">Rating</th>
                   <th className="px-5 py-3 text-center">Mode</th>
+                  {isStaff && <th className="px-5 py-3 text-center w-16"></th>}
                 </tr>
               </thead>
               <tbody className="ui-zebra">
@@ -1129,11 +1161,22 @@ export default function ProfilePage() {
                         {level.mode}
                       </span>
                     </td>
+                    {isStaff && (
+                      <td className="px-5 py-3.5 text-center">
+                        <button
+                          onClick={() => handleDeleteWork(level)}
+                          className="p-1 rounded hover:bg-red-500/20 text-red-500 transition-colors"
+                          title={t('profile.delete_work')}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
                 {(!data.createdLevels || data.createdLevels.length === 0) && (
                   <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-xs ui-dim">
+                    <td colSpan={isStaff ? 5 : 4} className="px-4 py-8 text-center text-xs ui-dim">
                       Chưa có tác phẩm nào
                     </td>
                   </tr>

@@ -87,14 +87,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             data: { youtubeId },
           });
         }
-      } else {
-        await upsertLevelFromForm({
-          gdLevelId: work.gdLevelId,
-          videoUrl: work.videoUrl || '',
-          placement: null,
+        } else {
+          await upsertLevelFromForm({
+            gdLevelId: work.gdLevelId,
+            videoUrl: work.videoUrl || '',
+            placement: null,
+          });
+        }
+        await prisma.level.updateMany({
+          where: { gdLevelId: work.gdLevelId },
+          data: { creatorId: work.userId },
         });
       }
-    }
 
     const ownWork = gdNamesEqual(work.username, work.user.gdUsername);
     const badgeIds = ownWork && typeof badgeId === 'string' ? badgeId.split(',').filter(Boolean) : [];
@@ -155,5 +159,45 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ success: true, work: { ...updated, imageUrl: null } });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Lỗi xử lý Work' }, { status: 500 });
+  }
+}
+
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    await requireAdmin();
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const { id } = await params;
+    const work = await prisma.creatorWork.findUnique({
+      where: { id },
+      select: { id: true, userId: true, gdLevelId: true, imageUrl: true, cpGranted: true },
+    });
+    if (!work) return NextResponse.json({ error: 'Không tìm thấy Work.' }, { status: 404 });
+
+    await purgeWorkImages(work.imageUrl);
+    if (work.cpGranted) {
+      const user = await prisma.user.findUnique({
+        where: { id: work.userId },
+        select: { creatorPoints: true },
+      });
+      const next = Math.max(0, (user?.creatorPoints || 0) - work.cpGranted);
+      await prisma.user.update({
+        where: { id: work.userId },
+        data: { creatorPoints: next },
+      });
+    }
+    await prisma.creatorWork.delete({ where: { id } });
+    if (work.gdLevelId) {
+      await prisma.level.updateMany({
+        where: { gdLevelId: work.gdLevelId, creatorId: work.userId },
+        data: { creatorId: null },
+      });
+    }
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || 'Lỗi xoá Work' }, { status: 500 });
   }
 }

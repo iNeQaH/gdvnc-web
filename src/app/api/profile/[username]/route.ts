@@ -169,8 +169,39 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
           })
         : [];
 
-    const createdById = new Map(user.createdLevels.map((l) => [l.id, l]));
-    for (const lvl of submittedLevels) createdById.set(lvl.id, lvl);
+    const createdById = new Map(user.createdLevels.map((l) => [l.id, { ...l, workId: null as string | null }]));
+    for (const lvl of submittedLevels) {
+      createdById.set(lvl.id, { ...lvl, workId: null });
+    }
+    const workByGd = new Map(
+      user.creatorWorks
+        .filter((w) => w.gdLevelId)
+        .map((w) => [w.gdLevelId as number, w])
+    );
+    for (const lvl of createdById.values()) {
+      const work = workByGd.get(lvl.gdLevelId);
+      if (work) lvl.workId = work.id;
+    }
+    for (const work of user.creatorWorks) {
+      if (!work.gdLevelId) continue;
+      const exists = [...createdById.values()].some((l) => l.gdLevelId === work.gdLevelId);
+      if (exists) continue;
+      createdById.set(`work:${work.id}`, {
+        id: `work:${work.id}`,
+        gdLevelId: work.gdLevelId,
+        name: work.levelName || `ID ${work.gdLevelId}`,
+        mode: 'CLASSIC',
+        placement: null,
+        basePp: 0,
+        difficulty: 'Demon',
+        ratingType: 'NONE',
+        youtubeId: null,
+        difficultyFace: 0,
+        isVN: false,
+        isChallenge: false,
+        workId: work.id,
+      });
+    }
     const createdLevels = Array.from(createdById.values()).sort((a, b) =>
       String(a.name).localeCompare(String(b.name), undefined, { sensitivity: 'base' })
     );
