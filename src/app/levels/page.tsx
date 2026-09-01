@@ -13,7 +13,7 @@ import LevelFiltersModal from '@/components/LevelFiltersModal';
 import FloatingNav from '@/components/FloatingNav';
 import { useToast } from '@/components/GlobalToast';
 import { isDemonDifficultyFace, matchesDifficultyFilter } from '@/lib/gdDifficulty';
-import { compareListLevels, isExtendedListPlacement, isLegacyTier, isMainListPlacement, isMainOrExtendedPlacement } from '@/lib/levelSort';
+import { compareListLevels, compareVnListLevels, isExtendedListPlacement, isLegacyTier, isMainListPlacement, isMainOrExtendedPlacement } from '@/lib/levelSort';
 import { levelPath } from '@/lib/levelUrl';
 import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
 
@@ -151,6 +151,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
   })
     .slice()
     .sort((a, b) => {
+      if (vnRanking) return compareVnListLevels(a, b);
       const am = String(a.mode || '');
       const bm = String(b.mode || '');
       if (am !== bm) return am === 'CLASSIC' ? -1 : 1;
@@ -161,6 +162,16 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
   const paginatedData = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const isAnyFilterActive = filterModes.length > 0 || filterTiers.length > 0 || filterFaces.length > 0 || filterVN;
+
+  const jumpToRank = (rank: number) => {
+    if (!Number.isFinite(rank) || rank < 1) return;
+    if (vnRanking) {
+      const idx = filtered.findIndex((l) => l.vnPlacement === rank);
+      if (idx >= 0) setCurrentPage(Math.ceil((idx + 1) / pageSize));
+      return;
+    }
+    if (rank <= filtered.length) setCurrentPage(Math.ceil(rank / pageSize));
+  };
 
   return (
     <div className="space-y-6 pb-24 max-w-7xl mx-auto">
@@ -309,9 +320,11 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
         ) : (
           paginatedData.map((lvl, idx) => {
             const listRank = (currentPage - 1) * pageSize + idx + 1;
-            const placement = vnRanking || searching || isChallengeList
-              ? '#' + listRank
-              : (lvl.placement ? '#' + lvl.placement : '#' + listRank);
+            const placement = vnRanking
+              ? (lvl.vnPlacement ? '#' + lvl.vnPlacement : '-')
+              : searching || isChallengeList
+                ? '#' + listRank
+                : (lvl.placement ? '#' + lvl.placement : '#' + listRank);
             if (viewMode === 'list') {
               return (
                 <div
@@ -553,9 +566,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
                     if (e.key === 'Enter') {
                       const val = e.currentTarget.value.replace('#', '');
                       const rank = parseInt(val);
-                      if (!isNaN(rank) && rank >= 1 && rank <= filtered.length) {
-                        setCurrentPage(Math.ceil(rank / pageSize));
-                      }
+                      if (!isNaN(rank)) jumpToRank(rank);
                       e.currentTarget.value = '';
                     }
                   }}
@@ -569,11 +580,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
           currentPage={currentPage} 
           totalPages={totalPages} 
           onPageChange={setCurrentPage} 
-          onJumpToRank={(rank) => {
-            if (rank >= 1 && rank <= filtered.length) {
-              setCurrentPage(Math.ceil(rank / pageSize));
-            }
-          }}
+          onJumpToRank={jumpToRank}
         />
 
         {/* Modals */}

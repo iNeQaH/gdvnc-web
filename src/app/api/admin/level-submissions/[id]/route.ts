@@ -54,6 +54,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       videoUrl: submission.videoUrl || '',
       minPercent: submission.minPercent,
       placement: submission.placement,
+      vnPlacement: submission.vnPlacement,
       mode: submission.mode,
       isVN: submission.isVN,
       isChallenge: submission.isChallenge,

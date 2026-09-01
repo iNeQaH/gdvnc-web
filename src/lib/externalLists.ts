@@ -347,6 +347,7 @@ export function mergeExternalWithDb(
       youtubeId?: string | null;
       minPercent?: number | null;
       creatorName?: string | null;
+      vnPlacement?: number | null;
     }
   >
 ) {
@@ -363,6 +364,7 @@ export function mergeExternalWithDb(
       isVN: local?.isVN || false,
       isChallenge: false,
       placement: ext.placement,
+      vnPlacement: local?.vnPlacement ?? null,
       basePp: calculateBasePp(ext.placement),
       minPercent: preferMinPercent(ext.minPercent, local?.minPercent),
       creatorName: preferText(ext.creatorName, local?.creatorName),

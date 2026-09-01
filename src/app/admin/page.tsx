@@ -1413,7 +1413,7 @@ export default function AdminPage() {
                           {sub.user?.gdUsername || sub.user?.username}
                         </Link>
                         <div className="text-[11px] ui-dim">
-                          GD ID {sub.gdLevelId} · {sub.mode} {sub.placement ? `· #${sub.placement}` : '· Unranked'} {sub.isVN ? '· VN' : ''}
+                          GD ID {sub.gdLevelId} · {sub.mode} {sub.placement ? `· #${sub.placement}` : '· Unranked'} {sub.isVN ? `· VN${sub.vnPlacement ? ` #${sub.vnPlacement}` : ''}` : ''}
                         </div>
                       </div>
                     </div>

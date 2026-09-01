@@ -29,58 +29,55 @@ export async function DELETE(req: Request) {
     if (!level) return NextResponse.json({ error: 'Level not found' }, { status: 404 });
 
     const oldPlacement = level.placement;
+    const oldVnPlacement = level.vnPlacement;
     const mode = level.mode;
     let affectedLevelIds: string[] = [];
 
     await prisma.$transaction(async (tx) => {
-      // 1. Delete the level (Cascade deletes records)
       await tx.level.delete({ where: { id } });
 
-      // 2. Shift placements up (decrement)
+      if (oldVnPlacement !== null) {
+        await tx.level.updateMany({
+          where: { isVN: true, isChallenge: false, vnPlacement: { gt: oldVnPlacement } },
+          data: { vnPlacement: { decrement: 1 } },
+        });
+      }
+
       if (oldPlacement !== null) {
         await tx.level.updateMany({
           where: { mode, isChallenge: false, placement: { gt: oldPlacement } },
-          data: { placement: { decrement: 1 } }
+          data: { placement: { decrement: 1 } },
         });
 
-        // 3. Recompute base PPs
         const allRankedLevels = await tx.level.findMany({
           where: { mode, isChallenge: false, placement: { not: null } },
           select: { id: true, placement: true, basePp: true },
         });
 
-        const updatesToRun = [];
-    for (const lvl of allRankedLevels) {
-      const correctPp = calculateBasePp(lvl.placement!);
-      if (Math.abs(correctPp - lvl.basePp) > 0.01) {
-        affectedLevelIds.push(lvl.id);
-        updatesToRun.push({ id: lvl.id, correctPp });
-      }
-    }
-    // Run updates in chunks of 50 to avoid TiDB serverless timeouts
-    if (updatesToRun.length > 0) {
-      for (let i = 0; i < updatesToRun.length; i += 500) {
-        const chunk = updatesToRun.slice(i, i + 500);
-        
-        // Chú ý: Dùng dấu ngoặc kép (") cho "Level", "basePp" và "id"
-        let sql = 'UPDATE "Level" SET "basePp" = CASE "id" ';
-        const ids = [];
-        
-        for (const u of chunk) {
-          // u.id vẫn dùng nháy đơn (') vì đây là giá trị string UUID
-          sql += `WHEN '${u.id}' THEN ${u.correctPp} `;
-          ids.push(`'${u.id}'`);
+        const updatesToRun: { id: string; correctPp: number }[] = [];
+        for (const lvl of allRankedLevels) {
+          const correctPp = calculateBasePp(lvl.placement!);
+          if (Math.abs(correctPp - lvl.basePp) > 0.01) {
+            affectedLevelIds.push(lvl.id);
+            updatesToRun.push({ id: lvl.id, correctPp });
+          }
         }
-        
-        sql += `END WHERE "id" IN (${ids.join(',')});`;
-        
-        await tx.$executeRawUnsafe(sql);
-      }
-    }
+        if (updatesToRun.length > 0) {
+          for (let i = 0; i < updatesToRun.length; i += 500) {
+            const chunk = updatesToRun.slice(i, i + 500);
+            let sql = 'UPDATE "Level" SET "basePp" = CASE "id" ';
+            const ids = [];
+            for (const u of chunk) {
+              sql += `WHEN '${u.id}' THEN ${u.correctPp} `;
+              ids.push(`'${u.id}'`);
+            }
+            sql += `END WHERE "id" IN (${ids.join(',')});`;
+            await tx.$executeRawUnsafe(sql);
+          }
+        }
       }
     }, { maxWait: 15000, timeout: 30000 });
 
-    // We must recalculate users who had records on the deleted level OR shifted levels
     triggerBackgroundPpRecalc([id, ...affectedLevelIds], mode);
 
     return NextResponse.json({ success: true });

@@ -87,6 +87,11 @@ export default function DemonDetailView({
               <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-white text-black shadow-lg">
                 {level.placement != null ? `#${level.placement}` : 'Unranked'}
               </span>
+              {level.isVN && (
+                <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-red-600 text-white shadow-lg">
+                  VN {level.vnPlacement != null ? `#${level.vnPlacement}` : '—'}
+                </span>
+              )}
               <LevelTagChips level={level} contrast="onDark" />
               <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-black/50 text-white backdrop-blur-md border border-white/10 shadow-lg">
                 {formatDifficultyLabel(level.difficultyFace ?? 0, level.difficulty)}

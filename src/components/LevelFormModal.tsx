@@ -25,6 +25,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
     videoUrl: '',
     minPercent: '100',
     placement: '',
+    vnPlacement: '',
     mode: 'CLASSIC',
     isVN: false,
     isChallenge: false,
@@ -77,6 +78,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
         videoUrl: initialData.videoUrl || (initialData.youtubeId ? `https://youtube.com/watch?v=${initialData.youtubeId}` : ''),
         minPercent: initialData.minPercent?.toString() || '100',
         placement: initialData.placement?.toString() || '',
+        vnPlacement: initialData.vnPlacement?.toString() || '',
         mode: initialData.mode || 'CLASSIC',
         isVN: initialData.isVN || false,
         isChallenge: initialData.isChallenge || false,
@@ -93,6 +95,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
         videoUrl: '',
         minPercent: '100',
         placement: '',
+        vnPlacement: '',
         mode: 'CLASSIC',
         isVN: false,
         isChallenge: false,
@@ -279,7 +282,18 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
                 placeholder="Không xếp hạng"
               />
             </div>
-            
+            {form.isVN && !form.isChallenge && (
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold uppercase ui-dim">{t('admin.vn_placement')}</label>
+              <input 
+                type="number" 
+                value={form.vnPlacement}
+                onChange={e => setForm({...form, vnPlacement: e.target.value})}
+                className="w-full ui-input px-3 py-2 rounded-xl text-xs font-bold"
+                placeholder={t('admin.vn_placement_ph')}
+              />
+            </div>
+            )}
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold uppercase ui-dim">{t('admin.min_percent')}</label>
               <input 

@@ -41,3 +41,13 @@ export function compareListLevels(
 export function isMainOrExtendedPlacement(placement: number | null | undefined): boolean {
   return isRankedPlacement(placement) && placement <= LIST_EXTENDED_MAX;
 }
+
+export function compareVnListLevels(
+  a: { vnPlacement?: number | null; difficultyFace?: number | null; name?: string | null },
+  b: { vnPlacement?: number | null; difficultyFace?: number | null; name?: string | null }
+): number {
+  return compareListLevels(
+    { placement: a.vnPlacement, difficultyFace: a.difficultyFace, name: a.name },
+    { placement: b.vnPlacement, difficultyFace: b.difficultyFace, name: b.name }
+  );
+}

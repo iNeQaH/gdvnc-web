@@ -134,6 +134,54 @@ async function shiftPlacementsAndRecalcPp(
   return affectedLevelIds;
 }
 
+function parseOptionalPositiveInt(value: unknown): number | null {
+  if (value === undefined || value === null || value === '') return null;
+  const n = parseInt(String(value), 10);
+  return Number.isFinite(n) && n >= 1 ? n : null;
+}
+
+async function shiftVnPlacements(
+  tx: any,
+  target: number | null,
+  existing: { id: string; vnPlacement: number | null; isVN: boolean } | null,
+  willBeVn: boolean
+) {
+  const exclude = existing?.id;
+  const notSelf = exclude ? { id: { not: exclude } } : {};
+  const vnWhere = { isVN: true, isChallenge: false, ...notSelf };
+  const old = existing?.isVN ? existing.vnPlacement : null;
+  const next = willBeVn ? target : null;
+
+  if (old != null && old !== next) {
+    if (next == null) {
+      await tx.level.updateMany({
+        where: { ...vnWhere, vnPlacement: { gt: old } },
+        data: { vnPlacement: { decrement: 1 } },
+      });
+      return;
+    }
+    if (old < next) {
+      await tx.level.updateMany({
+        where: { ...vnWhere, vnPlacement: { gt: old, lte: next } },
+        data: { vnPlacement: { decrement: 1 } },
+      });
+    } else {
+      await tx.level.updateMany({
+        where: { ...vnWhere, vnPlacement: { gte: next, lt: old } },
+        data: { vnPlacement: { increment: 1 } },
+      });
+    }
+    return;
+  }
+
+  if (old == null && next != null) {
+    await tx.level.updateMany({
+      where: { ...vnWhere, vnPlacement: { gte: next } },
+      data: { vnPlacement: { increment: 1 } },
+    });
+  }
+}
+
 export async function getOrCreateStubLevel(input: {
   gdLevelId: number;
   name?: string;
@@ -173,16 +221,14 @@ export async function upsertLevelFromForm(input: {
   isChallenge?: boolean;
   difficultyFace?: number;
   ratingType?: string;
+  vnPlacement?: number | string | null;
 }) {
   const gdLevelId = parseInt(String(input.gdLevelId), 10);
   if (!gdLevelId) throw new Error('Thiếu Level ID.');
 
   const youtubeId = extractYoutubeId(input.videoUrl);
   const pMode = (input.mode as LevelMode) || LevelMode.CLASSIC;
-  const targetPlacement =
-    input.placement !== undefined && input.placement !== null && input.placement !== ''
-      ? parseInt(String(input.placement), 10)
-      : null;
+  const targetPlacement = parseOptionalPositiveInt(input.placement);
 
   const existingLevel = input.id
     ? await prisma.level.findUnique({ where: { id: input.id } })
@@ -210,6 +256,9 @@ export async function upsertLevelFromForm(input: {
       : existingLevel?.description || '';
 
   const isChallengeLevel = input.isChallenge !== undefined ? !!input.isChallenge : !!existingLevel?.isChallenge;
+  const isVnLevel = input.isVN !== undefined ? !!input.isVN : !!existingLevel?.isVN;
+  const targetVnPlacement =
+    isVnLevel && !isChallengeLevel ? parseOptionalPositiveInt(input.vnPlacement) : null;
 
   const placementChanged =
     !isChallengeLevel &&
@@ -231,17 +280,27 @@ export async function upsertLevelFromForm(input: {
     minPercent: input.minPercent ? parseInt(String(input.minPercent), 10) : 100,
     basePp: finalPp,
     mode: pMode,
-    isVN: input.isVN !== undefined ? input.isVN : false,
-    isChallenge: input.isChallenge !== undefined ? !!input.isChallenge : false,
+    isVN: isVnLevel,
+    isChallenge: isChallengeLevel,
     difficultyFace: input.difficultyFace !== undefined ? input.difficultyFace : 10,
     ratingType: input.ratingType !== undefined ? input.ratingType : 'NONE',
+    vnPlacement: targetVnPlacement,
   };
+
+  const vnChanged =
+    !existingLevel ||
+    existingLevel.isVN !== isVnLevel ||
+    existingLevel.vnPlacement !== targetVnPlacement ||
+    existingLevel.isChallenge !== isChallengeLevel;
 
   await prisma.$transaction(
     async (tx) => {
       if (placementChanged) {
         const shifted = await shiftPlacementsAndRecalcPp(tx, pMode, targetPlacement, existingLevel);
         affectedLevelIds.push(...shifted);
+      }
+      if (vnChanged) {
+        await shiftVnPlacements(tx, targetVnPlacement, existingLevel, isVnLevel && !isChallengeLevel);
       }
 
       let upserted;

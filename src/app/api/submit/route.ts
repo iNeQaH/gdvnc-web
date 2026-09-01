@@ -108,7 +108,7 @@ export async function POST(req: Request) {
 
       return NextResponse.json({ success: true, work });
     } else if (type === 'LEVEL') {
-      const { gdLevelId, videoUrl, minPercent, placement, mode, isVN, isChallenge, difficultyFace, ratingType } = data;
+      const { gdLevelId, videoUrl, minPercent, placement, vnPlacement, mode, isVN, isChallenge, difficultyFace, ratingType } = data;
       if (!gdLevelId) {
         return NextResponse.json({ error: 'Vui lòng điền Level ID.' }, { status: 400 });
       }
@@ -120,6 +120,7 @@ export async function POST(req: Request) {
           videoUrl: isHttpsUrl(videoUrl) ? clipText(videoUrl, 500) : null,
           minPercent: minPercent ? parseInt(String(minPercent), 10) : 100,
           placement: placement ? parseInt(String(placement), 10) : null,
+          vnPlacement: vnPlacement ? parseInt(String(vnPlacement), 10) : null,
           mode: mode || 'CLASSIC',
           isVN: !!isVN,
           isChallenge: !!isChallenge,

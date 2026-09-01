@@ -89,7 +89,8 @@ model Level {
   ratingType    String     @default("NONE") // NONE, RATE, FEATURE, EPIC, LEGENDARY, MYTHIC
   isVN          Boolean    @default(false)
   isChallenge   Boolean    @default(false)
-  placement     Int?       // 1, 2, 3...
+  placement     Int?       // 1, 2, 3... main / demonlist / pemonlist
+  vnPlacement   Int?       // 1, 2, 3... VN tag list (independent of placement)
   basePp        Float
   minPercent    Int        @default(100) // Qualifying %
   
@@ -107,8 +108,10 @@ model Level {
   updatedAt     DateTime   @updatedAt
 
   @@index([placement])
+  @@index([vnPlacement])
   @@index([mode])
   @@index([isChallenge])
+  @@index([isVN])
 }
 
 model Record {
@@ -250,6 +253,7 @@ model LevelSubmission {
   videoUrl       String?
   minPercent     Int          @default(100)
   placement      Int?
+  vnPlacement    Int?
   mode           LevelMode    @default(CLASSIC)
   isVN           Boolean      @default(false)
   isChallenge    Boolean      @default(false)
