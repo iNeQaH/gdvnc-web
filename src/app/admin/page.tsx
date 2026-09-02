@@ -696,29 +696,20 @@ export default function AdminPage() {
   };
 
   const confirmWorkReviews = async () => {
-    const entries = Object.entries(workDecisions).filter(([, a]) => a === 'APPROVE' || a === 'REJECT') as Array<[string, 'APPROVE' | 'REJECT']>;
-    if (entries.length === 0) return;
+    const workEntries = Object.entries(workDecisions).filter(([, a]) => a === 'APPROVE' || a === 'REJECT') as Array<[string, 'APPROVE' | 'REJECT']>;
+    const subEntries = Object.entries(levelSubDecisions).filter(([, a]) => a === 'APPROVE' || a === 'REJECT') as Array<[string, 'APPROVE' | 'REJECT']>;
+    if (workEntries.length === 0 && subEntries.length === 0) return;
     setBulkConfirming(true);
     let ok = 0;
-    for (const [id, action] of entries) {
+    for (const [id, action] of workEntries) {
       if (await handleReviewWork(id, action)) ok++;
     }
-    setWorkDecisions({});
-    await fetchWorks(workFilter, workPage);
-    setBulkConfirming(false);
-    if (ok > 0) showToast(t('common.confirm') + `: ${ok}`, 'success');
-  };
-
-  const confirmLevelSubReviews = async () => {
-    const entries = Object.entries(levelSubDecisions).filter(([, a]) => a === 'APPROVE' || a === 'REJECT') as Array<[string, 'APPROVE' | 'REJECT']>;
-    if (entries.length === 0) return;
-    setBulkConfirming(true);
-    let ok = 0;
-    for (const [id, action] of entries) {
+    for (const [id, action] of subEntries) {
       if (await handleReviewLevelSub(id, action)) ok++;
     }
+    setWorkDecisions({});
     setLevelSubDecisions({});
-    await fetchLevelSubs(levelSubFilter, levelSubPage);
+    await Promise.all([fetchWorks(workFilter, workPage), fetchLevelSubs(workFilter, workPage)]);
     setBulkConfirming(false);
     if (ok > 0) showToast(t('common.confirm') + `: ${ok}`, 'success');
   };
@@ -963,6 +954,21 @@ export default function AdminPage() {
       return userSortOrder === 'desc' ? timeB - timeA : timeA - timeB;
     }
   });
+
+  const creatorCounts: QueueCounts = {
+    pending: workCounts.pending + levelSubCounts.pending,
+    approved: workCounts.approved + levelSubCounts.approved,
+    rejected: workCounts.rejected + levelSubCounts.rejected,
+  };
+  const creatorQueue = [
+    ...pendingWorks.map((item) => ({ kind: 'work' as const, at: item.submittedAt, item })),
+    ...pendingLevelSubs.map((item) => ({ kind: 'sub' as const, at: item.submittedAt, item })),
+  ].sort((a, b) => {
+    const da = new Date(a.at || 0).getTime();
+    const db = new Date(b.at || 0).getTime();
+    return workFilter === 'PENDING' ? da - db : db - da;
+  });
+  const creatorDecisionCount = decisionCount(workDecisions) + decisionCount(levelSubDecisions);
 
   return (
     <div className="space-y-6">
@@ -1220,32 +1226,39 @@ export default function AdminPage() {
         <div className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold ui-title">
             <div className="flex items-center gap-2">
-              <span>{t('admin.works_queue', { n: queueFilterTotal(workCounts, workFilter) })}</span>
+              <span>{t('admin.creator_queue', { n: queueFilterTotal(creatorCounts, workFilter) })}</span>
               <button
                 type="button"
-                disabled={bulkConfirming || decisionCount(workDecisions) === 0}
+                disabled={bulkConfirming || creatorDecisionCount === 0}
                 onClick={confirmWorkReviews}
                 className="px-3 py-1.5 rounded-xl text-[11px] font-bold cursor-pointer disabled:opacity-40"
                 style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-fg)' }}
               >
                 {t('common.confirm')}
-                {decisionCount(workDecisions) > 0 ? ` (${decisionCount(workDecisions)})` : ''}
+                {creatorDecisionCount > 0 ? ` (${creatorDecisionCount})` : ''}
               </button>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <QueueStatusFilters
                 value={workFilter}
-                counts={workCounts}
+                counts={creatorCounts}
                 onChange={(status) => {
                   setWorkFilter(status);
+                  setLevelSubFilter(status);
                   setWorkPage(1);
+                  setLevelSubPage(1);
                   setWorkDecisions({});
+                  setLevelSubDecisions({});
                   fetchWorks(status, 1);
+                  fetchLevelSubs(status, 1);
                 }}
                 t={t}
               />
               <button
-                onClick={() => fetchWorks(workFilter, workPage)}
+                onClick={() => {
+                  fetchWorks(workFilter, workPage);
+                  fetchLevelSubs(workFilter, workPage);
+                }}
                 className="inline-flex items-center gap-1 text-[11px] font-semibold ui-dim hover:opacity-100 cursor-pointer"
               >
                 <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
@@ -1253,17 +1266,20 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {loadingWorks ? (
+          {loadingWorks || loadingLevelSubs ? (
             <div className="p-8 text-center ui-dim text-xs">{t('admin.loading')}</div>
-          ) : pendingWorks.length === 0 ? (
+          ) : creatorQueue.length === 0 ? (
             <div className="ui-card p-8 text-center space-y-1">
               <div className="font-bold ui-title text-xs">{t('admin.queue_empty')}</div>
-              <div className="text-[11px] ui-dim">{t('admin.works_empty')}</div>
+              <div className="text-[11px] ui-dim">{t('admin.creator_empty')}</div>
             </div>
           ) : (
             <div className="space-y-3">
-              {pendingWorks.map((work) => (
-                <div key={work.id} className="ui-card p-4 sm:p-5 space-y-3">
+              {creatorQueue.map((entry) => {
+                if (entry.kind === 'work') {
+                  const work = entry.item;
+                  return (
+                <div key={`work-${work.id}`} className="ui-card p-4 sm:p-5 space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
                     <div className="flex items-center gap-2.5">
                       <Link href={`/profile/${work.user.username}`} className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs overflow-hidden shrink-0" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
@@ -1398,91 +1414,11 @@ export default function AdminPage() {
                   </div>
                   )}
                 </div>
-              ))}
-              <AdminListPager
-                page={workPage}
-                total={queueFilterTotal(workCounts, workFilter)}
-                onPage={(p) => {
-                  setWorkDecisions({});
-                  fetchWorks(workFilter, p);
-                }}
-                t={t}
-              />
-            </div>
-          )}
-          <BadgePickerModal
-            isOpen={!!badgePickerWorkId}
-            onClose={() => setBadgePickerWorkId(null)}
-            badges={badgesList}
-            selectedIds={badgePickerWorkId ? (workReviewData[badgePickerWorkId]?.badgeIds || []) : []}
-            onConfirm={(ids) => {
-              if (badgePickerWorkId) {
-                setWorkReviewData((prev) => ({
-                  ...prev,
-                  [badgePickerWorkId]: { ...prev[badgePickerWorkId], badgeIds: ids },
-                }));
-              }
-              setBadgePickerWorkId(null);
-            }}
-          />
-        </div>
-      )}
-
-              {/* Tab Helps */}
-        {tab === 'helps' && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-black mb-4">Hỗ trợ / Helps</h2>
-            <AdminHelpsTab onTotalChange={setHelpsTotal} onVerify={verifyUser} verifyBusy={actionLoading} />
-          </div>
-        )}
-
-        {tab === 'works' && (
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold ui-title">
-            <div className="flex items-center gap-2">
-              <span>{t('admin.level_sub_queue', { n: queueFilterTotal(levelSubCounts, levelSubFilter) })}</span>
-              <button
-                type="button"
-                disabled={bulkConfirming || decisionCount(levelSubDecisions) === 0}
-                onClick={confirmLevelSubReviews}
-                className="px-3 py-1.5 rounded-xl text-[11px] font-bold cursor-pointer disabled:opacity-40"
-                style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-fg)' }}
-              >
-                {t('common.confirm')}
-                {decisionCount(levelSubDecisions) > 0 ? ` (${decisionCount(levelSubDecisions)})` : ''}
-              </button>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <QueueStatusFilters
-                value={levelSubFilter}
-                counts={levelSubCounts}
-                onChange={(status) => {
-                  setLevelSubFilter(status);
-                  setLevelSubPage(1);
-                  setLevelSubDecisions({});
-                  fetchLevelSubs(status, 1);
-                }}
-                t={t}
-              />
-              <button
-                onClick={() => fetchLevelSubs(levelSubFilter, levelSubPage)}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold ui-dim hover:opacity-100 cursor-pointer"
-              >
-                <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
-              </button>
-            </div>
-          </div>
-          {loadingLevelSubs ? (
-            <div className="p-8 text-center ui-dim text-xs">{t('admin.loading')}</div>
-          ) : pendingLevelSubs.length === 0 ? (
-            <div className="ui-card p-8 text-center space-y-1">
-              <div className="font-bold ui-title text-xs">{t('admin.queue_empty')}</div>
-              <div className="text-[11px] ui-dim">{t('admin.level_sub_empty')}</div>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {pendingLevelSubs.map((sub) => (
-                <div key={sub.id} className="ui-card p-4 sm:p-5 space-y-3">
+                  );
+                }
+                const sub = entry.item;
+                return (
+                <div key={`sub-${sub.id}`} className="ui-card p-4 sm:p-5 space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
                     <div className="flex items-center gap-2.5">
                       <Link href={`/profile/${sub.user?.username}`} className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs overflow-hidden shrink-0" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
@@ -1559,20 +1495,46 @@ export default function AdminPage() {
                   </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
               <AdminListPager
-                page={levelSubPage}
-                total={queueFilterTotal(levelSubCounts, levelSubFilter)}
+                page={workPage}
+                total={queueFilterTotal(creatorCounts, workFilter)}
                 onPage={(p) => {
+                  setWorkDecisions({});
                   setLevelSubDecisions({});
-                  fetchLevelSubs(levelSubFilter, p);
+                  fetchWorks(workFilter, p);
+                  fetchLevelSubs(workFilter, p);
                 }}
                 t={t}
               />
             </div>
           )}
+          <BadgePickerModal
+            isOpen={!!badgePickerWorkId}
+            onClose={() => setBadgePickerWorkId(null)}
+            badges={badgesList}
+            selectedIds={badgePickerWorkId ? (workReviewData[badgePickerWorkId]?.badgeIds || []) : []}
+            onConfirm={(ids) => {
+              if (badgePickerWorkId) {
+                setWorkReviewData((prev) => ({
+                  ...prev,
+                  [badgePickerWorkId]: { ...prev[badgePickerWorkId], badgeIds: ids },
+                }));
+              }
+              setBadgePickerWorkId(null);
+            }}
+          />
         </div>
       )}
+
+              {/* Tab Helps */}
+        {tab === 'helps' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-black mb-4">Hỗ trợ / Helps</h2>
+            <AdminHelpsTab onTotalChange={setHelpsTotal} onVerify={verifyUser} verifyBusy={actionLoading} />
+          </div>
+        )}
 
             {isFullAdmin && tab === 'levels' && (
         <div className="space-y-4">

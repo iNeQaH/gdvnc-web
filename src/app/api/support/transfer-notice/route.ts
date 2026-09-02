@@ -5,11 +5,7 @@ import { Role } from '@prisma/client';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { clipText } from '@/lib/validate';
-import {
-  normalizeSupportMonths,
-  supportAmount,
-  supportTransferContent,
-} from '@/lib/supportPayment';
+import { supportTransferContent } from '@/lib/supportPayment';
 
 export async function POST(req: Request) {
   let auth;
@@ -24,12 +20,9 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const months = normalizeSupportMonths(Number(body.months) || 1);
-    const amount = supportAmount(months);
-    const content = supportTransferContent(auth.username, months);
+    const content = supportTransferContent(auth.username);
     const note = clipText(body.content, 80) || content;
-
-    const message = `${auth.username} · ${months}T · ${amount.toLocaleString('vi-VN')}đ · ${note}`;
+    const message = `${auth.username} · ${note}`;
 
     const admins = await prisma.user.findMany({
       where: { role: Role.ADMIN },
@@ -49,7 +42,7 @@ export async function POST(req: Request) {
     await prisma.helpRequest.create({
       data: {
         userId: auth.userId,
-        title: `Ủng hộ ${months}T`,
+        title: 'Ủng hộ',
         content: message,
       },
     });
