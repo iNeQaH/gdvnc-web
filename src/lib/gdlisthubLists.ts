@@ -103,17 +103,17 @@ function virtualFromGdlisthub(
   };
 }
 
-export function applyGdlisthubRanksToLevels<T extends { gdLevelId: number; isVN?: boolean; vnPlacement?: number | null }>(
-  levels: T[],
+export function applyGdlisthubRanksToLevels(
+  levels: Array<Record<string, any>>,
   featured = GDLISTHUB_FEATURED,
   classic = GDLISTHUB_CLASSIC
 ) {
   const maps = gdlisthubItemMaps(featured, classic);
   const seen = new Set<number>();
-  const next = levels.map((level) => {
-    seen.add(level.gdLevelId);
-    const fl = maps.featured.get(level.gdLevelId);
-    const dl = maps.classic.get(level.gdLevelId);
+  const next: Array<Record<string, any>> = levels.map((level) => {
+    seen.add(Number(level.gdLevelId));
+    const fl = maps.featured.get(Number(level.gdLevelId));
+    const dl = maps.classic.get(Number(level.gdLevelId));
     return {
       ...level,
       isVN: Boolean(level.isVN) || Boolean(fl),
@@ -123,9 +123,7 @@ export function applyGdlisthubRanksToLevels<T extends { gdLevelId: number; isVN?
   });
   for (const gdLevelId of new Set([...maps.featured.keys(), ...maps.classic.keys()])) {
     if (seen.has(gdLevelId)) continue;
-    next.push(virtualFromGdlisthub(gdLevelId, maps.featured.get(gdLevelId), maps.classic.get(gdLevelId)) as T & {
-      classicPlacement: number | null;
-    });
+    next.push(virtualFromGdlisthub(gdLevelId, maps.featured.get(gdLevelId), maps.classic.get(gdLevelId)));
   }
   return next;
 }
