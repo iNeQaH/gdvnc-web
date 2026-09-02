@@ -7,7 +7,7 @@ import { clipText } from '@/lib/validate';
 import { isAllowedImageRef } from '@/lib/uploadthing';
 import { toChronicleEvent } from '@/lib/timeline/serialize';
 import { sanitizeChronicleHtml } from '@/lib/timeline/sanitize';
-import { isNature, isTierId } from '@/lib/timeline/types';
+import { clampImageScale, isNature, isTierId } from '@/lib/timeline/types';
 import { fromDateInput } from '@/lib/timeline/time';
 import { parseGlowColor } from '@/lib/timeline/glow';
 import { purgeSheetTimelineEvents } from '@/lib/timeline/purgeSheetEvents';
@@ -38,6 +38,7 @@ function parseEventBody(body: any) {
       nature,
       tier,
       glowColor: parseGlowColor(body?.glowColor),
+      imageScale: clampImageScale(body?.imageScale),
     },
   };
 }

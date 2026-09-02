@@ -1,4 +1,4 @@
-import { isNature, isTierId, type ChronicleEvent } from '@/lib/timeline/types';
+import { clampImageScale, isNature, isTierId, type ChronicleEvent } from '@/lib/timeline/types';
 
 type TimelineRow = {
   id: string;
@@ -13,6 +13,7 @@ type TimelineRow = {
   tier: string;
   sourceKey?: string | null;
   glowColor?: string | null;
+  imageScale?: number | null;
 };
 
 export function toChronicleEvent(row: TimelineRow): ChronicleEvent {
@@ -29,5 +30,6 @@ export function toChronicleEvent(row: TimelineRow): ChronicleEvent {
     tier: isTierId(row.tier) ? row.tier : '1y',
     sourceKey: row.sourceKey || null,
     glowColor: row.glowColor || null,
+    imageScale: clampImageScale(row.imageScale),
   };
 }

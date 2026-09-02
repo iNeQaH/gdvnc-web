@@ -336,6 +336,7 @@ model TimelineEvent {
   tier             String   @default("1y") // 5y | 1y | 6m | 1m | week | day
   sourceKey        String?  @unique // e.g. gdvn-sheet:{gdLevelId}
   glowColor        String?  // hex #rrggbb animated card border; auto for Epic+
+  imageScale       Float    @default(1)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

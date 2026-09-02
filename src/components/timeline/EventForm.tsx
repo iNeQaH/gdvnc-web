@@ -3,7 +3,15 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { TIERS } from '@/lib/timeline/tiers';
 import { toDateInput, fromDateInput, TIMELINE_ORIGIN, timelineEnd } from '@/lib/timeline/time';
-import type { ChronicleEvent, TimelineNature, TimelineTierId } from '@/lib/timeline/types';
+import {
+  clampImageScale,
+  DEFAULT_IMAGE_SCALE,
+  MAX_IMAGE_SCALE,
+  MIN_IMAGE_SCALE,
+  type ChronicleEvent,
+  type TimelineNature,
+  type TimelineTierId,
+} from '@/lib/timeline/types';
 import type { DictKey } from '@/lib/dictionaries';
 import GlowStopsField from '@/components/GlowStopsField';
 import { uploadImagesToUt } from '@/lib/uploadthingClient';
@@ -28,6 +36,7 @@ const empty = {
   approximate: false,
   nature: 'positive' as TimelineNature,
   tier: '1y' as TimelineTierId,
+  imageScale: DEFAULT_IMAGE_SCALE,
 };
 
 export default function EventForm({
@@ -59,6 +68,7 @@ export default function EventForm({
         approximate: Boolean(event.approximate),
         nature: event.nature ?? 'positive',
         tier: event.tier ?? '1y',
+        imageScale: clampImageScale(event.imageScale),
       });
     } else {
       setForm(empty);
@@ -87,6 +97,7 @@ export default function EventForm({
       approximate: form.approximate,
       nature: form.nature,
       tier: form.tier,
+      imageScale: clampImageScale(form.imageScale),
     });
   }
 
@@ -142,8 +153,28 @@ export default function EventForm({
             }}
           />
           {uploading && <p className="text-[11px] ui-dim mt-1">{t('timeline.image_uploading')}</p>}
+          <label className="block mt-2 text-[11px] ui-dim">
+            <span className="flex justify-between gap-2">
+              <span>{t('timeline.image_scale')}</span>
+              <em>{Math.round(form.imageScale * 100)}%</em>
+            </span>
+            <input
+              type="range"
+              min={MIN_IMAGE_SCALE}
+              max={MAX_IMAGE_SCALE}
+              step={0.05}
+              value={form.imageScale}
+              onChange={(e) => set('imageScale', clampImageScale(e.target.value))}
+              className="w-full mt-1"
+            />
+          </label>
           {form.image ? (
-            <img src={form.image} alt="" className="mt-2 max-h-28 rounded-lg object-cover" />
+            <img
+              src={form.image}
+              alt=""
+              className="mt-2 rounded-lg"
+              style={{ width: `${Math.round(160 * form.imageScale)}px`, height: 'auto', maxWidth: '100%' }}
+            />
           ) : null}
         </div>
         <div className="field">

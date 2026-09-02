@@ -1,5 +1,5 @@
 import { ALWAYS_SHOW_MARKER_MAX_RANK, TIERS } from '@/lib/timeline/tiers';
-import type { ChronicleEvent } from '@/lib/timeline/types';
+import { clampImageScale, type ChronicleEvent } from '@/lib/timeline/types';
 
 export const CARD_W = 200;
 const CARD_GAP = 16;
@@ -7,6 +7,10 @@ const CARD_GAP = 16;
 export const CARD_STACK = 0;
 /** If a card would slide farther than this from its date, collapse it to a dot. */
 export const MAX_CARD_DRIFT = 112;
+
+export function cardWidthFor(event: Pick<ChronicleEvent, 'imageScale'>, base = CARD_W): number {
+  return Math.round(base * clampImageScale(event.imageScale));
+}
 
 export type LaneItem = {
   event: ChronicleEvent & { anchor: number };
@@ -41,12 +45,13 @@ export function layoutLane({
   const folded = foldedIds ?? new Set<string>();
   const items: LaneItem[] = events.map((event) => {
     const x = timeToX(event.anchor);
+    const width = cardWidthFor(event, cardWidth);
     return {
       event,
       x,
-      desiredLeft: x - cardWidth / 2,
-      width: cardWidth,
-      left: x - cardWidth / 2,
+      desiredLeft: x - width / 2,
+      width,
+      left: x - width / 2,
       collapsed: false,
       stack: 0,
     };
@@ -73,18 +78,18 @@ export function layoutLane({
       if (alwaysMark) collapsed.push(mark);
       continue;
     }
-    candidates.push({ ...item, collapsed: false, left: item.desiredLeft, width: cardWidth, stack: 0 });
+    candidates.push({ ...item, collapsed: false, left: item.desiredLeft, width: item.width, stack: 0 });
   }
 
   const shown: LaneItem[] = [];
   for (let i = candidates.length - 1; i >= 0; i--) {
-    const item: LaneItem = { ...candidates[i], left: candidates[i].desiredLeft, width: cardWidth, stack: 0 };
+    const item: LaneItem = { ...candidates[i], left: candidates[i].desiredLeft, width: candidates[i].width, stack: 0 };
     const next = shown[0];
     if (next) {
-      const maxLeft = next.left - CARD_GAP - cardWidth;
+      const maxLeft = next.left - CARD_GAP - item.width;
       if (item.left > maxLeft) item.left = maxLeft;
     }
-    const cardCenter = item.left + cardWidth / 2;
+    const cardCenter = item.left + item.width / 2;
     const drift = item.x - cardCenter;
     const forced = expandedIds.has(item.event.id) && !folded.has(item.event.id);
     if (drift > MAX_CARD_DRIFT && !forced) {
