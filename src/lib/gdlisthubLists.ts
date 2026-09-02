@@ -6,6 +6,15 @@ function youtubeId(value?: string | null) {
   return /^[\w-]{11}$/.test(raw) ? raw : null;
 }
 
+export function isMissingLevelText(value?: string | null) {
+  const s = String(value ?? '').trim();
+  return !s || /^unknown(?: level)?$/i.test(s);
+}
+
+export function hubYoutubeId(value?: string | null) {
+  return youtubeId(value);
+}
+
 export type GdlisthubListItem = {
   position: number;
   gdLevelId: number;
@@ -114,11 +123,16 @@ export function applyGdlisthubRanksToLevels(
     seen.add(Number(level.gdLevelId));
     const fl = maps.featured.get(Number(level.gdLevelId));
     const dl = maps.classic.get(Number(level.gdLevelId));
+    const src = fl || dl;
     return {
       ...level,
       isVN: Boolean(level.isVN) || Boolean(fl),
       vnPlacement: fl?.position ?? level.vnPlacement ?? null,
       classicPlacement: dl?.position ?? null,
+      name: isMissingLevelText(level.name) && src?.name ? src.name : level.name,
+      creatorName:
+        isMissingLevelText(level.creatorName) && src?.creator ? src.creator : level.creatorName,
+      youtubeId: level.youtubeId || youtubeId(src?.videoID),
     };
   });
   for (const gdLevelId of new Set([...maps.featured.keys(), ...maps.classic.keys()])) {

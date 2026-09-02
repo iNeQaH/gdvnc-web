@@ -4,6 +4,7 @@ import {
   fetchGdlisthubPack,
   GDLISTHUB_CLASSIC,
   GDLISTHUB_FEATURED,
+  isMissingLevelText,
   type GdlisthubListItem,
 } from '@/lib/gdlisthubLists';
 import { extractYoutubeId, preferText, preferYoutubeId } from '@/lib/upsertLevel';
@@ -31,14 +32,44 @@ async function ensureLevels(items: GdlisthubListItem[]) {
   const ids = items.map((item) => item.gdLevelId);
   const existing = await prisma.level.findMany({
     where: { gdLevelId: { in: ids } },
-    select: { gdLevelId: true },
+    select: { id: true, gdLevelId: true, name: true, creatorName: true, youtubeId: true },
   });
   const have = new Set(existing.map((row) => row.gdLevelId));
   const toCreate = items.filter((item) => !have.has(item.gdLevelId)).map((item) => stubData(item, false, null));
   if (toCreate.length > 0) {
     await prisma.level.createMany({ data: toCreate, skipDuplicates: true });
   }
-  return { created: toCreate.length, existing: have.size };
+
+  const byGd = new Map(items.map((item) => [item.gdLevelId, item]));
+  let filled = 0;
+  const toFill = existing.filter((row) => {
+    const item = byGd.get(row.gdLevelId);
+    if (!item) return false;
+    return (
+      (isMissingLevelText(row.creatorName) && item.creator) ||
+      (isMissingLevelText(row.name) && item.name) ||
+      (!row.youtubeId && extractYoutubeId(item.videoID))
+    );
+  });
+  const FILL_CHUNK = 40;
+  for (let i = 0; i < toFill.length; i += FILL_CHUNK) {
+    const chunk = toFill.slice(i, i + FILL_CHUNK);
+    await Promise.all(
+      chunk.map((row) => {
+        const item = byGd.get(row.gdLevelId)!;
+        filled += 1;
+        return prisma.level.update({
+          where: { id: row.id },
+          data: {
+            name: preferText(item.name, isMissingLevelText(row.name) ? null : row.name) || row.name,
+            creatorName: preferText(item.creator, isMissingLevelText(row.creatorName) ? null : row.creatorName),
+            youtubeId: preferYoutubeId(extractYoutubeId(item.videoID), row.youtubeId),
+          },
+        });
+      })
+    );
+  }
+  return { created: toCreate.length, existing: have.size, filled };
 }
 
 export async function syncGdlisthubLists() {
@@ -69,8 +100,11 @@ export async function syncGdlisthubLists() {
         isVN: true,
         isChallenge: false,
         vnPlacement: item.position,
-        name: preferText(item.name, row.name) || row.name,
-        creatorName: preferText(item.creator, row.creatorName),
+        name: preferText(item.name, isMissingLevelText(row.name) ? null : row.name) || row.name,
+        creatorName: preferText(
+          item.creator,
+          isMissingLevelText(row.creatorName) ? null : row.creatorName
+        ),
         youtubeId: preferYoutubeId(extractYoutubeId(item.videoID), row.youtubeId),
       },
     });
@@ -81,7 +115,9 @@ export async function syncGdlisthubLists() {
     featuredCount: featuredItems.length,
     classicCount: classicItems.length,
     classicCreated: classicEnsured.created,
+    classicFilled: classicEnsured.filled,
     featuredCreated: featuredEnsured.created,
+    featuredFilled: featuredEnsured.filled,
     featuredUpdated,
     source: featured.items.length > 0 ? 'live' : 'snapshot',
   };

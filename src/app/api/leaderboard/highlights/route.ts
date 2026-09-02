@@ -1,28 +1,65 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { LevelMode } from '@prisma/client';
-import { getPlayerLeaderboard, playerDisplayName } from '@/lib/leaderboard';
+import { getCreatorLeaderboard, getPlayerLeaderboard, playerDisplayName } from '@/lib/leaderboard';
+import { GDLISTHUB_CLASSIC, GDLISTHUB_FEATURED, isMissingLevelText } from '@/lib/gdlisthubLists';
+
+const highlightSelect = {
+  id: true,
+  gdLevelId: true,
+  name: true,
+  creatorName: true,
+  placement: true,
+  vnPlacement: true,
+  basePp: true,
+  mode: true,
+} as const;
+
+function withHubCreator<T extends { gdLevelId: number; creatorName: string | null }>(level: T | null): T | null {
+  if (!level || !isMissingLevelText(level.creatorName)) return level;
+  const hub =
+    GDLISTHUB_FEATURED.items.find((it) => it.gdLevelId === level.gdLevelId) ||
+    GDLISTHUB_CLASSIC.items.find((it) => it.gdLevelId === level.gdLevelId);
+  if (!hub?.creator) return level;
+  return { ...level, creatorName: hub.creator };
+}
+
+function hubFeaturedTop(mode: 'CLASSIC' | 'PLATFORMER') {
+  const wantPlat = mode === 'PLATFORMER';
+  const item = GDLISTHUB_FEATURED.items.find((it) => Boolean(it.isPlatformer) === wantPlat);
+  if (!item) return null;
+  return {
+    id: `gdlh:${item.gdLevelId}`,
+    gdLevelId: item.gdLevelId,
+    name: item.name,
+    creatorName: item.creator,
+    placement: item.position,
+    vnPlacement: item.position,
+    basePp: 0,
+    mode,
+  };
+}
 
 export async function GET() {
   try {
-    const [topClassicLevel, topPlatformerLevel, classicBoard, topCreator] = await Promise.all([
+    const [dbClassic, dbPlatformer, classicBoard, creatorBoard] = await Promise.all([
       prisma.level.findFirst({
-        where: { mode: LevelMode.CLASSIC, isChallenge: false, placement: { not: null } },
-        orderBy: { placement: 'asc' },
-        select: { id: true, gdLevelId: true, name: true, placement: true, basePp: true, mode: true },
+        where: { isVN: true, isChallenge: false, mode: LevelMode.CLASSIC, vnPlacement: { not: null } },
+        orderBy: { vnPlacement: 'asc' },
+        select: highlightSelect,
       }),
       prisma.level.findFirst({
-        where: { mode: LevelMode.PLATFORMER, isChallenge: false, placement: { not: null } },
-        orderBy: { placement: 'asc' },
-        select: { id: true, gdLevelId: true, name: true, placement: true, basePp: true, mode: true },
+        where: { isVN: true, isChallenge: false, mode: LevelMode.PLATFORMER },
+        orderBy: [{ vnPlacement: 'asc' }, { placement: 'asc' }, { name: 'asc' }],
+        select: highlightSelect,
       }),
       getPlayerLeaderboard('CLASSIC'),
-      prisma.user.findFirst({
-        where: { creatorPoints: { gt: 0 } },
-        orderBy: { creatorPoints: 'desc' },
-        select: { id: true, username: true, gdUsername: true, avatarUrl: true, creatorPoints: true },
-      }),
+      getCreatorLeaderboard(),
     ]);
+
+    const topClassicLevel = withHubCreator(dbClassic) || hubFeaturedTop('CLASSIC');
+    const topPlatformerLevel = withHubCreator(dbPlatformer) || hubFeaturedTop('PLATFORMER');
+    const topCreatorUser = creatorBoard[0] || null;
 
     const top = classicBoard[0];
     const topPlayer = top
@@ -43,10 +80,15 @@ export async function GET() {
         topClassicLevel,
         topPlatformerLevel,
         topPlayer,
-        topCreator: topCreator
+        topCreator: topCreatorUser
           ? {
-              ...topCreator,
-              displayName: playerDisplayName(topCreator),
+              id: topCreatorUser.id,
+              username: topCreatorUser.username,
+              gdUsername: topCreatorUser.gdUsername,
+              avatarUrl: topCreatorUser.avatarUrl,
+              creatorPoints: topCreatorUser.creatorPoints,
+              displayName: playerDisplayName(topCreatorUser),
+              isLegacy: topCreatorUser.isLegacy,
             }
           : null,
       },

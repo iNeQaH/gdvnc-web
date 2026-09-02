@@ -135,10 +135,12 @@ export default function HomePage() {
             <div className="text-base font-extrabold ui-title mt-0.5 truncate">
               {highlights?.topClassicLevel?.name || t('leaderboard.stats.no_data')}
             </div>
-            <div className="text-[10px] ui-dim">
-              {highlights?.topClassicLevel
-                ? `${Number(highlights.topClassicLevel.basePp || 0).toFixed(2)} ${t('leaderboard.points')}`
-                : '—'}
+            <div className="text-[10px] ui-dim truncate">
+              {highlights?.topClassicLevel?.creatorName
+                ? `${t('common.by')} ${highlights.topClassicLevel.creatorName}`
+                : highlights?.topClassicLevel?.vnPlacement
+                  ? `#${highlights.topClassicLevel.vnPlacement}`
+                  : '—'}
             </div>
           </Link>
           <Link
@@ -151,7 +153,13 @@ export default function HomePage() {
             <div className="text-base font-extrabold ui-title mt-0.5 truncate">
               {highlights?.topPlatformerLevel?.name || t('leaderboard.stats.no_data')}
             </div>
-            <div className="text-[10px] ui-dim">{t('leaderboard.speedrun')}</div>
+            <div className="text-[10px] ui-dim truncate">
+              {highlights?.topPlatformerLevel?.creatorName
+                ? `${t('common.by')} ${highlights.topPlatformerLevel.creatorName}`
+                : highlights?.topPlatformerLevel
+                  ? t('leaderboard.speedrun')
+                  : '—'}
+            </div>
           </Link>
           {highlights?.topPlayer?.username ? (
           <Link
@@ -183,22 +191,36 @@ export default function HomePage() {
             </div>
           </div>
           )}
+          {highlights?.topCreator?.username ? (
           <Link
-            href={highlights?.topCreator ? `/profile/${highlights.topCreator.username}` : '#'}
+            href={`/profile/${highlights.topCreator.username}`}
             className="ui-subtle p-3.5 rounded-xl block hover:opacity-90 transition-opacity"
           >
             <div className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1">
               <Wrench className="w-3 h-3" /> {t('leaderboard.stats.top1_creator')}
             </div>
             <div className="text-base font-extrabold ui-title mt-0.5 truncate">
-              {highlights?.topCreator?.displayName || highlights?.topCreator?.gdUsername || highlights?.topCreator?.username || t('leaderboard.stats.no_data')}
+              {highlights.topCreator.displayName || highlights.topCreator.gdUsername || highlights.topCreator.username}
+            </div>
+            <div className="text-[10px] ui-dim">
+              {`${formatCp(highlights.topCreator.creatorPoints)} CP`}
+            </div>
+          </Link>
+          ) : (
+          <div className="ui-subtle p-3.5 rounded-xl">
+            <div className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1">
+              <Wrench className="w-3 h-3" /> {t('leaderboard.stats.top1_creator')}
+            </div>
+            <div className="text-base font-extrabold ui-title mt-0.5 truncate">
+              {highlights?.topCreator?.displayName || highlights?.topCreator?.gdUsername || t('leaderboard.stats.no_data')}
             </div>
             <div className="text-[10px] ui-dim">
               {highlights?.topCreator
                 ? `${formatCp(highlights.topCreator.creatorPoints)} CP`
                 : '—'}
             </div>
-          </Link>
+          </div>
+          )}
         </div>
       </section>
 

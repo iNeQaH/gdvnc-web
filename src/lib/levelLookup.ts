@@ -3,9 +3,9 @@ import prisma from '@/lib/prisma';
 import { isAllDigitsId, UUID_RE } from '@/lib/levelUrl';
 import { RecordStatus } from '@prisma/client';
 import { dedupeRecordsByUser } from '@/lib/recordUtils';
-import { formatDifficultyLabel, mapDifficultyFace } from '@/lib/gdDifficulty';
+import { formatDifficultyLabel, mapDifficultyFace, pickGdCreatorName } from '@/lib/gdDifficulty';
 import { fetchGdBrowser, getOrCreateStubLevel } from '@/lib/upsertLevel';
-import { gdlisthubItemMaps } from '@/lib/gdlisthubLists';
+import { gdlisthubItemMaps, hubYoutubeId, isMissingLevelText } from '@/lib/gdlisthubLists';
 
 const levelInclude = {
   records: {
@@ -57,6 +57,35 @@ async function refreshDifficultyFromGd<T extends { id: string; gdLevelId: number
   return { ...level, difficulty, difficultyFace };
 }
 
+async function fillMissingCreatorFromHub<
+  T extends { id: string; gdLevelId: number; name: string; creatorName: string | null; youtubeId: string | null },
+>(level: T): Promise<T> {
+  const needCreator = isMissingLevelText(level.creatorName);
+  const needName = isMissingLevelText(level.name);
+  const needVideo = !level.youtubeId;
+  if (!needCreator && !needName && !needVideo) return level;
+
+  const maps = gdlisthubItemMaps();
+  const item = maps.featured.get(level.gdLevelId) || maps.classic.get(level.gdLevelId);
+  const patch: { name?: string; creatorName?: string; youtubeId?: string } = {};
+  if (needName && item?.name) patch.name = item.name;
+  if (needCreator && item?.creator) patch.creatorName = item.creator;
+  const yt = hubYoutubeId(item?.videoID);
+  if (needVideo && yt) patch.youtubeId = yt;
+
+  if (needCreator && !patch.creatorName) {
+    const gdb = await fetchGdBrowser(level.gdLevelId);
+    const fromGd = pickGdCreatorName(gdb);
+    if (fromGd) patch.creatorName = fromGd;
+    const gdName = gdb ? String(gdb.name || '').trim() : '';
+    if (needName && !patch.name && gdName) patch.name = gdName;
+  }
+
+  if (!Object.keys(patch).length) return level;
+  void prisma.level.update({ where: { id: level.id }, data: patch }).catch(() => {});
+  return { ...level, ...patch };
+}
+
 export async function resolvePublicLevel(id: string) {
   if (isAllDigitsId(id)) {
     const gdLevelId = Number(id);
@@ -95,7 +124,7 @@ export async function resolvePublicLevel(id: string) {
       });
     }
     if (!level) notFound();
-    return refreshDifficultyFromGd(level);
+    return refreshDifficultyFromGd(await fillMissingCreatorFromHub(level));
   }
 
   if (UUID_RE.test(id)) {

@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { clipText } from '@/lib/validate';
 import { fetchGdBrowser } from '@/lib/upsertLevel';
 import { fetchGdvnSheetRows, type GdvnSheetRow } from '@/lib/gdvnSheet';
+import { gdlisthubItemMaps, isMissingLevelText } from '@/lib/gdlisthubLists';
 import { parseYoutubeVideoField } from '@/lib/timeline/glow';
 import { purgeSheetTimelineEvents } from '@/lib/timeline/purgeSheetEvents';
 
@@ -58,6 +59,16 @@ async function resolveEpicYoutubeIds(rows: GdvnSheetRow[]) {
   return byGd;
 }
 
+function creatorNameForRow(row: GdvnSheetRow) {
+  if (!isMissingLevelText(row.creatorName)) return row.creatorName;
+  const maps = gdlisthubItemMaps();
+  return (
+    maps.featured.get(row.gdLevelId)?.creator ||
+    maps.classic.get(row.gdLevelId)?.creator ||
+    row.creatorName
+  );
+}
+
 function levelChanged(cur: {
   name: string;
   creatorName: string | null;
@@ -69,7 +80,7 @@ function levelChanged(cur: {
   return (
     !cur.isVN ||
     cur.name !== row.name ||
-    (cur.creatorName || '') !== row.creatorName ||
+    (cur.creatorName || '') !== creatorNameForRow(row) ||
     cur.difficulty !== row.difficulty ||
     cur.difficultyFace !== row.difficultyFace ||
     cur.ratingType !== row.ratingType
@@ -112,7 +123,7 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
       data: chunk.map((row) => ({
         gdLevelId: row.gdLevelId,
         name: clipText(row.name, 160),
-        creatorName: clipText(row.creatorName, 80),
+        creatorName: clipText(creatorNameForRow(row), 80),
         difficulty: clipText(row.difficulty, 40),
         difficultyFace: row.difficultyFace,
         ratingType: row.ratingType,
@@ -136,7 +147,7 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
           where: { id },
           data: {
             name: clipText(row.name, 160),
-            creatorName: clipText(row.creatorName, 80),
+            creatorName: clipText(creatorNameForRow(row), 80),
             difficulty: clipText(row.difficulty, 40),
             difficultyFace: row.difficultyFace,
             ratingType: row.ratingType,
