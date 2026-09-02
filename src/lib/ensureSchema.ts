@@ -6,6 +6,7 @@ const STATEMENTS = [
   `CREATE INDEX IF NOT EXISTS "Level_isVN_idx" ON "Level"("isVN")`,
   `ALTER TABLE "LevelSubmission" ADD COLUMN IF NOT EXISTS "vnPlacement" INTEGER`,
   `ALTER TABLE "TimelineEvent" ADD COLUMN IF NOT EXISTS "imageScale" DOUBLE PRECISION DEFAULT 1`,
+  `ALTER TABLE "TimelineEvent" ADD COLUMN IF NOT EXISTS "imageRatio" TEXT`,
 ] as const;
 
 let ready: Promise<void> | null = null;

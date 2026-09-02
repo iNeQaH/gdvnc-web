@@ -8,6 +8,8 @@ import {
   DEFAULT_IMAGE_SCALE,
   MAX_IMAGE_SCALE,
   MIN_IMAGE_SCALE,
+  normalizeImageRatio,
+  parseImageRatio,
   type ChronicleEvent,
   type TimelineNature,
   type TimelineTierId,
@@ -37,6 +39,7 @@ const empty = {
   nature: 'positive' as TimelineNature,
   tier: '1y' as TimelineTierId,
   imageScale: DEFAULT_IMAGE_SCALE,
+  imageRatio: '',
 };
 
 export default function EventForm({
@@ -69,6 +72,7 @@ export default function EventForm({
         nature: event.nature ?? 'positive',
         tier: event.tier ?? '1y',
         imageScale: clampImageScale(event.imageScale),
+        imageRatio: event.imageRatio || '',
       });
     } else {
       setForm(empty);
@@ -98,6 +102,7 @@ export default function EventForm({
       nature: form.nature,
       tier: form.tier,
       imageScale: clampImageScale(form.imageScale),
+      imageRatio: normalizeImageRatio(form.imageRatio),
     });
   }
 
@@ -153,27 +158,40 @@ export default function EventForm({
             }}
           />
           {uploading && <p className="text-[11px] ui-dim mt-1">{t('timeline.image_uploading')}</p>}
-          <label className="block mt-2 text-[11px] ui-dim">
-            <span className="flex justify-between gap-2">
-              <span>{t('timeline.image_scale')}</span>
-              <em>{Math.round(form.imageScale * 100)}%</em>
-            </span>
-            <input
-              type="range"
-              min={MIN_IMAGE_SCALE}
-              max={MAX_IMAGE_SCALE}
-              step={0.05}
-              value={form.imageScale}
-              onChange={(e) => set('imageScale', clampImageScale(e.target.value))}
-              className="w-full mt-1"
-            />
-          </label>
+          <div className="row-2 mt-2">
+            <div className="field">
+              <label>{t('timeline.image_scale')}</label>
+              <input
+                type="number"
+                min={MIN_IMAGE_SCALE}
+                max={MAX_IMAGE_SCALE}
+                step={0.05}
+                value={form.imageScale}
+                onChange={(e) => set('imageScale', clampImageScale(e.target.value))}
+              />
+            </div>
+            <div className="field">
+              <label>{t('timeline.image_ratio')}</label>
+              <input
+                value={form.imageRatio}
+                onChange={(e) => set('imageRatio', e.target.value)}
+                placeholder={t('timeline.image_ratio_ph')}
+              />
+            </div>
+          </div>
           {form.image ? (
             <img
               src={form.image}
               alt=""
               className="mt-2 rounded-lg"
-              style={{ width: `${Math.round(160 * form.imageScale)}px`, height: 'auto', maxWidth: '100%' }}
+              style={{
+                width: `${Math.round(160 * form.imageScale)}px`,
+                maxWidth: '100%',
+                height: parseImageRatio(form.imageRatio)
+                  ? `${Math.round((160 * form.imageScale) / parseImageRatio(form.imageRatio)!)}px`
+                  : 'auto',
+                objectFit: parseImageRatio(form.imageRatio) ? 'cover' : 'contain',
+              }}
             />
           ) : null}
         </div>

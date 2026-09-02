@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type CSSProperties } from 'react';
-import type { ChronicleEvent } from '@/lib/timeline/types';
+import { parseImageRatio, type ChronicleEvent } from '@/lib/timeline/types';
 import type { LaneItem } from '@/lib/timeline/layout';
 import { TIMELINE_CARD_LIFT } from '@/lib/timeline/time';
 import { glowStyleVars } from '@/lib/timeline/glow';
@@ -9,9 +9,13 @@ import type { DictKey } from '@/lib/dictionaries';
 
 function Media({ event }: { event: ChronicleEvent }) {
   const [failed, setFailed] = useState(false);
+  const ratio = parseImageRatio(event.imageRatio);
   if (event.image && !failed) {
     return (
-      <div className="card-media">
+      <div
+        className={`card-media${ratio ? ' has-ratio' : ''}`}
+        style={ratio ? { aspectRatio: String(ratio) } : undefined}
+      >
         <img src={event.image} alt="" onError={() => setFailed(true)} />
       </div>
     );

@@ -337,6 +337,7 @@ model TimelineEvent {
   sourceKey        String?  @unique // e.g. gdvn-sheet:{gdLevelId}
   glowColor        String?  // hex #rrggbb animated card border; auto for Epic+
   imageScale       Float    @default(1)
+  imageRatio       String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

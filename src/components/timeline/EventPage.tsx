@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { formatDate, localizeDateText } from '@/lib/timeline/time';
 import { sanitizeChronicleHtml } from '@/lib/timeline/sanitize';
 import { useLanguage } from '@/components/LanguageContext';
-import type { ChronicleEvent } from '@/lib/timeline/types';
+import { parseImageRatio, type ChronicleEvent } from '@/lib/timeline/types';
 import type { DictKey } from '@/lib/dictionaries';
 
 export default function EventPage({
@@ -30,6 +30,7 @@ export default function EventPage({
     event.end && event.end > event.start
       ? `${formatDate(event.start, { locale })} — ${formatDate(event.end, { locale })}`
       : formatDate(event.start, { locale });
+  const ratio = parseImageRatio(event.imageRatio);
   const [closing, setClosing] = useState(false);
 
   const requestClose = () => {
@@ -62,7 +63,10 @@ export default function EventPage({
           </p>
         ) : null}
         {event.image && !hasEmbed ? (
-          <figure className="chronicle-figure">
+          <figure
+            className={`chronicle-figure${ratio ? ' has-ratio' : ''}`}
+            style={ratio ? { aspectRatio: String(ratio) } : undefined}
+          >
             <img src={event.image} alt={event.title} />
           </figure>
         ) : null}

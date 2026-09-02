@@ -5,7 +5,7 @@ import { clipText } from '@/lib/validate';
 import { deleteUploadthingKeys, isAllowedImageRef, uploadthingKeysFromRef } from '@/lib/uploadthing';
 import { toChronicleEvent } from '@/lib/timeline/serialize';
 import { sanitizeChronicleHtml } from '@/lib/timeline/sanitize';
-import { clampImageScale, isNature, isTierId } from '@/lib/timeline/types';
+import { clampImageScale, isNature, isTierId, normalizeImageRatio } from '@/lib/timeline/types';
 import { fromDateInput } from '@/lib/timeline/time';
 import { parseGlowColor } from '@/lib/timeline/glow';
 
@@ -58,6 +58,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         tier: isTierId(String(body?.tier || '1y')) ? body.tier : '1y',
         glowColor: parseGlowColor(body?.glowColor),
         imageScale: clampImageScale(body?.imageScale),
+        imageRatio: normalizeImageRatio(body?.imageRatio),
       },
     });
     if (staleKeys.length > 0) {
