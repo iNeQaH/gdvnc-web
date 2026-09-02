@@ -16,7 +16,7 @@ import {
   eventSizeScale,
   TIMELINE_CARD_LIFT,
 } from '@/lib/timeline/time';
-import { CARD_STACK, clusterCollapsed, clusterLeadTier, layoutLane, type LaneItem } from '@/lib/timeline/layout';
+import { clusterCollapsed, clusterLeadTier, layoutLane, type LaneItem } from '@/lib/timeline/layout';
 import EventCard from '@/components/timeline/EventCard';
 import TimelineFx from '@/components/timeline/TimelineFx';
 import type { ChronicleEvent, TimelineTierId } from '@/lib/timeline/types';
@@ -43,6 +43,8 @@ export default function TimelineBoard({
   setCenter,
   expandedIds,
   setExpandedIds,
+  foldedIds,
+  setFoldedIds,
   onOpen,
   onFocusEvent,
   onStepEvent,
@@ -58,6 +60,8 @@ export default function TimelineBoard({
   setCenter: (c: number | ((prev: number) => number)) => void;
   expandedIds: Set<string>;
   setExpandedIds: (s: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
+  foldedIds: Set<string>;
+  setFoldedIds: (s: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
   onOpen: (event: ChronicleEvent) => void;
   onFocusEvent: (id: string) => void;
   onStepEvent: (dir: -1 | 1) => void;
@@ -133,12 +137,14 @@ export default function TimelineBoard({
     zoomIndex: zoom,
     timeToX,
     expandedIds,
+    foldedIds,
   });
   const negLayout = layoutLane({
     events: inView.filter((e) => e.nature === 'negative'),
     zoomIndex: zoom,
     timeToX,
     expandedIds,
+    foldedIds,
   });
 
   const posClusters = clusterCollapsed(posLayout);
@@ -249,19 +255,38 @@ export default function TimelineBoard({
     }
   }
 
-  function toggleEvent(event: ChronicleEvent, closeCluster = true) {
+  function toggleEvent(event: ChronicleEvent, showing: boolean, closeCluster = true) {
     onFocusEvent(event.id);
-    setExpandedIds((s) => {
-      const n = new Set(s);
-      if (n.has(event.id)) n.delete(event.id);
-      else n.add(event.id);
-      return n;
-    });
+    if (showing) {
+      setFoldedIds((s) => {
+        const n = new Set(s);
+        n.add(event.id);
+        return n;
+      });
+      setExpandedIds((s) => {
+        if (!s.has(event.id)) return s;
+        const n = new Set(s);
+        n.delete(event.id);
+        return n;
+      });
+    } else {
+      setFoldedIds((s) => {
+        if (!s.has(event.id)) return s;
+        const n = new Set(s);
+        n.delete(event.id);
+        return n;
+      });
+      setExpandedIds((s) => {
+        const n = new Set(s);
+        n.add(event.id);
+        return n;
+      });
+    }
     if (closeCluster) setCluster(null);
   }
 
   function toggleExpand(item: LaneItem, closeCluster = true) {
-    toggleEvent(item.event, closeCluster);
+    toggleEvent(item.event, !item.collapsed, closeCluster);
   }
 
   function openCluster(cl: ReturnType<typeof clusterCollapsed>[number], side: 'pos' | 'neg', ev: React.MouseEvent) {
@@ -317,7 +342,25 @@ export default function TimelineBoard({
   }
 
   function cardLiftPx(item: LaneItem) {
-    return TIMELINE_CARD_LIFT * cardLook(item).lift + item.stack * CARD_STACK;
+    return TIMELINE_CARD_LIFT * cardLook(item).lift;
+  }
+
+  function stemBox(item: LaneItem) {
+    const height = cardLiftPx(item);
+    const cardCenter = item.left + item.width / 2;
+    const drift = Math.round(cardCenter - item.x);
+    if (Math.abs(drift) < 2) {
+      return { className: 'is-mid', style: { left: item.x, height } };
+    }
+    return {
+      className: drift < 0 ? 'is-left' : 'is-right',
+      style: {
+        left: Math.min(item.x, cardCenter),
+        width: Math.abs(drift),
+        height,
+        transform: 'none' as const,
+      },
+    };
   }
 
   const visibleCards = [...posLayout, ...negLayout].filter((i) => !i.collapsed && onBar(visualX(i)));
@@ -401,11 +444,12 @@ export default function TimelineBoard({
         .filter((i) => !i.collapsed && onBar(visualX(i)))
         .map((i) => {
           const neg = i.event.nature === 'negative';
+          const stem = stemBox(i);
           return (
             <div
               key={`stem-${i.event.id}`}
-              className={`stem ${neg ? 'neg' : 'pos'}`}
-              style={{ left: i.x, height: cardLiftPx(i) }}
+              className={`stem ${neg ? 'neg' : 'pos'} ${stem.className}`}
+              style={stem.style}
             />
           );
         })}
@@ -458,12 +502,11 @@ export default function TimelineBoard({
       {[...posLayout, ...negLayout]
         .filter((i) => !i.collapsed && onBar(visualX(i)))
         .map((i) => {
-          const expanded = expandedIds.has(i.event.id);
           return (
             <button
               key={`dot-${i.event.id}`}
-              className={`dot tier-${i.event.tier} ${i.event.nature === 'negative' ? 'neg' : ''} ${expanded ? 'is-open' : ''}`}
-              style={{ left: i.x, top: lineY, zIndex: 12 + i.stack }}
+              className={`dot tier-${i.event.tier} ${i.event.nature === 'negative' ? 'neg' : ''} is-open`}
+              style={{ left: i.x, top: lineY, zIndex: 12 }}
               onClick={(ev) => {
                 ev.stopPropagation();
                 toggleExpand(i);

@@ -3,8 +3,10 @@ import type { ChronicleEvent } from '@/lib/timeline/types';
 
 export const CARD_W = 200;
 const CARD_GAP = 16;
-/** Extra lift (px) per stacked card so nearby events stay on their date. */
-export const CARD_STACK = 176;
+/** Cards no longer stack vertically. Kept so older callers still type-check. */
+export const CARD_STACK = 0;
+/** If a card would slide farther than this from its date, collapse it to a dot. */
+export const MAX_CARD_DRIFT = 112;
 
 export type LaneItem = {
   event: ChronicleEvent & { anchor: number };
@@ -16,10 +18,6 @@ export type LaneItem = {
   stack: number;
 };
 
-function overlaps(aLeft: number, aRight: number, bLeft: number, bRight: number) {
-  return aLeft < bRight && aRight > bLeft;
-}
-
 function tierRank(event: { tier: string }) {
   return TIERS.find((t) => t.id === event.tier)?.rank ?? 5;
 }
@@ -29,15 +27,18 @@ export function layoutLane({
   zoomIndex,
   timeToX,
   expandedIds,
+  foldedIds,
   cardWidth = CARD_W,
 }: {
   events: Array<ChronicleEvent & { anchor: number }>;
   zoomIndex: number;
   timeToX: (ms: number) => number;
   expandedIds: Set<string>;
+  foldedIds?: Set<string>;
   cardWidth?: number;
 }): LaneItem[] {
   const minShowRank = Math.round(zoomIndex);
+  const folded = foldedIds ?? new Set<string>();
   const items: LaneItem[] = events.map((event) => {
     const x = timeToX(event.anchor);
     return {
@@ -51,67 +52,49 @@ export function layoutLane({
     };
   });
 
-  items.sort((a, b) => {
-    const ra = tierRank(a.event);
-    const rb = tierRank(b.event);
-    if (ra !== rb) return ra - rb;
-    return a.x - b.x;
-  });
+  items.sort((a, b) => a.x - b.x || a.event.id.localeCompare(b.event.id));
 
-  const placed: LaneItem[] = [];
+  const collapsed: LaneItem[] = [];
+  const candidates: LaneItem[] = [];
+
   for (const item of items) {
     const rank = tierRank(item.event);
-    const forced = expandedIds.has(item.event.id);
+    const isFolded = folded.has(item.event.id);
+    const forced = expandedIds.has(item.event.id) && !isFolded;
     const visibleAtZoom = rank <= minShowRank;
     const alwaysMark = rank <= ALWAYS_SHOW_MARKER_MAX_RANK;
-    const left = item.desiredLeft;
-    const right = left + cardWidth;
+    const mark = { ...item, collapsed: true as const, left: item.x - 7, width: 14, stack: 0 };
 
+    if (isFolded) {
+      collapsed.push(mark);
+      continue;
+    }
     if (!visibleAtZoom && !forced) {
-      if (!alwaysMark) continue;
-      placed.push({ ...item, collapsed: true, left: item.x - 7, width: 14 });
+      if (alwaysMark) collapsed.push(mark);
       continue;
     }
+    candidates.push({ ...item, collapsed: false, left: item.desiredLeft, width: cardWidth, stack: 0 });
+  }
 
-    const hit = placed.some(
-      (p) => !p.collapsed && overlaps(left - CARD_GAP, right + CARD_GAP, p.left, p.left + p.width)
-    );
-    if (hit && !forced) {
-      placed.push({ ...item, collapsed: true, left: item.x - 7, width: 14 });
+  const shown: LaneItem[] = [];
+  for (let i = candidates.length - 1; i >= 0; i--) {
+    const item: LaneItem = { ...candidates[i], left: candidates[i].desiredLeft, width: cardWidth, stack: 0 };
+    const next = shown[0];
+    if (next) {
+      const maxLeft = next.left - CARD_GAP - cardWidth;
+      if (item.left > maxLeft) item.left = maxLeft;
+    }
+    const cardCenter = item.left + cardWidth / 2;
+    const drift = item.x - cardCenter;
+    const forced = expandedIds.has(item.event.id) && !folded.has(item.event.id);
+    if (drift > MAX_CARD_DRIFT && !forced) {
+      collapsed.push({ ...item, collapsed: true, left: item.x - 7, width: 14, stack: 0 });
       continue;
     }
-
-    placed.push({ ...item, collapsed: false, left, width: cardWidth });
+    shown.unshift(item);
   }
 
-  assignStacks(placed, cardWidth);
-  return placed;
-}
-
-function assignStacks(placed: LaneItem[], cardWidth: number) {
-  const shown = placed.filter((p) => !p.collapsed);
-  shown.sort((a, b) => a.x - b.x || a.event.id.localeCompare(b.event.id));
-  for (let i = 0; i < shown.length; i++) {
-    const cur = shown[i];
-    cur.left = cur.desiredLeft;
-    cur.width = cardWidth;
-    let stack = 0;
-    for (let j = 0; j < i; j++) {
-      const prev = shown[j];
-      if (
-        !overlaps(
-          cur.left - CARD_GAP,
-          cur.left + cardWidth + CARD_GAP,
-          prev.left,
-          prev.left + prev.width
-        )
-      ) {
-        continue;
-      }
-      stack = Math.max(stack, prev.stack + 1);
-    }
-    cur.stack = stack;
-  }
+  return [...shown, ...collapsed];
 }
 
 export function clusterCollapsed(items: LaneItem[]) {

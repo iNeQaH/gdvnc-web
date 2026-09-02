@@ -35,6 +35,7 @@ export default function TimelineApp() {
   const [zoom, setZoom] = useState(DEFAULT_ZOOM_INDEX);
   const [center, setCenter] = useState(TIMELINE_ORIGIN);
   const [expandedIds, setExpandedIds] = useState(() => new Set<string>());
+  const [foldedIds, setFoldedIds] = useState(() => new Set<string>());
   const [open, setOpen] = useState<ChronicleEvent | null>(null);
   const [editing, setEditing] = useState<ChronicleEvent | undefined>(undefined);
   const [formOpen, setFormOpen] = useState(false);
@@ -327,6 +328,8 @@ export default function TimelineApp() {
         setCenter={setCenter}
         expandedIds={expandedIds}
         setExpandedIds={setExpandedIds}
+        foldedIds={foldedIds}
+        setFoldedIds={setFoldedIds}
         onOpen={(e) => {
           setFocusId(e.id);
           setOpen(e);

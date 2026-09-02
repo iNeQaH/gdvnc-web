@@ -888,23 +888,51 @@
 
 .gdvn-timeline .stem {
   position: absolute;
-  width: 1px;
   z-index: 5;
-  transform: translateX(-50%);
   opacity: 0.7;
   pointer-events: none;
+  box-sizing: border-box;
 }
 
 .gdvn-timeline .stem.pos {
   bottom: 50%;
-  height: 58px;
-  background: var(--tl-accent);
 }
 
 .gdvn-timeline .stem.neg {
   top: 50%;
-  height: 58px;
+}
+
+.gdvn-timeline .stem.is-mid {
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+.gdvn-timeline .stem.pos.is-mid {
+  background: var(--tl-accent);
+}
+
+.gdvn-timeline .stem.neg.is-mid {
   background: var(--tl-neg);
+}
+
+.gdvn-timeline .stem.pos.is-left {
+  border-top: 1px solid var(--tl-accent);
+  border-right: 1px solid var(--tl-accent);
+}
+
+.gdvn-timeline .stem.pos.is-right {
+  border-top: 1px solid var(--tl-accent);
+  border-left: 1px solid var(--tl-accent);
+}
+
+.gdvn-timeline .stem.neg.is-left {
+  border-bottom: 1px solid var(--tl-neg);
+  border-right: 1px solid var(--tl-neg);
+}
+
+.gdvn-timeline .stem.neg.is-right {
+  border-bottom: 1px solid var(--tl-neg);
+  border-left: 1px solid var(--tl-neg);
 }
 
 .gdvn-timeline .dot {

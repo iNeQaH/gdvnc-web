@@ -50,3 +50,6 @@ next-env.d.ts
 # Next.js recreates these on `next dev`; they are not part of the app
 /AGENTS.md
 /CLAUDE.md
+
+# Local-only helpers (FAQ markdown tool, etc.)
+/tools

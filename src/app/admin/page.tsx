@@ -763,7 +763,7 @@ export default function AdminPage() {
           return;
         }
         const r = data.result || {};
-        const summary = `${r.fetched || 0} level · +${r.levelsCreated || 0} / ~${r.levelsUpdated || 0} · timeline +${r.timelineCreated || 0} / ~${r.timelineUpdated || 0} · skip ${r.timelineSkipped || 0} ngày · ${r.creatorsQueued || 0} creator · unverify ${r.usersUnverified || 0}`;
+        const summary = `${r.fetched || 0} level · +${r.levelsCreated || 0} / ~${r.levelsUpdated || 0} · ${r.creatorsQueued || 0} creator · unverify ${r.usersUnverified || 0}`;
         showToast(t('admin.sync_sheet_ok', { summary }), 'success');
       } catch {
         showToast(t('admin.sync_sheet_fail'), 'error');

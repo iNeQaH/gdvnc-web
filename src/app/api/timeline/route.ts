@@ -10,6 +10,7 @@ import { sanitizeChronicleHtml } from '@/lib/timeline/sanitize';
 import { isNature, isTierId } from '@/lib/timeline/types';
 import { fromDateInput } from '@/lib/timeline/time';
 import { parseGlowColor } from '@/lib/timeline/glow';
+import { purgeSheetTimelineEvents } from '@/lib/timeline/purgeSheetEvents';
 
 function allowedImage(url: string) {
   return isAllowedImageRef(url);
@@ -46,6 +47,7 @@ export async function GET(req: Request) {
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
   try {
+    await purgeSheetTimelineEvents();
     const rows = await prisma.timelineEvent.findMany({
       orderBy: { startAt: 'asc' },
     });
