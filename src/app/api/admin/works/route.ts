@@ -40,6 +40,27 @@ export async function GET(req: Request) {
       prisma.creatorWork.count({ where: { status: RecordStatus.REJECTED } }),
     ]);
 
+    const gdIds = [...new Set(works.map((w) => w.gdLevelId).filter((id): id is number => typeof id === 'number' && id > 0))];
+    const linkedLevels = gdIds.length
+      ? await prisma.level.findMany({
+          where: { gdLevelId: { in: gdIds } },
+          select: {
+            gdLevelId: true,
+            name: true,
+            creatorName: true,
+            difficulty: true,
+            difficultyFace: true,
+            ratingType: true,
+            mode: true,
+            isVN: true,
+            isChallenge: true,
+            placement: true,
+            vnPlacement: true,
+          },
+        })
+      : [];
+    const linkedByGd = new Map(linkedLevels.map((lvl) => [lvl.gdLevelId, lvl]));
+
     const counts = {
       pending: pendingCount,
       approved: approvedCount,
@@ -48,9 +69,11 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       success: true,
-      works: works.map((work) =>
-        work.status === RecordStatus.PENDING ? work : { ...work, imageUrl: null }
-      ),
+      works: works.map((work) => {
+        const linkedLevel = work.gdLevelId ? linkedByGd.get(work.gdLevelId) || null : null;
+        const base = work.status === RecordStatus.PENDING ? work : { ...work, imageUrl: null };
+        return { ...base, linkedLevel };
+      }),
       counts,
       page,
       limit: ADMIN_LIST_LIMIT,

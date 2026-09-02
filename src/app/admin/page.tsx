@@ -48,6 +48,9 @@ import { type DictKey } from '@/lib/dictionaries';
 import ReviewStatusBadge from '@/components/ReviewStatusBadge';
 import { BADGE_ICON_NAMES } from '@/lib/badgeIconCatalog';
 import { gdNamesEqual } from '@/lib/gdName';
+import MediaExpandEmbed, { WorkImageEmbeds } from '@/components/MediaExpandEmbed';
+import GdLevelMeta from '@/components/GdLevelMeta';
+import BadgePickerModal from '@/components/BadgePickerModal';
 
 const allIconNames = BADGE_ICON_NAMES;
 
@@ -243,20 +246,22 @@ function ReviewerLine({ item, t }: { item: { status: string; reviewer?: { userna
 }
 
 import LevelFormModal from '@/components/LevelFormModal';
-import { getDecoBadgeCp, getLayoutBadgeCp, isDecoCategory, isLayoutCategory } from '@/lib/creatorPoints';
 
 export default function AdminPage() {
   const { t, language } = useLanguage();
   const { showToast, showConfirm } = useToast();
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [tab, setTabState] = useState<'records' | 'works' | 'users' | 'levels' | 'levelSubs' | 'helps'>('records');
+  const [tab, setTabState] = useState<'records' | 'works' | 'users' | 'levels' | 'helps'>('records');
   
   useEffect(() => {
     const saved = localStorage.getItem('adminTab');
     if (saved === 'files' || saved === 'badges') {
       setTabState('levels');
       localStorage.setItem('adminTab', 'levels');
+    } else if (saved === 'levelSubs') {
+      setTabState('works');
+      localStorage.setItem('adminTab', 'works');
     } else if (saved) setTabState(saved as any);
   }, []);
 
@@ -287,7 +292,8 @@ export default function AdminPage() {
   const [workPage, setWorkPage] = useState(1);
   const [workCounts, setWorkCounts] = useState<QueueCounts>({ pending: 0, approved: 0, rejected: 0 });
   const [loadingWorks, setLoadingWorks] = useState(true);
-  const [workReviewData, setWorkReviewData] = useState<Record<string, { decoBadgeId?: string, layoutBadgeId?: string, cpAwarded?: string, rejectReason?: string }>>({});
+  const [workReviewData, setWorkReviewData] = useState<Record<string, { badgeIds?: string[], cpAwarded?: string, rejectReason?: string }>>({});
+  const [badgePickerWorkId, setBadgePickerWorkId] = useState<string | null>(null);
 
   // Badges state
   const [badgesList, setBadgesList] = useState<any[]>([]);
@@ -419,13 +425,6 @@ export default function AdminPage() {
     }
   };
 
-  const decoBadges = badgesList
-    .filter((b) => isDecoCategory(b))
-    .sort((a, b) => (getDecoBadgeCp(b.name) || 0) - (getDecoBadgeCp(a.name) || 0) || (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-  const layoutBadges = badgesList
-    .filter((b) => isLayoutCategory(b))
-    .sort((a, b) => (getLayoutBadgeCp(b.name) || 0) - (getLayoutBadgeCp(a.name) || 0) || (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-
   const fetchPendingRecords = async (status: QueueStatus = recordFilter, page = 1) => {
     setLoadingRecords(true);
     try {
@@ -511,7 +510,7 @@ export default function AdminPage() {
     const data = workReviewData[workId] || {};
     setActionLoading(workId);
     try {
-      const selectedBadges = [data.decoBadgeId, data.layoutBadgeId].filter(Boolean);
+      const selectedBadges = data.badgeIds || [];
       const res = await fetch(`/api/admin/works/${workId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -1004,18 +1003,7 @@ export default function AdminPage() {
             }}
           >
             <Shield className="w-3.5 h-3.5" />
-            Works ({workCounts.pending})
-          </button>
-          <button
-            onClick={() => setTab('levelSubs')}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
-            style={{
-              backgroundColor: tab === 'levelSubs' ? 'var(--bg-card)' : 'transparent',
-              color: tab === 'levelSubs' ? 'var(--accent)' : 'var(--text-dim)',
-            }}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            {t('admin.tab_level_subs')} ({levelSubCounts.pending})
+            {t('admin.tab_creator')} ({workCounts.pending + levelSubCounts.pending})
           </button>
           <button
             onClick={() => setTab('helps')}
@@ -1160,33 +1148,21 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                    <div className="flex items-center gap-1.5">
-                      <span className="ui-dim">Video:</span>
-                      <a
-                        href={rec.videoUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-semibold truncate hover:underline"
-                        style={{ color: 'var(--accent)' }}
-                      >
-                        {rec.videoUrl}
-                      </a>
-                    </div>
-                    {rec.rawProofUrl && (
-                      <div className="flex items-center gap-1.5">
-                        <span className="ui-dim">Raw Footage:</span>
-                        <a
-                          href={rec.rawProofUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="font-semibold truncate hover:underline"
-                          style={{ color: 'var(--accent)' }}
-                        >
-                          Link Raw
-                        </a>
-                      </div>
-                    )}
+                  <div className="space-y-2 text-xs">
+                    <MediaExpandEmbed
+                      url={rec.videoUrl}
+                      label="Video"
+                      expandLabel={t('admin.expand_media')}
+                      collapseLabel={t('admin.collapse_media')}
+                    />
+                    {rec.rawProofUrl ? (
+                      <MediaExpandEmbed
+                        url={rec.rawProofUrl}
+                        label="Raw Footage"
+                        expandLabel={t('admin.expand_media')}
+                        collapseLabel={t('admin.collapse_media')}
+                      />
+                    ) : null}
                   </div>
 
                   {rec.comment && (
@@ -1302,8 +1278,13 @@ export default function AdminPage() {
                           {work.user.gdUsername || work.user.username}
                         </Link>
                         <div className="text-[11px] ui-dim">
-                          Tác phẩm: {work.levelName} {work.gdLevelId ? `(ID: ${work.gdLevelId})` : ''}
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-violet-500/15 text-violet-500 border border-violet-500/25 mr-1.5">Tác phẩm</span>
+                          {work.levelName || 'Untitled'} {work.gdLevelId ? `(ID: ${work.gdLevelId})` : ''}
                           {work.username ? ` · GD: ${work.username}` : ''}
+                          {work.submittedAt ? ` · ${new Date(work.submittedAt).toLocaleString()}` : ''}
+                        </div>
+                        <div className="mt-1.5">
+                          <GdLevelMeta gdLevelId={work.gdLevelId} linked={work.linkedLevel} />
                         </div>
                       </div>
                     </div>
@@ -1313,23 +1294,23 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                    {work.videoUrl && (
-                      <div className="flex items-center gap-1.5">
-                        <span className="ui-dim">Video:</span>
-                        <a href={work.videoUrl} target="_blank" rel="noreferrer" className="font-semibold truncate hover:underline" style={{ color: 'var(--accent)' }}>
-                          {work.videoUrl}
-                        </a>
-                      </div>
-                    )}
-                    {work.imageUrl && work.status === 'PENDING' && (
-                      <div className="flex items-center gap-1.5">
-                        <span className="ui-dim">Ảnh:</span>
-                        <a href={work.imageUrl.split(',')[0]} target="_blank" rel="noreferrer" className="font-semibold hover:underline" style={{ color: 'var(--accent)' }}>
-                          Xem Ảnh Mẫu
-                        </a>
-                      </div>
-                    )}
+                  <div className="space-y-2">
+                    {work.videoUrl ? (
+                      <MediaExpandEmbed
+                        url={work.videoUrl}
+                        label="Video"
+                        expandLabel={t('admin.expand_media')}
+                        collapseLabel={t('admin.collapse_media')}
+                      />
+                    ) : null}
+                    {work.imageUrl && work.status === 'PENDING' ? (
+                      <WorkImageEmbeds
+                        imageUrl={work.imageUrl}
+                        label="Ảnh"
+                        expandLabel={t('admin.expand_media')}
+                        collapseLabel={t('admin.collapse_media')}
+                      />
+                    ) : null}
                   </div>
 
                   {work.description && (
@@ -1360,32 +1341,31 @@ export default function AdminPage() {
                   <div className="pt-2 flex flex-col gap-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
                     {gdNamesEqual(work.username, work.user?.gdUsername) ? (
                     <div className="flex items-center gap-2 flex-wrap">
-                      <select
-                        value={workReviewData[work.id]?.decoBadgeId || ''}
-                        onChange={(e) => setWorkReviewData({ ...workReviewData, [work.id]: { ...workReviewData[work.id], decoBadgeId: e.target.value } })}
-                        className="flex-1 min-w-[140px] px-2 py-1.5 rounded-xl text-xs border focus:outline-none font-sans"
-                        style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)', fontFamily: 'inherit' }}
+                      <button
+                        type="button"
+                        onClick={() => setBadgePickerWorkId(work.id)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border cursor-pointer"
+                        style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                       >
-                        <option value="">-- Deco Badge --</option>
-                        {decoBadges.map(b => (
-                          <option key={b.id} value={b.id}>
-                            {b.name}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        value={workReviewData[work.id]?.layoutBadgeId || ''}
-                        onChange={(e) => setWorkReviewData({ ...workReviewData, [work.id]: { ...workReviewData[work.id], layoutBadgeId: e.target.value } })}
-                        className="flex-1 min-w-[140px] px-2 py-1.5 rounded-xl text-xs border focus:outline-none font-sans"
-                        style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)', fontFamily: 'inherit' }}
-                      >
-                        <option value="">-- Layout Badge --</option>
-                        {layoutBadges.map(b => (
-                          <option key={b.id} value={b.id}>
-                            {b.name}
-                          </option>
-                        ))}
-                      </select>
+                        {t('admin.assign_badges')}
+                        {(workReviewData[work.id]?.badgeIds || []).length > 0
+                          ? ` (${(workReviewData[work.id]?.badgeIds || []).length})`
+                          : ''}
+                      </button>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {badgesList
+                          .filter((b: any) => (workReviewData[work.id]?.badgeIds || []).includes(b.id))
+                          .map((b: any) => (
+                            <BadgeIcon
+                              key={b.id}
+                              icon={b.icon || 'Star'}
+                              color={b.color}
+                              glow={b.glowColor}
+                              className="w-5 h-5"
+                              title={b.name}
+                            />
+                          ))}
+                      </div>
                       <input
                         type="number"
                         placeholder="CP (+)"
@@ -1430,6 +1410,21 @@ export default function AdminPage() {
               />
             </div>
           )}
+          <BadgePickerModal
+            isOpen={!!badgePickerWorkId}
+            onClose={() => setBadgePickerWorkId(null)}
+            badges={badgesList}
+            selectedIds={badgePickerWorkId ? (workReviewData[badgePickerWorkId]?.badgeIds || []) : []}
+            onConfirm={(ids) => {
+              if (badgePickerWorkId) {
+                setWorkReviewData((prev) => ({
+                  ...prev,
+                  [badgePickerWorkId]: { ...prev[badgePickerWorkId], badgeIds: ids },
+                }));
+              }
+              setBadgePickerWorkId(null);
+            }}
+          />
         </div>
       )}
 
@@ -1441,7 +1436,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {tab === 'levelSubs' && (
+        {tab === 'works' && (
         <div className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold ui-title">
             <div className="flex items-center gap-2">
@@ -1502,7 +1497,24 @@ export default function AdminPage() {
                           {sub.user?.gdUsername || sub.user?.username}
                         </Link>
                         <div className="text-[11px] ui-dim">
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-sky-500/15 text-sky-500 border border-sky-500/25 mr-1.5">Submit Level</span>
                           GD ID {sub.gdLevelId} · {sub.mode} {sub.placement ? `· #${sub.placement}` : '· Unranked'} {sub.isVN ? `· VN${sub.vnPlacement ? ` #${sub.vnPlacement}` : ''}` : ''}
+                          {sub.isChallenge ? ' · Challenge' : ''}
+                          {sub.submittedAt ? ` · ${new Date(sub.submittedAt).toLocaleString()}` : ''}
+                        </div>
+                        <div className="mt-1.5">
+                          <GdLevelMeta
+                            gdLevelId={sub.gdLevelId}
+                            linked={{
+                              difficultyFace: sub.difficultyFace,
+                              ratingType: sub.ratingType,
+                              mode: sub.mode,
+                              isVN: sub.isVN,
+                              isChallenge: sub.isChallenge,
+                              placement: sub.placement,
+                              vnPlacement: sub.vnPlacement,
+                            }}
+                          />
                         </div>
                       </div>
                     </div>
@@ -1511,11 +1523,14 @@ export default function AdminPage() {
                       <ReviewerLine item={sub} t={t} />
                     </div>
                   </div>
-                  {sub.videoUrl && (
-                    <a href={sub.videoUrl} target="_blank" rel="noreferrer" className="text-xs font-semibold truncate hover:underline block" style={{ color: 'var(--accent)' }}>
-                      {sub.videoUrl}
-                    </a>
-                  )}
+                  {sub.videoUrl ? (
+                    <MediaExpandEmbed
+                      url={sub.videoUrl}
+                      label="Video"
+                      expandLabel={t('admin.expand_media')}
+                      collapseLabel={t('admin.collapse_media')}
+                    />
+                  ) : null}
                   {sub.status === 'REJECTED' && sub.rejectReason && (
                     <div className="p-2.5 rounded-xl text-[11px]" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
                       <span className="font-semibold">{t('admin.reject')}:</span> {sub.rejectReason}

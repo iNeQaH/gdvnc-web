@@ -31,6 +31,13 @@ export async function PATCH(req: Request) {
       });
       return NextResponse.json({ success: true });
     }
+    if (body?.id && typeof body.isChallenge === 'boolean') {
+      await prisma.level.update({
+        where: { id: body.id },
+        data: { isChallenge: body.isChallenge },
+      });
+      return NextResponse.json({ success: true });
+    }
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Lỗi server' }, { status: 500 });

@@ -21,7 +21,7 @@ if (-not (Test-Path -LiteralPath '.env.local')) {
     Copy-Item '.env.example' '.env.local'
   }
   Write-Host 'Thieu .env.local. Dien DATABASE_URL (va DIRECT_URL) roi chay lai.'
-  Write-Host 'Huong dan: HUONG-DAN-LOCAL.md'
+  Write-Host 'Huong dan: README.md'
   exit 1
 }
 

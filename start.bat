@@ -29,7 +29,7 @@ if not exist ".env.local" (
   if exist ".env.example" copy /Y ".env.example" ".env.local" >nul
   echo.
   echo Thieu .env.local. Mo file .env.local, dien DATABASE_URL (va DIRECT_URL) roi chay lai start.bat
-  echo Huong dan: HUONG-DAN-LOCAL.md
+  echo Huong dan: README.md
   echo.
   pause
   exit /b 1

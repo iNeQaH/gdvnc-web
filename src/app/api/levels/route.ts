@@ -40,7 +40,9 @@ async function loadDbLevels(mode: string, tier: string | null, challenge: boolea
     },
     select: dbLevelSelect,
   });
-  return applyGdlisthubRanksToLevels(mapDbLevels(levels)).sort(compareListLevels);
+  const mapped = mapDbLevels(levels);
+  if (challenge) return mapped.sort(compareListLevels);
+  return applyGdlisthubRanksToLevels(mapped).sort(compareListLevels);
 }
 
 export async function GET(req: Request) {

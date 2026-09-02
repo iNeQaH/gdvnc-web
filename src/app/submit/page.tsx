@@ -28,8 +28,8 @@ function SubmitForm() {
   const [timeSeconds, setTimeSeconds] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [rawProofUrl, setRawProofUrl] = useState('');
-  const [hz, setHz] = useState('240');
-  const [fps, setFps] = useState('240');
+  const [hz, setHz] = useState('60');
+  const [fps, setFps] = useState('60');
   const [device, setDevice] = useState('PC');
   const [comment, setComment] = useState('');
 
@@ -136,7 +136,7 @@ function SubmitForm() {
           videoUrl: videoUrl.trim(),
           rawProofUrl: rawProofUrl.trim(),
           hz: parseInt(hz, 10) || 60,
-          fps: parseInt(fps, 10) || null,
+          fps: Number.isFinite(parseInt(fps, 10)) ? parseInt(fps, 10) : null,
           device,
           comment: comment.trim(),
         };
@@ -276,6 +276,7 @@ function SubmitForm() {
                   <div className="font-bold ui-title">{t('submit.guidelines_title')}</div>
                   <li>{t('submit.guidelines_1')}</li>
                   <li>{t('submit.guidelines_2')}</li>
+                  <li>{t('submit.guidelines_3')}</li>
                 </ul>
               </div>
 
@@ -343,7 +344,7 @@ function SubmitForm() {
                     required
                     value={hz}
                     onChange={(e) => setHz(e.target.value)}
-                    placeholder="60, 144, 240..."
+                    placeholder="60"
                     className="w-full px-3 py-2 rounded-xl text-xs ui-input"
                   />
                 </div>
@@ -354,7 +355,7 @@ function SubmitForm() {
                     required
                     value={fps}
                     onChange={(e) => setFps(e.target.value)}
-                    placeholder="60, 120, 240..."
+                    placeholder="60"
                     className="w-full px-3 py-2 rounded-xl text-xs ui-input"
                   />
                 </div>
@@ -366,9 +367,9 @@ function SubmitForm() {
                     className="w-full px-3 py-2 rounded-xl text-xs ui-input"
                   >
                     <option value="PC">PC</option>
-                    <option value="Mobile (iOS)">Mobile (iOS)</option>
-                    <option value="Mobile (Android)">Mobile (Android)</option>
-                    <option value="Tablet">Tablet</option>
+                    <option value="Android">{t('submit.device_android')}</option>
+                    <option value="iOS">{t('submit.device_ios')}</option>
+                    <option value="Khác">{t('submit.device_other')}</option>
                   </select>
                 </div>
               </div>
@@ -381,7 +382,7 @@ function SubmitForm() {
                     required
                     value={videoUrl}
                     onChange={(e) => setVideoUrl(e.target.value)}
-                    placeholder="https://youtu.be/..."
+                    placeholder={t('submit.link_placeholder')}
                     className="w-full px-3 py-2 rounded-xl text-xs ui-input"
                   />
                 </div>
@@ -391,7 +392,7 @@ function SubmitForm() {
                     type="url"
                     value={rawProofUrl}
                     onChange={(e) => setRawProofUrl(e.target.value)}
-                    placeholder="https://drive.google.com/..."
+                    placeholder={t('submit.link_placeholder')}
                     className="w-full px-3 py-2 rounded-xl text-xs ui-input"
                   />
                 </div>

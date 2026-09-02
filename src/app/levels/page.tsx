@@ -77,6 +77,28 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
       .catch(() => setLoading(false));
   };
 
+  const handleRemoveFromChallenge = (id: string, name: string) => {
+    if (!currentUser) return;
+    showConfirm(t('challenges.remove_confirm', { name }), async () => {
+      try {
+        const res = await fetch('/api/admin/levels', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, isChallenge: false }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(t('challenges.removed'), 'success');
+          fetchLevels();
+        } else {
+          showToast(data.error || 'Lỗi khi gỡ level.', 'error');
+        }
+      } catch {
+        showToast('Lỗi kết nối máy chủ.', 'error');
+      }
+    });
+  };
+
   const handleDeleteLevel = (id: string, name: string) => {
     if (!currentUser) return;
     showConfirm(
@@ -196,13 +218,13 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
           <h1 className="text-2xl font-black tracking-tight flex items-center gap-2 ui-title">
             {t(isChallengeList ? 'nav.challenges' : 'levelslist.title')}
           </h1>
-          <p className="text-xs ui-dim max-w-md">{t('levelslist.desc')}</p>
+          <p className="text-xs ui-dim max-w-md">{t(isChallengeList ? 'nav.challenges' : 'levelslist.desc')}</p>
         </div>
 
         {currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'MODERATOR') && (
           <button
             onClick={() => {
-              setEditingLevel(null);
+              setEditingLevel(isChallengeList ? { isChallenge: true } : null);
               setIsFormOpen(true);
             }}
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
@@ -419,10 +441,11 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
                       <button
                         onClick={(e) => {
                           e.preventDefault();
-                          handleDeleteLevel(lvl.id, lvl.name);
+                          if (isChallengeList) handleRemoveFromChallenge(lvl.id, lvl.name);
+                          else handleDeleteLevel(lvl.id, lvl.name);
                         }}
                         className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 ui-dim hover:text-red-500 cursor-pointer"
-                        title="Xoá Level"
+                        title={isChallengeList ? t('challenges.remove') : 'Xoá Level'}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -496,7 +519,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
                 </Link>
 
                 {currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'MODERATOR') && !isVirtualLevel(lvl) && (
-                  <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1 bg-black/70 backdrop-blur-sm p-1 rounded-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className={`absolute bottom-3 right-3 z-20 flex items-center gap-1 bg-black/70 backdrop-blur-sm p-1 rounded-xl border border-white/10 ${isChallengeList ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
                     <button
                       onClick={() => {
                         setEditingLevel(lvl);
@@ -508,9 +531,12 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => handleDeleteLevel(lvl.id, lvl.name)}
+                      onClick={() => {
+                        if (isChallengeList) handleRemoveFromChallenge(lvl.id, lvl.name);
+                        else handleDeleteLevel(lvl.id, lvl.name);
+                      }}
                       className="p-1.5 rounded text-white hover:text-red-400 cursor-pointer"
-                      title="Xoá Level"
+                      title={isChallengeList ? t('challenges.remove') : 'Xoá Level'}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
