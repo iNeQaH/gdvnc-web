@@ -50,14 +50,24 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     // Update role
-    let updatedData: any = {};
+    let updatedData: { role?: Role; supporterUntil?: Date | null } = {};
     if (grantSupporterMonths) {
-       const months = parseInt(grantSupporterMonths);
-       const now = new Date();
-       const newDate = new Date(now.setMonth(now.getMonth() + months));
-       updatedData.supporterUntil = newDate;
+      const months = parseInt(String(grantSupporterMonths), 10);
+      if (!Number.isFinite(months) || months === 0) {
+        return NextResponse.json({ error: 'Số tháng Supporter không hợp lệ.' }, { status: 400 });
+      }
+      if (months < 0) {
+        updatedData.supporterUntil = null;
+      } else {
+        const now = new Date();
+        const current = target.supporterUntil;
+        const base = current && current > now ? current : now;
+        const next = new Date(base.getTime());
+        next.setMonth(next.getMonth() + months);
+        updatedData.supporterUntil = next;
+      }
     } else {
-       updatedData.role = newRole as Role;
+      updatedData.role = newRole as Role;
     }
 
     const updated = await prisma.user.update({

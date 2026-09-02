@@ -201,7 +201,11 @@ export default function AuthPage() {
         localStorage.removeItem('gdvnc_remember');
       }
 
-      if (data.user.role === 'ADMIN') {
+      const next = new URLSearchParams(window.location.search).get('next') || '';
+      const safeNext = next.startsWith('/') && !next.startsWith('//') ? next : '';
+      if (safeNext) {
+        window.location.href = safeNext;
+      } else if (data.user.role === 'ADMIN') {
         window.location.href = '/admin';
       } else {
         window.location.href = `/profile/${data.user.username}`;
@@ -254,8 +258,10 @@ export default function AuthPage() {
 
       localStorage.setItem('gdvnc_user', JSON.stringify(data.user));
       setSuccessMsg(t('auth.register_ok'));
+      const next = new URLSearchParams(window.location.search).get('next') || '';
+      const safeNext = next.startsWith('/') && !next.startsWith('//') ? next : `/profile/${data.user.username}`;
       setTimeout(() => {
-        window.location.href = `/profile/${data.user.username}`;
+        window.location.href = safeNext;
       }, 1000);
     } catch (err: any) {
       setError(t('common.server_error'));
