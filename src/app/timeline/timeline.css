@@ -1243,11 +1243,6 @@ html.dark .gdvn-timeline .chronicle {
   background: var(--tl-accent-soft);
 }
 
-.gdvn-timeline .share-page:disabled {
-  opacity: 0.65;
-  cursor: wait;
-}
-
 .gdvn-timeline .share-page svg {
   width: 16px;
   height: 16px;

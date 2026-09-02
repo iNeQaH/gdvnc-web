@@ -36,7 +36,6 @@ export default function EventPage({
       : formatDate(event.start, { locale });
   const ratio = parseImageRatio(event.imageRatio);
   const [closing, setClosing] = useState(false);
-  const [sharing, setSharing] = useState(false);
 
   const requestClose = () => {
     if (closing) return;
@@ -44,31 +43,49 @@ export default function EventPage({
     window.setTimeout(() => onClose(), 200);
   };
 
+  async function copyShareUrl(url: string) {
+    try {
+      await Promise.race([
+        navigator.clipboard.writeText(url),
+        new Promise((_, reject) => window.setTimeout(() => reject(new Error('clipboard-timeout')), 1200)),
+      ]);
+      return true;
+    } catch {
+      /* fallback */
+    }
+    try {
+      const field = document.createElement('textarea');
+      field.value = url;
+      field.setAttribute('readonly', '');
+      field.style.position = 'fixed';
+      field.style.left = '-9999px';
+      document.body.appendChild(field);
+      field.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(field);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+
   async function shareEvent() {
-    if (sharing) return;
     const url = `${window.location.origin}${eventSharePath(event.id)}`;
     const title = event.title;
     const text = chronicleShareText(event);
-    setSharing(true);
-    try {
-      const native =
-        typeof navigator.share === 'function' &&
-        (navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches);
-      if (native) {
-        try {
-          await navigator.share({ title, text, url });
-          return;
-        } catch (err) {
-          if ((err as Error)?.name === 'AbortError') return;
-        }
+    const native =
+      typeof navigator.share === 'function' &&
+      (navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches);
+    if (native) {
+      try {
+        await navigator.share({ title, text, url });
+        return;
+      } catch (err) {
+        if ((err as Error)?.name === 'AbortError') return;
       }
-      await navigator.clipboard.writeText(url);
-      showToast(t('timeline.share_copied'), 'success');
-    } catch {
-      showToast(url, 'info');
-    } finally {
-      setSharing(false);
     }
+    const copied = await copyShareUrl(url);
+    showToast(copied ? t('timeline.share_copied') : url, copied ? 'success' : 'info');
   }
 
   return (
@@ -87,7 +104,6 @@ export default function EventPage({
             type="button"
             className="share-page"
             onClick={shareEvent}
-            disabled={sharing}
             aria-label={t('timeline.share')}
             title={t('timeline.share')}
           >
