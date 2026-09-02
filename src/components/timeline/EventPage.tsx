@@ -1,10 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { Share2 } from 'lucide-react';
 import { formatDate, localizeDateText } from '@/lib/timeline/time';
 import { sanitizeChronicleHtml } from '@/lib/timeline/sanitize';
 import { useLanguage } from '@/components/LanguageContext';
+import { useToast } from '@/components/GlobalToast';
 import { parseImageRatio, type ChronicleEvent } from '@/lib/timeline/types';
+import { chronicleShareText, eventSharePath } from '@/lib/timeline/share';
 import type { DictKey } from '@/lib/dictionaries';
 
 export default function EventPage({
@@ -23,6 +26,7 @@ export default function EventPage({
   t: (key: DictKey, vars?: Record<string, string | number>) => string;
 }) {
   const { language } = useLanguage();
+  const { showToast } = useToast();
   const locale = language === 'en' ? 'en' : 'vi';
   const html = localizeDateText(sanitizeChronicleHtml(event.fullDescription || ''), locale);
   const hasEmbed = /<iframe|youtube\.com\/embed/i.test(html);
@@ -32,12 +36,40 @@ export default function EventPage({
       : formatDate(event.start, { locale });
   const ratio = parseImageRatio(event.imageRatio);
   const [closing, setClosing] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   const requestClose = () => {
     if (closing) return;
     setClosing(true);
     window.setTimeout(() => onClose(), 200);
   };
+
+  async function shareEvent() {
+    if (sharing) return;
+    const url = `${window.location.origin}${eventSharePath(event.id)}`;
+    const title = event.title;
+    const text = chronicleShareText(event);
+    setSharing(true);
+    try {
+      const native =
+        typeof navigator.share === 'function' &&
+        (navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches);
+      if (native) {
+        try {
+          await navigator.share({ title, text, url });
+          return;
+        } catch (err) {
+          if ((err as Error)?.name === 'AbortError') return;
+        }
+      }
+      await navigator.clipboard.writeText(url);
+      showToast(t('timeline.share_copied'), 'success');
+    } catch {
+      showToast(url, 'info');
+    } finally {
+      setSharing(false);
+    }
+  }
 
   return (
     <div className={`overlay${closing ? ' closing' : ''}`} onClick={requestClose}>
@@ -50,9 +82,22 @@ export default function EventPage({
       >
         <span className="chronicle-stroke" aria-hidden />
         <span className="chronicle-corner-glow" aria-hidden />
-        <button className="close-page" onClick={requestClose} aria-label={t('timeline.close')}>
-          <span>×</span> {t('timeline.close')}
-        </button>
+        <div className="chronicle-tools">
+          <button
+            type="button"
+            className="share-page"
+            onClick={shareEvent}
+            disabled={sharing}
+            aria-label={t('timeline.share')}
+            title={t('timeline.share')}
+          >
+            <Share2 className="w-4 h-4" />
+            <span>{t('timeline.share')}</span>
+          </button>
+          <button className="close-page" onClick={requestClose} aria-label={t('timeline.close')}>
+            <span>×</span> {t('timeline.close')}
+          </button>
+        </div>
         <h2>{event.title}</h2>
         <div className="chronicle-meta">{range}</div>
         {html ? (

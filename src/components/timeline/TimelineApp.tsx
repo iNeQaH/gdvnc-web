@@ -19,15 +19,25 @@ import {
   nearestEventAnchor,
   neighborEvent,
   eventSpan,
+  eventTierRank,
   TIMELINE_ORIGIN,
 } from '@/lib/timeline/time';
+import { eventSharePath, parseTimelineEventIdFromPath } from '@/lib/timeline/share';
 import '@/app/timeline/timeline.css';
 
 function isFullAdmin(role?: string | null) {
   return role === 'ADMIN';
 }
 
-export default function TimelineApp() {
+function syncTimelineUrl(id: string | null) {
+  if (typeof window === 'undefined') return;
+  const next = id ? eventSharePath(id) : '/timeline';
+  const current = `${window.location.pathname}${window.location.search}`;
+  if (current === next) return;
+  window.history.replaceState(window.history.state, '', next);
+}
+
+export default function TimelineApp({ initialEventId }: { initialEventId?: string } = {}) {
   const { t, language } = useLanguage();
   const { showToast, showConfirm } = useToast();
   const [events, setEvents] = useState<ChronicleEvent[]>([]);
@@ -57,6 +67,7 @@ export default function TimelineApp() {
   focusIdRef.current = focusId;
   const eventsRef = useRef(events);
   eventsRef.current = events;
+  const deepLinkDone = useRef(false);
 
   useEffect(() => {
     setCenter(Date.now());
@@ -103,11 +114,48 @@ export default function TimelineApp() {
   }, []);
 
   useEffect(() => {
+    if (!loaded || deepLinkDone.current) return;
+    deepLinkDone.current = true;
+    const fromQuery =
+      typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('e') : null;
+    const id =
+      initialEventId ||
+      parseTimelineEventIdFromPath(window.location.pathname) ||
+      fromQuery ||
+      '';
+    if (!id) return;
+    const ev = eventsRef.current.find((item) => item.id === id);
+    if (!ev) {
+      showToast(t('timeline.share_missing'), 'error');
+      syncTimelineUrl(null);
+      return;
+    }
+    const nextZoom = Math.max(nearestTierIndex(zoomRef.current), eventTierRank(ev));
+    const width = rootRef.current?.clientWidth || window.innerWidth;
+    setZoom(nextZoom);
+    setCenter(clampCenter(eventSpan(ev).center, width, pxPerDayAt(nextZoom)));
+    setFocusId(ev.id);
+    setOpen(ev);
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      next.add(ev.id);
+      return next;
+    });
+    setFoldedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(ev.id);
+      return next;
+    });
+    syncTimelineUrl(ev.id);
+  }, [loaded, initialEventId, showToast, t]);
+
+  useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         setOpen(null);
         setFormOpen(false);
         setDateOpen(false);
+        syncTimelineUrl(null);
       }
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
@@ -158,6 +206,7 @@ export default function TimelineApp() {
       setEditing(undefined);
       setOpen(saved);
       setCenter(clampCenter(saved.start, window.innerWidth, pxPerDayAt(zoom)));
+      syncTimelineUrl(saved.id);
     } catch {
       showToast(t('common.network_error'), 'error');
     } finally {
@@ -178,6 +227,7 @@ export default function TimelineApp() {
         setFocusId((id) => (id === event.id ? null : id));
         setOpen(null);
         setFormOpen(false);
+        syncTimelineUrl(null);
       } catch {
         showToast(t('common.network_error'), 'error');
       }
@@ -333,6 +383,7 @@ export default function TimelineApp() {
         onOpen={(e) => {
           setFocusId(e.id);
           setOpen(e);
+          syncTimelineUrl(e.id);
         }}
         onFocusEvent={(id) => setFocusId(id)}
         onStepEvent={jumpToNeighbor}
@@ -401,7 +452,10 @@ export default function TimelineApp() {
       {open ? (
         <EventPage
           event={open}
-          onClose={() => setOpen(null)}
+          onClose={() => {
+            setOpen(null);
+            syncTimelineUrl(null);
+          }}
           onEdit={(e) => {
             setEditing(e);
             setFormOpen(true);
