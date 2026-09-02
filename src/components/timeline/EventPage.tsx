@@ -73,19 +73,20 @@ export default function EventPage({
     const url = `${window.location.origin}${eventSharePath(event.id)}`;
     const title = event.title;
     const text = chronicleShareText(event);
+    const copied = await copyShareUrl(url);
+    showToast(copied ? t('timeline.share_copied') : url, copied ? 'success' : 'info');
     const native =
       typeof navigator.share === 'function' &&
       (navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches);
-    if (native) {
-      try {
-        await navigator.share({ title, text, url });
-        return;
-      } catch (err) {
-        if ((err as Error)?.name === 'AbortError') return;
-      }
+    if (!native) return;
+    try {
+      await Promise.race([
+        navigator.share({ title, text, url }),
+        new Promise((_, reject) => window.setTimeout(() => reject(new Error('share-timeout')), 8000)),
+      ]);
+    } catch (err) {
+      if ((err as Error)?.name === 'AbortError') return;
     }
-    const copied = await copyShareUrl(url);
-    showToast(copied ? t('timeline.share_copied') : url, copied ? 'success' : 'info');
   }
 
   return (
