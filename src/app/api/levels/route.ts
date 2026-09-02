@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { LevelMode, RecordStatus } from '@prisma/client';
 import { compareListLevels } from '@/lib/levelSort';
+import { applyGdlisthubRanksToLevels } from '@/lib/gdlisthubLists';
 
 const dbLevelSelect = {
   id: true,
@@ -39,7 +40,7 @@ async function loadDbLevels(mode: string, tier: string | null, challenge: boolea
     },
     select: dbLevelSelect,
   });
-  return mapDbLevels(levels).sort(compareListLevels);
+  return applyGdlisthubRanksToLevels(mapDbLevels(levels)).sort(compareListLevels);
 }
 
 export async function GET(req: Request) {

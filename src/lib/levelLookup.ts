@@ -4,7 +4,8 @@ import { isAllDigitsId, UUID_RE } from '@/lib/levelUrl';
 import { RecordStatus } from '@prisma/client';
 import { dedupeRecordsByUser } from '@/lib/recordUtils';
 import { formatDifficultyLabel, mapDifficultyFace } from '@/lib/gdDifficulty';
-import { fetchGdBrowser } from '@/lib/upsertLevel';
+import { fetchGdBrowser, getOrCreateStubLevel } from '@/lib/upsertLevel';
+import { gdlisthubItemMaps } from '@/lib/gdlisthubLists';
 
 const levelInclude = {
   records: {
@@ -59,10 +60,40 @@ async function refreshDifficultyFromGd<T extends { id: string; gdLevelId: number
 export async function resolvePublicLevel(id: string) {
   if (isAllDigitsId(id)) {
     const gdLevelId = Number(id);
-    const level = await prisma.level.findUnique({
+    let level = await prisma.level.findUnique({
       where: { gdLevelId },
       include: levelInclude,
     });
+    if (!level) {
+      const maps = gdlisthubItemMaps();
+      const item = maps.featured.get(gdLevelId) || maps.classic.get(gdLevelId);
+      if (!item) notFound();
+      await getOrCreateStubLevel({
+        gdLevelId,
+        name: item.name || undefined,
+        creatorName: item.creator || undefined,
+        isPlatformer: item.isPlatformer,
+      });
+      if (item === maps.featured.get(gdLevelId)) {
+        await prisma.level.update({
+          where: { gdLevelId },
+          data: {
+            isVN: true,
+            vnPlacement: item.position,
+            youtubeId: item.videoID && /^[\w-]{11}$/.test(item.videoID) ? item.videoID : undefined,
+          },
+        });
+      } else if (item.videoID && /^[\w-]{11}$/.test(item.videoID)) {
+        await prisma.level.update({
+          where: { gdLevelId },
+          data: { youtubeId: item.videoID },
+        });
+      }
+      level = await prisma.level.findUnique({
+        where: { gdLevelId },
+        include: levelInclude,
+      });
+    }
     if (!level) notFound();
     return refreshDifficultyFromGd(level);
   }

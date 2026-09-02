@@ -20,6 +20,17 @@ export function isLegacyTier(placement: number | null | undefined): boolean {
   return !isRankedPlacement(placement) || placement >= LIST_LEGACY_MIN;
 }
 
+export function placementMatchesTiers(
+  placement: number | null | undefined,
+  tiers: string[]
+): boolean {
+  if (tiers.length === 0) return true;
+  if (tiers.includes('MAIN') && isMainListPlacement(placement)) return true;
+  if (tiers.includes('EXTENDED') && isExtendedListPlacement(placement)) return true;
+  if (tiers.includes('LEGACY') && isLegacyTier(placement)) return true;
+  return false;
+}
+
 export function compareListLevels(
   a: { placement?: number | null; difficultyFace?: number | null; name?: string | null },
   b: { placement?: number | null; difficultyFace?: number | null; name?: string | null }

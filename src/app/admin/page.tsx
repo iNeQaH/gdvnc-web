@@ -325,6 +325,7 @@ export default function AdminPage() {
   const [siteLockBusy, setSiteLockBusy] = useState(false);
   const [syncingLists, setSyncingLists] = useState(false);
   const [syncingSheet, setSyncingSheet] = useState(false);
+  const [syncingGdlisthub, setSyncingGdlisthub] = useState(false);
   const [refreshingCreators, setRefreshingCreators] = useState(false);
   const [refreshingTimelineCopy, setRefreshingTimelineCopy] = useState(false);
   const [adminToast, setAdminToast] = useState<{ text: string, isError: boolean } | null>(null);
@@ -748,6 +749,27 @@ export default function AdminPage() {
         showToast(t('admin.sync_lists_fail'), 'error');
       } finally {
         setSyncingLists(false);
+      }
+    });
+  };
+
+  const handleSyncGdlisthub = () => {
+    showConfirm(t('admin.sync_gdlisthub_confirm'), async () => {
+      setSyncingGdlisthub(true);
+      try {
+        const res = await fetch('/api/admin/lists/sync-gdlisthub', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          showToast(data.error || t('admin.sync_gdlisthub_fail'), 'error');
+          return;
+        }
+        const r = data.result || {};
+        const summary = `FL ${r.featuredUpdated || 0}/${r.featuredCount || 0} · CL +${r.classicCreated || 0}/${r.classicCount || 0}`;
+        showToast(t('admin.sync_gdlisthub_ok', { summary }), 'success');
+      } catch {
+        showToast(t('admin.sync_gdlisthub_fail'), 'error');
+      } finally {
+        setSyncingGdlisthub(false);
       }
     });
   };
@@ -1590,6 +1612,23 @@ export default function AdminPage() {
             >
               <RefreshCw className={`w-3.5 h-3.5 ${syncingSheet ? 'animate-spin' : ''}`} />
               {syncingSheet ? t('admin.sync_sheet_working') : t('admin.sync_sheet')}
+            </button>
+          </FnSection>
+
+          <FnSection
+            title={t('admin.sync_gdlisthub')}
+            icon={<RefreshCw className="w-4 h-4" />}
+            desc={t('admin.sync_gdlisthub_desc')}
+          >
+            <button
+              type="button"
+              disabled={syncingGdlisthub}
+              onClick={handleSyncGdlisthub}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              style={{ backgroundColor: 'var(--accent)' }}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${syncingGdlisthub ? 'animate-spin' : ''}`} />
+              {syncingGdlisthub ? t('admin.sync_gdlisthub_working') : t('admin.sync_gdlisthub')}
             </button>
           </FnSection>
 

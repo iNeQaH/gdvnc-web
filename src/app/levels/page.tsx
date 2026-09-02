@@ -13,7 +13,7 @@ import LevelFiltersModal from '@/components/LevelFiltersModal';
 import FloatingNav from '@/components/FloatingNav';
 import { useToast } from '@/components/GlobalToast';
 import { isDemonDifficultyFace, matchesDifficultyFilter } from '@/lib/gdDifficulty';
-import { compareListLevels, compareVnListLevels, isExtendedListPlacement, isLegacyTier, isMainListPlacement, isMainOrExtendedPlacement } from '@/lib/levelSort';
+import { compareListLevels, compareVnListLevels, placementMatchesTiers } from '@/lib/levelSort';
 import { levelPath } from '@/lib/levelUrl';
 import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
 
@@ -27,7 +27,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
-  const [listTab, setListTab] = useState<'featured' | 'demonlist' | 'pemonlist' | 'vn'>('featured');
+  const [listTab, setListTab] = useState<'featured' | 'classic' | 'demonlist' | 'pemonlist' | 'vn'>('featured');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -107,19 +107,20 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
 
   const searching = Boolean(search.trim());
   const vnRanking = !isChallengeList && (listTab === 'vn' || listTab === 'featured' || filterVN);
+  const classicRanking = !isChallengeList && listTab === 'classic';
+  const isVirtualLevel = (lvl: any) => String(lvl?.id || '').startsWith('gdlh:');
 
   const filtered = levels.filter((lvl) => {
     if (filterModes.length > 0 && !filterModes.includes(lvl.mode)) {
       return false;
     }
 
-    if (filterTiers.length > 0) {
-      let tierMatch = false;
-      if (filterTiers.includes('MAIN') && isMainListPlacement(lvl.placement)) tierMatch = true;
-      if (filterTiers.includes('EXTENDED') && isExtendedListPlacement(lvl.placement)) tierMatch = true;
-      if (filterTiers.includes('LEGACY') && isLegacyTier(lvl.placement)) tierMatch = true;
-      if (!tierMatch) return false;
-    }
+    const tierRank = classicRanking
+      ? lvl.classicPlacement
+      : vnRanking
+        ? lvl.vnPlacement
+        : lvl.placement;
+    if (!placementMatchesTiers(tierRank, filterTiers)) return false;
 
     if (!matchesDifficultyFilter(lvl.difficultyFace ?? 10, filterFaces)) {
       return false;
@@ -129,11 +130,14 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
 
     if (!isChallengeList && !searching) {
       if (listTab === 'featured') {
-        if (!lvl.isVN || !isDemonDifficultyFace(lvl.difficultyFace ?? 0)) return false;
+        if (!lvl.isVN) return false;
+        if (!lvl.vnPlacement && !isDemonDifficultyFace(lvl.difficultyFace ?? 0)) return false;
+      } else if (listTab === 'classic') {
+        if (lvl.mode !== 'CLASSIC' || lvl.isChallenge || !lvl.classicPlacement) return false;
       } else if (listTab === 'demonlist') {
-        if (lvl.mode !== 'CLASSIC' || !isMainOrExtendedPlacement(lvl.placement)) return false;
+        if (lvl.mode !== 'CLASSIC' || !lvl.placement || lvl.placement > 150) return false;
       } else if (listTab === 'pemonlist') {
-        if (lvl.mode !== 'PLATFORMER' || !isMainOrExtendedPlacement(lvl.placement)) return false;
+        if (lvl.mode !== 'PLATFORMER' || !lvl.placement || lvl.placement > 150) return false;
       } else if (listTab === 'vn') {
         if (!lvl.isVN || lvl.isChallenge) return false;
       }
@@ -151,6 +155,12 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
   })
     .slice()
     .sort((a, b) => {
+      if (classicRanking) {
+        return compareListLevels(
+          { placement: a.classicPlacement, difficultyFace: a.difficultyFace, name: a.name },
+          { placement: b.classicPlacement, difficultyFace: b.difficultyFace, name: b.name }
+        );
+      }
       if (vnRanking) return compareVnListLevels(a, b);
       const am = String(a.mode || '');
       const bm = String(b.mode || '');
@@ -167,6 +177,11 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
     if (!Number.isFinite(rank) || rank < 1) return;
     if (vnRanking) {
       const idx = filtered.findIndex((l) => l.vnPlacement === rank);
+      if (idx >= 0) setCurrentPage(Math.ceil((idx + 1) / pageSize));
+      return;
+    }
+    if (classicRanking) {
+      const idx = filtered.findIndex((l) => l.classicPlacement === rank);
       if (idx >= 0) setCurrentPage(Math.ceil((idx + 1) / pageSize));
       return;
     }
@@ -203,7 +218,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
       <div className="flex flex-col gap-3">
         {!isChallengeList && (
           <div className="flex items-center gap-1 p-0.5 rounded-xl border w-fit max-w-full overflow-x-auto" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-            {(['featured', 'demonlist', 'pemonlist', 'vn'] as const).map((tab) => (
+            {(['featured', 'classic', 'demonlist', 'pemonlist', 'vn'] as const).map((tab) => (
               <button
                 key={tab}
                 type="button"
@@ -320,7 +335,9 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
         ) : (
           paginatedData.map((lvl, idx) => {
             const listRank = (currentPage - 1) * pageSize + idx + 1;
-            const placement = vnRanking
+            const placement = classicRanking
+              ? (lvl.classicPlacement ? '#' + lvl.classicPlacement : '-')
+              : vnRanking
               ? (lvl.vnPlacement ? '#' + lvl.vnPlacement : '-')
               : searching || isChallengeList
                 ? '#' + listRank
@@ -386,7 +403,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
                     </div>
                   </Link>
 
-                  {currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'MODERATOR') && (
+                  {currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'MODERATOR') && !isVirtualLevel(lvl) && (
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={(e) => {
@@ -478,7 +495,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
                   </div>
                 </Link>
 
-                {currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'MODERATOR') && (
+                {currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'MODERATOR') && !isVirtualLevel(lvl) && (
                   <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1 bg-black/70 backdrop-blur-sm p-1 rounded-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => {
