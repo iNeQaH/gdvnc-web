@@ -47,7 +47,7 @@ export default function SupportPage() {
   const [selectedPlan, setSelectedPlan] = useState<number>(1);
   const [showTransfer, setShowTransfer] = useState(false);
   const [username, setUsername] = useState('');
-  const [bankApp, setBankApp] = useState(SUPPORT_BANK.appId);
+  const [bankApp, setBankApp] = useState<string>(SUPPORT_BANK.appId);
   const [notifying, setNotifying] = useState(false);
 
   useEffect(() => {
@@ -76,7 +76,7 @@ export default function SupportPage() {
     { months: 12, name: t('support.plan_12m'), price: formatVnd(supportAmount(12)) },
   ];
 
-  const openBankApp = (appId = bankApp) => {
+  const openBankApp = (appId: string = bankApp) => {
     if (!transferContent) return;
     const url = supportBankAppUrl(appId, transferContent, amount);
     setBankApp(appId);
@@ -88,7 +88,7 @@ export default function SupportPage() {
     }
   };
 
-  const handleCopy = async (value: string, okKey: string) => {
+  const handleCopy = async (value: string, okKey: 'support.copied_acc' | 'support.copied_content') => {
     const ok = await copyText(value);
     showToast(ok ? t(okKey) : t('support.copy_fail'), ok ? 'success' : 'error');
   };
