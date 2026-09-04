@@ -8,6 +8,11 @@ import {
   parseQueueStatusParam,
   queueFilterTotal,
 } from '@/lib/adminQueue';
+import {
+  REVIEWER_SELECT,
+  creatorWorkPairSet,
+  reviewerNameFrom,
+} from '@/lib/reviewerDisplay';
 
 export async function GET(req: Request) {
   try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
@@ -18,30 +23,36 @@ export async function GET(req: Request) {
     const page = parsePageParam(searchParams.get('page'));
     const skip = (page - 1) * ADMIN_LIST_LIMIT;
 
-    const [submissions, pendingCount, approvedCount, rejectedCount] = await Promise.all([
+    const pairSet = await creatorWorkPairSet();
+    const [listed, tally] = await Promise.all([
       prisma.levelSubmission.findMany({
         where: status ? { status } : {},
         include: {
           user: { select: { id: true, username: true, avatarUrl: true, gdUsername: true } },
-          reviewer: { select: { id: true, username: true } },
+          reviewer: { select: REVIEWER_SELECT },
         },
         orderBy: !status
           ? { submittedAt: 'desc' }
           : status === RecordStatus.PENDING
             ? { submittedAt: 'asc' }
             : { reviewedAt: 'desc' },
-        skip,
-        take: ADMIN_LIST_LIMIT,
       }),
-      prisma.levelSubmission.count({ where: { status: RecordStatus.PENDING } }),
-      prisma.levelSubmission.count({ where: { status: RecordStatus.APPROVED } }),
-      prisma.levelSubmission.count({ where: { status: RecordStatus.REJECTED } }),
+      prisma.levelSubmission.findMany({
+        select: { userId: true, gdLevelId: true, status: true },
+      }),
     ]);
 
+    const unpaired = listed.filter((row) => !pairSet.has(`${row.userId}:${row.gdLevelId}`));
+    const submissions = unpaired.slice(skip, skip + ADMIN_LIST_LIMIT).map((row) => ({
+      ...row,
+      reviewerName: reviewerNameFrom(row.reviewer),
+    }));
+
+    const unpairedTally = tally.filter((row) => !pairSet.has(`${row.userId}:${row.gdLevelId}`));
     const counts = {
-      pending: pendingCount,
-      approved: approvedCount,
-      rejected: rejectedCount,
+      pending: unpairedTally.filter((row) => row.status === RecordStatus.PENDING).length,
+      approved: unpairedTally.filter((row) => row.status === RecordStatus.APPROVED).length,
+      rejected: unpairedTally.filter((row) => row.status === RecordStatus.REJECTED).length,
     };
 
     return NextResponse.json({

@@ -2,10 +2,11 @@ import { requireAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { RecordStatus } from '@prisma/client';
-import { extractYoutubeId, upsertLevelFromForm } from '@/lib/upsertLevel';
+import { upsertLevelFromForm } from '@/lib/upsertLevel';
 import { purgeWorkImages } from '@/lib/workImages';
 import { clipReviewNote, notifyWithNote } from '@/lib/reviewNote';
 import { gdNamesEqual } from '@/lib/gdName';
+import { resolveStaffReviewerId } from '@/lib/reviewerDisplay';
 
 async function finalizeWorkImages(workId: string, imageUrl: string | null | undefined) {
   await purgeWorkImages(imageUrl);
@@ -21,8 +22,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   try {
     const { id } = await params;
-    const { action, rejectReason, badgeId, cpAwarded } = await req.json();
+    const { action, rejectReason, badgeId, cpAwarded, reviewerId: bodyReviewerId } = await req.json();
     const note = clipReviewNote(rejectReason);
+    const reviewerId = await resolveStaffReviewerId(admin, bodyReviewerId);
 
     if (!['APPROVE', 'REJECT'].includes(action)) {
       return NextResponse.json({ error: 'Hành động không hợp lệ.' }, { status: 400 });
@@ -39,6 +41,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         imageUrl: true,
         levelName: true,
         status: true,
+        minPercent: true,
+        placement: true,
+        vnPlacement: true,
+        mode: true,
+        isVN: true,
+        isChallenge: true,
+        difficultyFace: true,
+        ratingType: true,
         user: { select: { gdUsername: true, creatorPoints: true } },
       },
     });
@@ -56,7 +66,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           status: RecordStatus.REJECTED,
           rejectReason: note || 'Không đạt quy chuẩn Creator.',
           reviewedAt: new Date(),
-          reviewerId: admin.userId,
+          reviewerId,
           imageUrl: null,
         }
       });
@@ -75,30 +85,24 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     if (work.gdLevelId) {
-      const existingLevel = await prisma.level.findUnique({
-        where: { gdLevelId: work.gdLevelId },
-        select: { id: true, youtubeId: true },
+      await upsertLevelFromForm({
+        gdLevelId: work.gdLevelId,
+        name: work.levelName || undefined,
+        videoUrl: work.videoUrl || '',
+        minPercent: work.minPercent,
+        placement: work.placement,
+        vnPlacement: work.vnPlacement,
+        mode: work.mode,
+        isVN: work.isVN,
+        isChallenge: work.isChallenge,
+        difficultyFace: work.difficultyFace,
+        ratingType: work.ratingType,
       });
-      if (existingLevel) {
-        const youtubeId = extractYoutubeId(work.videoUrl);
-        if (youtubeId && youtubeId !== existingLevel.youtubeId) {
-          await prisma.level.update({
-            where: { id: existingLevel.id },
-            data: { youtubeId },
-          });
-        }
-        } else {
-          await upsertLevelFromForm({
-            gdLevelId: work.gdLevelId,
-            videoUrl: work.videoUrl || '',
-            placement: null,
-          });
-        }
-        await prisma.level.updateMany({
-          where: { gdLevelId: work.gdLevelId },
-          data: { creatorId: work.userId },
-        });
-      }
+      await prisma.level.updateMany({
+        where: { gdLevelId: work.gdLevelId },
+        data: { creatorId: work.userId },
+      });
+    }
 
     const ownWork = gdNamesEqual(work.username, work.user.gdUsername);
     const badgeIds = ownWork && typeof badgeId === 'string' ? badgeId.split(',').filter(Boolean) : [];
@@ -112,7 +116,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         badgeGranted: badgeIds.join(','),
         cpGranted: extraCp,
         reviewedAt: new Date(),
-        reviewerId: admin.userId,
+        reviewerId,
         imageUrl: null,
       }
     });

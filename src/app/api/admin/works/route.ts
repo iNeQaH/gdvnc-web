@@ -8,6 +8,7 @@ import {
   parseQueueStatusParam,
   queueFilterTotal,
 } from '@/lib/adminQueue';
+import { REVIEWER_SELECT, reviewerNameFrom } from '@/lib/reviewerDisplay';
 
 export async function GET(req: Request) {
   try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
@@ -25,7 +26,7 @@ export async function GET(req: Request) {
           user: {
             select: { username: true, id: true, avatarUrl: true, gdUsername: true },
           },
-          reviewer: { select: { id: true, username: true } },
+          reviewer: { select: REVIEWER_SELECT },
         },
         orderBy: !status
           ? { submittedAt: 'desc' }
@@ -72,7 +73,7 @@ export async function GET(req: Request) {
       works: works.map((work) => {
         const linkedLevel = work.gdLevelId ? linkedByGd.get(work.gdLevelId) || null : null;
         const base = work.status === RecordStatus.PENDING ? work : { ...work, imageUrl: null };
-        return { ...base, linkedLevel };
+        return { ...base, linkedLevel, reviewerName: reviewerNameFrom(work.reviewer) };
       }),
       counts,
       page,

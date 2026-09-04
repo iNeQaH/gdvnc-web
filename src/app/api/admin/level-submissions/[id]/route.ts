@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { RecordStatus } from '@prisma/client';
 import { upsertLevelFromForm } from '@/lib/upsertLevel';
 import { clipReviewNote, notifyWithNote } from '@/lib/reviewNote';
+import { resolveStaffReviewerId } from '@/lib/reviewerDisplay';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   let admin;
@@ -11,8 +12,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   try {
     const { id } = await params;
-    const { action, rejectReason } = await req.json();
+    const { action, rejectReason, reviewerId: bodyReviewerId } = await req.json();
     const note = clipReviewNote(rejectReason);
+    const reviewerId = await resolveStaffReviewerId(admin, bodyReviewerId);
 
     if (!['APPROVE', 'REJECT'].includes(action)) {
       return NextResponse.json({ error: 'Hành động không hợp lệ.' }, { status: 400 });
@@ -35,7 +37,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         data: {
           status: RecordStatus.REJECTED,
           rejectReason: note || 'Không đạt quy chuẩn.',
-          reviewerId: admin.userId,
+          reviewerId,
           reviewedAt: new Date(),
         },
       });
@@ -72,7 +74,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       data: {
         status: RecordStatus.APPROVED,
         rejectReason: note || null,
-        reviewerId: admin.userId,
+        reviewerId,
         reviewedAt: new Date(),
       },
     });

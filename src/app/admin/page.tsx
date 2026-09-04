@@ -236,11 +236,26 @@ function FnSection({
   );
 }
 
-function ReviewerLine({ item, t }: { item: { status: string; reviewer?: { username?: string } | null }; t: (key: DictKey, vars?: Record<string, string | number>) => string }) {
+function ReviewerLine({
+  item,
+  t,
+}: {
+  item: {
+    status: string;
+    reviewerName?: string | null;
+    reviewer?: { username?: string | null; gdUsername?: string | null } | null;
+  };
+  t: (key: DictKey, vars?: Record<string, string | number>) => string;
+}) {
   if (item.status !== 'APPROVED' && item.status !== 'REJECTED') return null;
+  const name =
+    (item.reviewerName || '').trim() ||
+    (item.reviewer?.username || '').trim() ||
+    (item.reviewer?.gdUsername || '').trim() ||
+    '—';
   return (
     <div className="text-[10px] ui-dim">
-      {t('admin.reviewed_by', { name: item.reviewer?.username || '—' })}
+      {t('admin.reviewed_by', { name })}
     </div>
   );
 }
@@ -519,6 +534,7 @@ export default function AdminPage() {
           badgeId: selectedBadges.join(','),
           cpAwarded: data.cpAwarded || '0',
           rejectReason: (data.rejectReason || '').trim() || (action === 'REJECT' ? 'Không đạt quy chuẩn Creator' : ''),
+          reviewerId: currentUser?.id,
         }),
       });
       const resData = await res.json();
@@ -1300,7 +1316,19 @@ export default function AdminPage() {
                           {work.submittedAt ? ` · ${new Date(work.submittedAt).toLocaleString()}` : ''}
                         </div>
                         <div className="mt-1.5">
-                          <GdLevelMeta gdLevelId={work.gdLevelId} linked={work.linkedLevel} />
+                          <GdLevelMeta
+                            gdLevelId={work.gdLevelId}
+                            linked={work.linkedLevel || {
+                              name: work.levelName,
+                              difficultyFace: work.difficultyFace,
+                              ratingType: work.ratingType,
+                              mode: work.mode,
+                              isVN: work.isVN,
+                              isChallenge: work.isChallenge,
+                              placement: work.placement,
+                              vnPlacement: work.vnPlacement,
+                            }}
+                          />
                         </div>
                       </div>
                     </div>

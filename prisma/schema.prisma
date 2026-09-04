@@ -229,6 +229,14 @@ model CreatorWork {
   imageUrl     String?      @db.Text
   videoUrl     String?
   description  String?      @db.Text
+  minPercent     Int          @default(100)
+  placement      Int?
+  vnPlacement    Int?
+  mode           LevelMode    @default(CLASSIC)
+  isVN           Boolean      @default(false)
+  isChallenge    Boolean      @default(false)
+  difficultyFace Int          @default(0)
+  ratingType     String       @default("NONE")
   status       RecordStatus @default(PENDING)
   badgeGranted String?
   cpGranted    Float        @default(0)

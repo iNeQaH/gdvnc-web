@@ -8,6 +8,7 @@ import {
   parseQueueStatusParam,
   queueFilterTotal,
 } from '@/lib/adminQueue';
+import { REVIEWER_SELECT, reviewerNameFrom } from '@/lib/reviewerDisplay';
 
 export async function GET(req: Request) {
   try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
@@ -24,7 +25,7 @@ export async function GET(req: Request) {
         include: {
           user: { select: { id: true, username: true, gdUsername: true, avatarUrl: true } },
           level: true,
-          reviewer: { select: { id: true, username: true } },
+          reviewer: { select: REVIEWER_SELECT },
         },
         orderBy: !status
           ? { submittedAt: 'desc' }
@@ -47,7 +48,10 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       success: true,
-      records,
+      records: records.map((record) => ({
+        ...record,
+        reviewerName: reviewerNameFrom(record.reviewer),
+      })),
       counts,
       page,
       limit: ADMIN_LIST_LIMIT,

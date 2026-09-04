@@ -97,24 +97,9 @@ export async function POST(req: Request) {
         );
       }
 
-      let submission = null;
       if (hasId) {
-        submission = await prisma.levelSubmission.create({
-          data: {
-            userId,
-            gdLevelId: gdIdRaw,
-            videoUrl: isHttpsUrl(data.videoUrl) ? clipText(data.videoUrl, 500) : null,
-            minPercent: data.minPercent ? parseInt(String(data.minPercent), 10) : 100,
-            placement: data.placement ? parseInt(String(data.placement), 10) : null,
-            vnPlacement: data.vnPlacement ? parseInt(String(data.vnPlacement), 10) : null,
-            mode: data.mode || 'CLASSIC',
-            isVN: !!data.isVN,
-            isChallenge: !!data.isChallenge,
-            difficultyFace: data.difficultyFace !== undefined ? parseInt(String(data.difficultyFace), 10) : 10,
-            ratingType: data.ratingType || 'NONE',
-            status: RecordStatus.PENDING,
-            prioritySp: 0,
-          },
+        await prisma.levelSubmission.deleteMany({
+          where: { userId, gdLevelId: gdIdRaw, status: RecordStatus.PENDING },
         });
       }
 
@@ -128,12 +113,20 @@ export async function POST(req: Request) {
           videoUrl: isHttpsUrl(data.videoUrl) ? clipText(data.videoUrl, 500) : null,
           imageUrl: storedImage,
           description: description || null,
+          minPercent: data.minPercent ? parseInt(String(data.minPercent), 10) : 100,
+          placement: data.placement ? parseInt(String(data.placement), 10) : null,
+          vnPlacement: data.vnPlacement ? parseInt(String(data.vnPlacement), 10) : null,
+          mode: data.mode === 'PLATFORMER' ? 'PLATFORMER' : 'CLASSIC',
+          isVN: !!data.isVN,
+          isChallenge: !!data.isChallenge,
+          difficultyFace: data.difficultyFace !== undefined ? parseInt(String(data.difficultyFace), 10) : 10,
+          ratingType: clipText(data.ratingType, 20) || 'NONE',
           status: RecordStatus.PENDING,
           prioritySp: 0,
         }
       });
 
-      return NextResponse.json({ success: true, work, submission });
+      return NextResponse.json({ success: true, work });
     } else if (type === 'LEVEL') {
       const { gdLevelId, videoUrl, minPercent, placement, vnPlacement, mode, isVN, isChallenge, difficultyFace, ratingType } = data;
       if (!gdLevelId) {

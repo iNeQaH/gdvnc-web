@@ -15,44 +15,23 @@ export async function GET(req: Request) {
 
   try {
     if (type === 'CREATOR') {
-      const [works, levels] = await Promise.all([
-        prisma.creatorWork.findMany({
-          where: { userId: user.userId },
-          orderBy: { submittedAt: 'desc' },
-          take: 20,
-          select: {
-            id: true,
-            status: true,
-            submittedAt: true,
-            levelName: true,
-            gdLevelId: true,
-            rejectReason: true,
-          },
-        }),
-        prisma.levelSubmission.findMany({
-          where: { userId: user.userId },
-          orderBy: { submittedAt: 'desc' },
-          take: 20,
-          select: {
-            id: true,
-            status: true,
-            submittedAt: true,
-            gdLevelId: true,
-            rejectReason: true,
-          },
-        }),
-      ]);
-      const items = [
-        ...works.map((w) => ({ ...w, kind: 'work' as const })),
-        ...levels.map((l) => ({
-          ...l,
-          levelName: `ID ${l.gdLevelId}`,
-          kind: 'level' as const,
-        })),
-      ]
-        .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
-        .slice(0, 20);
-      return NextResponse.json({ success: true, items });
+      const works = await prisma.creatorWork.findMany({
+        where: { userId: user.userId },
+        orderBy: { submittedAt: 'desc' },
+        take: 20,
+        select: {
+          id: true,
+          status: true,
+          submittedAt: true,
+          levelName: true,
+          gdLevelId: true,
+          rejectReason: true,
+        },
+      });
+      return NextResponse.json({
+        success: true,
+        items: works.map((w) => ({ ...w, kind: 'work' as const })),
+      });
     }
 
     if (type === 'LEVEL') {
