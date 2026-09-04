@@ -1,4 +1,4 @@
-import { requireAdmin, requireFullAdmin } from '@/lib/auth';
+import { requireAdmin, requireSuperAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
@@ -32,7 +32,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  try { await requireFullAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
+  try { await requireSuperAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
 
   try {
     const { name, description, imageUrl, color, glow, categoryId, sortOrder } = await req.json();
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
-  try { await requireFullAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
+  try { await requireSuperAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
 
   try {
     const { orderedIds } = await req.json();

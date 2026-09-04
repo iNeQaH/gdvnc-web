@@ -16,6 +16,7 @@ import { isDemonDifficultyFace, matchesDifficultyFilter } from '@/lib/gdDifficul
 import { compareListLevels, compareVnListLevels, placementMatchesTiers } from '@/lib/levelSort';
 import { levelPath } from '@/lib/levelUrl';
 import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
+import { isStaffRole } from '@/lib/roles';
 
 export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main' | 'challenge' }) {
   const { t } = useLanguage();
@@ -221,7 +222,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
           <p className="text-xs ui-dim max-w-md">{t(isChallengeList ? 'nav.challenges' : 'levelslist.desc')}</p>
         </div>
 
-        {currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'MODERATOR') && (
+        {currentUser && isStaffRole(currentUser.role) && (
           <button
             onClick={() => {
               setEditingLevel(isChallengeList ? { isChallenge: true } : null);
@@ -425,7 +426,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
                     </div>
                   </Link>
 
-                  {currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'MODERATOR') && !isVirtualLevel(lvl) && (
+                  {currentUser && isStaffRole(currentUser.role) && !isVirtualLevel(lvl) && (
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={(e) => {
@@ -518,7 +519,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
                   </div>
                 </Link>
 
-                {currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'MODERATOR') && !isVirtualLevel(lvl) && (
+                {currentUser && isStaffRole(currentUser.role) && !isVirtualLevel(lvl) && (
                   <div className={`absolute bottom-3 right-3 z-20 flex items-center gap-1 bg-black/70 backdrop-blur-sm p-1 rounded-xl border border-white/10 ${isChallengeList ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
                     <button
                       onClick={() => {

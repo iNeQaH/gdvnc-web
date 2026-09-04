@@ -7,6 +7,7 @@ import { Trophy, Folder, Goal, ClipboardList, ShieldCheck, User as UserIcon, Log
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { useLanguage } from './LanguageContext';
 import BrandMark from '@/components/BrandMark';
+import { isStaffRole } from '@/lib/roles';
 
 export const Navbar = () => {
   const pathname = usePathname();
@@ -35,7 +36,7 @@ export const Navbar = () => {
     { href: '/levels', label: t('nav.demonlist'), icon: Folder },
     { href: '/challenges', label: t('nav.challenges'), icon: Goal },
     { href: '/submit', label: t('nav.submit'), icon: ClipboardList },
-    ...(currentUser?.role === 'ADMIN' ? [{ href: '/admin', label: t('nav.admin'), icon: ShieldCheck }] : []),
+    ...(isStaffRole(currentUser?.role) ? [{ href: '/admin', label: t('nav.admin'), icon: ShieldCheck }] : []),
   ];
 
   return (
@@ -101,6 +102,11 @@ export const Navbar = () => {
                 {currentUser.role === 'ADMIN' && (
                   <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
                     Admin
+                  </span>
+                )}
+                {currentUser.role === 'MODERATOR' && (
+                  <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' }}>
+                    Mod
                   </span>
                 )}
               </Link>

@@ -1,6 +1,6 @@
 import { createUploadthing, type FileRouter } from 'uploadthing/next';
 import { UploadThingError } from 'uploadthing/server';
-import { getAuthUser, isFullAdminRole } from '@/lib/auth';
+import { getSessionUser, isFullAdminRole } from '@/lib/auth';
 
 const f = createUploadthing();
 
@@ -9,7 +9,7 @@ export const gdvnFileRouter = {
     image: { maxFileSize: '16MB', maxFileCount: 4 },
   })
     .middleware(async () => {
-      const user = await getAuthUser();
+      const user = await getSessionUser();
       if (!user) throw new UploadThingError('Unauthorized');
       return { userId: user.userId };
     })
@@ -20,7 +20,7 @@ export const gdvnFileRouter = {
     image: { maxFileSize: '16MB', maxFileCount: 4 },
   })
     .middleware(async () => {
-      const user = await getAuthUser();
+      const user = await getSessionUser();
       if (!user || !isFullAdminRole(user.role)) {
         throw new UploadThingError('Unauthorized');
       }

@@ -13,6 +13,7 @@ import { formatCp } from '@/lib/creatorPoints';
 import { levelPath } from '@/lib/levelUrl';
 import { type DictKey } from '@/lib/dictionaries';
 import GdUnverifiedNotice from '@/components/GdUnverifiedNotice';
+import { isFullAdminRole, isStaffRole } from '@/lib/roles';
 
 const RECORD_PAGE_SIZE = 10;
 
@@ -66,9 +67,10 @@ export default function ProfilePage() {
   const [recordPage, setRecordPage] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const isOwner = !!(currentUser && currentUser.username === username);
-  const isStaff = currentUser?.role === 'ADMIN' || currentUser?.role === 'MODERATOR';
-  const isFullAdmin = currentUser?.role === 'ADMIN';
+  const isStaff = isStaffRole(currentUser?.role);
+  const isFullAdmin = isFullAdminRole(currentUser?.role);
   const isAdmin = isFullAdmin;
+  const canEditInfo = isOwner || isStaff;
 
   // Direct editing states
   const [isEditingBio, setIsEditingBio] = useState(false);
@@ -159,7 +161,7 @@ export default function ProfilePage() {
   };
 
   const startInlineEdit = (field: 'country' | 'gdUsername' | 'discordTag', value?: string | null) => {
-    if (!isOwner) return;
+    if (!canEditInfo) return;
     setEditingField(field);
     setFieldDraft(value || '');
   };
@@ -171,12 +173,12 @@ export default function ProfilePage() {
   };
 
   const handleOpenAvatarModal = () => {
-    if (!isOwner) return;
+    if (!canEditInfo) return;
     setImageModal({ open: true, type: 'avatar' });
   };
 
   const handleOpenCoverModal = () => {
-    if (!isOwner) return;
+    if (!canEditInfo) return;
     setImageModal({ open: true, type: 'cover' });
   };
 
@@ -246,7 +248,7 @@ export default function ProfilePage() {
   };
 
   const handleOpenManageModal = async () => {
-    if (!currentUser || !isStaff) return;
+    if (!currentUser || !isFullAdmin) return;
     setSelectedRole(data.role);
     setSupporterMonthsToAdd('0');
     setSelectedBadgeIds((data.badges || []).map((b: any) => b.id));
@@ -475,15 +477,15 @@ export default function ProfilePage() {
       <div className="ui-card overflow-hidden space-y-0">
         {/* Clickable Cover */}
         <div 
-          onClick={isOwner ? handleOpenCoverModal : undefined}
-          className={`h-36 sm:h-52 w-full bg-cover bg-center relative group ${isOwner ? 'cursor-pointer' : ''}`}
+          onClick={canEditInfo ? handleOpenCoverModal : undefined}
+          className={`h-36 sm:h-52 w-full bg-cover bg-center relative group ${canEditInfo ? 'cursor-pointer' : ''}`}
           style={{ 
             backgroundColor: 'var(--bg-subtle)',
             backgroundImage: data.coverUrl ? `url(${data.coverUrl})` : 'none'
           }}
-          title={isOwner ? t("profile.cover_hint") : undefined}
+          title={canEditInfo ? t("profile.cover_hint") : undefined}
         >
-          {isOwner && (
+          {canEditInfo && (
             <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold backdrop-blur-xs">
               <Camera className="w-4 h-4" /> {t("profile.cover_overlay")}
             </div>
@@ -495,9 +497,9 @@ export default function ProfilePage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
               {/* Clickable Avatar */}
               <div 
-                onClick={isOwner ? handleOpenAvatarModal : undefined}
-                className={`relative group rounded-2xl ${isOwner ? 'cursor-pointer' : ''}`}
-                title={isOwner ? t("profile.avatar_hint") : undefined}
+                onClick={canEditInfo ? handleOpenAvatarModal : undefined}
+                className={`relative group rounded-2xl ${canEditInfo ? 'cursor-pointer' : ''}`}
+                title={canEditInfo ? t("profile.avatar_hint") : undefined}
               >
                 {data.avatarUrl ? (
                   <img 
@@ -515,7 +517,7 @@ export default function ProfilePage() {
                   </div>
                 )}
                 
-                {isOwner && (
+                {canEditInfo && (
                   <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold p-1 text-center backdrop-blur-xs">
                     <Camera className="w-4 h-4 mb-0.5" /> {t("profile.change_avatar_short")}
                   </div>
@@ -572,12 +574,12 @@ export default function ProfilePage() {
                     </span>
                   ) : (
                     <span
-                      className={`flex items-center gap-1 ${isOwner ? 'cursor-pointer hover:opacity-80' : ''}`}
+                      className={`flex items-center gap-1 ${canEditInfo ? 'cursor-pointer hover:opacity-80' : ''}`}
                       onClick={() => startInlineEdit('country', data.country || t('common.vietnam'))}
-                      title={isOwner ? t('profile.click_edit') : undefined}
+                      title={canEditInfo ? t('profile.click_edit') : undefined}
                     >
                       <Globe className="w-3 h-3" /> {data.country || t("common.vietnam")}
-                      {isOwner && <Pencil className="w-2.5 h-2.5 opacity-50" />}
+                      {canEditInfo && <Pencil className="w-2.5 h-2.5 opacity-50" />}
                     </span>
                   )}
                   {editingField === 'gdUsername' ? (
@@ -597,13 +599,13 @@ export default function ProfilePage() {
                       />
                     </span>
                   ) : (
-                    (data.gdUsername || isOwner) && (
+                    (data.gdUsername || canEditInfo) && (
                       <span
-                        className={`flex items-center gap-1 ${isOwner ? 'cursor-pointer hover:opacity-80' : ''}`}
+                        className={`flex items-center gap-1 ${canEditInfo ? 'cursor-pointer hover:opacity-80' : ''}`}
                         onClick={() => {
-                          if (isOwner) startInlineEdit('gdUsername', data.gdUsername);
+                          if (canEditInfo) startInlineEdit('gdUsername', data.gdUsername);
                         }}
-                        title={isOwner ? t('profile.click_edit') : undefined}
+                        title={canEditInfo ? t('profile.click_edit') : undefined}
                       >
                         <Gamepad2 className="w-3 h-3" /> {data.gdUsername || t('profile.add_gd')}
                         {data.gdVerified ? (
@@ -613,7 +615,7 @@ export default function ProfilePage() {
                         ) : data.gdUsername ? (
                           <span className="text-[9px] font-bold uppercase ui-dim">{t('profile.gd_unverified')}</span>
                         ) : null}
-                        {isOwner && <Pencil className="w-2.5 h-2.5 opacity-50" />}
+                        {canEditInfo && <Pencil className="w-2.5 h-2.5 opacity-50" />}
                       </span>
                     )
                   )}
@@ -634,14 +636,14 @@ export default function ProfilePage() {
                       />
                     </span>
                   ) : (
-                    (data.discordTag || isOwner) && (
+                    (data.discordTag || canEditInfo) && (
                       <span
-                        className={`flex items-center gap-1 ${isOwner ? 'cursor-pointer hover:opacity-80' : ''}`}
+                        className={`flex items-center gap-1 ${canEditInfo ? 'cursor-pointer hover:opacity-80' : ''}`}
                         onClick={() => startInlineEdit('discordTag', data.discordTag)}
-                        title={isOwner ? t('profile.click_edit') : undefined}
+                        title={canEditInfo ? t('profile.click_edit') : undefined}
                       >
                         <MessageSquare className="w-3 h-3" /> {data.discordTag || t('profile.add_discord')}
-                        {isOwner && <Pencil className="w-2.5 h-2.5 opacity-50" />}
+                        {canEditInfo && <Pencil className="w-2.5 h-2.5 opacity-50" />}
                       </span>
                     )
                   )}
@@ -682,14 +684,16 @@ export default function ProfilePage() {
                         {t('admin.verify_gd')}
                       </button>
                     )}
+                    {isFullAdmin && (
                     <button 
                       onClick={handleOpenManageModal}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm hover:opacity-90 transition-opacity"
                       style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}
                     >
                       <ShieldCheck className="w-3.5 h-3.5" />
-                      {isFullAdmin ? 'Quản Lý Role & Badge' : 'Gán huy hiệu'}
+                      Quản Lý Role & Badge
                     </button>
+                    )}
                   </div>
                 )}
 
@@ -756,21 +760,21 @@ export default function ProfilePage() {
               </div>
             ) : (
               <div
-                onClick={isOwner ? () => setIsEditingBio(true) : undefined}
+                onClick={canEditInfo ? () => setIsEditingBio(true) : undefined}
                 className={`p-3 rounded-xl ui-subtle text-xs leading-relaxed group transition-colors ${
-                  isOwner ? 'cursor-pointer hover:border border border-transparent' : ''
+                  canEditInfo ? 'cursor-pointer hover:border border border-transparent' : ''
                 }`}
-                style={{ borderColor: isOwner ? 'var(--border-ui)' : 'transparent' }}
-                title={isOwner ? t("profile.edit_bio_hint") : undefined}
+                style={{ borderColor: canEditInfo ? 'var(--border-ui)' : 'transparent' }}
+                title={canEditInfo ? t("profile.edit_bio_hint") : undefined}
               >
                 {data.bio ? (
                   <div className="flex items-start justify-between gap-2">
                     <p className="ui-body whitespace-pre-wrap flex-1">{data.bio}</p>
-                    {isOwner && (
+                    {canEditInfo && (
                       <Pencil className="w-3.5 h-3.5 ui-dim opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
                     )}
                   </div>
-                ) : isOwner ? (
+                ) : canEditInfo ? (
                   <div className="ui-dim italic flex items-center gap-1.5">
                     <Pencil className="w-3.5 h-3.5" /> {t("profile.no_bio_owner")}
                   </div>

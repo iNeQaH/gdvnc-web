@@ -36,9 +36,11 @@ export async function POST(req: Request) {
     const cleanEmail = email.trim().toLowerCase();
     const cleanOtp = otp.trim();
 
-    if (cleanUsername.length < 3) {
-      return NextResponse.json({ error: en ? 'Username must be at least 3 characters.' : 'Tên người dùng phải có ít nhất 3 ký tự.' }, { status: 400 });
+    if (cleanUsername.length < 1) {
+      return NextResponse.json({ error: en ? 'Username must be at least 1 character.' : 'Tên người dùng phải có ít nhất 1 ký tự.' }, { status: 400 });
     }
+
+    const cleanGd = typeof gdUsername === 'string' ? gdUsername.trim() : '';
 
     if (password.length < 6 || password.length > 128) {
       return NextResponse.json({ error: en ? 'Password must be 6–128 characters.' : 'Mật khẩu phải từ 6 đến 128 ký tự.' }, { status: 400 });
@@ -84,7 +86,7 @@ export async function POST(req: Request) {
         email: cleanEmail,
         passwordHash,
         role: Role.USER,
-        gdUsername: gdUsername?.trim() || null,
+        gdUsername: cleanGd || null,
         gdVerified: false,
         discordTag: discordTag?.trim() || null,
         country: en ? 'Vietnam' : 'Việt Nam',

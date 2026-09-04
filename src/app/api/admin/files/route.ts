@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireFullAdmin } from '@/lib/auth';
+import { requireSuperAdmin } from '@/lib/auth';
 import { migrateMediaToUt } from '@/lib/migrateMediaToUt';
 import { publicUrlForKey, utapi } from '@/lib/uploadthing';
 
@@ -9,7 +9,7 @@ export const maxDuration = 60;
 
 export async function GET() {
   try {
-    await requireFullAdmin();
+    await requireSuperAdmin();
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -39,7 +39,7 @@ export async function GET() {
 
 export async function DELETE(req: Request) {
   try {
-    await requireFullAdmin();
+    await requireSuperAdmin();
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -63,7 +63,7 @@ export async function DELETE(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    await requireFullAdmin();
+    await requireSuperAdmin();
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

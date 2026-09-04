@@ -1,6 +1,14 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { jwtSecretBytes } from '@/lib/secrets';
+import prisma from '@/lib/prisma';
+import {
+  isFullAdminRole,
+  isStaffRole,
+  isSuperAdminUsername,
+} from '@/lib/roles';
+
+export { isFullAdminRole, isStaffRole, isSuperAdminUsername };
 
 const COOKIE_NAME = 'gdvnc_token';
 const TOKEN_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
@@ -69,12 +77,16 @@ export async function getAuthUser(): Promise<JwtPayload | null> {
   return verifyToken(token);
 }
 
-export function isStaffRole(role?: string | null) {
-  return role === 'ADMIN' || role === 'MODERATOR';
-}
-
-export function isFullAdminRole(role?: string | null) {
-  return role === 'ADMIN';
+/** JWT identity with current username/role from the database. */
+export async function getSessionUser(): Promise<JwtPayload | null> {
+  const user = await getAuthUser();
+  if (!user) return null;
+  const row = await prisma.user.findUnique({
+    where: { id: user.userId },
+    select: { username: true, role: true },
+  });
+  if (!row) return null;
+  return { ...user, username: row.username, role: row.role };
 }
 
 /**
@@ -82,7 +94,7 @@ export function isFullAdminRole(role?: string | null) {
  * Returns the payload if authorized, throws otherwise.
  */
 export async function requireAdmin(): Promise<JwtPayload> {
-  const user = await getAuthUser();
+  const user = await getSessionUser();
   if (!user || !isStaffRole(user.role)) {
     throw new Error('UNAUTHORIZED');
   }
@@ -91,8 +103,17 @@ export async function requireAdmin(): Promise<JwtPayload> {
 
 /** Require a full ADMIN (not moderator). */
 export async function requireFullAdmin(): Promise<JwtPayload> {
-  const user = await getAuthUser();
+  const user = await getSessionUser();
   if (!user || !isFullAdminRole(user.role)) {
+    throw new Error('UNAUTHORIZED');
+  }
+  return user;
+}
+
+/** Require Super Admin (username iNeQaH). */
+export async function requireSuperAdmin(): Promise<JwtPayload> {
+  const user = await getSessionUser();
+  if (!user || !isSuperAdminUsername(user.username)) {
     throw new Error('UNAUTHORIZED');
   }
   return user;

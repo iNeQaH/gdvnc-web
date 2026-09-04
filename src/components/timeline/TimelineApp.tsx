@@ -23,11 +23,9 @@ import {
   TIMELINE_ORIGIN,
 } from '@/lib/timeline/time';
 import { eventSharePath, parseTimelineEventIdFromPath } from '@/lib/timeline/share';
+import { isFullAdminRole } from '@/lib/roles';
+import { refreshSessionUser } from '@/lib/sessionClient';
 import '@/app/timeline/timeline.css';
-
-function isFullAdmin(role?: string | null) {
-  return role === 'ADMIN';
-}
 
 function syncTimelineUrl(id: string | null) {
   if (typeof window === 'undefined') return;
@@ -89,11 +87,14 @@ export default function TimelineApp({ initialEventId }: { initialEventId?: strin
       const raw = localStorage.getItem('gdvnc_user');
       if (raw) {
         const user = JSON.parse(raw);
-        setCanEdit(isFullAdmin(user?.role));
+        setCanEdit(isFullAdminRole(user?.role));
       }
     } catch {
       setCanEdit(false);
     }
+    void refreshSessionUser().then((user) => {
+      if (user) setCanEdit(isFullAdminRole((user as { role?: string }).role));
+    });
     try {
       setLdm(localStorage.getItem('gdvnc_timeline_ldm') === '1');
     } catch {

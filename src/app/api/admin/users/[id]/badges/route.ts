@@ -1,10 +1,10 @@
-import { requireAdmin } from '@/lib/auth';
+import { requireFullAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   let actor;
-  try { actor = await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
+  try { actor = await requireFullAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
 
   try {
     const { id } = await params;

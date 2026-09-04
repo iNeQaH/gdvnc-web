@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireFullAdmin } from '@/lib/auth';
+import { requireSuperAdmin } from '@/lib/auth';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { refreshLevelCreatorNames } from '@/lib/gdRefreshJobs';
@@ -8,7 +8,7 @@ export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
-    await requireFullAdmin();
+    await requireSuperAdmin();
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

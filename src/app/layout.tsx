@@ -10,7 +10,7 @@ import { ToastProvider } from "@/components/GlobalToast";
 import { Sidebar } from "@/components/Sidebar";
 import { Analytics } from '@vercel/analytics/next';
 import { isSiteLocked } from "@/lib/siteLock";
-import { getAuthUser, isFullAdminRole } from "@/lib/auth";
+import { getSessionUser, isSuperAdminUsername } from "@/lib/auth";
 import NationalDayLock from "@/components/NationalDayLock";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -54,14 +54,14 @@ export default async function RootLayout({
   await connection();
   const locked = await isSiteLocked();
   const path = (await headers()).get("x-gdvnc-pathname") || "";
-  const auth = await getAuthUser();
-  const isAdmin = isFullAdminRole(auth?.role);
+  const auth = await getSessionUser();
+  const canUnlock = isSuperAdminUsername(auth?.username);
 
   if (locked && path !== "/login") {
     return (
       <html lang="vi" suppressHydrationWarning>
         <body className="qk-lock-body">
-          <NationalDayLock canUnlock={isAdmin} />
+          <NationalDayLock canUnlock={canUnlock} />
           <Analytics />
         </body>
       </html>

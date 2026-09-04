@@ -24,6 +24,8 @@ import { ThemeSwitcher } from './ThemeSwitcher';
 import { useLanguage } from './LanguageContext';
 import BrandMark from '@/components/BrandMark';
 import { NotificationModal } from './NotificationModal';
+import { isStaffRole } from '@/lib/roles';
+import { refreshSessionUser } from '@/lib/sessionClient';
 
 export const Sidebar = () => {
   const pathname = usePathname();
@@ -64,6 +66,7 @@ export const Sidebar = () => {
 
   useEffect(() => {
     loadUserFromStorage();
+    void refreshSessionUser();
     window.addEventListener('gdvnc_user_update', loadUserFromStorage);
     return () => window.removeEventListener('gdvnc_user_update', loadUserFromStorage);
   }, []);
@@ -118,7 +121,7 @@ export const Sidebar = () => {
     { href: '/submit', label: t('nav.submit'), icon: ClipboardList },
     { href: '/support', label: t('nav.supporter'), icon: Heart, highlight: false, isPink: true },
     { href: '/helps', label: t('nav.helps'), icon: Send},
-    ...(currentUser?.role === 'ADMIN' ? [{ href: '/admin', label: t('nav.admin'), icon: ShieldCheck }] : []),
+    ...(isStaffRole(currentUser?.role) ? [{ href: '/admin', label: t('nav.admin'), icon: ShieldCheck }] : []),
   ];
 
   return (
@@ -318,6 +321,8 @@ export const Sidebar = () => {
                   <div className="text-[10px] ui-dim flex items-center gap-1">
                     {currentUser.role === 'ADMIN' ? (
                       <span className="text-red-500 font-bold">Admin</span>
+                    ) : currentUser.role === 'MODERATOR' ? (
+                      <span className="text-emerald-500 font-bold">Mod</span>
                     ) : currentUser.supporterUntil && new Date(currentUser.supporterUntil) > new Date() ? (
                       <span className="text-emerald-500 font-bold">Supporter</span>
                     ) : (

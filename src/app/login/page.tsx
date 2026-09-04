@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { KeyRound, User, Mail, ArrowRight, AlertCircle, CheckCircle2, ShieldCheck, RefreshCw, Send, Lock } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import SmartCaptcha from '@/components/SmartCaptcha';
+import { isStaffRole } from '@/lib/roles';
 
 export default function AuthPage() {
   const router = useRouter();
@@ -205,7 +206,7 @@ export default function AuthPage() {
       const safeNext = next.startsWith('/') && !next.startsWith('//') ? next : '';
       if (safeNext) {
         window.location.href = safeNext;
-      } else if (data.user.role === 'ADMIN') {
+      } else if (isStaffRole(data.user.role)) {
         window.location.href = '/admin';
       } else {
         window.location.href = `/profile/${data.user.username}`;

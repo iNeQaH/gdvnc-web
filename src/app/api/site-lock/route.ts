@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireFullAdmin } from '@/lib/auth';
+import { requireSuperAdmin } from '@/lib/auth';
 import { isSiteLocked, setSiteLocked } from '@/lib/siteLock';
 
 export const dynamic = 'force-dynamic';
@@ -15,7 +15,7 @@ export async function GET() {
 
 export async function PATCH(req: Request) {
   try {
-    await requireFullAdmin();
+    await requireSuperAdmin();
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

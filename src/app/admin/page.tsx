@@ -48,6 +48,8 @@ import { type DictKey } from '@/lib/dictionaries';
 import ReviewStatusBadge from '@/components/ReviewStatusBadge';
 import { BADGE_ICON_NAMES } from '@/lib/badgeIconCatalog';
 import { gdNamesEqual } from '@/lib/gdName';
+import { isStaffRole, isSuperAdminUsername } from '@/lib/roles';
+import { refreshSessionUser } from '@/lib/sessionClient';
 import MediaExpandEmbed, { WorkImageEmbeds } from '@/components/MediaExpandEmbed';
 import GdLevelMeta from '@/components/GdLevelMeta';
 import BadgePickerModal from '@/components/BadgePickerModal';
@@ -281,7 +283,7 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (currentUser && currentUser.role !== 'ADMIN' && tab === 'levels') {
+    if (currentUser && tab === 'levels' && !isSuperAdminUsername(currentUser.username)) {
       setTabState('records');
       localStorage.setItem('adminTab', 'records');
     }
@@ -366,6 +368,9 @@ export default function AdminPage() {
         setCurrentUser(u);
       } catch (e) {}
     }
+    void refreshSessionUser().then((u) => {
+      if (u) setCurrentUser(u);
+    });
     fetchPendingRecords('PENDING', 1);
     fetchWorks('PENDING', 1);
     fetchBadges();
@@ -925,7 +930,7 @@ export default function AdminPage() {
     setBadgePage(1);
   }, [badgeSearch, badgeFilterCategory, badgeSort]);
 
-  if (!currentUser || (currentUser.role !== 'ADMIN' && currentUser.role !== 'MODERATOR')) {
+  if (!currentUser || !isStaffRole(currentUser.role)) {
     return (
       <div className="max-w-sm mx-auto py-12 text-center space-y-3">
         <div className="w-10 h-10 rounded-xl mx-auto flex items-center justify-center" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
@@ -945,8 +950,7 @@ export default function AdminPage() {
     );
   }
 
-  const isSuperAdmin = currentUser.username === 'iNeQaH';
-  const isFullAdmin = currentUser.role === 'ADMIN';
+  const isSuperAdmin = isSuperAdminUsername(currentUser.username);
 
   const filteredUsers = usersList.filter((u) => {
     if (roleFilter === 'ALL') return true;
@@ -1049,7 +1053,22 @@ export default function AdminPage() {
             <Users className="w-3.5 h-3.5" />
             Members
           </button>
-          {isFullAdmin && (
+          <button
+            type="button"
+            onClick={() => {
+              setLevelFormInitialData(null);
+              setIsLevelFormOpen(true);
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            style={{
+              backgroundColor: 'transparent',
+              color: 'var(--text-dim)',
+            }}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            {t('admin.fn_add_level')}
+          </button>
+          {isSuperAdmin && (
             <button
               onClick={() => setTab('levels')}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
@@ -1564,7 +1583,7 @@ export default function AdminPage() {
           </div>
         )}
 
-            {isFullAdmin && tab === 'levels' && (
+            {isSuperAdmin && tab === 'levels' && (
         <div className="space-y-4">
           <FnSection
             title={t('admin.sync_lists')}

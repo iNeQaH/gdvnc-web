@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { LevelMode } from '@prisma/client';
-import { requireAdmin } from '@/lib/auth';
+import { requireSuperAdmin } from '@/lib/auth';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { syncExternalListToDb } from '@/lib/externalLists';
@@ -12,7 +12,7 @@ const MODES = ['CLASSIC', 'PLATFORMER'] as const;
 
 export async function POST(req: Request) {
   try {
-    await requireAdmin();
+    await requireSuperAdmin();
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
