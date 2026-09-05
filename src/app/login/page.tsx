@@ -6,6 +6,7 @@ import { KeyRound, User, Mail, ArrowRight, AlertCircle, CheckCircle2, ShieldChec
 import { useLanguage } from '@/components/LanguageContext';
 import SmartCaptcha from '@/components/SmartCaptcha';
 import { isStaffRole } from '@/lib/roles';
+import { isTrustedEmailProvider, normalizeEmail } from '@/lib/emailProviders';
 
 export default function AuthPage() {
   const router = useRouter();
@@ -138,8 +139,13 @@ export default function AuthPage() {
     setError('');
     setOtpSentMsg(null);
 
-    if (!regEmail || !regEmail.includes('@') || !regEmail.includes('.')) {
+    const cleanRegEmail = normalizeEmail(regEmail);
+    if (!cleanRegEmail) {
       setError(t('auth.email_invalid'));
+      return;
+    }
+    if (!isTrustedEmailProvider(cleanRegEmail)) {
+      setError(t('auth.email_untrusted'));
       return;
     }
 
@@ -565,6 +571,7 @@ export default function AuthPage() {
                   {sendingOtp ? t('auth.sending') : otpCooldown > 0 ? `${otpCooldown}s` : t('auth.send_otp')}
                 </button>
               </div>
+              <p className="text-[11px] ui-dim pt-0.5">{t('auth.email_providers')}</p>
               {otpSentMsg && (
                 <p className="text-[11px] text-emerald-600 dark:text-emerald-400 pt-0.5 font-medium">
                   {otpSentMsg}

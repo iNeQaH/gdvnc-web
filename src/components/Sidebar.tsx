@@ -25,7 +25,7 @@ import { useLanguage } from './LanguageContext';
 import BrandMark from '@/components/BrandMark';
 import { NotificationModal } from './NotificationModal';
 import { isStaffRole } from '@/lib/roles';
-import { refreshSessionUser } from '@/lib/sessionClient';
+import { refreshSessionUser, logoutClient } from '@/lib/sessionClient';
 
 export const Sidebar = () => {
   const pathname = usePathname();
@@ -81,9 +81,8 @@ export const Sidebar = () => {
     return () => document.documentElement.classList.remove('gdvnc-sidebar-open');
   }, [isOpen]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('gdvnc_user');
-    setCurrentUser(null);
+  const handleLogout = async () => {
+    await logoutClient();
     window.location.href = '/';
   };
 

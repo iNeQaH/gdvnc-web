@@ -6,6 +6,7 @@ import { consumeCaptchaToken, isHoneypotFilled } from '@/lib/captcha';
 import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { isTrustedEmailProvider, normalizeEmail, untrustedEmailMessage } from '@/lib/emailProviders';
 
 export async function POST(req: Request) {
   try {
@@ -23,14 +24,16 @@ export async function POST(req: Request) {
     if (isHoneypotFilled(website)) {
       return NextResponse.json({ success: true, message: lang === 'en' ? 'Check your inbox.' : 'Vui lòng kiểm tra email.' });
     }
-    if (!email || !email.includes('@') || !email.includes('.')) {
+    const cleanEmail = normalizeEmail(email);
+    if (!cleanEmail) {
       return NextResponse.json(
         { error: lang === 'en' ? 'Invalid email address.' : 'Email không hợp lệ.' },
         { status: 400 }
       );
     }
-
-    const cleanEmail = email.trim().toLowerCase();
+    if (!isTrustedEmailProvider(cleanEmail)) {
+      return NextResponse.json({ error: untrustedEmailMessage(lang) }, { status: 400 });
+    }
 
     const existing = await prisma.user.findUnique({
       where: { email: cleanEmail },

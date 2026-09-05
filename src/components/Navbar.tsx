@@ -8,6 +8,7 @@ import { ThemeSwitcher } from './ThemeSwitcher';
 import { useLanguage } from './LanguageContext';
 import BrandMark from '@/components/BrandMark';
 import { isStaffRole } from '@/lib/roles';
+import { logoutClient } from '@/lib/sessionClient';
 
 export const Navbar = () => {
   const pathname = usePathname();
@@ -25,9 +26,8 @@ export const Navbar = () => {
     }
   }, [pathname]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('gdvnc_user');
-    setCurrentUser(null);
+  const handleLogout = async () => {
+    await logoutClient();
     window.location.href = '/';
   };
 

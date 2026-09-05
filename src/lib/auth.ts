@@ -63,7 +63,14 @@ export async function setAuthCookie(token: string) {
  */
 export async function clearAuthCookie() {
   const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
+  cookieStore.set(COOKIE_NAME, '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 0,
+    expires: new Date(0),
+    path: '/',
+  });
 }
 
 /**

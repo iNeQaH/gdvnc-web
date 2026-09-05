@@ -14,6 +14,7 @@ import { levelPath } from '@/lib/levelUrl';
 import { type DictKey } from '@/lib/dictionaries';
 import GdUnverifiedNotice from '@/components/GdUnverifiedNotice';
 import { isFullAdminRole, isStaffRole } from '@/lib/roles';
+import { logoutClient } from '@/lib/sessionClient';
 
 const RECORD_PAGE_SIZE = 10;
 
@@ -379,8 +380,7 @@ export default function ProfilePage() {
         if (res.ok && resData.success) {
           showToast('Đã xoá tài khoản.', 'success');
           if (currentUser.id === data.id) {
-            localStorage.removeItem('gdvnc_user');
-            window.dispatchEvent(new Event('gdvnc_user_update'));
+            await logoutClient();
           }
           window.location.href = '/';
         } else {

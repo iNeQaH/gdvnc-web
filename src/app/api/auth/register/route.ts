@@ -7,6 +7,7 @@ import { isHoneypotFilled } from '@/lib/captcha';
 import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { isTrustedEmailProvider, normalizeEmail, untrustedEmailMessage } from '@/lib/emailProviders';
 
 export async function POST(req: Request) {
   try {
@@ -33,8 +34,15 @@ export async function POST(req: Request) {
     }
 
     const cleanUsername = username.trim();
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanEmail = normalizeEmail(email);
     const cleanOtp = otp.trim();
+
+    if (!cleanEmail) {
+      return NextResponse.json({ error: en ? 'Invalid email address.' : 'Email không hợp lệ.' }, { status: 400 });
+    }
+    if (!isTrustedEmailProvider(cleanEmail)) {
+      return NextResponse.json({ error: untrustedEmailMessage(en ? 'en' : 'vi') }, { status: 400 });
+    }
 
     if (cleanUsername.length < 1) {
       return NextResponse.json({ error: en ? 'Username must be at least 1 character.' : 'Tên người dùng phải có ít nhất 1 ký tự.' }, { status: 400 });

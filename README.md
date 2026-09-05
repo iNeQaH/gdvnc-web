@@ -80,6 +80,7 @@ Leave these commented or empty until you need the matching feature.
 | `SMTP_USER` / `SMTP_PASS` | Required together to send OTP email. For Gmail, `SMTP_USER` is the **full Gmail address** shown at the top of [myaccount.google.com](https://myaccount.google.com) (for example `you@gmail.com`), **not** the GDVN username. `SMTP_PASS` is a 16-character [App Password](https://myaccount.google.com/apppasswords) (Google Account → Security → 2-Step Verification → App passwords), **not** the normal Gmail password. Do not wrap the values in extra quotes in Vercel. |
 | `SMTP_HOST` / `SMTP_PORT` | Used only for non-Gmail SMTP. Gmail always uses `smtp.gmail.com` (port 465, then 587 if the connection fails). |
 | `SMTP_FROM` | From header, e.g. `"GDVN" <you@gmail.com>`. Defaults to `"GDVN" <SMTP_USER>`. The login address is still `SMTP_USER`. |
+| `EMAIL_DOMAIN_WHITELIST` | Optional extra domains (comma-separated) allowed at registration, in addition to Gmail, Outlook, Yahoo, iCloud, Proton Mail, and other well-known providers. |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile. If unset, the built-in captcha is used. |
 | `CAPTCHA_SECRET` | Secret for the built-in captcha. Falls back to `JWT_SECRET`. |
 | `CRON_SECRET` | Protects `/api/cron/*`. Needed only if you call those routes yourself. |
