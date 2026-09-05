@@ -77,9 +77,9 @@ Leave these commented or empty until you need the matching feature.
 | Variable | Purpose |
 |----------|---------|
 | `UPLOADTHING_TOKEN` | Image uploads (avatars, covers, works, timeline). Paste the raw base64 token only — no quotes around the value. |
-| `SMTP_USER` / `SMTP_PASS` | Required together to send OTP email. For Gmail, `SMTP_USER` is the full Gmail address and `SMTP_PASS` is an [App Password](https://myaccount.google.com/apppasswords). |
-| `SMTP_HOST` / `SMTP_PORT` | Defaults to `smtp.gmail.com` and `587` if omitted. |
-| `SMTP_FROM` | From header, e.g. `"GDVN" <you@gmail.com>`. Defaults to `SMTP_USER`. |
+| `SMTP_USER` / `SMTP_PASS` | Required together to send OTP email. For Gmail, `SMTP_USER` is the **full Gmail address** shown at the top of [myaccount.google.com](https://myaccount.google.com) (for example `you@gmail.com`), **not** the GDVN username. `SMTP_PASS` is a 16-character [App Password](https://myaccount.google.com/apppasswords) (Google Account → Security → 2-Step Verification → App passwords), **not** the normal Gmail password. Do not wrap the values in extra quotes in Vercel. |
+| `SMTP_HOST` / `SMTP_PORT` | Used only for non-Gmail SMTP. Gmail always uses `smtp.gmail.com` (port 465, then 587 if the connection fails). |
+| `SMTP_FROM` | From header, e.g. `"GDVN" <you@gmail.com>`. Defaults to `"GDVN" <SMTP_USER>`. The login address is still `SMTP_USER`. |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile. If unset, the built-in captcha is used. |
 | `CAPTCHA_SECRET` | Secret for the built-in captcha. Falls back to `JWT_SECRET`. |
 | `CRON_SECRET` | Protects `/api/cron/*`. Needed only if you call those routes yourself. |
@@ -235,7 +235,7 @@ Do not commit `.env`, `.env.local`, or secrets.
 | `DATABASE_URL is not set` | Create `.env.local` and set both URL variables. Restart `npm run dev`. |
 | `npm install` / Prisma errors | Use Node 20+. Delete `node_modules` and run `npm install` again. |
 | Blank pages, APIs 500 | Postgres is down, the URL is wrong, or the schema was never pushed (`npx prisma db push`). |
-| Login / register OTP fails | Set `SMTP_USER` and `SMTP_PASS`. For Gmail, use an App Password, not the normal account password. |
+| Login / register OTP fails with Gmail login rejected | In Vercel → Settings → Environment Variables, set `SMTP_USER` to the Gmail address (not `GDVN` or `"GDVN" <...>`). Set `SMTP_PASS` to a new App Password with 2-Step Verification on. Redeploy after saving. |
 | Images do not upload | Set `UPLOADTHING_TOKEN` (raw token, no surrounding quotes) and restart. |
 | UI loads on another device but clicks do nothing | Set `ALLOWED_DEV_ORIGINS` and restart. The dev server already binds to `0.0.0.0`. |
 | Port already in use | Another process is using 8088. Close it, or stop the previous `npm run dev`. |
