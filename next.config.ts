@@ -31,10 +31,16 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
+    // Vercel runs Next.js only — do not proxy /api to localhost (or a missing Express).
+    const backendUrl =
+      process.env.BACKEND_URL || (process.env.VERCEL ? '' : 'http://localhost:8080');
+    if (!backendUrl) {
+      return [];
+    }
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.BACKEND_URL || 'http://localhost:8080'}/api/:path*`,
+        destination: backendUrl + '/api/:path*',
       },
     ];
   },
