@@ -1,8 +1,1 @@
-export function getClientIp(req: Request): string {
-  const forwarded = req.headers.get('x-forwarded-for');
-  if (forwarded) {
-    const first = forwarded.split(',')[0]?.trim();
-    if (first) return first.slice(0, 64);
-  }
-  return req.headers.get('x-real-ip')?.slice(0, 64) || 'unknown';
-}
+﻿export function getClientIp(req: any): string { const forwarded = req.headers['x-forwarded-for']; if (typeof forwarded === 'string') { const first = forwarded.split(',')[0]?.trim(); if (first) return first.slice(0, 64); } else if (Array.isArray(forwarded) && forwarded[0]) { return forwarded[0].split(',')[0].trim().slice(0, 64); } return (req.headers['x-real-ip'] || req.socket?.remoteAddress || 'unknown').toString().slice(0, 64); }
