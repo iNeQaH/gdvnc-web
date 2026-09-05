@@ -165,7 +165,7 @@ router.post('/:id/verify', requireAdmin, async (req, res) => {
         select: { username: true },
       });
       if (conflict) {
-        return res.status(409).json({ error: \Tên GD "\" đã được xác minh cho tài khoản \.\ });
+        return res.status(409).json({ error: "Loi tao moi" });
       }
     }
 

@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
+
 import { jwtSecretBytes } from '@/services/secrets';
 import prisma from '@/services/prisma';
 import {

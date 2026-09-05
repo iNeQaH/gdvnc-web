@@ -112,10 +112,7 @@ router.patch('/:id', requireAdmin, async (req, res) => {
           data: {
             userId: record.userId,
             title: 'Kỷ Lục Được Phê Duyệt',
-            message: notifyWithNote(
-              \Kỷ lục hoàn thành màn chơi "\" của bạn đã được Admin phê duyệt và cập nhật điểm Points vào Bảng Xếp Hạng!\,
-              note
-            ),
+            message: "Ky luc da duoc phan hoi",
           },
         });
       }
@@ -124,7 +121,7 @@ router.patch('/:id', requireAdmin, async (req, res) => {
         data: {
           userId: record.userId,
           title: 'Kỷ Lục Bị Từ Chối',
-          message: \Kỷ lục màn chơi "\" của bạn đã bị từ chối với lý do: "\"\,
+          message: `Ky luc bi tu choi`,
         },
       });
     }
