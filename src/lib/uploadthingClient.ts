@@ -1,7 +1,8 @@
 'use client';
 
 import { genUploader } from 'uploadthing/client';
-import type { GdvnFileRouter } from '@/app/api/uploadthing/core';
+// @ts-ignore
+type GdvnFileRouter = any;
 
 const { uploadFiles } = genUploader<GdvnFileRouter>({
   url: '/api/uploadthing',
