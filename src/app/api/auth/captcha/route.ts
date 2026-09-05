@@ -17,8 +17,7 @@ export async function GET(req: Request) {
     const ip = getClientIp(req);
     const limited = rateLimit(`captcha-chal:${ip}`, 20, 60_000);
     if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
-    const turnstileRequired =
-      Boolean(process.env.TURNSTILE_SECRET_KEY) || process.env.NODE_ENV === 'production';
+    const turnstileRequired = Boolean(process.env.TURNSTILE_SECRET_KEY);
     return NextResponse.json({
       success: true,
       ...issuePowChallenge(ip),

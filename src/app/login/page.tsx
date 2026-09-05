@@ -8,10 +8,10 @@ import SmartCaptcha from '@/components/SmartCaptcha';
 import { isStaffRole } from '@/lib/roles';
 import { isTrustedEmailProvider, normalizeEmail } from '@/lib/emailProviders';
 
-export default function AuthPage() {
+export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login' | 'register' | 'reset' }) {
   const router = useRouter();
   const { t, language } = useLanguage();
-  const [tab, setTab] = useState<'login' | 'register' | 'reset'>('login');
+  const [tab, setTab] = useState<'login' | 'register' | 'reset'>(initialTab);
 
   // Login state
   const [loginIdentifier, setLoginIdentifier] = useState('');
@@ -439,7 +439,7 @@ export default function AuthPage() {
                   type="button"
                   onClick={handleSendResetOtp}
                   disabled={sendingResetOtp || resetCooldown > 0 || !resetEmail || !captchaToken}
-                  className="px-3.5 py-2 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1 shrink-0 disabled:opacity-50 cursor-pointer"
+                  className="px-3.5 py-2 min-h-11 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1 shrink-0 disabled:opacity-50 cursor-pointer"
                   style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                 >
                   <Send className="w-3 h-3" />
@@ -564,7 +564,7 @@ export default function AuthPage() {
                   type="button"
                   onClick={handleSendOtp}
                   disabled={sendingOtp || otpCooldown > 0 || !regEmail || !captchaToken}
-                  className="px-3.5 py-2 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1 shrink-0 disabled:opacity-50 cursor-pointer"
+                  className="px-3.5 py-2 min-h-11 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1 shrink-0 disabled:opacity-50 cursor-pointer"
                   style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                 >
                   <Send className="w-3 h-3" />
