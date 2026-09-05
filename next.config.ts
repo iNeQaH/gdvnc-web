@@ -30,20 +30,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  async rewrites() {
-    // Vercel runs Next.js only — do not proxy /api to localhost (or a missing Express).
-    const backendUrl =
-      process.env.BACKEND_URL || (process.env.VERCEL ? '' : 'http://localhost:8080');
-    if (!backendUrl) {
-      return [];
-    }
-    return [
-      {
-        source: '/api/:path*',
-        destination: backendUrl + '/api/:path*',
-      },
-    ];
-  },
   // Allow LAN / public IP / tunnels to load /_next JS in `next dev`.
   // Without this, remote browsers get HTML but clicks (login, theme, register) do nothing.
   allowedDevOrigins: [
