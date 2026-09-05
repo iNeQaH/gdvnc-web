@@ -3,7 +3,7 @@ import { captchaSecret } from '@/lib/secrets';
 
 const TTL_MS = 10 * 60 * 1000;
 const PREFIX = 'verified_human_';
-export const POW_DIFFICULTY = 4;
+export const POW_DIFFICULTY = 5;
 
 const usedJti = new Map<string, number>();
 
@@ -103,7 +103,10 @@ export function consumeCaptchaToken(token: unknown, ip: string): boolean {
 
 export async function verifyTurnstile(token: unknown, ip: string): Promise<boolean> {
   const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) return true;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') return false;
+    return true;
+  }
   if (typeof token !== 'string' || token.length < 8) return false;
   const body = new URLSearchParams({
     secret,

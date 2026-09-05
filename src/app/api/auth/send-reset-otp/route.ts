@@ -39,6 +39,8 @@ export async function POST(req: Request) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
+    const limitedEmail = rateLimit(`reset-otp-email:${cleanEmail}`, 3, 60 * 60_000);
+    if (!limitedEmail.ok) return rateLimitResponse(limitedEmail.retryAfterSec);
 
     const existing = await prisma.user.findUnique({
       where: { email: cleanEmail },

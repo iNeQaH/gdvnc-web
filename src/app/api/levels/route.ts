@@ -29,17 +29,20 @@ function mapDbLevels(levels: Array<any>) {
   return levels.map(({ _count, ...rest }) => ({ ...rest, victorCount: _count.records }));
 }
 
-async function loadDbLevels(mode: string, tier: string | null, challenge: boolean) {
+async function loadDbLevels(mode: string, tier: string | null, challenge: boolean, skip: number, take: number) {
   const levels = await prisma.level.findMany({
     where: {
       isChallenge: challenge,
       ...(mode !== 'ALL' ? { mode: mode as LevelMode } : {}),
       ...(tier === 'main' ? { placement: { gte: 1, lte: 75 } }
-        : tier === 'extended' ? { placement: { gte: 75, lte: 150 } }
+        : tier === 'extended' ? { placement: { gte: 76, lte: 150 } }
         : tier === 'legacy' ? { OR: [{ placement: { gte: 151 } }, { placement: null }] }
         : {}),
     },
     select: dbLevelSelect,
+    skip,
+    take,
+    orderBy: { placement: 'asc' },
   });
   const mapped = mapDbLevels(levels);
   if (challenge) return mapped.sort(compareListLevels);
@@ -55,7 +58,9 @@ export async function GET(req: Request) {
     const mode = searchParams.get('mode') || 'CLASSIC';
     const tier = searchParams.get('tier');
     const challenge = searchParams.get('challenge') === '1';
-    const levels = await loadDbLevels(mode, tier, challenge);
+    const skip = Math.max(0, parseInt(searchParams.get('skip') || '0', 10) || 0);
+    const take = Math.min(1000, Math.max(1, parseInt(searchParams.get('take') || '800', 10) || 800));
+    const levels = await loadDbLevels(mode, tier, challenge, skip, take);
     return NextResponse.json(
       { success: true, levels, source: 'database' },
       { headers: { 'Cache-Control': 'public, s-maxage=20, stale-while-revalidate=60' } }

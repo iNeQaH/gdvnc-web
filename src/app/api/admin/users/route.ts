@@ -2,6 +2,8 @@ import { requireAdmin, requireFullAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { Prisma, Role } from '@prisma/client';
+import { deleteUserAccount } from '@/lib/deleteUser';
+import { publicApiError } from '@/lib/apiError';
 
 const userSelect = {
   id: true,
@@ -83,17 +85,23 @@ export async function GET(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  try { await requireFullAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
+  let actor;
+  try {
+    actor = await requireFullAdmin();
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   try {
-    
-
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
-    await prisma.user.delete({ where: { id } });
+    const result = await deleteUserAccount(actor.userId, id);
+    if ('error' in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  } catch (error) {
+    return publicApiError(error);
   }
 }

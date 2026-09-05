@@ -1,5 +1,5 @@
 export const LIST_MAIN_MAX = 75;
-export const LIST_EXTENDED_MIN = 75;
+export const LIST_EXTENDED_MIN = 76;
 export const LIST_EXTENDED_MAX = 150;
 export const LIST_LEGACY_MIN = 151;
 

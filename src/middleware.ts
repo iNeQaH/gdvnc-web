@@ -4,7 +4,15 @@ import type { NextRequest } from 'next/server';
 export function middleware(req: NextRequest) {
   const headers = new Headers(req.headers);
   headers.set('x-gdvnc-pathname', req.nextUrl.pathname);
-  return NextResponse.next({ request: { headers } });
+  const res = NextResponse.next({ request: { headers } });
+  res.headers.set('X-Content-Type-Options', 'nosniff');
+  res.headers.set('X-Frame-Options', 'DENY');
+  res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.headers.set('X-DNS-Prefetch-Control', 'off');
+  if (process.env.NODE_ENV === 'production') {
+    res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  }
+  return res;
 }
 
 export const config = {

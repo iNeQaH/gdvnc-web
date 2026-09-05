@@ -10,7 +10,7 @@ import { ToastProvider } from "@/components/GlobalToast";
 import { Sidebar } from "@/components/Sidebar";
 import { Analytics } from '@vercel/analytics/next';
 import { isSiteLocked } from "@/lib/siteLock";
-import { getSessionUser, isSuperAdminUsername } from "@/lib/auth";
+import { getAuthUser, isSuperAdminUsername } from "@/lib/auth";
 import NationalDayLock from "@/components/NationalDayLock";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -54,7 +54,7 @@ export default async function RootLayout({
   await connection();
   const locked = await isSiteLocked();
   const path = (await headers()).get("x-gdvnc-pathname") || "";
-  const auth = await getSessionUser();
+  const auth = await getAuthUser();
   const canUnlock = isSuperAdminUsername(auth?.username);
 
   if (locked && path !== "/login") {

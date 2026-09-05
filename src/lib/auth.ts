@@ -6,9 +6,10 @@ import {
   isFullAdminRole,
   isStaffRole,
   isSuperAdminUsername,
+  isSuperAdminUser,
 } from '@/lib/roles';
 
-export { isFullAdminRole, isStaffRole, isSuperAdminUsername };
+export { isFullAdminRole, isStaffRole, isSuperAdminUsername, isSuperAdminUser };
 
 const COOKIE_NAME = 'gdvnc_token';
 const TOKEN_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
@@ -17,24 +18,24 @@ export interface JwtPayload {
   userId: string;
   username: string;
   role: string;
+  tokenVersion?: number;
   iat?: number;
   exp?: number;
 }
 
-/**
- * Sign a JWT token for a user
- */
-export async function signToken(payload: { userId: string; username: string; role: string }): Promise<string> {
-  return new SignJWT(payload)
+export async function signToken(payload: {
+  userId: string;
+  username: string;
+  role: string;
+  tokenVersion?: number;
+}): Promise<string> {
+  return new SignJWT({ ...payload, tokenVersion: payload.tokenVersion ?? 0 })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(`${TOKEN_MAX_AGE}s`)
     .sign(jwtSecretBytes());
 }
 
-/**
- * Verify a JWT token string, returns payload or null
- */
 export async function verifyToken(token: string): Promise<JwtPayload | null> {
   try {
     const { payload } = await jwtVerify(token, jwtSecretBytes());
@@ -44,9 +45,6 @@ export async function verifyToken(token: string): Promise<JwtPayload | null> {
   }
 }
 
-/**
- * Set the JWT cookie in the response via Next.js cookies()
- */
 export async function setAuthCookie(token: string) {
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, token, {
@@ -58,9 +56,6 @@ export async function setAuthCookie(token: string) {
   });
 }
 
-/**
- * Clear the JWT cookie
- */
 export async function clearAuthCookie() {
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, '', {
@@ -73,10 +68,6 @@ export async function clearAuthCookie() {
   });
 }
 
-/**
- * Get the currently authenticated user from the JWT cookie.
- * Returns the decoded payload or null if not authenticated.
- */
 export async function getAuthUser(): Promise<JwtPayload | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
@@ -84,15 +75,31 @@ export async function getAuthUser(): Promise<JwtPayload | null> {
   return verifyToken(token);
 }
 
-/** JWT identity with current username/role from the database. */
-export async function getSessionUser(): Promise<JwtPayload | null> {
-  return await getAuthUser();
+export async function bumpTokenVersion(userId: string) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { tokenVersion: { increment: 1 } },
+  });
 }
 
-/**
- * Require the current user to be an ADMIN or MODERATOR.
- * Returns the payload if authorized, throws otherwise.
- */
+/** JWT identity with current username/role/tokenVersion from the database. */
+export async function getSessionUser(): Promise<JwtPayload | null> {
+  const jwt = await getAuthUser();
+  if (!jwt?.userId) return null;
+  const user = await prisma.user.findUnique({
+    where: { id: jwt.userId },
+    select: { id: true, username: true, role: true, tokenVersion: true },
+  });
+  if (!user) return null;
+  if ((jwt.tokenVersion ?? 0) !== user.tokenVersion) return null;
+  return {
+    userId: user.id,
+    username: user.username,
+    role: user.role,
+    tokenVersion: user.tokenVersion,
+  };
+}
+
 export async function requireAdmin(): Promise<JwtPayload> {
   const user = await getSessionUser();
   if (!user || !isStaffRole(user.role)) {
@@ -101,7 +108,6 @@ export async function requireAdmin(): Promise<JwtPayload> {
   return user;
 }
 
-/** Require a full ADMIN (not moderator). */
 export async function requireFullAdmin(): Promise<JwtPayload> {
   const user = await getSessionUser();
   if (!user || !isFullAdminRole(user.role)) {
@@ -110,20 +116,16 @@ export async function requireFullAdmin(): Promise<JwtPayload> {
   return user;
 }
 
-/** Require Super Admin (username iNeQaH). */
 export async function requireSuperAdmin(): Promise<JwtPayload> {
   const user = await getSessionUser();
-  if (!user || !isSuperAdminUsername(user.username)) {
+  if (!user || !isSuperAdminUser(user)) {
     throw new Error('UNAUTHORIZED');
   }
   return user;
 }
 
-/**
- * Require any authenticated user.
- */
 export async function requireAuth(): Promise<JwtPayload> {
-  const user = await getAuthUser();
+  const user = await getSessionUser();
   if (!user) {
     throw new Error('UNAUTHORIZED');
   }

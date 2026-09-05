@@ -1,22 +1,17 @@
 import { NextResponse } from 'next/server';
+import { authorizeCron } from '@/lib/cronAuth';
 import { purgeExpiredNotifications } from '@/lib/purgeExpiredNotifications';
+import { publicApiError } from '@/lib/apiError';
 
 export async function GET(req: Request) {
-  const secret = process.env.CRON_SECRET;
-  const auth = req.headers.get('authorization');
-  const vercelCron = req.headers.get('x-vercel-cron');
-  const ok =
-    (secret && auth === `Bearer ${secret}`) ||
-    Boolean(vercelCron);
-
-  if (!ok) {
+  if (!authorizeCron(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     const cleared = await purgeExpiredNotifications();
     return NextResponse.json({ success: true, cleared });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Purge failed.' }, { status: 500 });
+  } catch (error) {
+    return publicApiError(error, 'Purge failed.');
   }
 }

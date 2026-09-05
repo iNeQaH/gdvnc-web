@@ -262,40 +262,43 @@ async function applyListedLevelsToDb(mode: 'CLASSIC' | 'PLATFORMER', external: E
   const byGd = new Map(existing.map((l) => [l.gdLevelId, l]));
   const seen = new Set<number>();
   const affectedIds: string[] = [];
-  let created = 0;
-  let updated = 0;
+  const toCreate: Array<{
+    gdLevelId: number;
+    name: string;
+    mode: typeof levelMode;
+    difficulty: string;
+    difficultyFace: number;
+    placement: number;
+    basePp: number;
+    minPercent: number;
+    creatorName: string | null;
+    verifierName: string | null;
+    youtubeId: string | null;
+    description: string | null;
+    isChallenge: boolean;
+  }> = [];
+  const toUpdate: Array<{ id: string; placement: number; basePp: number; youtubeId?: string; minPercent?: number }> = [];
 
   for (const row of external) {
     seen.add(row.gdLevelId);
     const basePp = calculateBasePp(row.placement);
     const cur = byGd.get(row.gdLevelId);
     if (!cur) {
-      try {
-        const createdLevel = await prisma.level.create({
-          data: {
-            gdLevelId: row.gdLevelId,
-            name: row.name,
-            mode: levelMode,
-            difficulty: 'Demon',
-            difficultyFace: 0,
-            placement: row.placement,
-            basePp,
-            minPercent: row.minPercent,
-            creatorName: row.creatorName,
-            verifierName: row.verifierName,
-            youtubeId: row.youtubeId,
-            description: row.description,
-            isChallenge: false,
-          },
-        });
-        created += 1;
-        affectedIds.push(createdLevel.id);
-        byGd.set(row.gdLevelId, createdLevel);
-      } catch (error: any) {
-        if (error?.code !== 'P2002') throw error;
-        const raced = await prisma.level.findUnique({ where: { gdLevelId: row.gdLevelId } });
-        if (raced) byGd.set(row.gdLevelId, raced);
-      }
+      toCreate.push({
+        gdLevelId: row.gdLevelId,
+        name: row.name,
+        mode: levelMode,
+        difficulty: 'Demon',
+        difficultyFace: 0,
+        placement: row.placement,
+        basePp,
+        minPercent: row.minPercent,
+        creatorName: row.creatorName,
+        verifierName: row.verifierName,
+        youtubeId: row.youtubeId,
+        description: row.description,
+        isChallenge: false,
+      });
       continue;
     }
 
@@ -308,18 +311,52 @@ async function applyListedLevelsToDb(mode: 'CLASSIC' | 'PLATFORMER', external: E
       cur.minPercent !== nextMin;
 
     if (needsUpdate) {
-      await prisma.level.update({
-        where: { id: cur.id },
-        data: {
-          placement: row.placement,
-          basePp,
-          ...(nextYoutube && nextYoutube !== cur.youtubeId ? { youtubeId: nextYoutube } : {}),
-          ...(nextMin !== cur.minPercent ? { minPercent: nextMin } : {}),
-        },
+      toUpdate.push({
+        id: cur.id,
+        placement: row.placement,
+        basePp,
+        ...(nextYoutube && nextYoutube !== cur.youtubeId ? { youtubeId: nextYoutube } : {}),
+        ...(nextMin !== cur.minPercent ? { minPercent: nextMin } : {}),
       });
-      updated += 1;
       affectedIds.push(cur.id);
     }
+  }
+
+  let created = 0;
+  let updated = 0;
+
+  for (let i = 0; i < toCreate.length; i += 100) {
+    const chunk = toCreate.slice(i, i + 100);
+    const result = await prisma.level.createMany({ data: chunk, skipDuplicates: true });
+    created += result.count;
+  }
+  if (toCreate.length) {
+    const createdRows = await prisma.level.findMany({
+      where: { gdLevelId: { in: toCreate.map((r) => r.gdLevelId) } },
+      select: { id: true, gdLevelId: true },
+    });
+    for (const row of createdRows) {
+      if (!byGd.has(row.gdLevelId)) affectedIds.push(row.id);
+      byGd.set(row.gdLevelId, row as (typeof existing)[number]);
+    }
+  }
+
+  for (let i = 0; i < toUpdate.length; i += 50) {
+    const chunk = toUpdate.slice(i, i + 50);
+    await Promise.all(
+      chunk.map((u) =>
+        prisma.level.update({
+          where: { id: u.id },
+          data: {
+            placement: u.placement,
+            basePp: u.basePp,
+            ...(u.youtubeId ? { youtubeId: u.youtubeId } : {}),
+            ...(u.minPercent != null ? { minPercent: u.minPercent } : {}),
+          },
+        })
+      )
+    );
+    updated += chunk.length;
   }
 
   const staleIds = existing.filter((l) => l.placement != null && !seen.has(l.gdLevelId)).map((l) => l.id);

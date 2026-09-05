@@ -2,7 +2,7 @@
 
 import { useState, type CSSProperties } from 'react';
 import { parseImageRatio, type ChronicleEvent } from '@/lib/timeline/types';
-import type { LaneItem } from '@/lib/timeline/layout';
+import { CARD_STACK, type LaneItem } from '@/lib/timeline/layout';
 import { TIMELINE_CARD_LIFT } from '@/lib/timeline/time';
 import { glowStyleVars } from '@/lib/timeline/glow';
 import type { DictKey } from '@/lib/dictionaries';
@@ -47,7 +47,7 @@ export default function EventCard({
 }) {
   const { event } = item;
   const tone = event.nature === 'negative' ? 'neg' : 'pos';
-  const gap = TIMELINE_CARD_LIFT * lift;
+  const gap = TIMELINE_CARD_LIFT * lift + item.stack * CARD_STACK;
   const glow = event.glowColor || '';
   const flow = Boolean(glow) && !ldm;
   const glowVars = glowStyleVars(glow);
@@ -61,7 +61,7 @@ export default function EventCard({
         transform: `scale(${scale})`,
         transformOrigin: side === 'pos' ? 'bottom center' : 'top center',
         ...(side === 'pos' ? { bottom: gap } : { top: gap }),
-        zIndex: 6 + (focused ? 8 : 0),
+        zIndex: 6 + (focused ? 8 : 0) - item.stack,
         ...(glowVars as CSSProperties),
       }}
       onClick={(e) => {

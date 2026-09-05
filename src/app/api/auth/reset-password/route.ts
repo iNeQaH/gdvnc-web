@@ -3,16 +3,31 @@ import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { publicApiError } from '@/lib/apiError';
+import { normalizeEmail } from '@/lib/emailProviders';
+import { isBrowserSameOriginFetch } from '@/lib/origin';
+
+const OTP_MAX_ATTEMPTS = 5;
 
 export async function POST(req: Request) {
   try {
-    const limited = rateLimit(`reset:${getClientIp(req)}`, 8, 60_000);
-    if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
+    if (!isBrowserSameOriginFetch(req)) {
+      return NextResponse.json({ error: 'Invalid request.' }, { status: 403 });
+    }
+
+    const limitedIp = rateLimit(`reset:${getClientIp(req)}`, 8, 60_000);
+    if (!limitedIp.ok) return rateLimitResponse(limitedIp.retryAfterSec);
 
     const { email, otp, password, locale } = await req.json();
     const en = locale === 'en';
+    const cleanEmail = normalizeEmail(email);
 
-    if (!email || !otp || !password) {
+    if (cleanEmail) {
+      const limitedEmail = rateLimit(`reset-email:${cleanEmail}`, 8, 60_000);
+      if (!limitedEmail.ok) return rateLimitResponse(limitedEmail.retryAfterSec);
+    }
+
+    if (!cleanEmail || !otp || !password) {
       return NextResponse.json(
         { error: en ? 'Please fill in all fields.' : 'Vui lòng điền đầy đủ thông tin.' },
         { status: 400 }
@@ -26,8 +41,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanOtp = otp.trim();
+    const cleanOtp = String(otp).trim();
 
     const user = await prisma.user.findUnique({ where: { email: cleanEmail } });
     if (!user) {
@@ -37,19 +51,31 @@ export async function POST(req: Request) {
       );
     }
 
-    const validOtp = await prisma.otp.findFirst({
-      where: {
-        email: cleanEmail,
-        code: cleanOtp,
-        expiresAt: { gt: new Date() },
-      },
+    const row = await prisma.otp.findFirst({
+      where: { email: cleanEmail, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'desc' },
     });
 
-    if (!validOtp) {
-      return NextResponse.json(
-        { error: en ? 'OTP is incorrect or has expired.' : 'Mã OTP không đúng hoặc đã hết hạn.' },
-        { status: 400 }
-      );
+    const lockedMsg = en
+      ? 'Too many incorrect codes. Request a new OTP.'
+      : 'Nhập sai quá nhiều lần. Hãy yêu cầu mã OTP mới.';
+    const invalidMsg = en ? 'OTP is incorrect or has expired.' : 'Mã OTP không đúng hoặc đã hết hạn.';
+
+    if (!row) {
+      return NextResponse.json({ error: invalidMsg }, { status: 400 });
+    }
+    if (row.failedAttempts >= OTP_MAX_ATTEMPTS) {
+      await prisma.otp.deleteMany({ where: { email: cleanEmail } });
+      return NextResponse.json({ error: lockedMsg }, { status: 429 });
+    }
+    if (row.code !== cleanOtp) {
+      const next = row.failedAttempts + 1;
+      if (next >= OTP_MAX_ATTEMPTS) {
+        await prisma.otp.deleteMany({ where: { email: cleanEmail } });
+        return NextResponse.json({ error: lockedMsg }, { status: 429 });
+      }
+      await prisma.otp.update({ where: { id: row.id }, data: { failedAttempts: next } });
+      return NextResponse.json({ error: invalidMsg }, { status: 400 });
     }
 
     await prisma.otp.deleteMany({ where: { email: cleanEmail } });
@@ -57,14 +83,14 @@ export async function POST(req: Request) {
     const passwordHash = await bcrypt.hash(password, 10);
     await prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash },
+      data: { passwordHash, tokenVersion: { increment: 1 } },
     });
 
     return NextResponse.json({
       success: true,
       message: en ? 'Password updated successfully. You can log in now.' : 'Đặt lại mật khẩu thành công. Bạn có thể đăng nhập ngay.',
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi đặt lại mật khẩu.' }, { status: 500 });
+  } catch (error) {
+    return publicApiError(error, 'Lỗi đặt lại mật khẩu.');
   }
 }

@@ -248,7 +248,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
 
     const current = await prisma.user.findUnique({
       where: { username },
-      select: { gdVerified: true, gdUsername: true, avatarUrl: true, coverUrl: true },
+      select: { id: true, gdVerified: true, gdUsername: true, avatarUrl: true, coverUrl: true },
     });
     if (!current) {
       return NextResponse.json({ error: 'Không tìm thấy người chơi.' }, { status: 404 });
@@ -276,14 +276,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
       body.avatarUrl !== undefined ? clipText(body.avatarUrl, 500) : undefined;
     const nextCover =
       body.coverUrl !== undefined ? clipText(body.coverUrl, 500) : undefined;
-    const staleKeys = [
-      ...(nextAvatar !== undefined && nextAvatar !== (current.avatarUrl || '')
-        ? uploadthingKeysFromRef(current.avatarUrl)
-        : []),
-      ...(nextCover !== undefined && nextCover !== (current.coverUrl || '')
-        ? uploadthingKeysFromRef(current.coverUrl)
-        : []),
-    ];
+    const staleRefs: string[] = [];
+    if (nextAvatar !== undefined && nextAvatar !== (current.avatarUrl || '') && current.avatarUrl) {
+      staleRefs.push(current.avatarUrl);
+    }
+    if (nextCover !== undefined && nextCover !== (current.coverUrl || '') && current.coverUrl) {
+      staleRefs.push(current.coverUrl);
+    }
 
     const updated = await prisma.user.update({
       where: { username },
@@ -307,8 +306,21 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
       }
     });
 
-    if (staleKeys.length > 0) {
-      void deleteUploadthingKeys(staleKeys).catch(() => {});
+    if (staleRefs.length > 0) {
+      const stillUsed = await prisma.user.findMany({
+        where: {
+          id: { not: current.id },
+          OR: [{ avatarUrl: { in: staleRefs } }, { coverUrl: { in: staleRefs } }],
+        },
+        select: { avatarUrl: true, coverUrl: true },
+      });
+      const used = new Set(
+        stillUsed.flatMap((row) => [row.avatarUrl, row.coverUrl]).filter((url): url is string => Boolean(url))
+      );
+      const ownedKeys = staleRefs.filter((url) => !used.has(url)).flatMap((url) => uploadthingKeysFromRef(url));
+      if (ownedKeys.length > 0) {
+        void deleteUploadthingKeys(ownedKeys).catch(() => {});
+      }
     }
 
     return NextResponse.json({ success: true, updated });

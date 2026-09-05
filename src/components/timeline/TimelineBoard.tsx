@@ -16,7 +16,7 @@ import {
   eventSizeScale,
   TIMELINE_CARD_LIFT,
 } from '@/lib/timeline/time';
-import { clusterCollapsed, clusterLeadTier, layoutLane, type LaneItem } from '@/lib/timeline/layout';
+import { CARD_STACK, clusterCollapsed, clusterLeadTier, layoutLane, type LaneItem } from '@/lib/timeline/layout';
 import EventCard from '@/components/timeline/EventCard';
 import TimelineFx from '@/components/timeline/TimelineFx';
 import type { ChronicleEvent, TimelineTierId } from '@/lib/timeline/types';
@@ -342,7 +342,7 @@ export default function TimelineBoard({
   }
 
   function cardLiftPx(item: LaneItem) {
-    return TIMELINE_CARD_LIFT * cardLook(item).lift;
+    return TIMELINE_CARD_LIFT * cardLook(item).lift + item.stack * CARD_STACK;
   }
 
   function stemBox(item: LaneItem) {

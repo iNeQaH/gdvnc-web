@@ -65,7 +65,7 @@ export async function persistLocalListSnapshot(mode: 'CLASSIC' | 'PLATFORMER'): 
 
   const levelMode = mode === 'PLATFORMER' ? LevelMode.PLATFORMER : LevelMode.CLASSIC;
   const rows = await prisma.level.findMany({
-    where: { mode: levelMode, isChallenge: false },
+    where: { mode: levelMode, isChallenge: false, placement: { not: null } },
     select: {
       gdLevelId: true,
       name: true,

@@ -54,7 +54,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
 
     if (action === 'APPROVE') {
-      await recalculateUserPp(record.userId);
+        await recalculateUserPp(record.userId);
 
       if (record.userId) {
         await prisma.notification.create({
@@ -68,6 +68,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           },
         });
       }
+      clearLeaderboardCache();
     } else if (record.userId) {
       await prisma.notification.create({
         data: {

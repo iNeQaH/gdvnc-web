@@ -10,7 +10,6 @@ import { sanitizeChronicleHtml } from '@/lib/timeline/sanitize';
 import { clampImageScale, isNature, isTierId, normalizeImageRatio } from '@/lib/timeline/types';
 import { fromDateInput } from '@/lib/timeline/time';
 import { parseGlowColor } from '@/lib/timeline/glow';
-import { purgeSheetTimelineEvents } from '@/lib/timeline/purgeSheetEvents';
 import { checkSiteLockAndBlock } from '@/lib/siteLock';
 
 function allowedImage(url: string) {
@@ -53,11 +52,13 @@ export async function GET(req: Request) {
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
   try {
-    await purgeSheetTimelineEvents();
     const rows = await prisma.timelineEvent.findMany({
       orderBy: { startAt: 'asc' },
     });
-    return NextResponse.json({ success: true, events: rows.map(toChronicleEvent) });
+    return NextResponse.json(
+      { success: true, events: rows.map(toChronicleEvent) },
+      { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' } }
+    );
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Failed to load timeline.' }, { status: 500 });
   }

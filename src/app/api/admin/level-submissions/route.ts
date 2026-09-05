@@ -13,9 +13,14 @@ import {
   creatorWorkPairSet,
   reviewerNameFrom,
 } from '@/lib/reviewerDisplay';
+import { publicApiError } from '@/lib/apiError';
 
 export async function GET(req: Request) {
-  try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
+  try {
+    await requireAdmin();
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   try {
     const { searchParams } = new URL(req.url);
@@ -24,36 +29,42 @@ export async function GET(req: Request) {
     const skip = (page - 1) * ADMIN_LIST_LIMIT;
 
     const pairSet = await creatorWorkPairSet();
-    const [listed, tally] = await Promise.all([
-      prisma.levelSubmission.findMany({
-        where: status ? { status } : {},
-        include: {
-          user: { select: { id: true, username: true, avatarUrl: true, gdUsername: true } },
-          reviewer: { select: REVIEWER_SELECT },
-        },
-        orderBy: !status
-          ? { submittedAt: 'desc' }
-          : status === RecordStatus.PENDING
-            ? { submittedAt: 'asc' }
-            : { reviewedAt: 'desc' },
-      }),
-      prisma.levelSubmission.findMany({
-        select: { userId: true, gdLevelId: true, status: true },
-      }),
-    ]);
+    const tally = await prisma.levelSubmission.findMany({
+      select: { id: true, userId: true, gdLevelId: true, status: true, submittedAt: true, reviewedAt: true },
+    });
 
-    const unpaired = listed.filter((row) => !pairSet.has(`${row.userId}:${row.gdLevelId}`));
-    const submissions = unpaired.slice(skip, skip + ADMIN_LIST_LIMIT).map((row) => ({
-      ...row,
-      reviewerName: reviewerNameFrom(row.reviewer),
-    }));
-
-    const unpairedTally = tally.filter((row) => !pairSet.has(`${row.userId}:${row.gdLevelId}`));
+    const unpairedAll = tally.filter((row) => !pairSet.has(`${row.userId}:${row.gdLevelId}`));
     const counts = {
-      pending: unpairedTally.filter((row) => row.status === RecordStatus.PENDING).length,
-      approved: unpairedTally.filter((row) => row.status === RecordStatus.APPROVED).length,
-      rejected: unpairedTally.filter((row) => row.status === RecordStatus.REJECTED).length,
+      pending: unpairedAll.filter((row) => row.status === RecordStatus.PENDING).length,
+      approved: unpairedAll.filter((row) => row.status === RecordStatus.APPROVED).length,
+      rejected: unpairedAll.filter((row) => row.status === RecordStatus.REJECTED).length,
     };
+
+    const unpaired = (status ? unpairedAll.filter((row) => row.status === status) : unpairedAll).slice().sort((a, b) => {
+      if (!status) return b.submittedAt.getTime() - a.submittedAt.getTime();
+      if (status === RecordStatus.PENDING) return a.submittedAt.getTime() - b.submittedAt.getTime();
+      return (b.reviewedAt?.getTime() || 0) - (a.reviewedAt?.getTime() || 0);
+    });
+    const pageRows = unpaired.slice(skip, skip + ADMIN_LIST_LIMIT);
+    const pageIds = pageRows.map((row) => row.id);
+
+    const listed = pageIds.length
+      ? await prisma.levelSubmission.findMany({
+          where: { id: { in: pageIds } },
+          include: {
+            user: { select: { id: true, username: true, avatarUrl: true, gdUsername: true } },
+            reviewer: { select: REVIEWER_SELECT },
+          },
+        })
+      : [];
+    const listedById = new Map(listed.map((row) => [row.id, row]));
+    const submissions = pageIds
+      .map((id) => listedById.get(id))
+      .filter((row): row is NonNullable<typeof row> => Boolean(row))
+      .map((row) => ({
+        ...row,
+        reviewerName: reviewerNameFrom(row.reviewer),
+      }));
 
     return NextResponse.json({
       success: true,
@@ -63,7 +74,7 @@ export async function GET(req: Request) {
       limit: ADMIN_LIST_LIMIT,
       total: queueFilterTotal(counts, status),
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi server' }, { status: 500 });
+  } catch (error) {
+    return publicApiError(error, 'Lỗi server');
   }
 }

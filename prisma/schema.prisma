@@ -53,6 +53,7 @@ model User {
   platformerPp  Float     @default(0)
   creatorPoints Float     @default(0)
   spPoints      Int       @default(0)
+  tokenVersion  Int       @default(0)
 
   // Relationships
   records         Record[]        @relation("UserRecords")
@@ -112,6 +113,7 @@ model Level {
   @@index([mode])
   @@index([isChallenge])
   @@index([isVN])
+  @@index([creatorId])
 }
 
 model Record {
@@ -149,6 +151,9 @@ model Record {
   @@index([userId])
   @@index([levelId])
   @@index([legacyPlayerName])
+  @@index([reviewerId])
+  @@index([userId, status])
+  @@index([levelId, status])
 }
 
 model Notification {
@@ -167,6 +172,7 @@ model Otp {
   id        String   @id @default(uuid())
   email     String
   code      String
+  failedAttempts Int @default(0)
   expiresAt DateTime
   createdAt DateTime @default(now())
 
@@ -251,6 +257,8 @@ model CreatorWork {
 
   @@index([status])
   @@index([userId])
+  @@index([reviewerId])
+  @@index([userId, status])
 }
 
 model LevelSubmission {
@@ -277,6 +285,8 @@ model LevelSubmission {
 
   @@index([status])
   @@index([userId])
+  @@index([reviewerId])
+  @@index([userId, status])
 }
 
 model HelpRequest {

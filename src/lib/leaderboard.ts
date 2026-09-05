@@ -202,10 +202,9 @@ export async function getCreatorLeaderboard() {
       for (const lvl of createdLevels) byId.set(lvl.gdLevelId, lvl);
       for (const lvl of fromSheet) if (!byId.has(lvl.gdLevelId)) byId.set(lvl.gdLevelId, lvl);
       const merged = Array.from(byId.values());
-      const vnCp = cpFromVnLevels(merged);
       return {
         ...rest,
-        creatorPoints: vnCp > 0 ? vnCp : creator.creatorPoints || 0,
+        creatorPoints: creator.creatorPoints || 0,
         displayName: playerDisplayName(creator),
         isLegacy: false as const,
         unverified: !creator.gdVerified,

@@ -3,10 +3,16 @@ import { prisma } from '@/lib/prisma';
 
 export const SITE_LOCK_KEY = 'site-lock';
 
+const CACHE_MS = 15_000;
+let lockCache: { at: number; locked: boolean } | null = null;
+
 export async function isSiteLocked(): Promise<boolean> {
+  if (lockCache && Date.now() - lockCache.at < CACHE_MS) return lockCache.locked;
   try {
     const row = await prisma.siteContent.findUnique({ where: { key: SITE_LOCK_KEY } });
-    return row?.html?.trim() === '1';
+    const locked = row?.html?.trim() === '1';
+    lockCache = { at: Date.now(), locked };
+    return locked;
   } catch {
     return false;
   }
@@ -30,4 +36,5 @@ export async function setSiteLocked(locked: boolean) {
     create: { key: SITE_LOCK_KEY, html },
     update: { html },
   });
+  lockCache = { at: Date.now(), locked };
 }

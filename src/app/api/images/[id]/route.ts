@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const image = await (prisma as any).image.findUnique({
+    const image = await prisma.image.findUnique({
       where: { id },
     });
 
@@ -22,16 +24,21 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     const match = parts[0].match(/:(.*?);/);
-    const mimeType = match ? match[1] : 'image/jpeg';
+    const mimeType = (match ? match[1] : '').toLowerCase();
+    const normalized = mimeType === 'image/jpg' ? 'image/jpeg' : mimeType;
+    if (!ALLOWED_MIME.has(normalized)) {
+      return new NextResponse('Unsupported image type', { status: 415 });
+    }
     const buffer = Buffer.from(parts[1], 'base64');
 
     return new NextResponse(buffer, {
       headers: {
-        'Content-Type': mimeType,
+        'Content-Type': normalized,
         'Cache-Control': 'public, max-age=31536000, immutable',
+        'X-Content-Type-Options': 'nosniff',
       },
     });
-  } catch (error) {
+  } catch {
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

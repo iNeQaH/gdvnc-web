@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { LevelMode } from '@prisma/client';
-import { getCreatorLeaderboard, getPlayerLeaderboard, playerDisplayName } from '@/lib/leaderboard';
+import { playerDisplayName } from '@/lib/leaderboard';
 import { GDLISTHUB_CLASSIC, GDLISTHUB_FEATURED, isMissingLevelText } from '@/lib/gdlisthubLists';
+import { publicApiError } from '@/lib/apiError';
 
 const highlightSelect = {
   id: true,
@@ -13,6 +14,15 @@ const highlightSelect = {
   vnPlacement: true,
   basePp: true,
   mode: true,
+} as const;
+
+const userHighlightSelect = {
+  id: true,
+  username: true,
+  gdUsername: true,
+  avatarUrl: true,
+  classicPp: true,
+  creatorPoints: true,
 } as const;
 
 function withHubCreator<T extends { gdLevelId: number; creatorName: string | null }>(level: T | null): T | null {
@@ -42,7 +52,7 @@ function hubFeaturedTop(mode: 'CLASSIC' | 'PLATFORMER') {
 
 export async function GET() {
   try {
-    const [dbClassic, dbPlatformer, classicBoard, creatorBoard] = await Promise.all([
+    const [dbClassic, dbPlatformer, topPlayerRow, topCreatorRow] = await Promise.all([
       prisma.level.findFirst({
         where: { isVN: true, isChallenge: false, mode: LevelMode.CLASSIC, vnPlacement: { not: null } },
         orderBy: { vnPlacement: 'asc' },
@@ -53,47 +63,56 @@ export async function GET() {
         orderBy: [{ vnPlacement: 'asc' }, { placement: 'asc' }, { name: 'asc' }],
         select: highlightSelect,
       }),
-      getPlayerLeaderboard('CLASSIC'),
-      getCreatorLeaderboard(),
+      prisma.user.findFirst({
+        where: { classicPp: { gt: 0 } },
+        orderBy: { classicPp: 'desc' },
+        select: userHighlightSelect,
+      }),
+      prisma.user.findFirst({
+        where: { creatorPoints: { gt: 0 } },
+        orderBy: { creatorPoints: 'desc' },
+        select: userHighlightSelect,
+      }),
     ]);
 
     const topClassicLevel = withHubCreator(dbClassic) || hubFeaturedTop('CLASSIC');
     const topPlatformerLevel = withHubCreator(dbPlatformer) || hubFeaturedTop('PLATFORMER');
-    const topCreatorUser = creatorBoard[0] || null;
 
-    const top = classicBoard[0];
-    const topPlayer = top
+    const topPlayer = topPlayerRow
       ? {
-          id: top.id,
-          username: top.username,
-          gdUsername: top.gdUsername,
-          displayName: playerDisplayName(top),
-          avatarUrl: top.avatarUrl,
-          classicPp: top.classicPp,
-          isLegacy: top.isLegacy,
+          id: topPlayerRow.id,
+          username: topPlayerRow.username,
+          gdUsername: topPlayerRow.gdUsername,
+          displayName: playerDisplayName(topPlayerRow),
+          avatarUrl: topPlayerRow.avatarUrl,
+          classicPp: topPlayerRow.classicPp,
+          isLegacy: false,
         }
       : null;
 
-    return NextResponse.json({
-      success: true,
-      highlights: {
-        topClassicLevel,
-        topPlatformerLevel,
-        topPlayer,
-        topCreator: topCreatorUser
-          ? {
-              id: topCreatorUser.id,
-              username: topCreatorUser.username,
-              gdUsername: topCreatorUser.gdUsername,
-              avatarUrl: topCreatorUser.avatarUrl,
-              creatorPoints: topCreatorUser.creatorPoints,
-              displayName: playerDisplayName(topCreatorUser),
-              isLegacy: topCreatorUser.isLegacy,
-            }
-          : null,
+    return NextResponse.json(
+      {
+        success: true,
+        highlights: {
+          topClassicLevel,
+          topPlatformerLevel,
+          topPlayer,
+          topCreator: topCreatorRow
+            ? {
+                id: topCreatorRow.id,
+                username: topCreatorRow.username,
+                gdUsername: topCreatorRow.gdUsername,
+                avatarUrl: topCreatorRow.avatarUrl,
+                creatorPoints: topCreatorRow.creatorPoints,
+                displayName: playerDisplayName(topCreatorRow),
+                isLegacy: false,
+              }
+            : null,
+        },
       },
-    });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi tải Top 1.' }, { status: 500 });
+      { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' } }
+    );
+  } catch (error) {
+    return publicApiError(error, 'Lỗi tải Top 1.');
   }
 }

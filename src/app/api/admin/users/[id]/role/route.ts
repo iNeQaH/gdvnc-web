@@ -2,8 +2,8 @@ import { requireFullAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { Role } from '@prisma/client';
-
-const SUPER_ADMIN = 'iNeQaH';
+import { isSuperAdminUser } from '@/lib/roles';
+import { publicApiError } from '@/lib/apiError';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   let actorJwt;
@@ -22,7 +22,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       where: { id: actorJwt.userId },
     });
 
-    if (!actor || (actor.role !== Role.ADMIN && actor.username !== SUPER_ADMIN)) {
+    if (!actor || (actor.role !== Role.ADMIN && !isSuperAdminUser(actor))) {
       return NextResponse.json({ error: 'Bạn không có quyền thực hiện thao tác này.' }, { status: 403 });
     }
 
@@ -36,13 +36,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     // Rule 1: Nobody can touch iNeQaH
-    if (target.username === SUPER_ADMIN) {
-      return NextResponse.json({ error: 'Không thể thay đổi quyền của Super Admin (iNeQaH).' }, { status: 403 });
+    if (isSuperAdminUser(target)) {
+      return NextResponse.json({ error: 'Không thể thay đổi quyền của Super Admin.' }, { status: 403 });
     }
 
     // Rule 2: If target is currently an ADMIN, ONLY iNeQaH can change/demote them
     if (!grantSupporterMonths && target.role === Role.ADMIN && target.id !== actor.id) {
-      if (actor.username !== SUPER_ADMIN) {
+      if (!isSuperAdminUser(actor)) {
         return NextResponse.json({
           error: 'Admin không thể gỡ quyền của một Admin khác. Chỉ Super Admin (iNeQaH) mới có quyền này.',
         }, { status: 403 });
@@ -50,7 +50,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     // Update role
-    let updatedData: { role?: Role; supporterUntil?: Date | null } = {};
+    let updatedData: { role?: Role; supporterUntil?: Date | null; tokenVersion?: { increment: number } } = {};
     if (grantSupporterMonths) {
       const months = parseInt(String(grantSupporterMonths), 10);
       if (!Number.isFinite(months) || months === 0) {
@@ -68,6 +68,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
     } else {
       updatedData.role = newRole as Role;
+      if (newRole !== target.role) {
+        updatedData.tokenVersion = { increment: 1 };
+      }
     }
 
     const updated = await prisma.user.update({
@@ -113,7 +116,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     return NextResponse.json({ success: true, user: updated });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi cập nhật quyền.' }, { status: 500 });
+  } catch (error) {
+    return publicApiError(error, 'Lỗi cập nhật quyền.');
   }
 }

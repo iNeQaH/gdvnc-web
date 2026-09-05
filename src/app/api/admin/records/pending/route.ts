@@ -19,7 +19,7 @@ export async function GET(req: Request) {
     const page = parsePageParam(searchParams.get('page'));
     const skip = (page - 1) * ADMIN_LIST_LIMIT;
 
-    const [records, pendingCount, approvedCount, rejectedCount] = await Promise.all([
+    const [records, grouped] = await Promise.all([
       prisma.record.findMany({
         where: status ? { status } : {},
         include: {
@@ -35,15 +35,17 @@ export async function GET(req: Request) {
         skip,
         take: ADMIN_LIST_LIMIT,
       }),
-      prisma.record.count({ where: { status: RecordStatus.PENDING } }),
-      prisma.record.count({ where: { status: RecordStatus.APPROVED } }),
-      prisma.record.count({ where: { status: RecordStatus.REJECTED } }),
+      prisma.record.groupBy({
+        by: ['status'],
+        _count: { _all: true },
+      }),
     ]);
 
+    const countMap = Object.fromEntries(grouped.map((row) => [row.status, row._count._all]));
     const counts = {
-      pending: pendingCount,
-      approved: approvedCount,
-      rejected: rejectedCount,
+      pending: countMap[RecordStatus.PENDING] || 0,
+      approved: countMap[RecordStatus.APPROVED] || 0,
+      rejected: countMap[RecordStatus.REJECTED] || 0,
     };
 
     return NextResponse.json({

@@ -4,7 +4,7 @@ import prisma from '@/lib/prisma';
 import { calculateBasePp } from '@/lib/ScoringEngine';
 import { upsertLevelFromForm, triggerBackgroundPpRecalc } from '@/lib/upsertLevel';
 import { persistLocalListSnapshot } from '@/lib/listSnapshot';
-import { LevelMode } from '@prisma/client';
+import { LevelMode, Prisma } from '@prisma/client';
 
 export async function POST(req: Request) {
   try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
@@ -92,20 +92,20 @@ export async function DELETE(req: Request) {
         if (updatesToRun.length > 0) {
           for (let i = 0; i < updatesToRun.length; i += 500) {
             const chunk = updatesToRun.slice(i, i + 500);
-            let sql = 'UPDATE "Level" SET "basePp" = CASE "id" ';
-            const ids = [];
-            for (const u of chunk) {
-              sql += `WHEN '${u.id}' THEN ${u.correctPp} `;
-              ids.push(`'${u.id}'`);
-            }
-            sql += `END WHERE "id" IN (${ids.join(',')});`;
-            await tx.$executeRawUnsafe(sql);
+            const caseSql = Prisma.join(
+              chunk.map((u) => Prisma.sql`WHEN ${u.id} THEN ${u.correctPp}`),
+              ' '
+            );
+            const ids = Prisma.join(chunk.map((u) => Prisma.sql`${u.id}`));
+            await tx.$executeRaw`
+              UPDATE "Level" SET "basePp" = CASE "id" ${caseSql} END WHERE "id" IN (${ids})
+            `;
           }
         }
       }
     }, { maxWait: 15000, timeout: 30000 });
 
-    triggerBackgroundPpRecalc([id, ...affectedLevelIds], mode);
+    await triggerBackgroundPpRecalc([id, ...affectedLevelIds], mode);
 
     if (!level.isChallenge) {
       void persistLocalListSnapshot(mode === LevelMode.PLATFORMER ? 'PLATFORMER' : 'CLASSIC').catch((err) =>

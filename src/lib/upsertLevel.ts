@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma';
-import { LevelMode, RecordStatus } from '@prisma/client';
+import { LevelMode, Prisma, RecordStatus } from '@prisma/client';
 import { calculateBasePp } from '@/lib/ScoringEngine';
 import { recalculateUserPp as recalcUserPp } from '@/lib/recordUtils';
 import { persistLocalListSnapshot } from '@/lib/listSnapshot';
@@ -120,17 +120,14 @@ async function shiftPlacementsAndRecalcPp(
   if (updatesToRun.length > 0) {
     for (let i = 0; i < updatesToRun.length; i += 500) {
       const chunk = updatesToRun.slice(i, i + 500);
-      let sql = 'UPDATE "Level" SET "basePp" = CASE "id" ';
-      const ids = [];
-      
-      for (const u of chunk) {
-        sql += `WHEN '${u.id}' THEN ${u.correctPp} `;
-        ids.push(`'${u.id}'`);
-      }
-      
-      sql += `END WHERE "id" IN (${ids.join(',')});`;
-      
-      await tx.$executeRawUnsafe(sql);
+      const caseSql = Prisma.join(
+        chunk.map((u) => Prisma.sql`WHEN ${u.id} THEN ${u.correctPp}`),
+        ' '
+      );
+      const ids = Prisma.join(chunk.map((u) => Prisma.sql`${u.id}`));
+      await tx.$executeRaw`
+        UPDATE "Level" SET "basePp" = CASE "id" ${caseSql} END WHERE "id" IN (${ids})
+      `;
     }
   }
   return affectedLevelIds;
@@ -338,31 +335,23 @@ export async function upsertLevelFromForm(input: {
   );
 
   if (affectedLevelIds.length > 0 && placementChanged) {
-    triggerBackgroundPpRecalc(affectedLevelIds, pMode);
+    await triggerBackgroundPpRecalc(affectedLevelIds, pMode);
   }
 
-  // Re-align every ranked level in this mode to the server PP formula
-  // (Pointercrate imports previously wrote a different curve).
-  void prisma.level
-    .findMany({
-      where: { mode: pMode, isChallenge: false, placement: { not: null } },
-      select: { id: true, placement: true, basePp: true },
-    })
-    .then(async (ranked) => {
-      const diffs = ranked.filter(
-        (l) => Math.abs(calculateBasePp(l.placement!) - l.basePp) > 0.01
-      );
-      for (const l of diffs) {
-        await prisma.level.update({
-          where: { id: l.id },
-          data: { basePp: calculateBasePp(l.placement!) },
-        });
-      }
-      if (diffs.length > 0) {
-        triggerBackgroundPpRecalc(diffs.map((d) => d.id), pMode);
-      }
-    })
-    .catch(console.error);
+  const ranked = await prisma.level.findMany({
+    where: { mode: pMode, isChallenge: false, placement: { not: null } },
+    select: { id: true, placement: true, basePp: true },
+  });
+  const diffs = ranked.filter((l) => Math.abs(calculateBasePp(l.placement!) - l.basePp) > 0.01);
+  for (const l of diffs) {
+    await prisma.level.update({
+      where: { id: l.id },
+      data: { basePp: calculateBasePp(l.placement!) },
+    });
+  }
+  if (diffs.length > 0) {
+    await triggerBackgroundPpRecalc(diffs.map((d) => d.id), pMode);
+  }
 
   if (!isChallengeLevel) {
     void persistLocalListSnapshot(pMode === LevelMode.PLATFORMER ? 'PLATFORMER' : 'CLASSIC').catch((err) =>

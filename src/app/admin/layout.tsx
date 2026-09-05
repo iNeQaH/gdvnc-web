@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
+import { redirect } from 'next/navigation';
 import { pageMetadata } from '@/lib/pageMeta';
+import { getSessionUser, isStaffRole } from '@/lib/auth';
 
 export const metadata = pageMetadata(
   'GDVN Admin',
@@ -7,6 +9,10 @@ export const metadata = pageMetadata(
   '/admin'
 );
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  const user = await getSessionUser();
+  if (!user || !isStaffRole(user.role)) {
+    redirect('/login');
+  }
   return <>{children}</>;
 }

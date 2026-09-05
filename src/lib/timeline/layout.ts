@@ -2,10 +2,10 @@ import { ALWAYS_SHOW_MARKER_MAX_RANK, TIERS } from '@/lib/timeline/tiers';
 import { clampImageScale, type ChronicleEvent } from '@/lib/timeline/types';
 
 export const CARD_W = 200;
-const CARD_GAP = 16;
-/** Cards no longer stack vertically. Kept so older callers still type-check. */
-export const CARD_STACK = 0;
-/** If a card would slide farther than this from its date, collapse it to a dot. */
+const CARD_GAP = 12;
+/** Extra lift (px) for each overlapping card so the date marker stays put. */
+export const CARD_STACK = 36;
+/** Unused after vertical stacking; kept so older callers still type-check. */
 export const MAX_CARD_DRIFT = 112;
 
 export function cardWidthFor(event: Pick<ChronicleEvent, 'imageScale'>, base = CARD_W): number {
@@ -81,22 +81,28 @@ export function layoutLane({
     candidates.push({ ...item, collapsed: false, left: item.desiredLeft, width: item.width, stack: 0 });
   }
 
-  const shown: LaneItem[] = [];
-  for (let i = candidates.length - 1; i >= 0; i--) {
-    const item: LaneItem = { ...candidates[i], left: candidates[i].desiredLeft, width: candidates[i].width, stack: 0 };
-    const next = shown[0];
-    if (next) {
-      const maxLeft = next.left - CARD_GAP - item.width;
-      if (item.left > maxLeft) item.left = maxLeft;
+  const shown: LaneItem[] = candidates.map((item) => ({
+    ...item,
+    collapsed: false,
+    left: item.desiredLeft,
+    width: item.width,
+    stack: 0,
+  }));
+
+  shown.sort((a, b) => a.x - b.x || a.event.id.localeCompare(b.event.id));
+
+  for (let i = 0; i < shown.length; i++) {
+    const item = shown[i];
+    const used = new Set<number>();
+    for (let j = 0; j < i; j++) {
+      const other = shown[j];
+      if (item.left < other.left + other.width + CARD_GAP && other.left < item.left + item.width + CARD_GAP) {
+        used.add(other.stack);
+      }
     }
-    const cardCenter = item.left + item.width / 2;
-    const drift = item.x - cardCenter;
-    const forced = expandedIds.has(item.event.id) && !folded.has(item.event.id);
-    if (drift > MAX_CARD_DRIFT && !forced) {
-      collapsed.push({ ...item, collapsed: true, left: item.x - 7, width: 14, stack: 0 });
-      continue;
-    }
-    shown.unshift(item);
+    let stack = 0;
+    while (used.has(stack)) stack += 1;
+    item.stack = stack;
   }
 
   return [...shown, ...collapsed];

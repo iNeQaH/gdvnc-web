@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       const result = await syncExternalListToDb(target, { force: true });
       const levelMode = target === 'PLATFORMER' ? LevelMode.PLATFORMER : LevelMode.CLASSIC;
       if (result.affectedIds.length > 0) {
-        void triggerBackgroundPpRecalc(result.affectedIds, levelMode);
+        await triggerBackgroundPpRecalc(result.affectedIds, levelMode);
       }
       results.push({
         mode: result.mode,

@@ -8,6 +8,7 @@ import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { isTrustedEmailProvider, normalizeEmail, untrustedEmailMessage } from '@/lib/emailProviders';
+import { validateUsername } from '@/lib/username';
 
 export async function POST(req: Request) {
   try {
@@ -33,7 +34,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: en ? 'Please enter email and OTP code.' : 'Vui lòng nhập email và mã xác nhận OTP.' }, { status: 400 });
     }
 
-    const cleanUsername = username.trim();
+    const cleanUsernameCheck = validateUsername(username);
+    if (!cleanUsernameCheck.ok) {
+      return NextResponse.json({ error: en ? cleanUsernameCheck.errorEn : cleanUsernameCheck.errorVi }, { status: 400 });
+    }
+    const cleanUsername = cleanUsernameCheck.value;
     const cleanEmail = normalizeEmail(email);
     const cleanOtp = otp.trim();
 
@@ -42,10 +47,6 @@ export async function POST(req: Request) {
     }
     if (!isTrustedEmailProvider(cleanEmail)) {
       return NextResponse.json({ error: untrustedEmailMessage(en ? 'en' : 'vi') }, { status: 400 });
-    }
-
-    if (cleanUsername.length < 1) {
-      return NextResponse.json({ error: en ? 'Username must be at least 1 character.' : 'Tên người dùng phải có ít nhất 1 ký tự.' }, { status: 400 });
     }
 
     const cleanGd = typeof gdUsername === 'string' ? gdUsername.trim() : '';
@@ -57,12 +58,25 @@ export async function POST(req: Request) {
     const validOtp = await prisma.otp.findFirst({
       where: {
         email: cleanEmail,
-        code: cleanOtp,
         expiresAt: { gt: new Date() },
       },
+      orderBy: { createdAt: 'desc' },
     });
 
     if (!validOtp) {
+      return NextResponse.json({ error: en ? 'OTP is incorrect or has expired.' : 'Mã xác nhận OTP không đúng hoặc đã hết hạn.' }, { status: 400 });
+    }
+    if (validOtp.failedAttempts >= 5) {
+      await prisma.otp.deleteMany({ where: { email: cleanEmail } });
+      return NextResponse.json({ error: en ? 'Too many incorrect codes. Request a new OTP.' : 'Nhập sai quá nhiều lần. Hãy yêu cầu mã OTP mới.' }, { status: 429 });
+    }
+    if (validOtp.code !== cleanOtp) {
+      const next = validOtp.failedAttempts + 1;
+      if (next >= 5) {
+        await prisma.otp.deleteMany({ where: { email: cleanEmail } });
+        return NextResponse.json({ error: en ? 'Too many incorrect codes. Request a new OTP.' : 'Nhập sai quá nhiều lần. Hãy yêu cầu mã OTP mới.' }, { status: 429 });
+      }
+      await prisma.otp.update({ where: { id: validOtp.id }, data: { failedAttempts: next } });
       return NextResponse.json({ error: en ? 'OTP is incorrect or has expired.' : 'Mã xác nhận OTP không đúng hoặc đã hết hạn.' }, { status: 400 });
     }
 
@@ -117,7 +131,7 @@ export async function POST(req: Request) {
     };
 
     // Sign JWT and set httpOnly cookie
-    const token = await signToken({ userId: newUser.id, username: newUser.username, role: newUser.role });
+    const token = await signToken({ userId: newUser.id, username: newUser.username, role: newUser.role, tokenVersion: newUser.tokenVersion });
     await setAuthCookie(token);
 
     return NextResponse.json({ success: true, user: safeUser });

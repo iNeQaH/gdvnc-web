@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getAuthUser } from '@/lib/auth';
+import { getSessionUser } from '@/lib/auth';
 
 export async function GET() {
-  const auth = await getAuthUser();
+  const auth = await getSessionUser();
   if (!auth) {
     return NextResponse.json({ success: false }, { status: 401 });
   }

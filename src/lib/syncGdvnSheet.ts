@@ -163,10 +163,6 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
 
   const timelinePurged = await purgeSheetTimelineEvents();
 
-  const unverified = await prisma.user.updateMany({
-    data: { gdVerified: false },
-  });
-
   const creatorNames = [...new Set(rows.map((r) => r.creatorName.trim()).filter(Boolean))];
 
   return {
@@ -177,7 +173,7 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
     timelineUpdated: 0,
     timelineSkipped: 0,
     timelinePurged,
-    usersUnverified: unverified.count,
+    usersUnverified: 0,
     creatorsQueued: creatorNames.length,
   };
 }

@@ -4,9 +4,15 @@ import bcrypt from 'bcryptjs';
 import { signToken, setAuthCookie } from '@/lib/auth';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { isBrowserSameOriginFetch } from '@/lib/origin';
+import { publicApiError } from '@/lib/apiError';
 
 export async function POST(req: Request) {
   try {
+    if (!isBrowserSameOriginFetch(req)) {
+      return NextResponse.json({ error: 'Invalid request.' }, { status: 403 });
+    }
+
     const limited = rateLimit(`login:${getClientIp(req)}`, 8, 60_000);
     if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
@@ -21,12 +27,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: en ? 'Incorrect username / email or password.' : 'Tên người dùng / Email hoặc mật khẩu không chính xác.' }, { status: 401 });
     }
 
-    // Find user by username OR email
+    const lowered = loginInput.toLowerCase();
     const user = await prisma.user.findFirst({
       where: {
         OR: [
           { username: { equals: loginInput, mode: 'insensitive' } },
-          { email: { equals: loginInput.toLowerCase(), mode: 'insensitive' } },
+          { email: lowered },
         ],
       },
       select: {
@@ -43,6 +49,7 @@ export async function POST(req: Request) {
         spPoints: true,
         supporterUntil: true,
         passwordHash: true,
+        tokenVersion: true,
       },
     });
 
@@ -55,7 +62,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: en ? 'Incorrect username / email or password.' : 'Tên người dùng / Email hoặc mật khẩu không chính xác.' }, { status: 401 });
     }
 
-    // Return safe user object
     const safeUser = {
       id: user.id,
       username: user.username,
@@ -71,12 +77,16 @@ export async function POST(req: Request) {
       supporterUntil: user.supporterUntil,
     };
 
-    // Sign JWT and set httpOnly cookie
-    const token = await signToken({ userId: user.id, username: user.username, role: user.role });
+    const token = await signToken({
+      userId: user.id,
+      username: user.username,
+      role: user.role,
+      tokenVersion: user.tokenVersion,
+    });
     await setAuthCookie(token);
 
     return NextResponse.json({ success: true, user: safeUser });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Server error.' }, { status: 500 });
+  } catch (error) {
+    return publicApiError(error, 'Server error.');
   }
 }
