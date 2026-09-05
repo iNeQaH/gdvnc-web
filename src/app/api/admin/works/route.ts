@@ -19,7 +19,7 @@ export async function GET(req: Request) {
     const page = parsePageParam(searchParams.get('page'));
     const skip = (page - 1) * ADMIN_LIST_LIMIT;
 
-    const [works, pendingCount, approvedCount, rejectedCount] = await Promise.all([
+    const [works, grouped] = await Promise.all([
       prisma.creatorWork.findMany({
         where: status ? { status } : {},
         include: {
@@ -36,10 +36,18 @@ export async function GET(req: Request) {
         skip,
         take: ADMIN_LIST_LIMIT,
       }),
-      prisma.creatorWork.count({ where: { status: RecordStatus.PENDING } }),
-      prisma.creatorWork.count({ where: { status: RecordStatus.APPROVED } }),
-      prisma.creatorWork.count({ where: { status: RecordStatus.REJECTED } }),
+      prisma.creatorWork.groupBy({
+        by: ['status'],
+        _count: { _all: true },
+      }),
     ]);
+
+    const countMap = Object.fromEntries(grouped.map((row) => [row.status, row._count._all]));
+    const counts = {
+      pending: countMap[RecordStatus.PENDING] || 0,
+      approved: countMap[RecordStatus.APPROVED] || 0,
+      rejected: countMap[RecordStatus.REJECTED] || 0,
+    };
 
     const gdIds = [...new Set(works.map((w) => w.gdLevelId).filter((id): id is number => typeof id === 'number' && id > 0))];
     const linkedLevels = gdIds.length
@@ -61,12 +69,6 @@ export async function GET(req: Request) {
         })
       : [];
     const linkedByGd = new Map(linkedLevels.map((lvl) => [lvl.gdLevelId, lvl]));
-
-    const counts = {
-      pending: pendingCount,
-      approved: approvedCount,
-      rejected: rejectedCount,
-    };
 
     return NextResponse.json({
       success: true,

@@ -54,6 +54,10 @@ model User {
   creatorPoints Float     @default(0)
   spPoints      Int       @default(0)
   tokenVersion  Int       @default(0)
+  hardestClassicLevelId    String?
+  hardestPlatformerLevelId String?
+  hardestClassicLevel      Level?  @relation("UserHardestClassic", fields: [hardestClassicLevelId], references: [id], onDelete: SetNull)
+  hardestPlatformerLevel   Level?  @relation("UserHardestPlatformer", fields: [hardestPlatformerLevelId], references: [id], onDelete: SetNull)
 
   // Relationships
   records         Record[]        @relation("UserRecords")
@@ -76,6 +80,8 @@ model User {
   @@index([creatorPoints(sort: Desc)])
   @@index([role])
   @@index([gdUsername])
+  @@index([hardestClassicLevelId])
+  @@index([hardestPlatformerLevelId])
   helpRequests    HelpRequest[]
 }
 
@@ -104,6 +110,8 @@ model Level {
   description   String?    @db.Text
 
   records       Record[]
+  hardestClassicFor  User[] @relation("UserHardestClassic")
+  hardestPlatformerFor User[] @relation("UserHardestPlatformer")
 
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
@@ -166,6 +174,7 @@ model Notification {
   createdAt DateTime @default(now())
 
   @@index([userId])
+  @@index([userId, isRead])
 }
 
 model Otp {
@@ -299,6 +308,10 @@ model HelpRequest {
   createdAt  DateTime @default(now())
 
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([status, createdAt])
 }
 
 model SiteContent {

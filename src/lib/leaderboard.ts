@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { LevelMode, RecordStatus } from '@prisma/client';
 import { pickDecoAndLayoutBadges, cpFromVnLevels } from '@/lib/creatorPoints';
-import { calculateModePp, pickHardestLevel } from '@/lib/recordUtils';
+import { calculateModePp, pickHardestLevel, type HardestLevel } from '@/lib/recordUtils';
 
 export const publicUser = {
   id: true,
@@ -14,6 +14,33 @@ export const publicUser = {
   gdVerified: true,
 } as const;
 
+const hardestLevelSelect = {
+  id: true,
+  name: true,
+  placement: true,
+  gdLevelId: true,
+} as const;
+
+const recordSelect = {
+  progress: true,
+  timeMs: true,
+  submittedAt: true,
+  levelId: true,
+  userId: true,
+  level: {
+    select: {
+      id: true,
+      mode: true,
+      minPercent: true,
+      basePp: true,
+      placement: true,
+      name: true,
+      gdLevelId: true,
+      isChallenge: true,
+    },
+  },
+} as const;
+
 export function playerDisplayName(player: {
   gdUsername?: string | null;
   username?: string | null;
@@ -22,27 +49,69 @@ export function playerDisplayName(player: {
   return (player.gdUsername || player.displayName || player.username || '').trim();
 }
 
+function hardestFromLevel(
+  level: { id: string; name: string; placement: number | null; gdLevelId: number } | null | undefined
+): HardestLevel | null {
+  if (!level) return null;
+  return {
+    id: level.id,
+    name: level.name,
+    placement: level.placement,
+    gdLevelId: level.gdLevelId,
+  };
+}
+
+async function backfillMissingHardest(
+  players: Array<{ id: string; hardestLevel: HardestLevel | null }>,
+  mode: 'CLASSIC' | 'PLATFORMER'
+) {
+  const missingIds = players.filter((p) => !p.hardestLevel).map((p) => p.id);
+  if (!missingIds.length) return;
+
+  const levelMode = mode === 'PLATFORMER' ? LevelMode.PLATFORMER : LevelMode.CLASSIC;
+  const records = await prisma.record.findMany({
+    where: {
+      userId: { in: missingIds },
+      status: RecordStatus.APPROVED,
+      level: { mode: levelMode, isChallenge: false },
+    },
+    select: recordSelect,
+  });
+
+  const byUser = new Map<string, typeof records>();
+  for (const rec of records) {
+    const uid = rec.userId;
+    if (!uid) continue;
+    const list = byUser.get(uid) || [];
+    list.push(rec);
+    byUser.set(uid, list);
+  }
+
+  const updates: Array<ReturnType<typeof prisma.user.update>> = [];
+  for (const player of players) {
+    if (player.hardestLevel) continue;
+    const hardest = pickHardestLevel(byUser.get(player.id) || []);
+    player.hardestLevel = hardest;
+    if (hardest?.id) {
+      updates.push(
+        prisma.user.update({
+          where: { id: player.id },
+          data:
+            mode === 'PLATFORMER'
+              ? { hardestPlatformerLevelId: hardest.id }
+              : { hardestClassicLevelId: hardest.id },
+        })
+      );
+    }
+  }
+  if (updates.length) {
+    void Promise.all(updates).catch(() => {});
+  }
+}
+
 export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER') {
   const levelMode = mode === 'PLATFORMER' ? LevelMode.PLATFORMER : LevelMode.CLASSIC;
   const ppField = mode === 'PLATFORMER' ? 'platformerPp' : 'classicPp';
-
-  const recordSelect = {
-    progress: true,
-    timeMs: true,
-    submittedAt: true,
-    levelId: true,
-    level: {
-      select: {
-        mode: true,
-        minPercent: true,
-        basePp: true,
-        placement: true,
-        name: true,
-        gdLevelId: true,
-        isChallenge: true,
-      },
-    },
-  } as const;
 
   const [players, orphanRecords, claimedUsers] = await Promise.all([
     prisma.user.findMany({
@@ -52,13 +121,8 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER') {
         ...publicUser,
         classicPp: true,
         platformerPp: true,
-        records: {
-          where: {
-            status: RecordStatus.APPROVED,
-            level: { mode: levelMode, isChallenge: false },
-          },
-          select: recordSelect,
-        },
+        hardestClassicLevel: { select: hardestLevelSelect },
+        hardestPlatformerLevel: { select: hardestLevelSelect },
       },
     }),
     prisma.record.findMany({
@@ -98,14 +162,26 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER') {
   }
 
   const registered = players.map((player) => {
-    const { records, ...rest } = player;
+    const stored =
+      mode === 'PLATFORMER' ? player.hardestPlatformerLevel : player.hardestClassicLevel;
     return {
-      ...rest,
+      id: player.id,
+      username: player.username,
+      gdUsername: player.gdUsername,
+      avatarUrl: player.avatarUrl,
+      role: player.role,
+      country: player.country,
+      supporterUntil: player.supporterUntil,
+      gdVerified: player.gdVerified,
+      classicPp: player.classicPp,
+      platformerPp: player.platformerPp,
       displayName: playerDisplayName(player),
       isLegacy: false as const,
-      hardestLevel: pickHardestLevel(records),
+      hardestLevel: hardestFromLevel(stored),
     };
   });
+
+  await backfillMissingHardest(registered, mode);
 
   const legacy = [];
   for (const [key, recs] of byLegacy) {
@@ -131,10 +207,10 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER') {
   return [...registered, ...legacy]
     .filter((p) => (mode === 'PLATFORMER' ? p.platformerPp : p.classicPp) > 0.005)
     .sort((a, b) => {
-    const ap = mode === 'PLATFORMER' ? a.platformerPp : a.classicPp;
-    const bp = mode === 'PLATFORMER' ? b.platformerPp : b.classicPp;
-    return bp - ap;
-  });
+      const ap = mode === 'PLATFORMER' ? a.platformerPp : a.classicPp;
+      const bp = mode === 'PLATFORMER' ? b.platformerPp : b.classicPp;
+      return bp - ap;
+    });
 }
 
 export async function getCreatorLeaderboard() {
@@ -147,11 +223,6 @@ export async function getCreatorLeaderboard() {
       select: {
         ...publicUser,
         creatorPoints: true,
-        createdLevels: {
-          where: { isVN: true },
-          select: { name: true, difficulty: true, gdLevelId: true, ratingType: true },
-          orderBy: [{ vnPlacement: 'asc' }, { name: 'asc' }],
-        },
         userBadges: {
           include: {
             badge: { include: { badgeCategory: true } },
@@ -160,27 +231,39 @@ export async function getCreatorLeaderboard() {
       },
     }),
     prisma.level.findMany({
-      where: { isVN: true, creatorName: { not: null } },
-      select: { creatorName: true, name: true, difficulty: true, gdLevelId: true, ratingType: true },
+      where: { isVN: true },
+      select: {
+        creatorId: true,
+        creatorName: true,
+        name: true,
+        difficulty: true,
+        gdLevelId: true,
+        ratingType: true,
+      },
       orderBy: [{ vnPlacement: 'asc' }, { name: 'asc' }],
     }),
   ]);
 
   type VnLevel = { name: string; difficulty: string; gdLevelId: number; ratingType: string };
-  const levelsByCreator = new Map<string, VnLevel[]>();
+  const levelsByCreatorId = new Map<string, VnLevel[]>();
+  const levelsByCreatorName = new Map<string, VnLevel[]>();
+  const pushLevel = (map: Map<string, VnLevel[]>, key: string, lvl: VnLevel) => {
+    if (!key) return;
+    const list = map.get(key) || [];
+    if (!list.some((l) => l.gdLevelId === lvl.gdLevelId)) list.push(lvl);
+    map.set(key, list);
+  };
+
   for (const row of vnLevels) {
-    const key = (row.creatorName || '').trim().toLowerCase();
-    if (!key) continue;
-    const list = levelsByCreator.get(key) || [];
-    if (!list.some((l) => l.gdLevelId === row.gdLevelId)) {
-      list.push({
-        name: row.name,
-        difficulty: row.difficulty,
-        gdLevelId: row.gdLevelId,
-        ratingType: row.ratingType,
-      });
-    }
-    levelsByCreator.set(key, list);
+    const lvl: VnLevel = {
+      name: row.name,
+      difficulty: row.difficulty,
+      gdLevelId: row.gdLevelId,
+      ratingType: row.ratingType,
+    };
+    if (row.creatorId) pushLevel(levelsByCreatorId, row.creatorId, lvl);
+    const nameKey = (row.creatorName || '').trim().toLowerCase();
+    if (nameKey) pushLevel(levelsByCreatorName, nameKey, lvl);
   }
 
   const claimedGd = new Set(
@@ -192,15 +275,14 @@ export async function getCreatorLeaderboard() {
   const registered = creators
     .filter((creator) => {
       const gd = creator.gdUsername?.trim().toLowerCase() || '';
-      return (creator.creatorPoints || 0) > 0 || (gd && levelsByCreator.has(gd));
+      return (creator.creatorPoints || 0) > 0 || (gd && levelsByCreatorName.has(gd)) || levelsByCreatorId.has(creator.id);
     })
     .map((creator) => {
-      const { userBadges, createdLevels, ...rest } = creator;
+      const { userBadges, ...rest } = creator;
       const gd = creator.gdUsername?.trim().toLowerCase() || '';
-      const fromSheet = levelsByCreator.get(gd) || [];
       const byId = new Map<number, VnLevel>();
-      for (const lvl of createdLevels) byId.set(lvl.gdLevelId, lvl);
-      for (const lvl of fromSheet) if (!byId.has(lvl.gdLevelId)) byId.set(lvl.gdLevelId, lvl);
+      for (const lvl of levelsByCreatorId.get(creator.id) || []) byId.set(lvl.gdLevelId, lvl);
+      for (const lvl of levelsByCreatorName.get(gd) || []) if (!byId.has(lvl.gdLevelId)) byId.set(lvl.gdLevelId, lvl);
       const merged = Array.from(byId.values());
       return {
         ...rest,
@@ -219,7 +301,7 @@ export async function getCreatorLeaderboard() {
     });
 
   const legacy = [];
-  for (const [key, levels] of levelsByCreator) {
+  for (const [key, levels] of levelsByCreatorName) {
     if (!key || claimedGd.has(key)) continue;
     const name = (vnLevels.find((r) => (r.creatorName || '').trim().toLowerCase() === key)?.creatorName || key).trim();
     legacy.push({

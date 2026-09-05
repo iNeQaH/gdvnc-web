@@ -28,6 +28,7 @@ type RecordWithLevel = RecordLike & {
 };
 
 export type HardestLevel = {
+  id?: string;
   name: string;
   placement: number | null;
   gdLevelId: number;
@@ -68,6 +69,7 @@ export function pickHardestLevel(
     progress: number | null;
     timeMs: number | null;
     level: {
+      id?: string;
       mode: LevelMode;
       minPercent: number;
       placement: number | null;
@@ -90,6 +92,7 @@ export function pickHardestLevel(
   pool.sort((a, b) => (a.level.placement ?? 999999) - (b.level.placement ?? 999999));
   const level = pool[0].level;
   return {
+    id: level.id,
     name: level.name,
     placement: level.placement,
     gdLevelId: level.gdLevelId,
@@ -175,11 +178,16 @@ export async function recalculateUserPp(userId: string | null | undefined) {
     .map((r) => r.level.basePp)
     .filter((pp) => pp > 0);
 
+  const classicHardest = pickHardestLevel(deduped.filter((r) => r.level.mode === LevelMode.CLASSIC));
+  const platformerHardest = pickHardestLevel(deduped.filter((r) => r.level.mode === LevelMode.PLATFORMER));
+
   await prisma.user.update({
     where: { id: userId },
     data: {
       classicPp: calculateTotalPp(classicBasePps),
       platformerPp: calculateTotalPp(platformerBasePps),
+      hardestClassicLevelId: classicHardest?.id || null,
+      hardestPlatformerLevelId: platformerHardest?.id || null,
     },
   });
 }

@@ -28,30 +28,33 @@ export async function POST(req: Request) {
     }
 
     const lowered = loginInput.toLowerCase();
-    const user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { username: { equals: loginInput, mode: 'insensitive' } },
-          { email: lowered },
-        ],
-      },
-      select: {
-        id: true,
-        username: true,
-        role: true,
-        avatarUrl: true,
-        discordTag: true,
-        gdUsername: true,
-        gdVerified: true,
-        classicPp: true,
-        platformerPp: true,
-        creatorPoints: true,
-        spPoints: true,
-        supporterUntil: true,
-        passwordHash: true,
-        tokenVersion: true,
-      },
-    });
+    const matches = await prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM "User"
+      WHERE LOWER("username") = ${lowered}
+         OR ("email" IS NOT NULL AND LOWER("email") = ${lowered})
+      LIMIT 1
+    `;
+    const user = matches[0]?.id
+      ? await prisma.user.findUnique({
+          where: { id: matches[0].id },
+          select: {
+            id: true,
+            username: true,
+            role: true,
+            avatarUrl: true,
+            discordTag: true,
+            gdUsername: true,
+            gdVerified: true,
+            classicPp: true,
+            platformerPp: true,
+            creatorPoints: true,
+            spPoints: true,
+            supporterUntil: true,
+            passwordHash: true,
+            tokenVersion: true,
+          },
+        })
+      : null;
 
     if (!user || !user.passwordHash) {
       return NextResponse.json({ error: en ? 'Incorrect username / email or password.' : 'Tên người dùng / Email hoặc mật khẩu không chính xác.' }, { status: 401 });
