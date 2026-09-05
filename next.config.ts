@@ -30,6 +30,14 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${process.env.BACKEND_URL || 'http://localhost:8080'}/api/:path*`,
+      },
+    ];
+  },
   // Allow LAN / public IP / tunnels to load /_next JS in `next dev`.
   // Without this, remote browsers get HTML but clicks (login, theme, register) do nothing.
   allowedDevOrigins: [

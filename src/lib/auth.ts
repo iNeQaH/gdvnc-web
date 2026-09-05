@@ -79,14 +79,7 @@ export async function getAuthUser(): Promise<JwtPayload | null> {
 
 /** JWT identity with current username/role from the database. */
 export async function getSessionUser(): Promise<JwtPayload | null> {
-  const user = await getAuthUser();
-  if (!user) return null;
-  const row = await prisma.user.findUnique({
-    where: { id: user.userId },
-    select: { username: true, role: true },
-  });
-  if (!row) return null;
-  return { ...user, username: row.username, role: row.role };
+  return await getAuthUser();
 }
 
 /**
