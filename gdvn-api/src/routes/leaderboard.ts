@@ -10,11 +10,11 @@ router.get('/', async (req, res) => {
   
   try {
     const cached = await getCachedLeaderboard(mode);
-    if (cached) return res.json({ success: true, data: cached });
+    if (cached) return res.json({ success: true, leaderboard: cached });
 
     const data = await getPlayerLeaderboard(mode as 'CLASSIC' | 'PLATFORMER');
     await setCachedLeaderboard(mode, data);
-    return res.json({ success: true, data });
+    return res.json({ success: true, leaderboard: data });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ success: false, error: 'Internal server error' });

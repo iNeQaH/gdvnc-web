@@ -55,7 +55,7 @@ router.get('/', async (req, res) => {
     const challenge = req.query.challenge === '1';
     
     const page = parseInt((req.query.page as string) || '1');
-    const limit = parseInt((req.query.limit as string) || '50');
+    const limit = parseInt((req.query.limit as string) || '5000');
     
     const cacheKey = `levels:${mode}:${tier}:${challenge}:${page}:${limit}`;
     const cached = await getCached<any>(cacheKey);
