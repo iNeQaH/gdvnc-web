@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { LevelMode, RecordStatus } from '@prisma/client';
 import { compareListLevels } from '@/lib/levelSort';
 import { applyGdlisthubRanksToLevels } from '@/lib/gdlisthubLists';
+import { checkSiteLockAndBlock } from '@/lib/siteLock';
 
 const dbLevelSelect = {
   id: true,
@@ -46,6 +47,9 @@ async function loadDbLevels(mode: string, tier: string | null, challenge: boolea
 }
 
 export async function GET(req: Request) {
+  const block = await checkSiteLockAndBlock();
+  if (block) return block;
+
   try {
     const { searchParams } = new URL(req.url);
     const mode = searchParams.get('mode') || 'CLASSIC';

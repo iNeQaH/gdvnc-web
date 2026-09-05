@@ -5,8 +5,12 @@ import {
   getPlayerLeaderboard,
   setCachedLeaderboard,
 } from '@/lib/leaderboard';
+import { checkSiteLockAndBlock } from '@/lib/siteLock';
 
 export async function GET(req: Request) {
+  const block = await checkSiteLockAndBlock();
+  if (block) return block;
+
   try {
     const { searchParams } = new URL(req.url);
     const mode = searchParams.get('mode') || 'CLASSIC';

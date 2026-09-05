@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { NextResponse } from 'next/server';
 
 export const SITE_LOCK_KEY = 'site-lock';
 
@@ -9,6 +10,17 @@ export async function isSiteLocked(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+export async function checkSiteLockAndBlock() {
+  const locked = await isSiteLocked();
+  if (locked) {
+    return NextResponse.json(
+      { error: 'Trang web đang bảo trì.', success: false, data: [] },
+      { status: 503 }
+    );
+  }
+  return null;
 }
 
 export async function setSiteLocked(locked: boolean) {

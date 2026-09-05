@@ -11,6 +11,7 @@ import { clampImageScale, isNature, isTierId, normalizeImageRatio } from '@/lib/
 import { fromDateInput } from '@/lib/timeline/time';
 import { parseGlowColor } from '@/lib/timeline/glow';
 import { purgeSheetTimelineEvents } from '@/lib/timeline/purgeSheetEvents';
+import { checkSiteLockAndBlock } from '@/lib/siteLock';
 
 function allowedImage(url: string) {
   return isAllowedImageRef(url);
@@ -45,6 +46,9 @@ function parseEventBody(body: any) {
 }
 
 export async function GET(req: Request) {
+  const block = await checkSiteLockAndBlock();
+  if (block) return block;
+
   const limited = rateLimit(`timeline:${getClientIp(req)}`, 60, 60_000);
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
