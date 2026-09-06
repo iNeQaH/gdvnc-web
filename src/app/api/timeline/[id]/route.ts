@@ -8,6 +8,7 @@ import { sanitizeChronicleHtml } from '@/lib/timeline/sanitize';
 import { clampImageScale, isNature, isTierId, normalizeImageRatio } from '@/lib/timeline/types';
 import { fromDateInput } from '@/lib/timeline/time';
 import { parseGlowColor } from '@/lib/timeline/glow';
+import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 
 function allowedImage(url: string) {
   return isAllowedImageRef(url);
@@ -64,6 +65,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (staleKeys.length > 0) {
       void deleteUploadthingKeys(staleKeys).catch(() => {});
     }
+    bustPublicCache(CACHE_TAGS.timeline);
     return NextResponse.json({ success: true, event: toChronicleEvent(row) });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Failed to update event.' }, { status: 500 });
@@ -89,6 +91,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     if (current?.image) {
       void deleteUploadthingKeys(uploadthingKeysFromRef(current.image)).catch(() => {});
     }
+    bustPublicCache(CACHE_TAGS.timeline);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Failed to delete event.' }, { status: 500 });

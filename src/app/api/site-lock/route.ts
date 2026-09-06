@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server';
 import { requireSuperAdmin } from '@/lib/auth';
 import { isSiteLocked, setSiteLocked } from '@/lib/siteLock';
-
-export const dynamic = 'force-dynamic';
+import { SHORT_CACHE_HEADERS } from '@/lib/publicCache';
 
 export async function GET() {
   try {
     const locked = await isSiteLocked();
-    return NextResponse.json({ success: true, locked });
+    return NextResponse.json({ success: true, locked }, { headers: SHORT_CACHE_HEADERS });
   } catch {
-    return NextResponse.json({ success: true, locked: false });
+    return NextResponse.json({ success: true, locked: false }, { headers: SHORT_CACHE_HEADERS });
   }
 }
 

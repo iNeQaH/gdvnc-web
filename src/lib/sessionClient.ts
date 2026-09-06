@@ -1,6 +1,20 @@
 'use client';
 
+function hasSessionHint() {
+  try {
+    if (localStorage.getItem('gdvnc_user')) return true;
+  } catch {
+    /* ignore */
+  }
+  try {
+    return document.cookie.split(';').some((part) => part.trim().startsWith('gdvnc_ui=1'));
+  } catch {
+    return false;
+  }
+}
+
 export async function refreshSessionUser() {
+  if (!hasSessionHint()) return null;
   try {
     const res = await fetch('/api/auth/me', { cache: 'no-store' });
     if (res.status === 401) {
@@ -20,8 +34,12 @@ export async function refreshSessionUser() {
       prev = {};
     }
     const next = { ...prev, ...data.user };
-    localStorage.setItem('gdvnc_user', JSON.stringify(next));
-    window.dispatchEvent(new Event('gdvnc_user_update'));
+    const prevJson = localStorage.getItem('gdvnc_user') || '';
+    const nextJson = JSON.stringify(next);
+    localStorage.setItem('gdvnc_user', nextJson);
+    if (prevJson !== nextJson) {
+      window.dispatchEvent(new Event('gdvnc_user_update'));
+    }
     return next;
   } catch {
     return null;
@@ -37,6 +55,7 @@ export async function logoutClient() {
   try {
     localStorage.removeItem('gdvnc_user');
     localStorage.removeItem('gdvnc_remember');
+    sessionStorage.removeItem('gdvnc_badges');
   } catch {
     /* ignore */
   }

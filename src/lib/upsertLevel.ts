@@ -4,6 +4,7 @@ import { calculateBasePp } from '@/lib/ScoringEngine';
 import { recalculateUserPp as recalcUserPp } from '@/lib/recordUtils';
 import { persistLocalListSnapshot } from '@/lib/listSnapshot';
 import { pickGdCreatorName, pickGdLevelName } from '@/lib/gdDifficulty';
+import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 
 export async function triggerBackgroundPpRecalc(levelIds: string[], mode: LevelMode) {
   const records = await prisma.record.findMany({
@@ -359,5 +360,6 @@ export async function upsertLevelFromForm(input: {
     );
   }
 
+  bustPublicCache(CACHE_TAGS.levels, CACHE_TAGS.highlights, CACHE_TAGS.leaderboard);
   return { name, creatorName, gdLevelId };
 }

@@ -1,21 +1,23 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { bustPublicCache, cachedJson, CACHE_TAGS } from '@/lib/publicCache';
 
 export const SITE_LOCK_KEY = 'site-lock';
 
-const CACHE_MS = 15_000;
-let lockCache: { at: number; locked: boolean } | null = null;
-
 export async function isSiteLocked(): Promise<boolean> {
-  if (lockCache && Date.now() - lockCache.at < CACHE_MS) return lockCache.locked;
-  try {
-    const row = await prisma.siteContent.findUnique({ where: { key: SITE_LOCK_KEY } });
-    const locked = row?.html?.trim() === '1';
-    lockCache = { at: Date.now(), locked };
-    return locked;
-  } catch {
-    return false;
-  }
+  return cachedJson(
+    async () => {
+      try {
+        const row = await prisma.siteContent.findUnique({ where: { key: SITE_LOCK_KEY } });
+        return row?.html?.trim() === '1';
+      } catch {
+        return false;
+      }
+    },
+    ['site-lock-flag'],
+    [CACHE_TAGS.siteLock],
+    30
+  );
 }
 
 export async function checkSiteLockAndBlock() {
@@ -36,5 +38,5 @@ export async function setSiteLocked(locked: boolean) {
     create: { key: SITE_LOCK_KEY, html },
     update: { html },
   });
-  lockCache = { at: Date.now(), locked };
+  bustPublicCache(CACHE_TAGS.siteLock);
 }

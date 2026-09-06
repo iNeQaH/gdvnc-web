@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getSessionUser } from '@/lib/auth';
+import { getAuthUser } from '@/lib/auth';
 
 export async function GET() {
-  const auth = await getSessionUser();
-  if (!auth) {
+  const jwt = await getAuthUser();
+  if (!jwt?.userId) {
     return NextResponse.json({ success: false }, { status: 401 });
   }
 
   const user = await prisma.user.findUnique({
-    where: { id: auth.userId },
+    where: { id: jwt.userId },
     select: {
       id: true,
       username: true,
@@ -23,12 +23,14 @@ export async function GET() {
       creatorPoints: true,
       spPoints: true,
       supporterUntil: true,
+      tokenVersion: true,
     },
   });
 
-  if (!user) {
+  if (!user || (jwt.tokenVersion ?? 0) !== user.tokenVersion) {
     return NextResponse.json({ success: false }, { status: 401 });
   }
 
-  return NextResponse.json({ success: true, user });
+  const { tokenVersion: _tokenVersion, ...publicUser } = user;
+  return NextResponse.json({ success: true, user: publicUser });
 }

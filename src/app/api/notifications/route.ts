@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
-import { notificationRetentionCutoff, purgeExpiredNotifications } from '@/lib/purgeExpiredNotifications';
+import { notificationRetentionCutoff } from '@/lib/purgeExpiredNotifications';
 import { canSeeAnnouncement } from '@/lib/announcements';
 
 export async function GET() {
@@ -13,8 +13,6 @@ export async function GET() {
   }
 
   try {
-    await purgeExpiredNotifications(auth.userId);
-
     const cutoff = notificationRetentionCutoff();
     const viewer = await prisma.user.findUnique({
       where: { id: auth.userId },

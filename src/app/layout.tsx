@@ -1,17 +1,13 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Inter } from "next/font/google";
-import { connection } from "next/server";
-import { headers } from "next/headers";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { LanguageProvider } from "@/components/LanguageContext";
 import { ToastProvider } from "@/components/GlobalToast";
 import { Sidebar } from "@/components/Sidebar";
+import { SiteLockGate } from "@/components/SiteLockGate";
 import { Analytics } from '@vercel/analytics/next';
-import { isSiteLocked } from "@/lib/siteLock";
-import { getAuthUser, isSuperAdminUsername } from "@/lib/auth";
-import NationalDayLock from "@/components/NationalDayLock";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -42,32 +38,13 @@ export const metadata: Metadata = {
   },
 };
 
-// removed dynamic export
-
 const THEME_BOOT = `(function(){try{var t=localStorage.getItem('gdvnc_theme');document.documentElement.setAttribute('data-theme',t&&['sky','mint','peach','lavender','mono','sakura'].indexOf(t)>=0?t:'sky');var m=localStorage.getItem('gdvnc_mode');var dark=m==='dark'||(m!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',!!dark);}catch(e){}})();`;
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  await connection();
-  const locked = await isSiteLocked();
-  const path = (await headers()).get("x-gdvnc-pathname") || "";
-  const auth = await getAuthUser();
-  const canUnlock = isSuperAdminUsername(auth?.username);
-
-  if (locked && path !== "/login") {
-    return (
-      <html lang="vi" suppressHydrationWarning>
-        <body className="qk-lock-body">
-          <NationalDayLock canUnlock={canUnlock} />
-          <Analytics />
-        </body>
-      </html>
-    );
-  }
-
   return (
     <html lang="vi" suppressHydrationWarning>
       <body className={`${inter.className} antialiased min-h-screen flex flex-col`}>
@@ -77,11 +54,7 @@ export default async function RootLayout({
         <ThemeProvider>
           <LanguageProvider>
             <ToastProvider>
-              {locked && path === "/login" ? (
-                <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 py-6 sm:py-8">
-                  {children}
-                </main>
-              ) : (
+              <SiteLockGate>
                 <div className="min-h-screen flex flex-col md:flex-row">
                   <Sidebar />
 
@@ -95,7 +68,7 @@ export default async function RootLayout({
                     </footer>
                   </div>
                 </div>
-              )}
+              </SiteLockGate>
             </ToastProvider>
           </LanguageProvider>
         </ThemeProvider>

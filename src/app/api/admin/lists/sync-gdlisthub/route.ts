@@ -3,6 +3,7 @@ import { requireSuperAdmin } from '@/lib/auth';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { syncGdlisthubLists } from '@/lib/syncGdlisthubLists';
+import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 
 export const maxDuration = 60;
 
@@ -18,6 +19,7 @@ export async function POST(req: Request) {
 
   try {
     const result = await syncGdlisthubLists();
+    bustPublicCache(CACHE_TAGS.levels, CACHE_TAGS.highlights);
     return NextResponse.json({ success: true, result });
   } catch (error: any) {
     return NextResponse.json(

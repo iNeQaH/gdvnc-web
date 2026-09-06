@@ -12,6 +12,7 @@ import {
 export { isFullAdminRole, isStaffRole, isSuperAdminUsername, isSuperAdminUser };
 
 const COOKIE_NAME = 'gdvnc_token';
+const UI_COOKIE_NAME = 'gdvnc_ui';
 const TOKEN_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
 
 export interface JwtPayload {
@@ -47,9 +48,17 @@ export async function verifyToken(token: string): Promise<JwtPayload | null> {
 
 export async function setAuthCookie(token: string) {
   const cookieStore = await cookies();
+  const secure = process.env.NODE_ENV === 'production';
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure,
+    sameSite: 'lax',
+    maxAge: TOKEN_MAX_AGE,
+    path: '/',
+  });
+  cookieStore.set(UI_COOKIE_NAME, '1', {
+    httpOnly: false,
+    secure,
     sameSite: 'lax',
     maxAge: TOKEN_MAX_AGE,
     path: '/',
@@ -58,9 +67,18 @@ export async function setAuthCookie(token: string) {
 
 export async function clearAuthCookie() {
   const cookieStore = await cookies();
+  const secure = process.env.NODE_ENV === 'production';
   cookieStore.set(COOKIE_NAME, '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure,
+    sameSite: 'lax',
+    maxAge: 0,
+    expires: new Date(0),
+    path: '/',
+  });
+  cookieStore.set(UI_COOKIE_NAME, '', {
+    httpOnly: false,
+    secure,
     sameSite: 'lax',
     maxAge: 0,
     expires: new Date(0),

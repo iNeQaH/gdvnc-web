@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import {
-  getCachedLeaderboard,
   getCreatorLeaderboard,
   getPlayerLeaderboard,
+  getCachedLeaderboard,
   setCachedLeaderboard,
 } from '@/lib/leaderboard';
 import { checkSiteLockAndBlock } from '@/lib/siteLock';
+import { cachedJson, CACHE_TAGS, PUBLIC_CACHE_HEADERS } from '@/lib/publicCache';
 
 export async function GET(req: Request) {
   const block = await checkSiteLockAndBlock();
@@ -14,23 +15,26 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const mode = searchParams.get('mode') || 'CLASSIC';
-    const cached = getCachedLeaderboard(mode);
-    if (cached) {
-      return NextResponse.json(cached, {
-        headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
-      });
+    const memory = getCachedLeaderboard(mode);
+    if (memory) {
+      return NextResponse.json(memory, { headers: PUBLIC_CACHE_HEADERS });
     }
 
-    const leaderboard =
-      mode === 'CREATOR'
-        ? await getCreatorLeaderboard()
-        : await getPlayerLeaderboard(mode === 'PLATFORMER' ? 'PLATFORMER' : 'CLASSIC');
+    const body = await cachedJson(
+      async () => {
+        const leaderboard =
+          mode === 'CREATOR'
+            ? await getCreatorLeaderboard()
+            : await getPlayerLeaderboard(mode === 'PLATFORMER' ? 'PLATFORMER' : 'CLASSIC');
+        return { success: true, leaderboard };
+      },
+      ['leaderboard', mode],
+      [CACHE_TAGS.leaderboard],
+      300
+    );
 
-    const body = { success: true, leaderboard };
     setCachedLeaderboard(mode, body);
-    return NextResponse.json(body, {
-      headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
-    });
+    return NextResponse.json(body, { headers: PUBLIC_CACHE_HEADERS });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Lỗi tải Bảng Xếp Hạng.' }, { status: 500 });
   }

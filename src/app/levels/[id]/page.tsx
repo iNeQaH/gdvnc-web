@@ -4,6 +4,8 @@ import DemonDetailView from '@/components/DemonDetailView';
 import { resolvePublicLevel, victorCountForLevel } from '@/lib/levelLookup';
 import { dedupeRecordsByUser } from '@/lib/recordUtils';
 
+export const revalidate = 120;
+
 export default async function DemonDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const level = await resolvePublicLevel(id);

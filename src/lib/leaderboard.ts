@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { LevelMode, RecordStatus } from '@prisma/client';
 import { pickDecoAndLayoutBadges, cpFromVnLevels } from '@/lib/creatorPoints';
 import { calculateModePp, pickHardestLevel, type HardestLevel } from '@/lib/recordUtils';
+import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 
 export const publicUser = {
   id: true,
@@ -331,7 +332,7 @@ export async function getCreatorLeaderboard() {
   });
 }
 
-const CACHE_MS = 30_000;
+const CACHE_MS = 120_000;
 const cache = new Map<string, { at: number; body: unknown }>();
 
 export function getCachedLeaderboard(mode: string) {
@@ -346,4 +347,5 @@ export function setCachedLeaderboard(mode: string, body: unknown) {
 
 export function clearLeaderboardCache() {
   cache.clear();
+  bustPublicCache(CACHE_TAGS.leaderboard, CACHE_TAGS.highlights);
 }

@@ -5,6 +5,7 @@ import { calculateBasePp } from '@/lib/ScoringEngine';
 import { upsertLevelFromForm, triggerBackgroundPpRecalc } from '@/lib/upsertLevel';
 import { persistLocalListSnapshot } from '@/lib/listSnapshot';
 import { LevelMode, Prisma } from '@prisma/client';
+import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 
 export async function POST(req: Request) {
   try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
@@ -29,6 +30,7 @@ export async function PATCH(req: Request) {
         where: { id: body.id },
         data: { creatorId: null },
       });
+      bustPublicCache(CACHE_TAGS.levels, CACHE_TAGS.highlights);
       return NextResponse.json({ success: true });
     }
     if (body?.id && typeof body.isChallenge === 'boolean') {
@@ -36,6 +38,7 @@ export async function PATCH(req: Request) {
         where: { id: body.id },
         data: { isChallenge: body.isChallenge },
       });
+      bustPublicCache(CACHE_TAGS.levels);
       return NextResponse.json({ success: true });
     }
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
@@ -106,6 +109,8 @@ export async function DELETE(req: Request) {
     }, { maxWait: 15000, timeout: 30000 });
 
     await triggerBackgroundPpRecalc([id, ...affectedLevelIds], mode);
+
+    bustPublicCache(CACHE_TAGS.levels, CACHE_TAGS.highlights, CACHE_TAGS.leaderboard);
 
     if (!level.isChallenge) {
       void persistLocalListSnapshot(mode === LevelMode.PLATFORMER ? 'PLATFORMER' : 'CLASSIC').catch((err) =>

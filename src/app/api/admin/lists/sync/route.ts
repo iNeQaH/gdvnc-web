@@ -5,6 +5,7 @@ import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { syncExternalListToDb } from '@/lib/externalLists';
 import { triggerBackgroundPpRecalc } from '@/lib/upsertLevel';
+import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 
 export const maxDuration = 60;
 
@@ -48,6 +49,7 @@ export async function POST(req: Request) {
       });
     }
 
+    bustPublicCache(CACHE_TAGS.levels, CACHE_TAGS.highlights, CACHE_TAGS.leaderboard);
     return NextResponse.json({ success: true, results });
   } catch (error: any) {
     return NextResponse.json(

@@ -42,16 +42,38 @@ export const Sidebar = () => {
       try {
         const u = JSON.parse(userStr);
         setCurrentUser(u);
-        fetch(`/api/notifications`)
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.success) setUnreadCount(data.unreadCount || 0);
-          })
-          .catch(() => {});
-        fetch('/api/announcements')
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.success) setAnnounceUnread(data.unreadCount || 0);
+        let usedCache = false;
+        try {
+          const raw = sessionStorage.getItem('gdvnc_badges');
+          if (raw) {
+            const cached = JSON.parse(raw);
+            if (cached?.userId === u.id && Date.now() - cached.at < 90_000) {
+              setUnreadCount(cached.unreadCount || 0);
+              setAnnounceUnread(cached.announceUnread || 0);
+              usedCache = true;
+            }
+          }
+        } catch {
+          /* ignore */
+        }
+        if (usedCache) return;
+        Promise.all([
+          fetch('/api/notifications').then((res) => res.json()),
+          fetch('/api/announcements').then((res) => res.json()),
+        ])
+          .then(([inbox, announces]) => {
+            const unread = inbox?.success ? inbox.unreadCount || 0 : 0;
+            const announce = announces?.success ? announces.unreadCount || 0 : 0;
+            setUnreadCount(unread);
+            setAnnounceUnread(announce);
+            try {
+              sessionStorage.setItem(
+                'gdvnc_badges',
+                JSON.stringify({ userId: u.id, at: Date.now(), unreadCount: unread, announceUnread: announce })
+              );
+            } catch {
+              /* ignore */
+            }
           })
           .catch(() => {});
       } catch (e) {

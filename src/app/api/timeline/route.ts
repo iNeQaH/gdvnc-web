@@ -11,6 +11,7 @@ import { clampImageScale, isNature, isTierId, normalizeImageRatio } from '@/lib/
 import { fromDateInput } from '@/lib/timeline/time';
 import { parseGlowColor } from '@/lib/timeline/glow';
 import { checkSiteLockAndBlock } from '@/lib/siteLock';
+import { bustPublicCache, cachedJson, CACHE_TAGS, PUBLIC_CACHE_HEADERS } from '@/lib/publicCache';
 
 function allowedImage(url: string) {
   return isAllowedImageRef(url);
@@ -52,12 +53,20 @@ export async function GET(req: Request) {
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
   try {
-    const rows = await prisma.timelineEvent.findMany({
-      orderBy: { startAt: 'asc' },
-    });
+    const events = await cachedJson(
+      async () => {
+        const rows = await prisma.timelineEvent.findMany({
+          orderBy: { startAt: 'asc' },
+        });
+        return rows.map(toChronicleEvent);
+      },
+      ['timeline-events'],
+      [CACHE_TAGS.timeline],
+      300
+    );
     return NextResponse.json(
-      { success: true, events: rows.map(toChronicleEvent) },
-      { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' } }
+      { success: true, events },
+      { headers: PUBLIC_CACHE_HEADERS }
     );
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Failed to load timeline.' }, { status: 500 });
@@ -76,6 +85,7 @@ export async function POST(req: Request) {
     const parsed = parseEventBody(body);
     if ('data' in parsed && parsed.data) {
       const row = await prisma.timelineEvent.create({ data: parsed.data });
+      bustPublicCache(CACHE_TAGS.timeline);
       return NextResponse.json({ success: true, event: toChronicleEvent(row) });
     }
     return NextResponse.json({ error: parsed.error || 'Invalid event.' }, { status: 400 });

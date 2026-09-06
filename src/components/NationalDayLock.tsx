@@ -24,6 +24,13 @@ export default function NationalDayLock({ canUnlock }: { canUnlock: boolean }) {
         setErr(data.error || 'Không tắt được.');
         return;
       }
+      try {
+        sessionStorage.setItem('gdvnc_site_lock', '0');
+        sessionStorage.setItem('gdvnc_site_lock_at', String(Date.now()));
+      } catch {
+        /* ignore */
+      }
+      window.dispatchEvent(new Event('gdvnc_site_lock_update'));
       router.refresh();
     } catch {
       setErr('Mạng lỗi.');
