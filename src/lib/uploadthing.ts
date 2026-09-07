@@ -1,24 +1,18 @@
-import { UTApi } from 'uploadthing/server';
+import {
+  uploadBufferToLocal,
+  uploadDataUrlToLocal,
+  deleteLocalFiles
+} from './localStorage';
 
 const IMAGE_ID_RE = /\/api\/images\/([A-Za-z0-9_-]+)/g;
 const UT_HOST = /(^|\.)((utfs\.io)|(ufs\.sh))$/i;
 
-let cached: UTApi | null = null;
-
-/** Read at request time so Next does not inline an empty value at build. */
 export function getUploadthingToken() {
-  const env = process.env;
-  const raw = String(env['UPLOADTHING_TOKEN'] || env['UPLOADTHING_SECRET'] || '').trim();
-  return raw.replace(/^['"]|['"]$/g, '');
+  return '';
 }
 
 export function utapi() {
-  const token = getUploadthingToken();
-  if (!token) {
-    throw new Error('UPLOADTHING_TOKEN is not set.');
-  }
-  if (!cached) cached = new UTApi({ token });
-  return cached;
+  throw new Error('UploadThing is no longer supported. Use local storage helpers instead.');
 }
 
 export function isUploadthingUrl(url: string) {
@@ -33,7 +27,9 @@ export function isAllowedImageRef(url: string | null | undefined, maxLen = 500) 
   const value = String(url ?? '').trim();
   if (!value) return true;
   if (value.length > maxLen) return false;
-  if (value.startsWith('/api/images/')) return value.length <= 200;
+  if (value.startsWith('/api/images/') || value.startsWith('/api/uploads/') || value.startsWith('/uploads/')) {
+    return value.length <= 200;
+  }
   try {
     const parsed = new URL(value);
     return parsed.protocol === 'https:';
@@ -44,6 +40,10 @@ export function isAllowedImageRef(url: string | null | undefined, maxLen = 500) 
 
 export function uploadthingKeyFromUrl(url: string): string | null {
   try {
+    if (url.startsWith('/api/uploads/')) {
+      const parts = url.split('/');
+      return decodeURIComponent(parts[parts.length - 1]);
+    }
     const parsed = new URL(url);
     if (!UT_HOST.test(parsed.hostname)) return null;
     const match = parsed.pathname.match(/\/f\/([^/?#]+)/);
@@ -54,22 +54,10 @@ export function uploadthingKeyFromUrl(url: string): string | null {
 }
 
 export function publicUrlForKey(key: string) {
-  try {
-    const raw = Buffer.from(process.env.UPLOADTHING_TOKEN || '', 'base64').toString('utf8');
-    const appId = JSON.parse(raw)?.appId;
-    if (typeof appId === 'string' && appId) {
-      return `https://${appId}.ufs.sh/f/${key}`;
-    }
-  } catch {
-    /* fall through */
+  if (key.includes('-')) {
+    return `/api/uploads/${key}`; // local heuristic
   }
   return `https://utfs.io/f/${key}`;
-}
-
-function mimeToName(mime: string, fallback = 'image.jpg') {
-  const ext = mime.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
-  if (!/^[a-z0-9]+$/i.test(ext)) return fallback;
-  return `image.${ext}`;
 }
 
 export async function uploadBufferToUt(
@@ -77,23 +65,11 @@ export async function uploadBufferToUt(
   mime = 'image/jpeg',
   filename?: string
 ): Promise<{ url: string; key: string }> {
-  const bytes = new Uint8Array(buffer.byteLength);
-  bytes.set(buffer);
-  const file = new File([bytes], filename || mimeToName(mime), { type: mime });
-  const result = await utapi().uploadFiles(file);
-  if (result.error || !result.data) {
-    throw new Error(result.error?.message || 'UploadThing upload failed.');
-  }
-  return { url: result.data.ufsUrl, key: result.data.key };
+  return uploadBufferToLocal(buffer, mime, filename);
 }
 
 export async function uploadDataUrlToUt(dataUrl: string, filename?: string): Promise<string> {
-  const parts = dataUrl.split(',');
-  if (parts.length !== 2) throw new Error('Invalid image data');
-  const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
-  const buffer = Buffer.from(parts[1], 'base64');
-  const uploaded = await uploadBufferToUt(buffer, mime, filename);
-  return uploaded.url;
+  return uploadDataUrlToLocal(dataUrl, filename);
 }
 
 export function imageIdsFromRef(ref: string | null | undefined): string[] {
@@ -110,9 +86,7 @@ export function uploadthingKeysFromRef(ref: string | null | undefined): string[]
 }
 
 export async function deleteUploadthingKeys(keys: string[]) {
-  const unique = [...new Set(keys.filter(Boolean))];
-  if (unique.length === 0) return;
-  await utapi().deleteFiles(unique);
+  return deleteLocalFiles(keys);
 }
 
 export async function deleteStoredImages(ref: string | null | undefined) {

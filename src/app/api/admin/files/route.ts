@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { requireSuperAdmin } from '@/lib/auth';
 import { migrateMediaToUt } from '@/lib/migrateMediaToUt';
-import { publicUrlForKey, utapi } from '@/lib/uploadthing';
+import fs from 'fs';
+import path from 'path';
+import { getUserDataDir, deleteLocalFiles } from '@/lib/localStorage';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,22 +17,53 @@ export async function GET() {
   }
 
   try {
-    const [listed, usage] = await Promise.all([
-      utapi().listFiles({ limit: 100 }),
-      utapi().getUsageInfo().catch(() => null),
-    ]);
+    const uploadsDir = path.join(getUserDataDir(), 'uploads');
+    let dirExists = true;
+    try {
+      await fs.promises.access(uploadsDir);
+    } catch {
+      dirExists = false;
+    }
+
+    const files = [];
+    let totalSize = 0;
+
+    if (dirExists) {
+      const entries = await fs.promises.readdir(uploadsDir);
+      // Fetch stats for all files concurrently, bounded manually if needed, but since we are limiting to 100, we'll sort.
+      // Wait, to sort by newest we need stats for all.
+      // If there are many files, this could be slow, but it's acceptable for now.
+      const stats = await Promise.all(
+        entries.map(async (name) => {
+          const filePath = path.join(uploadsDir, name);
+          const stat = await fs.promises.stat(filePath).catch(() => null);
+          return { name, stat };
+        })
+      );
+
+      for (const { name, stat } of stats) {
+        if (stat && stat.isFile()) {
+          files.push({
+            key: name,
+            name: name,
+            size: stat.size,
+            status: 'Uploaded',
+            uploadedAt: stat.mtimeMs,
+            url: `/api/uploads/${name}`,
+          });
+          totalSize += stat.size;
+        }
+      }
+
+      // Sort by newest first and limit to 100
+      files.sort((a, b) => b.uploadedAt - a.uploadedAt);
+    }
+
     return NextResponse.json({
       success: true,
-      hasMore: listed.hasMore,
-      usage,
-      files: listed.files.map((file) => ({
-        key: file.key,
-        name: file.name,
-        size: file.size,
-        status: file.status,
-        uploadedAt: file.uploadedAt,
-        url: publicUrlForKey(file.key),
-      })),
+      hasMore: files.length > 100,
+      usage: { totalBytes: totalSize, totalFiles: files.length },
+      files: files.slice(0, 100),
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Failed to list files.' }, { status: 500 });
@@ -54,7 +87,8 @@ export async function DELETE(req: Request) {
     if (keys.length === 0) {
       return NextResponse.json({ error: 'Missing file key.' }, { status: 400 });
     }
-    await utapi().deleteFiles(keys);
+    
+    await deleteLocalFiles(keys);
     return NextResponse.json({ success: true, deleted: keys.length });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Failed to delete files.' }, { status: 500 });

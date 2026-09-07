@@ -1,11 +1,9 @@
 import { LevelMode } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import type { ExternalListLevel } from '@/lib/externalLists';
-import {
-  deleteUploadthingKeys,
-  getUploadthingToken,
-  uploadBufferToUt,
-} from '@/lib/uploadthing';
+import fs from 'fs';
+import path from 'path';
+import { getUserDataDir } from '@/lib/localStorage';
 
 const SITE_KEY = (mode: 'CLASSIC' | 'PLATFORMER') => `list-snapshot:${mode}`;
 
@@ -56,13 +54,8 @@ function rowToExternal(
   };
 }
 
-/** Dump the local ranked list to UploadThing (backup). Never calls Pointercrate. */
+/** Dump the local ranked list to local storage (backup). */
 export async function persistLocalListSnapshot(mode: 'CLASSIC' | 'PLATFORMER'): Promise<SnapshotMeta | null> {
-  if (!getUploadthingToken()) {
-    console.warn('Skip list snapshot: UPLOADTHING_TOKEN is not set');
-    return null;
-  }
-
   const levelMode = mode === 'PLATFORMER' ? LevelMode.PLATFORMER : LevelMode.CLASSIC;
   const rows = await prisma.level.findMany({
     where: { mode: levelMode, isChallenge: false, placement: { not: null } },
@@ -87,14 +80,15 @@ export async function persistLocalListSnapshot(mode: 'CLASSIC' | 'PLATFORMER'): 
   const savedAt = new Date().toISOString();
   const payload: SnapshotFile = { version: 1, mode, savedAt, levels };
   const buffer = Buffer.from(JSON.stringify(payload), 'utf8');
-  const uploaded = await uploadBufferToUt(buffer, 'application/json', `gdvn-${mode.toLowerCase()}-list.json`);
-
-  const prev = await prisma.siteContent.findUnique({ where: { key: SITE_KEY(mode) } });
-  const prevMeta = prev ? parseMeta(prev.html) : null;
+  
+  const filename = `gdvn-${mode.toLowerCase()}-list.json`;
+  const snapshotPath = path.join(getUserDataDir(), 'snapshots', filename);
+  await fs.promises.mkdir(path.dirname(snapshotPath), { recursive: true }).catch(() => {});
+  await fs.promises.writeFile(snapshotPath, buffer);
 
   const meta: SnapshotMeta = {
-    url: uploaded.url,
-    key: uploaded.key,
+    url: `/api/uploads/snapshots/${filename}`,
+    key: `snapshots/${filename}`,
     savedAt,
     count: levels.length,
   };
@@ -105,34 +99,39 @@ export async function persistLocalListSnapshot(mode: 'CLASSIC' | 'PLATFORMER'): 
     update: { html: JSON.stringify(meta) },
   });
 
-  if (prevMeta?.key && prevMeta.key !== uploaded.key) {
-    await deleteUploadthingKeys([prevMeta.key]).catch((err) =>
-      console.error('Failed to delete old list snapshot', err)
-    );
-  }
-
   return meta;
 }
 
 export async function loadListSnapshot(mode: 'CLASSIC' | 'PLATFORMER'): Promise<ExternalListLevel[] | null> {
   const row = await prisma.siteContent.findUnique({ where: { key: SITE_KEY(mode) } });
   const meta = row ? parseMeta(row.html) : null;
-  if (!meta?.url) return null;
+  if (!meta?.key) return null;
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 25_000);
   try {
-    const res = await fetch(meta.url, { signal: controller.signal, cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status} for list snapshot`);
-    const data = (await res.json()) as SnapshotFile;
+    const snapshotPath = path.join(getUserDataDir(), meta.key);
+    const content = await fs.promises.readFile(snapshotPath, 'utf8');
+    const data = JSON.parse(content) as SnapshotFile;
     if (!Array.isArray(data?.levels) || data.levels.length === 0) return null;
     return data.levels.filter(
       (l) => Number.isFinite(l.gdLevelId) && l.gdLevelId > 0 && Number.isFinite(l.placement) && l.placement >= 1
     );
-  } catch (error) {
-    console.error(`Failed to load ${mode} list snapshot`, error);
+  } catch (error: any) {
+    // Fallback if the path is an external URL (legacy UploadThing URL)
+    if (meta.url.startsWith('http')) {
+      try {
+        const res = await fetch(meta.url, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json() as SnapshotFile;
+        if (!Array.isArray(data?.levels) || data.levels.length === 0) return null;
+        return data.levels.filter(
+          (l) => Number.isFinite(l.gdLevelId) && l.gdLevelId > 0 && Number.isFinite(l.placement) && l.placement >= 1
+        );
+      } catch (fallbackError) {
+        console.error(`Failed to load legacy ${mode} list snapshot via fetch`, fallbackError);
+      }
+    } else {
+      console.error(`Failed to load ${mode} list snapshot from disk`, error);
+    }
     return null;
-  } finally {
-    clearTimeout(timer);
   }
 }
