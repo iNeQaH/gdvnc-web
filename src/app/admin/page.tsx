@@ -39,6 +39,7 @@ import {
   Lock,
   Wrench,
   Plus,
+  Activity,
 } from 'lucide-react';
 import BadgeIcon, { IconGlyph } from '@/components/BadgeIcon';
 import { useLanguage } from '@/components/LanguageContext';
@@ -298,6 +299,9 @@ export default function AdminPage() {
   const [pendingRecords, setPendingRecords] = useState<any[]>([]);
   const [recordFilter, setRecordFilter] = useState<QueueStatus>('PENDING');
   const [recordPage, setRecordPage] = useState(1);
+  const [recordQuery, setRecordQuery] = useState('');
+  const [recordSort, setRecordSort] = useState<'newest' | 'oldest'>('newest');
+  const [recordRole, setRecordRole] = useState('ALL');
   const [recordCounts, setRecordCounts] = useState<QueueCounts>({ pending: 0, approved: 0, rejected: 0 });
   const [loadingRecords, setLoadingRecords] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -305,8 +309,11 @@ export default function AdminPage() {
 
   // Works moderation state
   const [pendingWorks, setPendingWorks] = useState<any[]>([]);
+  const [levelSubs, setLevelSubs] = useState<any[]>([]);
   const [workFilter, setWorkFilter] = useState<QueueStatus>('PENDING');
   const [workPage, setWorkPage] = useState(1);
+  const [workQuery, setWorkQuery] = useState('');
+  const [workSort, setWorkSort] = useState<'newest' | 'oldest'>('newest');
   const [workCounts, setWorkCounts] = useState<QueueCounts>({ pending: 0, approved: 0, rejected: 0 });
   const [loadingWorks, setLoadingWorks] = useState(true);
   const [workReviewData, setWorkReviewData] = useState<Record<string, { badgeIds?: string[], cpAwarded?: string, rejectReason?: string }>>({});
@@ -392,13 +399,21 @@ export default function AdminPage() {
 
   const fetchWorks = async (status: QueueStatus = workFilter, page = 1) => {
     setLoadingWorks(true);
+    setLoadingLevelSubs(true);
     try {
-      const res = await fetch(`/api/admin/works?status=${status}&page=${page}`);
-      const data = await res.json();
+      const [wRes, lRes] = await Promise.all([
+        fetch(`/api/admin/works?status=${status}&page=${page}&q=${encodeURIComponent(workQuery)}&sort=${workSort}`),
+        fetch(`/api/admin/level-submissions?status=${status}&page=${page}`)
+      ]);
+      const data = await wRes.json();
+      const lData = await lRes.json();
       if (data.success) {
         setPendingWorks(data.works || []);
         if (data.counts) setWorkCounts(data.counts);
         setWorkPage(data.page || page);
+      }
+      if (lData.success) {
+        setLevelSubs(lData.submissions || []);
       }
     } catch (e) {
       console.error(e);
@@ -448,7 +463,7 @@ export default function AdminPage() {
   const fetchPendingRecords = async (status: QueueStatus = recordFilter, page = 1) => {
     setLoadingRecords(true);
     try {
-      const res = await fetch(`/api/admin/records/pending?status=${status}&page=${page}`);
+      const res = await fetch(`/api/admin/records/pending?status=${status}&page=${page}&q=${encodeURIComponent(recordQuery)}&sort=${recordSort}&role=${recordRole}`);
       const data = await res.json();
       if (data.success) {
         setPendingRecords(data.records || []);
@@ -499,6 +514,15 @@ export default function AdminPage() {
     }
   };
 
+  useEffect(() => {
+    if (tab === 'records') {
+      const timer = setTimeout(() => {
+        fetchPendingRecords(recordFilter, 1);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [recordQuery, recordSort, recordRole]);
+
   const handleReview = async (recordId: string, action: 'APPROVE' | 'REJECT') => {
     setActionLoading(recordId);
     try {
@@ -525,6 +549,15 @@ export default function AdminPage() {
       setActionLoading(null);
     }
   };
+
+  useEffect(() => {
+    if (tab === 'works') {
+      const timer = setTimeout(() => {
+        fetchWorks(workFilter, 1);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [workQuery, workSort]);
 
   const handleReviewWork = async (workId: string, action: 'APPROVE' | 'REJECT') => {
     const data = workReviewData[workId] || {};
@@ -1053,21 +1086,6 @@ export default function AdminPage() {
             <Users className="w-3.5 h-3.5" />
             Members
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              setLevelFormInitialData(null);
-              setIsLevelFormOpen(true);
-            }}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
-            style={{
-              backgroundColor: 'transparent',
-              color: 'var(--text-dim)',
-            }}
-          >
-            <Plus className="w-3.5 h-3.5" />
-            {t('admin.fn_add_level')}
-          </button>
           {isSuperAdmin && (
             <button
               onClick={() => setTab('levels')}
@@ -1080,6 +1098,16 @@ export default function AdminPage() {
               <Wrench className="w-3.5 h-3.5" />
               {t('admin.tab_levels')}
             </button>
+          )}
+          {isSuperAdmin && (
+            <Link
+              href="/admin/analytics"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all hover:bg-black/5 dark:hover:bg-white/5"
+              style={{ color: 'var(--text-dim)' }}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              Analytics
+            </Link>
           )}
         </div>
       </div>
@@ -1119,6 +1147,43 @@ export default function AdminPage() {
               >
                 <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
               </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 p-3 rounded-2xl border" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}>
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 ui-dim absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder={t('admin.search_user')}
+                value={recordQuery}
+                onChange={(e) => setRecordQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 rounded-xl text-xs border focus:outline-none"
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                value={recordSort}
+                onChange={(e) => setRecordSort(e.target.value as any)}
+                className="px-2.5 py-2 rounded-xl border text-[11px] font-semibold"
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+              >
+                <option value="newest">Mới nhất</option>
+                <option value="oldest">Cũ nhất</option>
+              </select>
+              <select
+                value={recordRole}
+                onChange={(e) => setRecordRole(e.target.value)}
+                className="px-2.5 py-2 rounded-xl border text-[11px] font-semibold"
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+              >
+                <option value="ALL">{t('admin.filter_all')}</option>
+                <option value="ADMIN">Admin</option>
+                <option value="MODERATOR">Moderator</option>
+                <option value="SUPPORTER">Supporter</option>
+                <option value="USER">{t('admin.filter_user')}</option>
+              </select>
             </div>
           </div>
 
@@ -1298,6 +1363,31 @@ export default function AdminPage() {
               >
                 <RefreshCw className="w-3 h-3" /> {t('admin.refresh')}
               </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 p-3 rounded-2xl border" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}>
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 ui-dim absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder={t('admin.search_user')}
+                value={workQuery}
+                onChange={(e) => setWorkQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 rounded-xl text-xs border focus:outline-none"
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                value={workSort}
+                onChange={(e) => setWorkSort(e.target.value as any)}
+                className="px-2.5 py-2 rounded-xl border text-[11px] font-semibold"
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+              >
+                <option value="newest">Mới nhất</option>
+                <option value="oldest">Cũ nhất</option>
+              </select>
             </div>
           </div>
 

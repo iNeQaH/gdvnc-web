@@ -18,20 +18,35 @@ export async function GET(req: Request) {
     const status = parseQueueStatusParam(searchParams.get('status'));
     const page = parsePageParam(searchParams.get('page'));
     const skip = (page - 1) * ADMIN_LIST_LIMIT;
+    const q = searchParams.get('q') || '';
+    const sort = searchParams.get('sort') || 'newest';
+    const role = searchParams.get('role') || 'ALL';
+
+    const whereClause: any = status ? { status } : {};
+    
+    if (q) {
+      whereClause.OR = [
+        { level: { name: { contains: q, mode: 'insensitive' } } },
+        { user: { username: { contains: q, mode: 'insensitive' } } },
+        { user: { gdUsername: { contains: q, mode: 'insensitive' } } }
+      ];
+    }
+    
+    if (role !== 'ALL') {
+      whereClause.user = { ...whereClause.user, role };
+    }
 
     const [records, grouped] = await Promise.all([
       prisma.record.findMany({
-        where: status ? { status } : {},
+        where: whereClause,
         include: {
-          user: { select: { id: true, username: true, gdUsername: true, avatarUrl: true } },
+          user: { select: { id: true, username: true, gdUsername: true, avatarUrl: true, role: true } },
           level: true,
           reviewer: { select: REVIEWER_SELECT },
         },
-        orderBy: !status
-          ? { submittedAt: 'desc' }
-          : status === RecordStatus.PENDING
-            ? { submittedAt: 'asc' }
-            : { reviewedAt: 'desc' },
+        orderBy: sort === 'oldest' 
+          ? (status === RecordStatus.PENDING ? { submittedAt: 'asc' } : { reviewedAt: 'asc' })
+          : (status === RecordStatus.PENDING ? { submittedAt: 'desc' } : { reviewedAt: 'desc' }),
         skip,
         take: ADMIN_LIST_LIMIT,
       }),

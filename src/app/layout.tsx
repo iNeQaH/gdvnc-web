@@ -7,6 +7,7 @@ import { LanguageProvider } from "@/components/LanguageContext";
 import { ToastProvider } from "@/components/GlobalToast";
 import { Sidebar } from "@/components/Sidebar";
 import { SiteLockGate } from "@/components/SiteLockGate";
+import AnalyticsTracker from "@/components/AnalyticsTracker";
 import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({ subsets: ["latin"] });
@@ -55,6 +56,7 @@ export default function RootLayout({
           <LanguageProvider>
             <ToastProvider>
               <SiteLockGate>
+                <AnalyticsTracker />
                 <div className="min-h-screen flex flex-col md:flex-row">
                   <Sidebar />
 

@@ -374,3 +374,15 @@ model TimelineEvent {
 
   @@index([startAt])
 }
+
+model PageVisit {
+  id        String   @id @default(uuid())
+  path      String
+  ipHash    String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([path])
+  @@index([ipHash])
+}

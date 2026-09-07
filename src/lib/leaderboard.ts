@@ -124,6 +124,7 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER') {
         platformerPp: true,
         hardestClassicLevel: { select: hardestLevelSelect },
         hardestPlatformerLevel: { select: hardestLevelSelect },
+        userBadges: { include: { badge: true } },
       },
     }),
     prisma.record.findMany({
@@ -179,6 +180,20 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER') {
       displayName: playerDisplayName(player),
       isLegacy: false as const,
       hardestLevel: hardestFromLevel(stored),
+      topBadges: (() => {
+        const roles = [];
+        if (player.role === 'ADMIN') {
+          roles.push({ id: 'role-admin', name: 'Admin', icon: 'Shield', bgColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)', sortOrder: 9999 });
+        } else if (player.role === 'MODERATOR') {
+          roles.push({ id: 'role-mod', name: 'Moderator', icon: 'ShieldCheck', bgColor: 'var(--badge-green-bg)', color: 'var(--badge-green-text)', sortOrder: 9998 });
+        }
+        if (player.supporterUntil && new Date(player.supporterUntil) > new Date()) {
+          roles.push({ id: 'role-supporter', name: 'Supporter', icon: 'Heart', bgColor: 'rgba(236, 72, 153, 0.15)', color: '#ec4899', sortOrder: 9997 });
+        }
+        return [...(player.userBadges || []).map(ub => ub.badge), ...roles]
+          .sort((a, b) => b.sortOrder - a.sortOrder)
+          .slice(0, 3);
+      })()
     };
   });
 
@@ -292,6 +307,20 @@ export async function getCreatorLeaderboard() {
         isLegacy: false as const,
         unverified: !creator.gdVerified,
         createdLevels: merged,
+        topBadges: (() => {
+          const roles = [];
+          if (creator.role === 'ADMIN') {
+            roles.push({ id: 'role-admin', name: 'Admin', icon: 'Shield', bgColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)', sortOrder: 9999 });
+          } else if (creator.role === 'MODERATOR') {
+            roles.push({ id: 'role-mod', name: 'Moderator', icon: 'ShieldCheck', bgColor: 'var(--badge-green-bg)', color: 'var(--badge-green-text)', sortOrder: 9998 });
+          }
+          if (creator.supporterUntil && new Date(creator.supporterUntil) > new Date()) {
+            roles.push({ id: 'role-supporter', name: 'Supporter', icon: 'Heart', bgColor: 'rgba(236, 72, 153, 0.15)', color: '#ec4899', sortOrder: 9997 });
+          }
+          return [...(userBadges || []).map(ub => ub.badge), ...roles]
+            .sort((a, b) => b.sortOrder - a.sortOrder)
+            .slice(0, 3);
+        })(),
         qualityBadges: pickDecoAndLayoutBadges(
           userBadges.map((ub) => ({
             ...ub.badge,

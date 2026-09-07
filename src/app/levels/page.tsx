@@ -18,6 +18,22 @@ import { levelPath } from '@/lib/levelUrl';
 import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
 import { isStaffRole } from '@/lib/roles';
 
+const tabNames: Record<string, string> = {
+  featured: 'Featured List',
+  classic: 'Classic List',
+  demonlist: 'Demon List',
+  pemonlist: 'Pemon List',
+  vn: 'Made in VN',
+};
+
+const tabDescriptions: Record<string, string> = {
+  featured: 'Danh sách các Demon được đánh giá của người Việt',
+  classic: 'Danh sách các Demon đã được đánh bại bởi người Việt',
+  demonlist: 'Danh sách demon trên thế giới',
+  pemonlist: 'Danh sách Platformer Demon trên thế giới',
+  vn: 'Tổng hợp tất cả các level được đánh giá bới người Việt',
+};
+
 export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main' | 'challenge' }) {
   const { t } = useLanguage();
   const { showConfirm, showToast } = useToast();
@@ -27,7 +43,6 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
 
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-  const [searchOpen, setSearchOpen] = useState(false);
   const [listTab, setListTab] = useState<'featured' | 'classic' | 'demonlist' | 'pemonlist' | 'vn'>('featured');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -59,7 +74,6 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
     const timer = setTimeout(() => {
       const q = searchInput.trim();
       setSearch(q);
-      if (q) setSearchOpen(true);
       setCurrentPage(1);
     }, 1000);
     return () => clearTimeout(timer);
@@ -178,6 +192,12 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
   })
     .slice()
     .sort((a, b) => {
+      if (!isChallengeList && listTab === 'vn') {
+        const cpA = a.creator?.creatorPoints || 0;
+        const cpB = b.creator?.creatorPoints || 0;
+        if (cpA !== cpB) return cpB - cpA;
+        return (a.creatorName || '').localeCompare(b.creatorName || '');
+      }
       if (classicRanking) {
         return compareListLevels(
           { placement: a.classicPlacement, difficultyFace: a.difficultyFace, name: a.name },
@@ -240,69 +260,55 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
       {/* Controls */}
       <div className="flex flex-col gap-3">
         {!isChallengeList && (
-          <div className="flex items-center gap-1 p-0.5 rounded-xl border w-fit max-w-full overflow-x-auto" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-            {(['featured', 'classic', 'demonlist', 'pemonlist', 'vn'] as const).map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => {
-                  setListTab(tab);
-                  setCurrentPage(1);
-                }}
-                className="px-3 py-2 rounded-lg text-xs font-bold cursor-pointer transition-all shrink-0"
-                style={{
-                  backgroundColor: listTab === tab ? 'var(--bg-card)' : 'transparent',
-                  color: listTab === tab ? 'var(--accent)' : 'var(--text-dim)',
-                  boxShadow: listTab === tab ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                }}
-              >
-                {t(`levelslist.tab_${tab}` as 'levelslist.tab_featured')}
-              </button>
-            ))}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-1 p-0.5 rounded-xl border w-fit max-w-full overflow-x-auto" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+              {(['featured', 'classic', 'demonlist', 'pemonlist', 'vn'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => {
+                    setListTab(tab);
+                    setCurrentPage(1);
+                  }}
+                  className="px-3 py-2 rounded-lg text-xs font-bold cursor-pointer transition-all shrink-0"
+                  style={{
+                    backgroundColor: listTab === tab ? 'var(--bg-card)' : 'transparent',
+                    color: listTab === tab ? 'var(--accent)' : 'var(--text-dim)',
+                    boxShadow: listTab === tab ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                  }}
+                >
+                  {tabNames[tab]}
+                </button>
+              ))}
+            </div>
+            <p className="text-[13px] font-medium ui-dim px-1">{tabDescriptions[listTab]}</p>
           </div>
         )}
         <div className="flex flex-col lg:flex-row justify-between gap-3 items-stretch lg:items-center">
           <div className="flex flex-1 flex-wrap sm:flex-nowrap items-center gap-2">
-            {searchOpen || searchInput ? (
-              <div className="relative flex-1 min-w-[180px] max-w-md">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ui-dim" />
-                <input
-                  type="text"
-                  autoFocus
-                  placeholder={t('levelslist.search_demon')}
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  onBlur={() => {
-                    if (!searchInput.trim()) setSearchOpen(false);
+            <div className="relative flex-1 min-w-[180px] max-w-md">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ui-dim" />
+              <input
+                type="text"
+                placeholder={t('levelslist.search_demon')}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-full pl-9 pr-14 py-2 rounded-xl text-xs font-semibold ui-input focus:ring-2 focus:ring-red-500/20 bg-[var(--bg-subtle)] border border-[var(--border-ui)]"
+              />
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchInput('');
+                    setSearch('');
+                    setCurrentPage(1);
                   }}
-                  className="w-full pl-9 pr-14 py-2 rounded-xl text-xs font-semibold ui-input focus:ring-2 focus:ring-red-500/20"
-                />
-                {searchInput && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchInput('');
-                      setSearch('');
-                      setSearchOpen(false);
-                      setCurrentPage(1);
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-bold ui-dim hover:opacity-100 px-1.5 py-0.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10"
-                  >
-                    {t('common.clear')}
-                  </button>
-                )}
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setSearchOpen(true)}
-                className="p-2 rounded-xl border ui-subtle hover:bg-black/5 dark:hover:bg-white/5 shrink-0 cursor-pointer"
-                style={{ borderColor: 'var(--border-ui)' }}
-                title={t('levelslist.search_demon')}
-              >
-                <Search className="w-4 h-4" />
-              </button>
-            )}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-bold ui-dim hover:opacity-100 px-1.5 py-0.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10"
+                >
+                  {t('common.clear')}
+                </button>
+              )}
+            </div>
 
             <button
               onClick={() => setIsFilterModalOpen(true)}

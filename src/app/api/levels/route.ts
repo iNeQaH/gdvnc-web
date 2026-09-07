@@ -23,6 +23,11 @@ const dbLevelSelect = {
   creatorName: true,
   youtubeId: true,
   description: true,
+  creator: {
+    select: {
+      creatorPoints: true,
+    },
+  },
 } as const;
 
 async function loadDbLevels(mode: string, tier: string | null, challenge: boolean, skip: number, take: number) {

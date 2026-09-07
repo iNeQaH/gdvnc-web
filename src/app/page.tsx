@@ -356,8 +356,31 @@ export default function HomePage() {
                             </div>
                           )}
                           <div>
-                            <div className="font-bold ui-title flex items-center gap-1.5">
+                            <div className="font-bold ui-title flex items-center gap-1.5 flex-wrap">
                               {displayName}
+                              
+                              {/* Top Badges */}
+                              {player.topBadges && player.topBadges.length > 0 && (
+                                <div className="flex items-center gap-1 ml-1">
+                                  {player.topBadges.map((ub: any) => (
+                                    <div 
+                                      key={ub.id}
+                                      className="flex items-center justify-center rounded-full"
+                                      style={{
+                                        width: '16px', height: '16px',
+                                        backgroundColor: ub.bgColor || 'transparent',
+                                        color: ub.color || '#fff',
+                                        border: ub.borderColor ? `1px solid ${ub.borderColor}` : 'none',
+                                        boxShadow: ub.glowColor ? `0 0 4px ${ub.glowColor}` : 'none'
+                                      }}
+                                      title={ub.name}
+                                    >
+                                      <BadgeIcon icon={ub.icon} className="w-2.5 h-2.5" color={ub.color || '#fff'} />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              
                               {player.isLegacy && (
                                 <span className="text-[9px] font-bold uppercase ui-dim">{t('levelslist.unclaimed')}</span>
                               )}
@@ -373,16 +396,6 @@ export default function HomePage() {
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
-                              )}
-                              {player.role === 'ADMIN' && (
-                                <span className="px-1 py-0.2 text-[9px] font-extrabold uppercase rounded" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
-                                  Admin
-                                </span>
-                              )}
-                              {player.supporterUntil && new Date(player.supporterUntil) > new Date() && (
-                                <span className="px-1.5 py-0.2 text-[9px] font-extrabold uppercase rounded" style={{ backgroundColor: 'rgba(236, 72, 153, 0.15)', color: '#ec4899' }}>
-                                  Supporter
-                                </span>
                               )}
                             </div>
                             <div className="text-[10px] ui-dim">{player.isLegacy ? '—' : (player.country || t('common.vietnam'))}</div>

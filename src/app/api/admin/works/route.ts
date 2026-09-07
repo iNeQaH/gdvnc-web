@@ -18,21 +18,30 @@ export async function GET(req: Request) {
     const status = parseQueueStatusParam(searchParams.get('status'));
     const page = parsePageParam(searchParams.get('page'));
     const skip = (page - 1) * ADMIN_LIST_LIMIT;
+    const q = searchParams.get('q') || '';
+    const sort = searchParams.get('sort') || 'newest';
+
+    const whereClause: any = status ? { status } : {};
+    if (q) {
+      whereClause.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { user: { username: { contains: q, mode: 'insensitive' } } },
+        { user: { gdUsername: { contains: q, mode: 'insensitive' } } }
+      ];
+    }
 
     const [works, grouped] = await Promise.all([
       prisma.creatorWork.findMany({
-        where: status ? { status } : {},
+        where: whereClause,
         include: {
           user: {
             select: { username: true, id: true, avatarUrl: true, gdUsername: true },
           },
           reviewer: { select: REVIEWER_SELECT },
         },
-        orderBy: !status
-          ? { submittedAt: 'desc' }
-          : status === RecordStatus.PENDING
-            ? { submittedAt: 'asc' }
-            : { reviewedAt: 'desc' },
+        orderBy: sort === 'oldest'
+          ? (status === RecordStatus.PENDING ? { submittedAt: 'asc' } : { reviewedAt: 'asc' })
+          : (status === RecordStatus.PENDING ? { submittedAt: 'desc' } : { reviewedAt: 'desc' }),
         skip,
         take: ADMIN_LIST_LIMIT,
       }),
