@@ -16,7 +16,7 @@ import {
   Droplet
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
-import { uploadImagesToUt } from '@/lib/uploadthingClient';
+import { uploadImagesToUt } from '@/lib/localUploadClient';
 
 interface ImageEditorModalProps {
   isOpen: boolean;

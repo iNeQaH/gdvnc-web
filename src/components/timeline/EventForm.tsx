@@ -16,7 +16,7 @@ import {
 } from '@/lib/timeline/types';
 import type { DictKey } from '@/lib/dictionaries';
 import GlowStopsField from '@/components/GlowStopsField';
-import { uploadImagesToUt } from '@/lib/uploadthingClient';
+import { uploadImagesToUt } from '@/lib/localUploadClient';
 
 const TIER_KEYS: Record<TimelineTierId, DictKey> = {
   '5y': 'timeline.tier.5y',

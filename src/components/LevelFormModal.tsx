@@ -4,7 +4,7 @@ import { useLanguage } from './LanguageContext';
 import { useToast } from './GlobalToast';
 import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
 import ColorToggle from './ColorToggle';
-import { uploadImagesToUt } from '@/lib/uploadthingClient';
+import { uploadImagesToUt } from '@/lib/localUploadClient';
 
 interface LevelFormModalProps {
   isOpen: boolean;
