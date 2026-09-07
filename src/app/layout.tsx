@@ -47,7 +47,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" suppressHydrationWarning>
-      <body className={`${inter.className} antialiased min-h-screen flex flex-col`}>
+      <body className={`${inter.className} antialiased min-h-screen flex flex-col`} suppressHydrationWarning>
         <Script id="gdvnc-theme" strategy="beforeInteractive">
           {THEME_BOOT}
         </Script>
