@@ -3,7 +3,7 @@ import { LevelMode, Prisma, RecordStatus } from '@prisma/client';
 import { calculateBasePp } from '@/lib/ScoringEngine';
 import { recalculateUserPp as recalcUserPp } from '@/lib/recordUtils';
 import { persistLocalListSnapshot } from '@/lib/listSnapshot';
-import { mapDifficultyFace, mapRatingType, pickGdCreatorName, pickGdLevelName } from '@/lib/gdDifficulty';
+import { formatDifficultyLabel, mapDifficultyFace, mapRatingType, pickGdCreatorName, pickGdLevelName } from '@/lib/gdDifficulty';
 import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 
 export async function triggerBackgroundPpRecalc(levelIds: string[], mode: LevelMode) {
@@ -252,7 +252,7 @@ export async function upsertLevelFromForm(input: {
   const creatorForm = formCreator && !/^unknown$/i.test(formCreator) ? formCreator : null;
 
   let gdbData: any = null;
-  if (!existingLevel || (!namedForm && !existingLevel.name) || (!creatorForm && !existingLevel.creatorName)) {
+  if (!existingLevel || (!namedForm && !existingLevel.name) || (!creatorForm && !existingLevel.creatorName) || !existingLevel.difficultyFace || existingLevel.difficultyFace === 10 || !existingLevel.ratingType || existingLevel.ratingType === 'NONE') {
     gdbData = await fetchGdBrowser(gdLevelId);
   }
 
@@ -260,9 +260,13 @@ export async function upsertLevelFromForm(input: {
     throw new Error('Không thể lấy thông tin Level từ máy chủ GD. Điền tên level và tên creator, hoặc kiểm tra lại ID.');
   }
 
+  const gdbFace = gdbData ? mapDifficultyFace(gdbData) : 0;
+  const gdbRating = gdbData ? mapRatingType(gdbData) : 'NONE';
+  const gdbDiff = gdbData?.difficulty ? String(gdbData.difficulty) : null;
+
   const name = namedForm || existingLevel?.name || pickGdLevelName(gdbData) || 'Unknown';
   const creatorName = creatorForm || existingLevel?.creatorName || pickGdCreatorName(gdbData) || 'Unknown';
-  const difficulty = existingLevel?.difficulty || gdbData?.difficulty || 'Demon';
+  const difficulty = gdbDiff || existingLevel?.difficulty || (gdbFace ? formatDifficultyLabel(gdbFace) : 'Demon');
   const description =
     existingLevel?.description ||
     (gdbData?.description !== undefined && gdbData?.description !== null
@@ -283,12 +287,29 @@ export async function upsertLevelFromForm(input: {
   const finalPp = targetPlacement ? calculateBasePp(targetPlacement) : 0;
   const affectedLevelIds: string[] = [];
 
-  const derivedFace = (input.difficultyFace !== undefined && input.difficultyFace > 0)
-    ? input.difficultyFace
-    : (mapDifficultyFace(difficulty || gdbData?.difficulty) || existingLevel?.difficultyFace || 10);
-  const derivedRating = (input.ratingType !== undefined && input.ratingType !== 'NONE')
-    ? input.ratingType
-    : (gdbData ? mapRatingType(gdbData) : (existingLevel?.ratingType ?? 'NONE'));
+  let derivedFace = 10;
+  if (input.difficultyFace !== undefined && input.difficultyFace > 0) {
+    if (input.difficultyFace === 10 && gdbFace > 0) {
+      derivedFace = gdbFace;
+    } else {
+      derivedFace = input.difficultyFace;
+    }
+  } else if (gdbFace > 0) {
+    derivedFace = gdbFace;
+  } else if (existingLevel?.difficultyFace && existingLevel.difficultyFace > 0) {
+    derivedFace = existingLevel.difficultyFace;
+  } else {
+    derivedFace = mapDifficultyFace(difficulty) || 10;
+  }
+
+  let derivedRating: string = 'NONE';
+  if (input.ratingType !== undefined && input.ratingType !== 'NONE') {
+    derivedRating = input.ratingType;
+  } else if (gdbRating !== 'NONE') {
+    derivedRating = gdbRating;
+  } else if (existingLevel?.ratingType) {
+    derivedRating = existingLevel.ratingType;
+  }
 
   const updateData: any = {
     gdLevelId,

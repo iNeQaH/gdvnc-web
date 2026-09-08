@@ -5,7 +5,7 @@ import { useToast } from './GlobalToast';
 import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
 import ColorToggle from './ColorToggle';
 import { uploadImagesToUt } from '@/lib/localUploadClient';
-import { mapDifficultyFace } from '@/lib/gdDifficulty';
+import { mapDifficultyFace, mapRatingType } from '@/lib/gdDifficulty';
 
 interface LevelFormModalProps {
   isOpen: boolean;
@@ -65,13 +65,16 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
           const hasCustomCreator = isInitialEdit && prev.creatorName && !/^unknown$/i.test(prev.creatorName);
           const fetchedFace = (data.level.difficultyFace && data.level.difficultyFace > 0)
             ? data.level.difficultyFace
-            : (mapDifficultyFace(data.level.difficulty) || prev.difficultyFace || 10);
+            : (mapDifficultyFace(data.level) || prev.difficultyFace || 10);
+          const fetchedRating = (data.level.ratingType && data.level.ratingType !== 'NONE')
+            ? data.level.ratingType
+            : (mapRatingType(data.level) || prev.ratingType || 'NONE');
           return {
             ...prev,
             name: hasCustomName ? prev.name : (nextName || prev.name),
             creatorName: hasCustomCreator ? prev.creatorName : (nextCreator || prev.creatorName),
             difficultyFace: fetchedFace,
-            ratingType: data.level.ratingType || prev.ratingType || 'NONE',
+            ratingType: fetchedRating,
             mode: data.level.isPlatformer ? 'PLATFORMER' : (prev.mode || 'CLASSIC'),
           };
         });
@@ -92,9 +95,14 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
 
     if (initialData) {
       const gdId = initialData.gdLevelId?.toString() || '';
+      const mappedFace = mapDifficultyFace(initialData);
       const initialFace = (initialData.difficultyFace && initialData.difficultyFace > 0)
         ? initialData.difficultyFace
-        : (mapDifficultyFace(initialData.difficulty) || 10);
+        : (mappedFace || mapDifficultyFace(initialData.difficulty) || 10);
+      const mappedRating = mapRatingType(initialData);
+      const initialRating = mappedRating !== 'NONE'
+        ? mappedRating
+        : (initialData.ratingType || 'NONE');
       setForm({
         gdLevelId: gdId,
         name: initialData.name || '',
@@ -107,7 +115,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
         isVN: initialData.isVN || false,
         isChallenge: initialData.isChallenge || false,
         difficultyFace: initialFace,
-        ratingType: initialData.ratingType || 'NONE',
+        ratingType: initialRating,
       });
       setFetchedLevelName(initialData.name || '');
       if (gdId && /^\d+$/.test(gdId)) {

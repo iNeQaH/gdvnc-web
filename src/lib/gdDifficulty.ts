@@ -121,30 +121,84 @@ export function formatDifficultyLabel(face: number, fallback?: string | null): s
   return (fallback && String(fallback).trim()) || 'Demon';
 }
 
-export function mapDifficultyFace(difficulty: string | null | undefined): number {
-  if (!difficulty) return 0;
-  const key = String(difficulty).trim().toLowerCase();
-  if (key in DIFFICULTY_NAME_TO_FACE) return DIFFICULTY_NAME_TO_FACE[key];
-  if (key.includes('extreme')) return 14;
-  if (key.includes('insane demon')) return 13;
-  if (key.includes('hard demon')) return 12;
-  if (key.includes('medium demon')) return 11;
-  if (key.includes('easy demon') || key.includes('demon')) return 10;
+export function mapDifficultyFace(input: any): number {
+  if (input === undefined || input === null) return 0;
+  if (typeof input === 'number') {
+    return Number.isFinite(input) && input >= 0 && input <= 14 ? input : 0;
+  }
+
+  let difficultyStr = '';
+  let faceStr = '';
+  let isDemon = false;
+
+  if (typeof input === 'object') {
+    difficultyStr = String(input.difficulty || '').trim().toLowerCase();
+    faceStr = String(input.difficultyFace || '').trim().toLowerCase();
+    isDemon = Boolean(input.demon || input.isDemon || difficultyStr.includes('demon') || faceStr.includes('demon'));
+  } else {
+    difficultyStr = String(input).trim().toLowerCase();
+    isDemon = difficultyStr.includes('demon');
+  }
+
+  if (faceStr) {
+    if (faceStr.includes('demon-extreme') || faceStr.includes('extreme')) return 14;
+    if (faceStr.includes('demon-insane')) return 13;
+    if (faceStr.includes('demon-hard')) return 12;
+    if (faceStr.includes('demon-medium')) return 11;
+    if (faceStr.includes('demon-easy')) return 10;
+  }
+
+  if (isDemon) {
+    if (difficultyStr.includes('extreme')) return 14;
+    if (difficultyStr.includes('insane')) return 13;
+    if (difficultyStr.includes('hard')) return 12;
+    if (difficultyStr.includes('medium')) return 11;
+    if (difficultyStr.includes('easy')) return 10;
+    return 10;
+  }
+
+  if (difficultyStr in DIFFICULTY_NAME_TO_FACE) {
+    return DIFFICULTY_NAME_TO_FACE[difficultyStr];
+  }
+
+  if (difficultyStr.includes('extreme')) return 14;
+  if (difficultyStr.includes('insane demon')) return 13;
+  if (difficultyStr.includes('insane')) return 8;
+  if (difficultyStr.includes('harder')) return 6;
+  if (difficultyStr.includes('hard')) return 4;
+  if (difficultyStr.includes('normal')) return 3;
+  if (difficultyStr.includes('easy')) return 2;
+  if (difficultyStr.includes('auto')) return 1;
+
   return 0;
 }
 
 export function mapRatingType(data: any): RatingType {
-  const epicRaw = data?.epic;
-  const epic = typeof epicRaw === 'string' ? epicRaw.toLowerCase() : '';
+  if (!data) return 'NONE';
 
-  if (epic === 'mythic' || data?.mythic === true) return 'MYTHIC';
-  if (epic === 'legendary' || data?.legendary === true) return 'LEGENDARY';
-  if (epic === 'epic' || epicRaw === true) return 'EPIC';
+  if (typeof data === 'string') {
+    const s = data.trim().toUpperCase();
+    if (['FEATURE', 'EPIC', 'LEGENDARY', 'MYTHIC', 'RATE'].includes(s)) {
+      return s as RatingType;
+    }
+  }
 
-  const featured = data?.featured;
+  const epicRaw = data.epic;
+  const epicStr = typeof epicRaw === 'string' ? epicRaw.toLowerCase() : '';
+  if (epicRaw === 3 || epicRaw === '3' || epicStr === 'mythic' || data.mythic === true) return 'MYTHIC';
+  if (epicRaw === 2 || epicRaw === '2' || epicStr === 'legendary' || data.legendary === true) return 'LEGENDARY';
+  if (epicRaw === 1 || epicRaw === '1' || epicStr === 'epic' || epicRaw === true) return 'EPIC';
+
+  const ratingStr = String(data.rating || '').toLowerCase();
+  if (ratingStr.includes('mythic')) return 'MYTHIC';
+  if (ratingStr.includes('legendary')) return 'LEGENDARY';
+  if (ratingStr.includes('epic')) return 'EPIC';
+  if (ratingStr.includes('feature')) return 'FEATURE';
+
+  const featured = data.featured;
   if (featured && featured !== 0 && featured !== '0' && featured !== false) return 'FEATURE';
 
-  if (data?.stars > 0 || data?.rated) return 'RATE';
+  if (data.stars > 0 || data.rated || ratingStr.includes('star')) return 'RATE';
 
   return 'NONE';
 }
