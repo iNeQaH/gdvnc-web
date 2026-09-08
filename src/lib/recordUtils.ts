@@ -190,6 +190,11 @@ export async function recalculateUserPp(userId: string | null | undefined) {
       hardestPlatformerLevelId: platformerHardest?.id || null,
     },
   });
+
+  try {
+    const { bustPublicCache, CACHE_TAGS } = await import('@/lib/publicCache');
+    bustPublicCache(CACHE_TAGS.leaderboard, CACHE_TAGS.highlights);
+  } catch {}
 }
 
 export async function consolidateBeforeApprove(recordId: string): Promise<
