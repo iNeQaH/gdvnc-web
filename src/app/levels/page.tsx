@@ -57,6 +57,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
   const isChallengeList = listKind === 'challenge';
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [editingLevel, setEditingLevel] = useState<any>(null);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     const userStr = localStorage.getItem('gdvnc_user');
@@ -79,13 +80,31 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  useEffect(() => {
+    fetchLevels();
+  }, [search, listTab, currentPage, filterModes, filterTiers, filterFaces, filterVN]);
+
   const fetchLevels = () => {
     setLoading(true);
-    fetch(`/api/levels?mode=ALL&challenge=${isChallengeList ? '1' : '0'}`, { cache: 'no-store' })
+    const params = new URLSearchParams();
+    params.set('ssp', '1');
+    params.set('mode', 'ALL');
+    params.set('challenge', isChallengeList ? '1' : '0');
+    params.set('page', String(currentPage));
+    params.set('limit', String(pageSize));
+    params.set('tab', listTab);
+    if (search.trim()) params.set('search', search.trim());
+    if (filterModes.length) params.set('modes', filterModes.join(','));
+    if (filterTiers.length) params.set('tiers', filterTiers.join(','));
+    if (filterFaces.length) params.set('faces', filterFaces.join(','));
+    if (filterVN) params.set('vn', '1');
+
+    fetch(`/api/levels?${params.toString()}`, { cache: 'no-store' })
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
           setLevels(data.levels || []);
+          setTotalPages(data.totalPages || 1);
         }
         setLoading(false);
       })
@@ -145,90 +164,12 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
   const searching = Boolean(search.trim());
   const vnRanking = !isChallengeList && (listTab === 'vn' || listTab === 'featured' || filterVN);
   const classicRanking = !isChallengeList && listTab === 'classic';
-  const isVirtualLevel = (lvl: any) => String(lvl?.id || '').startsWith('gdlh:');
-
-  const filtered = levels.filter((lvl) => {
-    if (filterModes.length > 0 && !filterModes.includes(lvl.mode)) {
-      return false;
-    }
-
-    const tierRank = classicRanking
-      ? lvl.classicPlacement
-      : vnRanking
-        ? lvl.vnPlacement
-        : lvl.placement;
-    if (!placementMatchesTiers(tierRank, filterTiers)) return false;
-
-    if (!matchesDifficultyFilter(lvl.difficultyFace ?? 10, filterFaces)) {
-      return false;
-    }
-
-    if (filterVN && !lvl.isVN) return false;
-
-    if (!isChallengeList && !searching) {
-      if (listTab === 'featured') {
-        if (!lvl.isVN) return false;
-        if (!lvl.vnPlacement && !isDemonDifficultyFace(lvl.difficultyFace ?? 0)) return false;
-      } else if (listTab === 'classic') {
-        if (lvl.mode !== 'CLASSIC' || lvl.isChallenge || !lvl.classicPlacement) return false;
-      } else if (listTab === 'demonlist') {
-        if (lvl.mode !== 'CLASSIC' || !lvl.placement || lvl.placement > 150) return false;
-      } else if (listTab === 'pemonlist') {
-        if (lvl.mode !== 'PLATFORMER' || !lvl.placement || lvl.placement > 150) return false;
-      } else if (listTab === 'vn') {
-        if (!lvl.isVN || lvl.isChallenge) return false;
-      }
-    }
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      const matchName = lvl.name?.toLowerCase().includes(q);
-      const matchCreator = lvl.creatorName?.toLowerCase().includes(q);
-      const matchId = String(lvl.gdLevelId || '').includes(q);
-      if (!matchName && !matchCreator && !matchId) return false;
-    }
-
-    return true;
-  })
-    .slice()
-    .sort((a, b) => {
-      if (!isChallengeList && listTab === 'vn') {
-        const cpA = a.creator?.creatorPoints || 0;
-        const cpB = b.creator?.creatorPoints || 0;
-        if (cpA !== cpB) return cpB - cpA;
-        return (a.creatorName || '').localeCompare(b.creatorName || '');
-      }
-      if (classicRanking) {
-        return compareListLevels(
-          { placement: a.classicPlacement, difficultyFace: a.difficultyFace, name: a.name },
-          { placement: b.classicPlacement, difficultyFace: b.difficultyFace, name: b.name }
-        );
-      }
-      if (vnRanking) return compareVnListLevels(a, b);
-      const am = String(a.mode || '');
-      const bm = String(b.mode || '');
-      if (am !== bm) return am === 'CLASSIC' ? -1 : 1;
-      return compareListLevels(a, b);
-    });
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const paginatedData = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const isAnyFilterActive = filterModes.length > 0 || filterTiers.length > 0 || filterFaces.length > 0 || filterVN;
 
   const jumpToRank = (rank: number) => {
     if (!Number.isFinite(rank) || rank < 1) return;
-    if (vnRanking) {
-      const idx = filtered.findIndex((l) => l.vnPlacement === rank);
-      if (idx >= 0) setCurrentPage(Math.ceil((idx + 1) / pageSize));
-      return;
-    }
-    if (classicRanking) {
-      const idx = filtered.findIndex((l) => l.classicPlacement === rank);
-      if (idx >= 0) setCurrentPage(Math.ceil((idx + 1) / pageSize));
-      return;
-    }
-    if (rank <= filtered.length) setCurrentPage(Math.ceil(rank / pageSize));
+    setCurrentPage(Math.ceil(rank / pageSize));
   };
 
   return (
@@ -344,7 +285,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
       <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'ui-zebra-list flex flex-col'}>
         {loading ? (
           <div className="col-span-full p-16 text-center ui-dim text-xs font-medium">{t('levelslist.loading')}</div>
-        ) : paginatedData.length === 0 ? (
+        ) : levels.length === 0 ? (
           <div className="col-span-full p-16 text-center ui-dim text-xs font-medium space-y-2">
             <div>{t('levelslist.empty')}</div>
             <button
@@ -362,7 +303,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
             </button>
           </div>
         ) : (
-          paginatedData.map((lvl, idx) => {
+          levels.map((lvl, idx) => {
             const listRank = (currentPage - 1) * pageSize + idx + 1;
             const placement = classicRanking
               ? (lvl.classicPlacement ? '#' + lvl.classicPlacement : '-')

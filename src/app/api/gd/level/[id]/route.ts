@@ -22,6 +22,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
     const data = await res.json();
 
+    // Workaround for GDBrowser's "Generation Retro" meme when the GD server fails or level is not found
+    if (String(data.id) !== String(id)) {
+      return NextResponse.json({ error: 'Level not found on GD Servers (GDBrowser returned fallback)' }, { status: 404 });
+    }
+
     return NextResponse.json({
       success: true,
       level: {

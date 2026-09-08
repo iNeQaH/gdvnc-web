@@ -62,7 +62,9 @@ export async function fetchGdBrowser(gdLevelId: number): Promise<any | null> {
     });
     clearTimeout(timer);
     if (!gdbRes.ok) return null;
-    return await gdbRes.json();
+    const json = await gdbRes.json();
+    if (String(json.id) !== String(gdLevelId)) return null;
+    return json;
   } catch {
     return null;
   }

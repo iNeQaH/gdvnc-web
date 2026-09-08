@@ -87,6 +87,89 @@ export async function GET(req: Request) {
       [CACHE_TAGS.levels],
       180
     );
+
+    const ssp = searchParams.get('ssp') === '1';
+    if (ssp) {
+      const tab = searchParams.get('tab') || 'featured';
+      const q = (searchParams.get('search') || '').toLowerCase();
+      const filterModes = searchParams.get('modes') ? searchParams.get('modes')!.split(',') : [];
+      const filterTiers = searchParams.get('tiers') ? searchParams.get('tiers')!.split(',') : [];
+      const filterFaces = searchParams.get('faces') ? searchParams.get('faces')!.split(',').map(Number) : [];
+      const filterVN = searchParams.get('vn') === '1';
+
+      const searching = Boolean(q);
+      const vnRanking = !challenge && (tab === 'vn' || tab === 'featured' || filterVN);
+      const classicRanking = !challenge && tab === 'classic';
+
+      const { placementMatchesTiers, compareVnListLevels } = require('@/lib/levelSort');
+      const { isDemonDifficultyFace, matchesDifficultyFilter } = require('@/lib/gdDifficulty');
+
+      let filtered = levels.filter((lvl: any) => {
+        if (filterModes.length > 0 && !filterModes.includes(lvl.mode)) return false;
+
+        const tierRank = classicRanking ? lvl.classicPlacement : vnRanking ? lvl.vnPlacement : lvl.placement;
+        if (!placementMatchesTiers(tierRank, filterTiers)) return false;
+
+        if (!matchesDifficultyFilter(lvl.difficultyFace ?? 10, filterFaces)) return false;
+        if (filterVN && !lvl.isVN) return false;
+
+        if (!challenge && !searching) {
+          if (tab === 'featured') {
+            if (!lvl.isVN) return false;
+            if (!lvl.vnPlacement && !isDemonDifficultyFace(lvl.difficultyFace ?? 0)) return false;
+          } else if (tab === 'classic') {
+            if (lvl.mode !== 'CLASSIC' || lvl.isChallenge || !lvl.classicPlacement) return false;
+          } else if (tab === 'demonlist') {
+            if (lvl.mode !== 'CLASSIC' || !lvl.placement || lvl.placement > 150) return false;
+          } else if (tab === 'pemonlist') {
+            if (lvl.mode !== 'PLATFORMER' || !lvl.placement || lvl.placement > 150) return false;
+          } else if (tab === 'vn') {
+            if (!lvl.isVN || lvl.isChallenge) return false;
+          }
+        }
+
+        if (searching) {
+          const matchName = lvl.name?.toLowerCase().includes(q);
+          const matchCreator = lvl.creatorName?.toLowerCase().includes(q);
+          const matchId = String(lvl.gdLevelId || '').includes(q);
+          if (!matchName && !matchCreator && !matchId) return false;
+        }
+
+        return true;
+      });
+
+      filtered.sort((a: any, b: any) => {
+        if (!challenge && tab === 'vn') {
+          const cpA = a.creator?.creatorPoints || 0;
+          const cpB = b.creator?.creatorPoints || 0;
+          if (cpA !== cpB) return cpB - cpA;
+          return (a.creatorName || '').localeCompare(b.creatorName || '');
+        }
+        if (classicRanking) {
+          return compareListLevels(
+            { placement: a.classicPlacement, difficultyFace: a.difficultyFace, name: a.name },
+            { placement: b.classicPlacement, difficultyFace: b.difficultyFace, name: b.name }
+          );
+        }
+        if (vnRanking) return compareVnListLevels(a, b);
+        const am = String(a.mode || '');
+        const bm = String(b.mode || '');
+        if (am !== bm) return am === 'CLASSIC' ? -1 : 1;
+        return compareListLevels(a, b);
+      });
+
+      const page = parseInt(searchParams.get('page') || '1', 10) || 1;
+      const limit = parseInt(searchParams.get('limit') || '20', 10) || 20;
+      const total = filtered.length;
+      const totalPages = Math.max(1, Math.ceil(total / limit));
+      const sliced = filtered.slice((page - 1) * limit, page * limit);
+
+      return NextResponse.json(
+        { success: true, levels: sliced, total, totalPages },
+        { headers: PUBLIC_CACHE_HEADERS }
+      );
+    }
+
     return NextResponse.json(
       { success: true, levels, source: 'database' },
       { headers: PUBLIC_CACHE_HEADERS }
