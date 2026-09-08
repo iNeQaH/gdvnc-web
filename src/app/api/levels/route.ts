@@ -80,7 +80,7 @@ export async function GET(req: Request) {
     const tier = searchParams.get('tier') || '';
     const challenge = searchParams.get('challenge') === '1';
     const skip = Math.max(0, parseInt(searchParams.get('skip') || '0', 10) || 0);
-    const take = Math.min(1000, Math.max(1, parseInt(searchParams.get('take') || '800', 10) || 800));
+    const take = Math.min(5000, Math.max(1, parseInt(searchParams.get('take') || '5000', 10) || 5000));
     const levels = await cachedJson(
       () => loadDbLevels(mode, tier || null, challenge, skip, take),
       ['levels', mode, tier || 'all', challenge ? '1' : '0', String(skip), String(take)],
