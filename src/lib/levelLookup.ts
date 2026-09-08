@@ -6,6 +6,7 @@ import { dedupeRecordsByUser } from '@/lib/recordUtils';
 import { formatDifficultyLabel, mapDifficultyFace, pickGdCreatorName } from '@/lib/gdDifficulty';
 import { fetchGdBrowser, getOrCreateStubLevel } from '@/lib/upsertLevel';
 import { gdlisthubItemMaps, hubYoutubeId, isMissingLevelText } from '@/lib/gdlisthubLists';
+import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 
 const levelInclude = {
   records: {
@@ -40,7 +41,7 @@ async function refreshDifficultyFromGd<T extends { id: string; gdLevelId: number
       if (level.difficultyFace > 0) {
         const label = formatDifficultyLabel(level.difficultyFace, level.difficulty);
         if (label !== level.difficulty) {
-          await prisma.level.update({ where: { id: level.id }, data: { difficulty: label } }).catch(() => {});
+          await prisma.level.update({ where: { id: level.id }, data: { difficulty: label } }).then(() => bustPublicCache(CACHE_TAGS.levels, CACHE_TAGS.highlights)).catch(() => {});
         }
       }
       return;
@@ -52,6 +53,7 @@ async function refreshDifficultyFromGd<T extends { id: string; gdLevelId: number
         where: { id: level.id },
         data: { difficulty, difficultyFace },
       })
+      .then(() => bustPublicCache(CACHE_TAGS.levels, CACHE_TAGS.highlights))
       .catch(() => {});
   })();
   return level;
