@@ -232,8 +232,11 @@ export async function upsertLevelFromForm(input: {
   const pMode = (input.mode as LevelMode) || LevelMode.CLASSIC;
   const targetPlacement = parseOptionalPositiveInt(input.placement);
 
-  const existingLevel = input.id
-    ? await prisma.level.findUnique({ where: { id: input.id } })
+  const isVirtualId = typeof input.id === 'string' && input.id.startsWith('gdlh:');
+  const realId = input.id && !isVirtualId ? input.id : undefined;
+
+  const existingLevel = realId
+    ? await prisma.level.findUnique({ where: { id: realId } })
     : await prisma.level.findUnique({ where: { gdLevelId } });
 
   if (existingLevel && existingLevel.gdLevelId !== gdLevelId) {
@@ -321,17 +324,11 @@ export async function upsertLevelFromForm(input: {
           data: updateData,
         });
       } else {
-        try {
-          upserted = await tx.level.create({
-            data: { gdLevelId, ...updateData },
-          });
-        } catch (error: any) {
-          if (error?.code !== 'P2002') throw error;
-          upserted = await tx.level.update({
-            where: { gdLevelId },
-            data: updateData,
-          });
-        }
+        upserted = await tx.level.upsert({
+          where: { gdLevelId },
+          create: { gdLevelId, ...updateData },
+          update: updateData,
+        });
       }
 
       if (!affectedLevelIds.includes(upserted.id)) {
