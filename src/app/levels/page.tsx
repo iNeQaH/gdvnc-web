@@ -81,7 +81,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
 
   const fetchLevels = () => {
     setLoading(true);
-    fetch(`/api/levels?mode=ALL&challenge=${isChallengeList ? '1' : '0'}`)
+    fetch(`/api/levels?mode=ALL&challenge=${isChallengeList ? '1' : '0'}`, { cache: 'no-store' })
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {

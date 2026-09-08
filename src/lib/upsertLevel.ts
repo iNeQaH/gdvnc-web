@@ -3,7 +3,7 @@ import { LevelMode, Prisma, RecordStatus } from '@prisma/client';
 import { calculateBasePp } from '@/lib/ScoringEngine';
 import { recalculateUserPp as recalcUserPp } from '@/lib/recordUtils';
 import { persistLocalListSnapshot } from '@/lib/listSnapshot';
-import { pickGdCreatorName, pickGdLevelName } from '@/lib/gdDifficulty';
+import { mapDifficultyFace, mapRatingType, pickGdCreatorName, pickGdLevelName } from '@/lib/gdDifficulty';
 import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 
 export async function triggerBackgroundPpRecalc(levelIds: string[], mode: LevelMode) {
@@ -283,6 +283,13 @@ export async function upsertLevelFromForm(input: {
   const finalPp = targetPlacement ? calculateBasePp(targetPlacement) : 0;
   const affectedLevelIds: string[] = [];
 
+  const derivedFace = (input.difficultyFace !== undefined && input.difficultyFace > 0)
+    ? input.difficultyFace
+    : (mapDifficultyFace(difficulty || gdbData?.difficulty) || existingLevel?.difficultyFace || 10);
+  const derivedRating = (input.ratingType !== undefined && input.ratingType !== 'NONE')
+    ? input.ratingType
+    : (gdbData ? mapRatingType(gdbData) : (existingLevel?.ratingType ?? 'NONE'));
+
   const updateData: any = {
     gdLevelId,
     name,
@@ -296,8 +303,8 @@ export async function upsertLevelFromForm(input: {
     mode: pMode,
     isVN: isVnLevel,
     isChallenge: isChallengeLevel,
-    difficultyFace: input.difficultyFace !== undefined ? input.difficultyFace : (existingLevel?.difficultyFace ?? 10),
-    ratingType: input.ratingType !== undefined ? input.ratingType : (existingLevel?.ratingType ?? 'NONE'),
+    difficultyFace: derivedFace,
+    ratingType: derivedRating,
     vnPlacement: targetVnPlacement,
   };
 

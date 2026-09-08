@@ -5,6 +5,7 @@ import { compareListLevels } from '@/lib/levelSort';
 import { applyGdlisthubRanksToLevels } from '@/lib/gdlisthubLists';
 import { checkSiteLockAndBlock } from '@/lib/siteLock';
 import { cachedJson, CACHE_TAGS, PUBLIC_CACHE_HEADERS } from '@/lib/publicCache';
+import { mapDifficultyFace } from '@/lib/gdDifficulty';
 
 const dbLevelSelect = {
   id: true,
@@ -55,7 +56,16 @@ async function loadDbLevels(mode: string, tier: string | null, challenge: boolea
       })
     : [];
   const countMap = new Map(counts.map((row) => [row.levelId, row._count._all]));
-  const mapped = levels.map((row) => ({ ...row, victorCount: countMap.get(row.id) || 0 }));
+  const mapped = levels.map((row) => {
+    const face = (row.difficultyFace && row.difficultyFace > 0)
+      ? row.difficultyFace
+      : (mapDifficultyFace(row.difficulty) || 10);
+    return {
+      ...row,
+      difficultyFace: face,
+      victorCount: countMap.get(row.id) || 0,
+    };
+  });
   if (challenge) return mapped.sort(compareListLevels);
   return applyGdlisthubRanksToLevels(mapped).sort(compareListLevels);
 }

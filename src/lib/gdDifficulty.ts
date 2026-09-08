@@ -144,5 +144,7 @@ export function mapRatingType(data: any): RatingType {
   const featured = data?.featured;
   if (featured && featured !== 0 && featured !== '0' && featured !== false) return 'FEATURE';
 
+  if (data?.stars > 0 || data?.rated) return 'RATE';
+
   return 'NONE';
 }

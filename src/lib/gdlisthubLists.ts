@@ -1,5 +1,6 @@
 import featuredPack from '@/lib/data/gdlisthub-fl.json';
 import classicPack from '@/lib/data/gdlisthub-dl.json';
+import { mapDifficultyFace } from '@/lib/gdDifficulty';
 
 function youtubeId(value?: string | null) {
   const raw = String(value || '').trim();
@@ -90,6 +91,8 @@ function virtualFromGdlisthub(
   classic?: GdlisthubListItem
 ) {
   const src = featured || classic;
+  const diffStr = src?.difficulty || 'Demon';
+  const face = mapDifficultyFace(diffStr) || 10;
   return {
     id: `gdlh:${gdLevelId}`,
     gdLevelId,
@@ -97,8 +100,8 @@ function virtualFromGdlisthub(
     creatorName: src?.creator || 'Unknown',
     youtubeId: youtubeId(src?.videoID),
     mode: src?.isPlatformer ? 'PLATFORMER' : 'CLASSIC',
-    difficulty: src?.difficulty || 'Unrated',
-    difficultyFace: 0,
+    difficulty: diffStr,
+    difficultyFace: face,
     ratingType: 'NONE',
     isVN: Boolean(featured),
     isChallenge: Boolean(src?.isChallenge),
@@ -125,8 +128,12 @@ export function applyGdlisthubRanksToLevels(
     const dl = maps.classic.get(Number(level.gdLevelId));
     const src = fl || dl;
     const isVnExplicit = typeof level.isVN === 'boolean';
+    const face = (level.difficultyFace && level.difficultyFace > 0)
+      ? level.difficultyFace
+      : (mapDifficultyFace(level.difficulty || src?.difficulty) || 10);
     return {
       ...level,
+      difficultyFace: face,
       isVN: isVnExplicit ? level.isVN : Boolean(fl),
       vnPlacement: level.vnPlacement ?? (fl?.position ?? null),
       classicPlacement: dl?.position ?? null,
