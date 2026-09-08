@@ -149,7 +149,7 @@ export default function AnalyticsPage() {
               className="flex items-center gap-2 bg-[var(--bg-card)] hover:bg-[var(--bg-subtle)] text-[var(--text-title)] border border-[var(--border-ui)] px-3 py-1.5 rounded-lg shadow-sm text-xs font-semibold transition-colors"
             >
               <Calendar className="w-4 h-4 text-[var(--accent)]" />
-              <span>{startDate} — {endDate}</span>
+              <span>{startDate.split('-').reverse().join('/')} — {endDate.split('-').reverse().join('/')}</span>
               <ChevronDown className="w-3.5 h-3.5 text-[var(--text-dim)]" />
             </button>
 
@@ -385,7 +385,7 @@ export default function AnalyticsPage() {
                   : 'text-[var(--text-dim)] hover:text-[var(--text-title)]'
               }`}
             >
-              Theo ngày ({startDate} — {endDate})
+              Theo ngày ({startDate.split('-').reverse().join('/')} — {endDate.split('-').reverse().join('/')})
             </button>
             <button
               onClick={() => setDbComputeViewMode('live')}

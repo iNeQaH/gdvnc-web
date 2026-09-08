@@ -75,7 +75,7 @@ export async function GET(req: Request) {
     startDate.setHours(0, 0, 0, 0);
     
     const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
-    const isHourly = diffDays <= 3;
+    const isHourly = diffDays <= 1;
     
     const visits = await prisma.pageVisit.findMany({
       where: { 
