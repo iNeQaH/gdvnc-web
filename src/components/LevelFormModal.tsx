@@ -102,10 +102,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
         ratingType: initialData.ratingType || 'NONE',
       });
       setFetchedLevelName(initialData.name || '');
-      if (gdId && /^\d+$/.test(gdId)) {
-        skipNextFetchRef.current = true;
-        void fetchGdLevel(gdId);
-      }
+      skipNextFetchRef.current = true;
     } else {
       setForm({
         gdLevelId: '',
@@ -139,13 +136,16 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
       skipNextFetchRef.current = false;
       return;
     }
+    if (initialData && String(initialData.gdLevelId) === id) {
+      return;
+    }
 
     const timer = setTimeout(() => {
       void fetchGdLevel(id);
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [form.gdLevelId, isOpen]);
+  }, [form.gdLevelId, isOpen, initialData]);
 
   if (!isOpen) return null;
 

@@ -243,22 +243,28 @@ export async function upsertLevelFromForm(input: {
     }
   }
 
-  const gdbData = await fetchGdBrowser(gdLevelId);
   const formName = preferText(input.name, null);
   const formCreator = preferText(input.creatorName, null);
   const namedForm = formName && !/^unknown$/i.test(formName) ? formName : null;
   const creatorForm = formCreator && !/^unknown$/i.test(formCreator) ? formCreator : null;
+
+  let gdbData: any = null;
+  if (!existingLevel || (!namedForm && !existingLevel.name) || (!creatorForm && !existingLevel.creatorName)) {
+    gdbData = await fetchGdBrowser(gdLevelId);
+  }
+
   if (!existingLevel && !gdbData && (!namedForm || !creatorForm)) {
     throw new Error('Không thể lấy thông tin Level từ máy chủ GD. Điền tên level và tên creator, hoặc kiểm tra lại ID.');
   }
 
-  const name = namedForm || pickGdLevelName(gdbData) || existingLevel?.name || 'Unknown';
-  const creatorName = creatorForm || pickGdCreatorName(gdbData) || existingLevel?.creatorName || 'Unknown';
-  const difficulty = gdbData?.difficulty || existingLevel?.difficulty || 'Demon';
+  const name = namedForm || existingLevel?.name || pickGdLevelName(gdbData) || 'Unknown';
+  const creatorName = creatorForm || existingLevel?.creatorName || pickGdCreatorName(gdbData) || 'Unknown';
+  const difficulty = existingLevel?.difficulty || gdbData?.difficulty || 'Demon';
   const description =
-    gdbData?.description !== undefined && gdbData?.description !== null
+    existingLevel?.description ||
+    (gdbData?.description !== undefined && gdbData?.description !== null
       ? gdbData.description
-      : existingLevel?.description || '';
+      : '');
 
   const isChallengeLevel = input.isChallenge !== undefined ? !!input.isChallenge : !!existingLevel?.isChallenge;
   const isVnLevel = input.isVN !== undefined ? !!input.isVN : !!existingLevel?.isVN;
@@ -282,13 +288,13 @@ export async function upsertLevelFromForm(input: {
     description,
     youtubeId: youtubeId ?? existingLevel?.youtubeId ?? null,
     placement: targetPlacement,
-    minPercent: input.minPercent ? parseInt(String(input.minPercent), 10) : 100,
+    minPercent: input.minPercent ? parseInt(String(input.minPercent), 10) : (existingLevel?.minPercent ?? 100),
     basePp: finalPp,
     mode: pMode,
     isVN: isVnLevel,
     isChallenge: isChallengeLevel,
-    difficultyFace: input.difficultyFace !== undefined ? input.difficultyFace : 10,
-    ratingType: input.ratingType !== undefined ? input.ratingType : 'NONE',
+    difficultyFace: input.difficultyFace !== undefined ? input.difficultyFace : (existingLevel?.difficultyFace ?? 10),
+    ratingType: input.ratingType !== undefined ? input.ratingType : (existingLevel?.ratingType ?? 'NONE'),
     vnPlacement: targetVnPlacement,
   };
 
