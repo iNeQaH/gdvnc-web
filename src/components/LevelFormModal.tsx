@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Check, Loader2, Tag, Image as ImageIcon } from 'lucide-react';
+import { X, Check, Loader2, Tag, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { useToast } from './GlobalToast';
 import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
@@ -39,7 +39,6 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
   const [saving, setSaving] = useState(false);
   const [fetchingLevel, setFetchingLevel] = useState(false);
   const fetchSeq = useRef(0);
-  const skipNextFetchRef = useRef(false);
   const [tagsOpen, setTagsOpen] = useState(false);
   const [workDesc, setWorkDesc] = useState('');
   const [workImageUrls, setWorkImageUrls] = useState<string[]>([]);
@@ -47,7 +46,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
   const [imageError, setImageError] = useState('');
   const [uploadingImages, setUploadingImages] = useState(false);
 
-  const fetchGdLevel = async (id: string) => {
+  const fetchGdLevel = async (id: string, isInitialEdit = false) => {
     if (!id || !/^\d+$/.test(id)) return;
     const seq = ++fetchSeq.current;
     setFetchingLevel(true);
@@ -61,13 +60,15 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
           if (prev.gdLevelId.trim() !== id) return prev;
           const nextName = String(data.level.name || '').trim();
           const nextCreator = String(data.level.creatorName || '').trim();
+          const hasCustomName = isInitialEdit && prev.name && !/^unknown$/i.test(prev.name);
+          const hasCustomCreator = isInitialEdit && prev.creatorName && !/^unknown$/i.test(prev.creatorName);
           return {
             ...prev,
-            name: nextName || prev.name,
-            creatorName: nextCreator || prev.creatorName,
+            name: hasCustomName ? prev.name : (nextName || prev.name),
+            creatorName: hasCustomCreator ? prev.creatorName : (nextCreator || prev.creatorName),
             difficultyFace: data.level.difficultyFace ?? prev.difficultyFace,
             ratingType: data.level.ratingType || prev.ratingType,
-            mode: data.level.isPlatformer ? 'PLATFORMER' : 'CLASSIC',
+            mode: data.level.isPlatformer ? 'PLATFORMER' : (prev.mode || 'CLASSIC'),
           };
         });
       }
@@ -102,7 +103,9 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
         ratingType: initialData.ratingType || 'NONE',
       });
       setFetchedLevelName(initialData.name || '');
-      skipNextFetchRef.current = true;
+      if (gdId && /^\d+$/.test(gdId)) {
+        void fetchGdLevel(gdId, true);
+      }
     } else {
       setForm({
         gdLevelId: '',
@@ -132,16 +135,13 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
       setFetchedLevelName('');
       return;
     }
-    if (skipNextFetchRef.current) {
-      skipNextFetchRef.current = false;
-      return;
-    }
-    if (initialData && String(initialData.gdLevelId) === id) {
+    // Skip auto-debounce fetch if initialEdit fetch has already been triggered for the same ID
+    if (initialData && String(initialData.gdLevelId) === id && fetchSeq.current > 0) {
       return;
     }
 
     const timer = setTimeout(() => {
-      void fetchGdLevel(id);
+      void fetchGdLevel(id, false);
     }, 1000);
 
     return () => clearTimeout(timer);
@@ -301,10 +301,24 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
 
             <div className="flex-1 space-y-3">
               <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1.5">
-                  Level ID
-                  {fetchingLevel && <Loader2 className="w-3 h-3 animate-spin" />}
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1.5">
+                    Level ID
+                    {fetchingLevel && <Loader2 className="w-3 h-3 animate-spin text-[var(--accent)]" />}
+                  </label>
+                  {form.gdLevelId.trim() !== '' && (
+                    <button
+                      type="button"
+                      onClick={() => void fetchGdLevel(form.gdLevelId.trim(), false)}
+                      disabled={fetchingLevel}
+                      className="text-[10px] font-bold text-[var(--accent)] hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                      title="Tải lại thông tin độ khó & rating từ máy chủ GD"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${fetchingLevel ? 'animate-spin' : ''}`} />
+                      <span>Fetch GD</span>
+                    </button>
+                  )}
+                </div>
                 <input 
                   type="number" 
                   value={form.gdLevelId}
