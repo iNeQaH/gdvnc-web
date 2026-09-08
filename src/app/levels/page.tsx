@@ -432,7 +432,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
                     </div>
                   </Link>
 
-                  {currentUser && isStaffRole(currentUser.role) && !isVirtualLevel(lvl) && (
+                  {currentUser && isStaffRole(currentUser.role) && (
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={(e) => {
@@ -525,7 +525,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
                   </div>
                 </Link>
 
-                {currentUser && isStaffRole(currentUser.role) && !isVirtualLevel(lvl) && (
+                {currentUser && isStaffRole(currentUser.role) && (
                   <div className={`absolute bottom-3 right-3 z-20 flex items-center gap-1 bg-black/70 backdrop-blur-sm p-1 rounded-xl border border-white/10 ${isChallengeList ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
                     <button
                       onClick={() => {

@@ -124,10 +124,11 @@ export function applyGdlisthubRanksToLevels(
     const fl = maps.featured.get(Number(level.gdLevelId));
     const dl = maps.classic.get(Number(level.gdLevelId));
     const src = fl || dl;
+    const isVnExplicit = typeof level.isVN === 'boolean';
     return {
       ...level,
-      isVN: Boolean(level.isVN) || Boolean(fl),
-      vnPlacement: fl?.position ?? level.vnPlacement ?? null,
+      isVN: isVnExplicit ? level.isVN : Boolean(fl),
+      vnPlacement: level.vnPlacement ?? (fl?.position ?? null),
       classicPlacement: dl?.position ?? null,
       name: isMissingLevelText(level.name) && src?.name ? src.name : level.name,
       creatorName:
