@@ -17,6 +17,7 @@ import {
 import type { DictKey } from '@/lib/dictionaries';
 import GlowStopsField from '@/components/GlowStopsField';
 import { uploadImagesToUt } from '@/lib/localUploadClient';
+import DateRangePicker from '@/components/DateRangePicker';
 
 const TIER_KEYS: Record<TimelineTierId, DictKey> = {
   '5y': 'timeline.tier.5y',
@@ -207,26 +208,16 @@ export default function EventForm({
             scaleLabel={t('timeline.glow_scale')}
           />
         </div>
-        <div className="row-2">
-          <div className="field">
-            <label>{t('timeline.from')}</label>
-            <input
-              type="date"
-              min={minDate}
-              max={maxDate}
-              value={form.start}
-              onChange={(e) => set('start', e.target.value)}
-              required
-            />
-          </div>
-          <div className="field">
-            <label>{t('timeline.to')}</label>
-            <input
-              type="date"
-              min={minDate}
-              max={maxDate}
-              value={form.end}
-              onChange={(e) => set('end', e.target.value)}
+        <div className="field">
+          <label>{t('timeline.from')} — {t('timeline.to')}</label>
+          <div className="w-full">
+            <DateRangePicker 
+              startDate={form.start || toDateInput(new Date())} 
+              endDate={form.end || form.start || toDateInput(new Date())}
+              onApply={(s, e) => {
+                set('start', s);
+                set('end', e);
+              }}
             />
           </div>
         </div>

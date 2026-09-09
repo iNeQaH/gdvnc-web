@@ -12,8 +12,15 @@ export default function DateRangePicker({ startDate, endDate, onApply }: DateRan
   const [tempStart, setTempStart] = useState(startDate);
   const [tempEnd, setTempEnd] = useState(endDate);
   
+  const toLocalISOString = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
   // Convert strings to dates for the calendar math
-  const initialDate = useMemo(() => new Date(tempStart || new Date().toISOString().split('T')[0]), [tempStart]);
+  const initialDate = useMemo(() => new Date(tempStart || toLocalISOString(new Date())), [tempStart]);
   const [currentMonth, setCurrentMonth] = useState(initialDate.getMonth());
   const [currentYear, setCurrentYear] = useState(initialDate.getFullYear());
 
@@ -36,8 +43,8 @@ export default function DateRangePicker({ startDate, endDate, onApply }: DateRan
     const start = new Date();
     start.setDate(start.getDate() - days);
     
-    const endStr = end.toISOString().split('T')[0];
-    const startStr = start.toISOString().split('T')[0];
+    const endStr = toLocalISOString(end);
+    const startStr = toLocalISOString(start);
     setTempStart(startStr);
     setTempEnd(endStr);
     
@@ -68,7 +75,7 @@ export default function DateRangePicker({ startDate, endDate, onApply }: DateRan
 
   const handleDayClick = (day: number) => {
     const clickedDate = new Date(currentYear, currentMonth, day);
-    const clickedStr = clickedDate.toISOString().split('T')[0];
+    const clickedStr = toLocalISOString(clickedDate);
     
     const startObj = new Date(tempStart);
     const endObj = new Date(tempEnd);
