@@ -187,7 +187,7 @@ export async function GET(req: Request) {
     const trafficChart = Object.keys(viewsByTime).map(time => {
       const views = viewsByTime[time];
       const visitors = visitorsByTime[time].size;
-      const queries = views > 0 ? (views * 12 + Math.floor(Math.random() * 5)) : (visitors > 0 ? 10 : 0);
+      const queries = views > 0 ? (views * 12) : (visitors > 0 ? 10 : 0);
       totalQueries += queries;
 
       const snaps = metricsByTime[time] || [];

@@ -8,19 +8,18 @@ import { ToastProvider } from "@/components/GlobalToast";
 import { Sidebar } from "@/components/Sidebar";
 import { SiteLockGate } from "@/components/SiteLockGate";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
-import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://gdvnc-web.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:8088"),
   title: "Geometry Dash Việt Nam",
   description: "Trang web chính thức của cộng đồng GDVN",
   openGraph: {
     title: "Geometry Dash Việt Nam",
     description: "Trang web chính thức của cộng đồng GDVN",
     type: "website",
-    url: "https://gdvnc-web.vercel.app/",
+    url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:8088",
     siteName: "GDVN",
     locale: "vi_VN",
   },
@@ -74,7 +73,6 @@ export default function RootLayout({
             </ToastProvider>
           </LanguageProvider>
         </ThemeProvider>
-        <Analytics />
       </body>
     </html>
   );

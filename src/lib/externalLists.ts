@@ -37,7 +37,7 @@ async function fetchJson(url: string) {
         Accept: 'application/json',
         'Accept-Language': 'en',
         'User-Agent':
-          'Mozilla/5.0 (compatible; GDVNC/1.0; +https://gdvnc-web.vercel.app) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Mozilla/5.0 (compatible; GDVNC/1.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         Referer: 'https://pointercrate.com/',
       },
       cache: 'no-store',

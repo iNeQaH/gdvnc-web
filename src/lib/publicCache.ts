@@ -13,13 +13,11 @@ export const CACHE_TAGS = {
 export const PUBLIC_CACHE_HEADERS = {
   'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=1800',
   'CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=1800',
-  'Vercel-CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=1800',
 } as const;
 
 export const SHORT_CACHE_HEADERS = {
   'Cache-Control': 'public, max-age=15, s-maxage=30, stale-while-revalidate=60',
   'CDN-Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
-  'Vercel-CDN-Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
 } as const;
 
 export function bustPublicCache(...tags: string[]) {

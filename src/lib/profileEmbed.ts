@@ -10,25 +10,13 @@ export function getSiteBaseUrl() {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
   }
-  const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL?.replace(/^https?:\/\//, '');
-  if (productionHost) {
-    return `https://${productionHost}`;
-  }
-  return 'https://gdvnc-web.vercel.app';
+  return 'http://localhost:8088';
 }
 
 export function toAbsoluteUrl(url?: string | null) {
   if (!url) return null;
   if (url.startsWith('data:')) return null;
   if (url.startsWith('http://') || url.startsWith('https://')) {
-    try {
-      const parsed = new URL(url);
-      if (parsed.hostname.endsWith('.vercel.app') && parsed.hostname !== 'gdvnc-web.vercel.app') {
-        return `${getSiteBaseUrl()}${parsed.pathname}${parsed.search}`;
-      }
-    } catch {
-      return url;
-    }
     return url;
   }
   const base = getSiteBaseUrl();

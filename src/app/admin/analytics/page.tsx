@@ -7,6 +7,7 @@ import {
   Server, Activity, Users, FileStack, HardDrive, Database, Monitor, ArrowLeft, Clock, 
   Calendar, Check, ChevronDown, Cpu, Zap 
 } from 'lucide-react';
+import DateRangePicker from '@/components/DateRangePicker';
 
 export default function AnalyticsPage() {
   const [data, setData] = useState<any>(null);
@@ -71,11 +72,12 @@ export default function AnalyticsPage() {
   }, [startDate, endDate]);
 
   useEffect(() => {
+    if (dbComputeViewMode !== 'live') return;
     const timer = setInterval(() => {
       fetchData();
     }, 3000);
     return () => clearInterval(timer);
-  }, [startDate, endDate]);
+  }, [startDate, endDate, dbComputeViewMode]);
 
   // Close popover when clicking outside
   useEffect(() => {
@@ -139,95 +141,29 @@ export default function AnalyticsPage() {
           </h2>
           
           {/* SINGLE BUTTON DATE PICKER WITH POPOVER MODAL */}
-          <div className="relative" ref={popoverRef}>
-            <button
-              onClick={() => {
-                setTempStart(startDate);
-                setTempEnd(endDate);
-                setIsDatePickerOpen(!isDatePickerOpen);
-              }}
-              className="flex items-center gap-2 bg-[var(--bg-card)] hover:bg-[var(--bg-subtle)] text-[var(--text-title)] border border-[var(--border-ui)] px-3 py-1.5 rounded-lg shadow-sm text-xs font-semibold transition-colors"
+          <div className="flex gap-2 items-center">
+            <DateRangePicker 
+              startDate={startDate} 
+              endDate={endDate} 
+              onApply={(start, end) => {
+                setStartDate(start);
+                setEndDate(end);
+              }} 
+            />
+            <a 
+              href={`/api/admin/analytics-export?start=${startDate}&end=${endDate}&format=json`}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-card)] hover:bg-[var(--bg-subtle)] border border-[var(--border-ui)] rounded-lg text-xs font-semibold transition-colors"
+              download
             >
-              <Calendar className="w-4 h-4 text-[var(--accent)]" />
-              <span>{startDate.split('-').reverse().join('/')} — {endDate.split('-').reverse().join('/')}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-[var(--text-dim)]" />
-            </button>
-
-            {/* POPOVER MODAL */}
-            {isDatePickerOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-[var(--bg-card)] border border-[var(--border-ui)] rounded-xl shadow-xl p-4 z-50 animate-in fade-in zoom-in-95 space-y-4">
-                <div className="flex items-center justify-between border-b border-[var(--border-ui)] pb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-title)] flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-[var(--accent)]" /> Chọn khoảng thời gian
-                  </span>
-                </div>
-
-                {/* Quick Presets */}
-                <div className="flex gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => handleQuickPreset(0)}
-                    className="flex-1 py-1 text-[11px] font-semibold bg-[var(--bg-subtle)] hover:bg-[var(--border-ui)] rounded transition-colors text-[var(--text-title)]"
-                  >
-                    Hôm nay
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickPreset(7)}
-                    className="flex-1 py-1 text-[11px] font-semibold bg-[var(--bg-subtle)] hover:bg-[var(--border-ui)] rounded transition-colors text-[var(--text-title)]"
-                  >
-                    7 ngày
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickPreset(30)}
-                    className="flex-1 py-1 text-[11px] font-semibold bg-[var(--bg-subtle)] hover:bg-[var(--border-ui)] rounded transition-colors text-[var(--text-title)]"
-                  >
-                    30 ngày
-                  </button>
-                </div>
-
-                {/* Date Inputs */}
-                <div className="space-y-2 text-xs">
-                  <div>
-                    <label className="block text-[var(--text-dim)] font-medium mb-1">Từ ngày (Start Date):</label>
-                    <input
-                      type="date"
-                      value={tempStart}
-                      onChange={e => setTempStart(e.target.value)}
-                      className="w-full bg-[var(--bg-subtle)] text-[var(--text-title)] border border-[var(--border-ui)] px-3 py-1.5 rounded-md focus:outline-none focus:border-[var(--accent)]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[var(--text-dim)] font-medium mb-1">Đến ngày (End Date):</label>
-                    <input
-                      type="date"
-                      value={tempEnd}
-                      onChange={e => setTempEnd(e.target.value)}
-                      className="w-full bg-[var(--bg-subtle)] text-[var(--text-title)] border border-[var(--border-ui)] px-3 py-1.5 rounded-md focus:outline-none focus:border-[var(--accent)]"
-                    />
-                  </div>
-                </div>
-
-                {/* Confirm Action Button */}
-                <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border-ui)]">
-                  <button
-                    type="button"
-                    onClick={() => setIsDatePickerOpen(false)}
-                    className="px-3 py-1.5 text-xs font-semibold text-[var(--text-dim)] hover:text-[var(--text-title)] transition-colors"
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleApplyDateRange}
-                    className="flex items-center gap-1 px-4 py-1.5 text-xs font-bold bg-[var(--accent)] text-white rounded-md shadow hover:opacity-90 transition-opacity"
-                  >
-                    <Check className="w-3.5 h-3.5" /> Xác nhận
-                  </button>
-                </div>
-              </div>
-            )}
+              JSON
+            </a>
+            <a 
+              href={`/api/admin/analytics-export?start=${startDate}&end=${endDate}&format=csv`}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-card)] hover:bg-[var(--bg-subtle)] border border-[var(--border-ui)] rounded-lg text-xs font-semibold transition-colors"
+              download
+            >
+              CSV
+            </a>
           </div>
         </div>
         

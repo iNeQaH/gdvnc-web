@@ -24,6 +24,9 @@ function SubmitForm() {
   const [fetchedLevel, setFetchedLevel] = useState<any>(null);
   const [fetchingLevel, setFetchingLevel] = useState(false);
   const [fetchError, setFetchError] = useState('');
+  const [levelName, setLevelName] = useState('');
+  const [creatorName, setCreatorName] = useState('');
+  const [isPlatformer, setIsPlatformer] = useState(false);
   const [progress, setProgress] = useState('100');
   const [timeSeconds, setTimeSeconds] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
@@ -86,11 +89,14 @@ function SubmitForm() {
     setFetchError('');
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/gd/level/${id}`);
+        const res = await fetch(`/api/gd/level/${id}?t=${Date.now()}`);
         const data = await res.json();
         if (seq !== fetchSeq.current) return;
         if (data.success) {
           setFetchedLevel(data.level);
+          setLevelName(data.level.name || '');
+          setCreatorName(data.level.creatorName || '');
+          setIsPlatformer(data.level.isPlatformer || false);
         } else {
           setFetchedLevel(null);
           setFetchError(data.error || t('submit.level_fetch_fail'));
@@ -122,17 +128,17 @@ function SubmitForm() {
       };
 
       if (tab === 'PLAYER') {
-        if (!fetchedLevel) {
-          setError(t('submit.fetch_first'));
+        if (!levelName.trim() || !creatorName.trim()) {
+          setError('Vui lòng điền đủ Tên Level và Creator. Nếu fetch thất bại, bạn có thể tự điền tay.');
           setLoading(false);
           return;
         }
         payload = {
           ...payload,
           gdLevelId: gdLevelIdStr.trim(),
-          levelName: fetchedLevel.name,
-          creatorName: fetchedLevel.creatorName,
-          isPlatformer: fetchedLevel.isPlatformer,
+          levelName: levelName.trim(),
+          creatorName: creatorName.trim(),
+          isPlatformer: isPlatformer,
           videoUrl: videoUrl.trim(),
           rawProofUrl: rawProofUrl.trim(),
           hz: parseInt(hz, 10) || 60,
@@ -141,7 +147,7 @@ function SubmitForm() {
           comment: comment.trim(),
         };
 
-        if (fetchedLevel.isPlatformer) {
+        if (isPlatformer) {
           payload.timeMs = Math.round(parseFloat(timeSeconds) * 1000);
         } else {
           payload.progress = parseInt(progress, 10);
@@ -296,20 +302,44 @@ function SubmitForm() {
                 {fetchError && <p className="text-[10px] text-red-500 pt-1">{fetchError}</p>}
               </div>
 
-              {fetchedLevel && (
-                <div className="p-2.5 rounded-xl border flex items-center justify-between text-xs ui-subtle ui-border">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold ui-title">{fetchedLevel.name}</span>
-                    <span className="ui-dim">by {fetchedLevel.creatorName}</span>
-                  </div>
-                  <span className="font-bold text-[11px] uppercase px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--bg-card)' }}>
-                    {fetchedLevel.isPlatformer ? 'Platformer' : 'Classic'}
-                  </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold ui-title">Tên Level *</label>
+                  <input
+                    type="text"
+                    required
+                    value={levelName}
+                    onChange={(e) => setLevelName(e.target.value)}
+                    placeholder="Tên Level..."
+                    className="w-full px-3 py-2 rounded-xl text-xs ui-input"
+                  />
                 </div>
-              )}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold ui-title">Creator *</label>
+                  <input
+                    type="text"
+                    required
+                    value={creatorName}
+                    onChange={(e) => setCreatorName(e.target.value)}
+                    placeholder="Tên Creator..."
+                    className="w-full px-3 py-2 rounded-xl text-xs ui-input"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2 mt-2">
+                <input 
+                  type="checkbox" 
+                  id="isPlatformer" 
+                  checked={isPlatformer} 
+                  onChange={(e) => setIsPlatformer(e.target.checked)} 
+                  className="rounded border-[var(--border-ui)] text-sky-500 focus:ring-sky-500"
+                />
+                <label htmlFor="isPlatformer" className="text-xs font-bold ui-title cursor-pointer">Platformer Level</label>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                {fetchedLevel?.isPlatformer ? (
+                {isPlatformer ? (
                   <div className="space-y-1">
                     <label className="text-xs font-bold ui-title">{t('submit.time_seconds')} *</label>
                     <input

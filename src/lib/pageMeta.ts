@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 
 export function pageMetadata(title: string, description: string, path: string): Metadata {
-  const url = `https://gdvnc-web.vercel.app${path}`;
+  const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:8088';
+  const url = `${base}${path}`;
 
   return {
     title,
