@@ -151,6 +151,13 @@ export default function AnalyticsPage() {
               }} 
             />
             <a 
+              href={`/api/admin/analytics-export?start=${startDate}&end=${endDate}&format=md`}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-card)] hover:bg-[var(--bg-subtle)] border border-[var(--border-ui)] rounded-lg text-xs font-semibold transition-colors"
+              download
+            >
+              Markdown
+            </a>
+            <a 
               href={`/api/admin/analytics-export?start=${startDate}&end=${endDate}&format=json`}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-card)] hover:bg-[var(--bg-subtle)] border border-[var(--border-ui)] rounded-lg text-xs font-semibold transition-colors"
               download

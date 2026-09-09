@@ -22,14 +22,14 @@ const FAQ_TAGS = new Set([
   'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'blockquote',
   'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'span', 'div', 'a', 'img',
   'table', 'thead', 'tbody', 'tr', 'th', 'td', 'hr', 'pre', 'code',
-  'iframe', 'video', 'source',
+  'iframe', 'video', 'source', 'details', 'summary'
 ]);
 
 const CHRONICLE_ATTRS = new Set(['href', 'title', 'target', 'rel', 'src', 'alt', 'width', 'height', 'class']);
 
 const FAQ_ATTRS = new Set([
   'href', 'title', 'target', 'rel', 'src', 'alt', 'width', 'height', 'class', 'id',
-  'allow', 'allowfullscreen', 'frameborder', 'loading', 'controls', 'poster', 'type',
+  'allow', 'allowfullscreen', 'frameborder', 'loading', 'controls', 'poster', 'type', 'open'
 ]);
 
 function escapeAttr(value: string): string {
@@ -110,7 +110,7 @@ function sanitizeHtml(html: string, allowedTags: Set<string>, allowedAttrs: Set<
         kept.push('target="_blank"');
         continue;
       }
-      if (name === 'allowfullscreen' || name === 'controls') {
+      if (name === 'allowfullscreen' || name === 'controls' || name === 'open') {
         kept.push(name);
         continue;
       }

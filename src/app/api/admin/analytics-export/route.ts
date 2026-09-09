@@ -117,6 +117,37 @@ export async function GET(req: Request) {
       });
     }
 
+    if (format === 'md') {
+      let md = `# GDVN Analytics Report\n\n`;
+      md += `**Thời gian:** ${report.period.start} đến ${report.period.end}\n\n`;
+      md += `## Tóm tắt\n`;
+      md += `- **Lượt khách:** ${report.summary.totalVisitors.toLocaleString()}\n`;
+      md += `- **Lượt xem trang:** ${report.summary.totalPageViews.toLocaleString()}\n`;
+      md += `- **Lượt truy vấn (ước tính):** ${report.summary.totalEstimatedQueries.toLocaleString()}\n\n`;
+      
+      md += `## Biểu đồ Lượt xem theo ngày\n\n`;
+      md += `| Ngày/Giờ | Lượt xem | Khách | Truy vấn |\n`;
+      md += `|---|---|---|---|\n`;
+      daily.forEach(d => {
+        md += `| ${d.date} | ${d.views} | ${d.visitors} | ${d.estimatedQueries} |\n`;
+      });
+      md += `\n`;
+
+      md += `## Top 20 Trang phổ biến\n\n`;
+      md += `| Đường dẫn | Lượt xem |\n`;
+      md += `|---|---|\n`;
+      report.topPages.slice(0, 20).forEach(p => {
+        md += `| ${p.path} | ${p.count} |\n`;
+      });
+
+      return new NextResponse(md, {
+        headers: {
+          'Content-Type': 'text/markdown',
+          'Content-Disposition': `attachment; filename="analytics_${report.period.start}_to_${report.period.end}.md"`
+        }
+      });
+    }
+
     return new NextResponse(JSON.stringify(report, null, 2), {
       headers: {
         'Content-Type': 'application/json',
