@@ -212,8 +212,8 @@ export default function EventForm({
           <label>{t('timeline.from')} — {t('timeline.to')}</label>
           <div className="w-full">
             <DateRangePicker 
-              startDate={form.start || toDateInput(new Date())} 
-              endDate={form.end || form.start || toDateInput(new Date())}
+              startDate={form.start || toDateInput(Date.now())} 
+              endDate={form.end || form.start || toDateInput(Date.now())}
               onApply={(s, e) => {
                 set('start', s);
                 set('end', e);
