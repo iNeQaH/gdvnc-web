@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Discord Markdown ↔ HTML</title>
+  <style>
+    :root {
+      --bg: #313338;
+      --bg-2: #2B2D31;
+      --panel: #383A40;
+      --border: #1E1F22;
+      --text: #DBDEE1;
+      --text-header: #F2F3F5;
+      --dim: #949BA4;
+      --accent: #5865F2;
+      --accent-hover: #4752C4;
+      --accent-fg: #FFFFFF;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: "gg sans", "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: var(--bg-2);
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-header);
+    }
+    .actions { display: flex; gap: 8px; }
+    button {
+      border: 0;
+      border-radius: 4px;
+      padding: 6px 16px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+    .btn-accent { background: var(--accent); color: var(--accent-fg); }
+    .btn-accent:hover { background: var(--accent-hover); }
+    .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: var(--panel); }
+    
+    .grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      min-height: 0;
+      gap: 1px;
+      background: var(--border);
+    }
+    .pane {
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--dim);
+      padding: 12px 16px;
+      background: var(--bg-2);
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    textarea, .preview {
+      flex: 1;
+      margin: 0;
+      border: none;
+      resize: none;
+      background: var(--bg);
+      color: var(--text);
+      padding: 16px;
+      font: 14px/1.5 Consolas, "Cascadia Mono", monospace;
+      outline: none;
+    }
+    .preview {
+      font-family: "gg sans", "Segoe UI", sans-serif;
+      overflow: auto;
+      background: var(--bg);
+    }
+    .preview p { margin: 0 0 12px 0; }
+    .preview a { color: #00A8FC; text-decoration: none; }
+    .preview a:hover { text-decoration: underline; }
+    .preview h2, .preview h3, .preview h4 { color: var(--text-header); margin-top: 0; }
+    .preview ul, .preview ol { padding-left: 20px; margin-top: 0; }
+    .preview blockquote {
+      margin: 4px 0;
+      padding-left: 12px;
+      border-left: 4px solid var(--panel);
+      color: var(--text);
+    }
+    .preview code {
+      background: #1E1F22;
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+    }
+    .preview pre code {
+      display: block;
+      padding: 8px;
+      overflow-x: auto;
+    }
+    
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--accent);
+      color: var(--accent-fg);
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .toast.show { opacity: 1; }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Discord Markdown ↔ HTML Converter</h1>
+    <div class="actions">
+      <button type="button" class="btn-ghost" id="sampleBtn">Mẫu</button>
+      <button type="button" class="btn-ghost" id="clearBtn">Xóa</button>
+      <button type="button" class="btn-accent" id="copyBtn">Copy HTML</button>
+    </div>
+  </header>
+  
+  <div class="grid">
+    <section class="pane">
+      <div class="label">Discord Markdown</div>
+      <textarea id="mdInput" spellcheck="false" placeholder="Nhập Markdown Discord vào đây..."></textarea>
+    </section>
+    
+    <section class="pane">
+      <div class="label">HTML Code (Paste ngược lại được)</div>
+      <textarea id="htmlInput" spellcheck="false" placeholder="<p>Hoặc dán HTML vào đây...</p>"></textarea>
+    </section>
+    
+    <section class="pane">
+      <div class="label">Preview UI</div>
+      <div class="preview" id="preview"></div>
+    </section>
+  </div>
+  
+  <div class="toast" id="toast">Đã copy HTML</div>
+  
+  <script src="MarkdownToHTML.js"></script>
+  <script>
+    var SAMPLE = [
+      '# Tại sao tôi có cảnh báo verify username?',
+      '- Username này là tên tài khoản của bạn trong Geometry Dash, xác nhận để tránh trường hợp bạn giả mạo, cướp công.',
+      '- Bạn có thể đọc [__hướng dẫn chi tiết tại đây__](https://docs.google.com/document/d/1zhE1QWVJs0baapl0oWq-V1wiOeTgc7qDD7TB5z3cK1E/edit?usp=sharing).',
+      '',
+      '::: Cách mở hộp hướng dẫn (Click vào)',
+      'Đây là nội dung ẩn bên trong hộp.',
+      'Bạn có thể gõ văn bản bình thường vào đây.',
+      ':::',
+      '',
+      '**Embed** — dán link trần, một dòng riêng:',
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+    ].join('\n');
+
+    var mdInput = document.getElementById('mdInput');
+    var htmlInput = document.getElementById('htmlInput');
+    var preview = document.getElementById('preview');
+    var toast = document.getElementById('toast');
+    var KEY = 'gdvn-faq-md-draft';
+    
+    // Prevent infinite loops when syncing
+    var isTypingMd = false;
+    var isTypingHtml = false;
+
+    function renderFromMd() {
+      var html = window.discordToFaqHtml(mdInput.value);
+      if (!isTypingHtml) htmlInput.value = html;
+      preview.innerHTML = html || '<p style="color:var(--dim)">Chưa có nội dung.</p>';
+      localStorage.setItem(KEY, mdInput.value);
+    }
+
+    function renderFromHtml() {
+      var md = window.faqHtmlToDiscord ? window.faqHtmlToDiscord(htmlInput.value) : '';
+      if (!isTypingMd) mdInput.value = md;
+      preview.innerHTML = htmlInput.value || '<p style="color:var(--dim)">Chưa có nội dung.</p>';
+      localStorage.setItem(KEY, mdInput.value);
+    }
+
+    mdInput.addEventListener('input', function() {
+      isTypingMd = true;
+      renderFromMd();
+      isTypingMd = false;
+    });
+
+    htmlInput.addEventListener('input', function() {
+      isTypingHtml = true;
+      renderFromHtml();
+      isTypingHtml = false;
+    });
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(function () { toast.classList.remove('show'); }, 1400);
+    }
+
+    mdInput.value = localStorage.getItem(KEY) || SAMPLE;
+    renderFromMd();
+
+    document.getElementById('copyBtn').onclick = function () {
+      var html = htmlInput.value;
+      if (!html) return;
+      navigator.clipboard.writeText(html).then(function () {
+        showToast('Đã copy HTML');
+      });
+    };
+
+    document.getElementById('sampleBtn').onclick = function () {
+      mdInput.value = SAMPLE;
+      renderFromMd();
+    };
+
+    document.getElementById('clearBtn').onclick = function () {
+      mdInput.value = '';
+      htmlInput.value = '';
+      renderFromMd();
+      mdInput.focus();
+    };
+  </script>
+</body>
+</html>

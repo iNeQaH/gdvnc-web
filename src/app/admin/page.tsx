@@ -222,20 +222,35 @@ function FnSection({
   children: React.ReactNode;
   danger?: boolean;
 }) {
+  const [open, setOpen] = useState(false);
   return (
-    <section
-      className="ui-card p-5 space-y-3"
+    <div
+      className="ui-card transition-colors overflow-hidden"
       style={danger ? { borderColor: 'rgba(220, 38, 38, 0.45)' } : undefined}
     >
-      <div className="space-y-1">
-        <h3 className="font-bold text-sm ui-title flex items-center gap-2">
-          {icon}
-          {title}
-        </h3>
-        {desc ? <p className="text-xs ui-dim leading-relaxed">{desc}</p> : null}
-      </div>
-      {children}
-    </section>
+      <button 
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full p-4 flex items-center justify-between text-left cursor-pointer transition-colors"
+        style={{ backgroundColor: open ? 'var(--bg-subtle)' : 'transparent' }}
+      >
+        <div className="space-y-1">
+          <h3 className="font-bold text-sm ui-title flex items-center gap-2">
+            {icon}
+            {title}
+          </h3>
+          {desc && !open ? <p className="text-xs ui-dim line-clamp-1 opacity-70">{desc}</p> : null}
+        </div>
+        <ChevronDown className={`w-4 h-4 ui-dim transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      
+      {open && (
+        <div className="p-4 pt-0 border-t space-y-4" style={{ borderColor: 'var(--border-subtle)', backgroundColor: 'var(--bg-subtle)' }}>
+          {desc ? <p className="text-xs ui-dim leading-relaxed pt-3">{desc}</p> : null}
+          <div>{children}</div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1778,6 +1793,22 @@ export default function AdminPage() {
               <RefreshCw className={`w-3.5 h-3.5 ${refreshingTimelineCopy ? 'animate-spin' : ''}`} />
               {refreshingTimelineCopy ? t('admin.refresh_timeline_copy_working') : t('admin.refresh_timeline_copy')}
             </button>
+          </FnSection>
+
+          <FnSection
+            title="Công cụ Markdown to HTML"
+            icon={<Layers className="w-4 h-4" />}
+            desc="Mở công cụ chuyển đổi nhanh Discord Markdown sang chuẩn HTML dành cho mục Hỗ trợ (FAQ)."
+          >
+            <a
+              href="/tools/MarkdownToHTML.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs inline-flex items-center justify-center gap-1.5 cursor-pointer"
+              style={{ backgroundColor: 'var(--accent)' }}
+            >
+              Mở công cụ
+            </a>
           </FnSection>
 
           <FnSection
