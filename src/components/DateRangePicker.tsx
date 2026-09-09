@@ -139,7 +139,9 @@ export default function DateRangePicker({ startDate, endDate, onApply }: DateRan
   return (
     <div className="relative" ref={popoverRef}>
       <button
-        onClick={() => {
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
           setTempStart(startDate);
           setTempEnd(endDate);
           setIsOpen(!isOpen);
@@ -159,10 +161,10 @@ export default function DateRangePicker({ startDate, endDate, onApply }: DateRan
                 {monthNames[currentMonth]} {currentYear}
              </span>
              <div className="flex gap-2">
-                <button onClick={handlePrevMonth} className="p-1 rounded hover:bg-[var(--bg-subtle)] text-[var(--text-dim)] hover:text-[var(--text-title)]">
+                <button type="button" onClick={handlePrevMonth} className="p-1 rounded hover:bg-[var(--bg-subtle)] text-[var(--text-dim)] hover:text-[var(--text-title)]">
                    <ChevronLeft className="w-4 h-4" />
                 </button>
-                <button onClick={handleNextMonth} className="p-1 rounded hover:bg-[var(--bg-subtle)] text-[var(--text-dim)] hover:text-[var(--text-title)]">
+                <button type="button" onClick={handleNextMonth} className="p-1 rounded hover:bg-[var(--bg-subtle)] text-[var(--text-dim)] hover:text-[var(--text-title)]">
                    <ChevronRight className="w-4 h-4" />
                 </button>
              </div>
@@ -176,13 +178,13 @@ export default function DateRangePicker({ startDate, endDate, onApply }: DateRan
           </div>
 
           <div className="flex gap-1.5 pt-2">
-            <button onClick={() => handleQuickPreset(0)} className="flex-1 py-1 text-[11px] font-semibold bg-[var(--bg-subtle)] hover:bg-[var(--border-ui)] rounded transition-colors text-[var(--text-title)]">
+            <button type="button" onClick={() => handleQuickPreset(0)} className="flex-1 py-1 text-[11px] font-semibold bg-[var(--bg-subtle)] hover:bg-[var(--border-ui)] rounded transition-colors text-[var(--text-title)]">
               Hôm nay
             </button>
-            <button onClick={() => handleQuickPreset(7)} className="flex-1 py-1 text-[11px] font-semibold bg-[var(--bg-subtle)] hover:bg-[var(--border-ui)] rounded transition-colors text-[var(--text-title)]">
+            <button type="button" onClick={() => handleQuickPreset(7)} className="flex-1 py-1 text-[11px] font-semibold bg-[var(--bg-subtle)] hover:bg-[var(--border-ui)] rounded transition-colors text-[var(--text-title)]">
               7 ngày
             </button>
-            <button onClick={() => handleQuickPreset(30)} className="flex-1 py-1 text-[11px] font-semibold bg-[var(--bg-subtle)] hover:bg-[var(--border-ui)] rounded transition-colors text-[var(--text-title)]">
+            <button type="button" onClick={() => handleQuickPreset(30)} className="flex-1 py-1 text-[11px] font-semibold bg-[var(--bg-subtle)] hover:bg-[var(--border-ui)] rounded transition-colors text-[var(--text-title)]">
               30 ngày
             </button>
           </div>
@@ -200,7 +202,9 @@ export default function DateRangePicker({ startDate, endDate, onApply }: DateRan
 
           <div className="flex justify-end pt-2">
             <button
-              onClick={() => {
+              type="button"
+              onClick={(e) => {
+                 e.preventDefault();
                  onApply(tempStart, tempEnd);
                  setIsOpen(false);
               }}
