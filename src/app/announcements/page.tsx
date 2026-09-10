@@ -5,6 +5,7 @@ import { Bell, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import type { DictKey } from '@/lib/dictionaries';
+import { sanitizeFaqHtml } from '@/lib/faqSanitize';
 
 type Announcement = {
   id: string;
@@ -223,11 +224,10 @@ function AnnouncementDetail({
           </button>
         </div>
         <div
-          className="p-3.5 rounded-xl border text-sm leading-relaxed ui-title whitespace-pre-wrap max-h-[50vh] overflow-y-auto"
+          className="p-3.5 rounded-xl border text-sm leading-relaxed ui-title whitespace-pre-wrap max-h-[50vh] overflow-y-auto [&_ul]:list-disc [&_ul]:list-inside [&_ol]:list-decimal [&_ol]:list-inside [&_a]:text-sky-400 [&_a]:underline"
           style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
-        >
-          {item.body}
-        </div>
+          dangerouslySetInnerHTML={{ __html: sanitizeFaqHtml(item.body) }}
+        />
         {canEdit ? (
           <div className="flex gap-2 justify-end">
             <button
@@ -339,15 +339,18 @@ function AnnouncementForm({
           className="w-full px-3 py-2 rounded-xl border text-sm"
           style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
         />
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder={t('announce.field.body')}
-          rows={8}
-          className="w-full px-3 py-2 rounded-xl border text-sm"
-          style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-          required
-        />
+        <div className="space-y-1">
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder={t('announce.field.body')}
+            rows={8}
+            className="w-full px-3 py-2 rounded-xl border text-sm"
+            style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+            required
+          />
+          <div className="text-[10px] ui-dim">Hỗ trợ HTML và embed (iframe)</div>
+        </div>
         <select
           value={audience}
           onChange={(e) => setAudience(e.target.value)}

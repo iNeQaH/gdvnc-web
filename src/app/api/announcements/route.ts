@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthUser, requireFullAdmin } from '@/lib/auth';
 import { clipText } from '@/lib/validate';
+import { sanitizeFaqHtml } from '@/lib/faqSanitize';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import {
@@ -45,10 +46,11 @@ async function resolveUsernames(raw: unknown): Promise<{ ids: string[]; error?: 
   return { ids: users.map((u) => u.id) };
 }
 
+
 function parseBody(body: any) {
   const title = clipText(body?.title, 160);
   const excerpt = clipText(body?.excerpt, 400);
-  const full = clipText(body?.body, 20000);
+  const full = sanitizeFaqHtml(clipText(body?.body, 20000));
   if (!title || !full) return { error: 'Title and content are required.' };
   const audienceRaw = String(body?.audience || 'ALL').toUpperCase();
   if (!isAnnouncementAudience(audienceRaw)) return { error: 'Invalid audience.' };

@@ -31,6 +31,8 @@ async function resolveUsernames(raw: unknown): Promise<{ ids: string[]; error?: 
   return { ids: users.map((u) => u.id) };
 }
 
+import { sanitizeFaqHtml } from '@/lib/faqSanitize';
+
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireFullAdmin();
@@ -46,7 +48,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const body = await req.json();
     const title = body?.title != null ? clipText(body.title, 160) : existing.title;
     const excerptIn = body?.excerpt != null ? clipText(body.excerpt, 400) : existing.excerpt;
-    const full = body?.body != null ? clipText(body.body, 20000) : existing.body;
+    const full = body?.body != null ? sanitizeFaqHtml(clipText(body.body, 20000)) : existing.body;
     if (!title || !full) return NextResponse.json({ error: 'Title and content are required.' }, { status: 400 });
 
     let audience = existing.audience;

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Bell, Check, Trash2, X, Sparkles, Gift, ShieldAlert, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
+import { sanitizeFaqHtml } from '@/lib/faqSanitize';
 
 interface NotificationItem {
   id: string;
@@ -255,9 +256,11 @@ export const NotificationModal = ({ userId, isOpen, onClose, onUpdateUnreadCount
                 </button>
               </div>
 
-              <div className="p-4 rounded-2xl border text-xs leading-relaxed ui-title whitespace-pre-wrap" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}>
-                {selectedNotif.body || selectedNotif.message}
-              </div>
+              <div
+                className="p-4 rounded-2xl border text-xs leading-relaxed ui-title whitespace-pre-wrap max-h-[50vh] overflow-y-auto [&_ul]:list-disc [&_ul]:list-inside [&_ol]:list-decimal [&_ol]:list-inside [&_a]:text-sky-400 [&_a]:underline"
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
+                dangerouslySetInnerHTML={{ __html: sanitizeFaqHtml(selectedNotif.body || selectedNotif.message) }}
+              />
 
               <button
                 onClick={() => setSelectedNotif(null)}
