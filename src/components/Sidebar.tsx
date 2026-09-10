@@ -137,7 +137,7 @@ export const Sidebar = () => {
     { href: '/announcements', label: t('nav.announcements'), icon: Bell },
     { href: '/', label: t('nav.leaderboard'), icon: Star },
     { href: '/levels', label: t('nav.demonlist'), icon: Folder },
-    { href: '/challenges', label: t('nav.challenges'), icon: Goal },
+    { href: '/levels?tab=challenge', label: t('nav.challenges'), icon: Goal },
     { href: '/timeline', label: t('nav.timeline'), icon: History },
     { href: '/submit', label: t('nav.submit'), icon: ClipboardList },
     { href: '/support', label: t('nav.supporter'), icon: Heart, highlight: false, isPink: true },

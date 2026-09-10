@@ -78,7 +78,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const mode = searchParams.get('mode') || 'CLASSIC';
     const tier = searchParams.get('tier') || '';
-    const challenge = searchParams.get('challenge') === '1';
+    const challenge = searchParams.get('challenge') === '1' || searchParams.get('tab') === 'challenge';
     const skip = Math.max(0, parseInt(searchParams.get('skip') || '0', 10) || 0);
     const take = Math.min(5000, Math.max(1, parseInt(searchParams.get('take') || '5000', 10) || 5000));
     const levels = await cachedJson(

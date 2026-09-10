@@ -24,6 +24,7 @@ const tabNames: Record<string, string> = {
   demonlist: 'Demon List',
   pemonlist: 'Pemon List',
   vn: 'Made in VN',
+  challenge: 'Challenge List',
 };
 
 const tabDescriptions: Record<string, string> = {
@@ -32,6 +33,7 @@ const tabDescriptions: Record<string, string> = {
   demonlist: 'Danh sách demon trên thế giới',
   pemonlist: 'Danh sách Platformer Demon trên thế giới',
   vn: 'Tổng hợp tất cả các level được đánh giá bới người Việt',
+  challenge: 'Danh sách các màn chơi Challenge',
 };
 
 export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main' | 'challenge' }) {
@@ -43,7 +45,9 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
 
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-  const [listTab, setListTab] = useState<'featured' | 'classic' | 'demonlist' | 'pemonlist' | 'vn'>('featured');
+  const [listTab, setListTab] = useState<'featured' | 'classic' | 'demonlist' | 'pemonlist' | 'vn' | 'challenge'>(
+    listKind === 'challenge' ? 'challenge' : 'featured'
+  );
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -54,10 +58,20 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
   const [filterTiers, setFilterTiers] = useState<string[]>([]);
   const [filterFaces, setFilterFaces] = useState<number[]>([]);
   const [filterVN, setFilterVN] = useState(false);
-  const isChallengeList = listKind === 'challenge';
+  const isChallengeList = listKind === 'challenge' || listTab === 'challenge';
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [editingLevel, setEditingLevel] = useState<any>(null);
   const [totalPages, setTotalPages] = useState(1);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam && ['featured', 'classic', 'demonlist', 'pemonlist', 'vn', 'challenge'].includes(tabParam)) {
+        setListTab(tabParam as any);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const userStr = localStorage.getItem('gdvnc_user');
@@ -200,31 +214,34 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
 
       {/* Controls */}
       <div className="flex flex-col gap-3">
-        {!isChallengeList && (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-1 p-0.5 rounded-xl border w-fit max-w-full overflow-x-auto" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-              {(['featured', 'classic', 'demonlist', 'pemonlist', 'vn'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => {
-                    setListTab(tab);
-                    setCurrentPage(1);
-                  }}
-                  className="px-3 py-2 rounded-lg text-xs font-bold cursor-pointer transition-all shrink-0"
-                  style={{
-                    backgroundColor: listTab === tab ? 'var(--bg-card)' : 'transparent',
-                    color: listTab === tab ? 'var(--accent)' : 'var(--text-dim)',
-                    boxShadow: listTab === tab ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                  }}
-                >
-                  {tabNames[tab]}
-                </button>
-              ))}
-            </div>
-            <p className="text-[13px] font-medium ui-dim px-1">{tabDescriptions[listTab]}</p>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-1 p-0.5 rounded-xl border w-fit max-w-full overflow-x-auto" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+            {(['featured', 'classic', 'demonlist', 'pemonlist', 'vn', 'challenge'] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => {
+                  setListTab(tab);
+                  setCurrentPage(1);
+                  if (typeof window !== 'undefined') {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('tab', tab);
+                    window.history.replaceState({}, '', url.toString());
+                  }
+                }}
+                className="px-3 py-2 rounded-lg text-xs font-bold cursor-pointer transition-all shrink-0"
+                style={{
+                  backgroundColor: listTab === tab ? 'var(--bg-card)' : 'transparent',
+                  color: listTab === tab ? 'var(--accent)' : 'var(--text-dim)',
+                  boxShadow: listTab === tab ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                }}
+              >
+                {tabNames[tab]}
+              </button>
+            ))}
           </div>
-        )}
+          <p className="text-[13px] font-medium ui-dim px-1">{tabDescriptions[listTab]}</p>
+        </div>
         <div className="flex flex-col lg:flex-row justify-between gap-3 items-stretch lg:items-center">
           <div className="flex flex-1 flex-wrap sm:flex-nowrap items-center gap-2">
             <div className="relative flex-1 min-w-[180px] max-w-md">
