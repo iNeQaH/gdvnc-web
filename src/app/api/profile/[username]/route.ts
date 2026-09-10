@@ -10,6 +10,7 @@ import {
 import { requireAuth } from '@/lib/auth';
 import { clipText } from '@/lib/validate';
 import { deleteUploadthingKeys, isAllowedImageRef, uploadthingKeysFromRef } from '@/lib/uploadthing';
+import { deleteUserAccount } from '@/lib/deleteUser';
 
 export const dynamic = 'force-dynamic';
 
@@ -329,5 +330,43 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     return NextResponse.json({ error: error.message || 'Lỗi cập nhật profile.' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request, { params }: { params: Promise<{ username: string }> }) {
+  try {
+    const auth = await requireAuth();
+    const { username } = await params;
+    const targetUser = await prisma.user.findUnique({
+      where: { username },
+      select: { id: true, username: true, role: true },
+    });
+    if (!targetUser) {
+      return NextResponse.json({ error: 'Không tìm thấy người dùng.' }, { status: 404 });
+    }
+
+    const isSelf = auth.username === username;
+    const isAdmin = auth.role === 'ADMIN';
+    if (!isSelf && !isAdmin) {
+      return NextResponse.json({ error: 'Không có quyền xoá tài khoản này.' }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const reason = body?.reason || '';
+    if (!reason || !reason.trim()) {
+      return NextResponse.json({ error: 'Vui lòng nhập lý do xoá tài khoản.' }, { status: 400 });
+    }
+
+    const result = await deleteUserAccount(auth.userId, targetUser.id, reason);
+    if ('error' in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+
+    return NextResponse.json({ success: true, message: 'Đã xoá tài khoản thành công.' });
+  } catch (error: any) {
+    if (error?.message === 'UNAUTHORIZED') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    return NextResponse.json({ error: error.message || 'Lỗi xoá tài khoản.' }, { status: 500 });
   }
 }

@@ -93,10 +93,10 @@ export async function DELETE(req: Request) {
   }
 
   try {
-    const { id } = await req.json();
+    const { id, reason } = await req.json();
     if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
-    const result = await deleteUserAccount(actor.userId, id);
+    const result = await deleteUserAccount(actor.userId, id, reason);
     if ('error' in result) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }

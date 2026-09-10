@@ -13,7 +13,14 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
 
   try {
     const { id } = await context.params;
-    const result = await deleteUserAccount(actorJwt.userId, id);
+    let reason = '';
+    try {
+      const body = await req.json();
+      reason = body?.reason || '';
+    } catch {
+      /* ignore */
+    }
+    const result = await deleteUserAccount(actorJwt.userId, id, reason);
     if ('error' in result) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }

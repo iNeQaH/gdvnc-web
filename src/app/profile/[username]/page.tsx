@@ -101,6 +101,11 @@ export default function ProfilePage() {
   const [editingField, setEditingField] = useState<null | 'country' | 'gdUsername' | 'discordTag'>(null);
   const [fieldDraft, setFieldDraft] = useState('');
 
+  // Delete Account States
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteAccountReason, setDeleteAccountReason] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
   useEffect(() => {
     const userStr = localStorage.getItem('gdvnc_user');
     if (userStr) {
@@ -343,53 +348,42 @@ export default function ProfilePage() {
     }
   };
 
-  const handleRequestDeleteAccount = () => {
-    if (!currentUser || !isOwner || !data) return;
-    showConfirm('Gửi yêu cầu xoá tài khoản? Admin sẽ xem xét và xử lý yêu cầu này.', async () => {
-      try {
-        const res = await fetch('/api/helps', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: `Yêu cầu xoá tài khoản: ${data.username}`,
-            content: `Người dùng ${data.username} (ID: ${data.id}) yêu cầu xoá tài khoản của mình.`,
-          }),
-        });
-        const resData = await res.json();
-        if (res.ok && resData.success) {
-          showToast('Đã gửi yêu cầu xoá tài khoản. Admin sẽ xử lý sớm.', 'success');
-        } else {
-          showToast(resData.error || 'Không gửi được yêu cầu xoá tài khoản.', 'error');
-        }
-      } catch (e) {
-        showToast(t('common.server_error'), 'error');
-      }
-    });
+  const openDeleteModal = () => {
+    if (!currentUser || (!isOwner && !isFullAdmin) || !data) return;
+    setDeleteAccountReason('');
+    setShowDeleteModal(true);
   };
 
-  const handleForceDeleteAccount = () => {
-    if (!currentUser || !isFullAdmin || !data) return;
-    showConfirm(`Xoá vĩnh viễn tài khoản "${data.username}"? Hành động này không thể hoàn tác.`, async () => {
-      try {
-        const res = await fetch(`/api/admin/users/${data.id}`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ currentAdminUsername: currentUser.username }),
-        });
-        const resData = await res.json();
-        if (res.ok && resData.success) {
-          showToast('Đã xoá tài khoản.', 'success');
-          if (currentUser.id === data.id) {
-            await logoutClient();
-          }
-          window.location.href = '/';
-        } else {
-          showToast(resData.error || t('admin.action_fail'), 'error');
+  const confirmDeleteAccount = async () => {
+    if (!currentUser || (!isOwner && !isFullAdmin) || !data) return;
+    const reason = deleteAccountReason.trim();
+    if (!reason) {
+      showToast('Vui lòng nhập lý do xoá tài khoản.', 'error');
+      return;
+    }
+    setDeletingAccount(true);
+    try {
+      const res = await fetch(`/api/profile/${data.username}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+      });
+      const resData = await res.json();
+      if (res.ok && resData.success) {
+        showToast('Đã xoá tài khoản thành công.', 'success');
+        setShowDeleteModal(false);
+        if (currentUser.id === data.id) {
+          await logoutClient();
         }
-      } catch (e) {
-        showToast(t('common.server_error'), 'error');
+        window.location.href = '/';
+      } else {
+        showToast(resData.error || t('admin.action_fail'), 'error');
       }
-    });
+    } catch (e) {
+      showToast(t('common.server_error'), 'error');
+    } finally {
+      setDeletingAccount(false);
+    }
   };
 
   const handleResetCp = () => {
@@ -693,6 +687,16 @@ export default function ProfilePage() {
                       <ShieldCheck className="w-3.5 h-3.5" />
                       Quản Lý Role & Badge
                     </button>
+                    )}
+                    {(isOwner || isFullAdmin) && (
+                      <button 
+                        type="button"
+                        onClick={openDeleteModal}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-red-500 border border-red-500/20 bg-red-500/10 shadow-sm hover:bg-red-500/20 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Xoá tài khoản
+                      </button>
                     )}
                   </div>
                 )}
@@ -1212,7 +1216,7 @@ export default function ProfilePage() {
           <div className="flex flex-wrap gap-2">
             {isOwner && (
               <button
-                onClick={handleRequestDeleteAccount}
+                onClick={openDeleteModal}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm hover:opacity-90 transition-opacity bg-orange-500/10 text-orange-500 border border-orange-500/20"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -1221,7 +1225,7 @@ export default function ProfilePage() {
             )}
             {isAdmin && (
               <button
-                onClick={handleForceDeleteAccount}
+                onClick={openDeleteModal}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm hover:opacity-90 transition-opacity bg-red-600 border border-red-500"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -1450,6 +1454,62 @@ export default function ProfilePage() {
           selectedIds={selectedBadgeIds}
           onConfirm={setSelectedBadgeIds}
         />
+      )}
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[999999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150" onClick={() => setShowDeleteModal(false)}>
+          <div 
+            className="w-full max-w-md rounded-3xl border shadow-2xl p-6 space-y-4"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-sm sm:text-base ui-title text-red-500 flex items-center gap-2">
+                <Trash2 className="w-5 h-5" />
+                Xoá tài khoản: {data.username}
+              </h3>
+              <button type="button" onClick={() => setShowDeleteModal(false)} className="p-1 rounded-xl border ui-dim cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-500 leading-relaxed font-semibold">
+              Hành động này sẽ gỡ người dùng khỏi hệ thống và chuyển các bản ghi đã duyệt thành kỷ lục vô chủ. Không thể hoàn tác.
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold ui-title">Lý do xoá tài khoản (bắt buộc):</label>
+              <textarea
+                rows={3}
+                value={deleteAccountReason}
+                onChange={(e) => setDeleteAccountReason(e.target.value)}
+                placeholder="Nhập lý do muốn xoá tài khoản..."
+                className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-red-500/50 resize-y"
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                autoFocus
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border cursor-pointer"
+                style={{ borderColor: 'var(--border-ui)' }}
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                disabled={deletingAccount || !deleteAccountReason.trim()}
+                onClick={confirmDeleteAccount}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                {deletingAccount ? 'Đang xoá...' : 'Xác nhận xoá'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

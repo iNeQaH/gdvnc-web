@@ -364,6 +364,43 @@ export default function AdminPage() {
   const [usersList, setUsersList] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
+  // User deletion state
+  const [deleteUserTarget, setDeleteUserTarget] = useState<{ id: string; username: string } | null>(null);
+  const [deleteUserReason, setDeleteUserReason] = useState('');
+  const [isDeleteUserModalOpen, setIsDeleteUserModalOpen] = useState(false);
+  const [deletingUser, setDeletingUser] = useState(false);
+
+  const confirmDeleteUser = async () => {
+    if (!deleteUserTarget) return;
+    if (!deleteUserReason.trim() || deleteUserReason.trim().length < 3) {
+      showToast('Vui lòng nhập lý do xoá (tối thiểu 3 ký tự).', 'error');
+      return;
+    }
+    setDeletingUser(true);
+    try {
+      const res = await fetch(`/api/admin/users/${deleteUserTarget.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: deleteUserReason.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.error || 'Xoá người dùng thất bại', 'error');
+        return;
+      }
+      showToast(`Đã xoá tài khoản ${deleteUserTarget.username}`, 'success');
+      setIsDeleteUserModalOpen(false);
+      setDeleteUserTarget(null);
+      setDeleteUserReason('');
+      fetchUsers(userQuery);
+    } catch (err) {
+      console.error(err);
+      showToast('Lỗi khi xoá tài khoản', 'error');
+    } finally {
+      setDeletingUser(false);
+    }
+  };
+
   const [isLevelFormOpen, setIsLevelFormOpen] = useState(false);
   const [levelFormInitialData, setLevelFormInitialData] = useState<any>(null);
   const [siteLocked, setSiteLocked] = useState(false);
@@ -2287,6 +2324,7 @@ export default function AdminPage() {
                       <th className="px-5 py-3">{t('admin.sort_role')}</th>
                       <th className="px-5 py-3">GD</th>
                       <th className="px-5 py-3 text-right">{t('leaderboard.classic')}</th>
+                      <th className="px-5 py-3 text-right">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody className="ui-zebra">
@@ -2385,6 +2423,24 @@ export default function AdminPage() {
                             {user.classicPp.toFixed(1)}
                             <span className="text-[10px] font-normal ui-dim ml-1">Pts</span>
                           </td>
+                          <td className="px-5 py-3.5 text-right">
+                            {!isTargetSuper && currentUser?.role === 'ADMIN' && user.id !== currentUser?.id && (
+                              <button
+                                type="button"
+                                title="Xoá tài khoản"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setDeleteUserTarget({ id: user.id, username: user.username });
+                                  setDeleteUserReason('');
+                                  setIsDeleteUserModalOpen(true);
+                                }}
+                                className="p-1.5 rounded-lg text-red-500 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all cursor-pointer inline-flex items-center gap-1"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </td>
                         </tr>
                       );
                     })}
@@ -2395,6 +2451,97 @@ export default function AdminPage() {
           </div>
 
           <AdminListPager page={userPage} total={sortedUsers.length} onPage={setUserPage} t={t} />
+        </div>
+      )}
+
+      {/* Modal Xoá Tài Khoản người dùng */}
+      {isDeleteUserModalOpen && deleteUserTarget && (
+        <div
+          className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => {
+            if (!deletingUser) {
+              setIsDeleteUserModalOpen(false);
+              setDeleteUserTarget(null);
+            }
+          }}
+        >
+          <div
+            className="ui-card p-6 w-full max-w-md space-y-4 shadow-2xl rounded-2xl border"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div className="flex items-center gap-2 text-red-500 font-black text-base">
+                <Trash2 className="w-5 h-5" />
+                <span>Xoá tài khoản người dùng</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!deletingUser) {
+                    setIsDeleteUserModalOpen(false);
+                    setDeleteUserTarget(null);
+                  }
+                }}
+                className="ui-dim hover:opacity-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <p className="ui-title font-medium">
+                Bạn đang chuẩn bị xoá tài khoản <strong className="text-red-500">{deleteUserTarget.username}</strong>. Thao tác này sẽ xoá toàn bộ kỷ lục, tác phẩm và thông tin của người dùng khỏi hệ thống!
+              </p>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase ui-dim mb-1">
+                  Lý do xoá tài khoản <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={deleteUserReason}
+                  onChange={(e) => setDeleteUserReason(e.target.value)}
+                  placeholder="Nhập lý do xoá tài khoản (ví dụ: Vi phạm quy định, Spammer, theo yêu cầu...)"
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-xl border text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+              <button
+                type="button"
+                disabled={deletingUser}
+                onClick={() => {
+                  setIsDeleteUserModalOpen(false);
+                  setDeleteUserTarget(null);
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border cursor-pointer hover:bg-black/5 dark:hover:bg-white/5"
+                style={{ borderColor: 'var(--border-ui)' }}
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                disabled={deletingUser || !deleteUserReason.trim()}
+                onClick={confirmDeleteUser}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 transition-all shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {deletingUser ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    Đang xoá...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Xác nhận xoá
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
