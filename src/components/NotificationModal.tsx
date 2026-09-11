@@ -57,6 +57,12 @@ export const NotificationModal = ({ userId, isOpen, onClose, onUpdateUnreadCount
   const markAsRead = async (notif: NotificationItem) => {
     setSelectedNotif(notif);
     if (!notif.isRead) {
+      setNotifications((prev) => {
+        const next = prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n));
+        const newUnread = next.filter((n) => !n.isRead).length;
+        if (onUpdateUnreadCount) onUpdateUnreadCount(newUnread);
+        return next;
+      });
       try {
         const payload =
           notif.kind === 'announcement'
@@ -67,11 +73,6 @@ export const NotificationModal = ({ userId, isOpen, onClose, onUpdateUnreadCount
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
-        );
-        const newUnread = notifications.filter((n) => !n.isRead && n.id !== notif.id).length;
-        if (onUpdateUnreadCount) onUpdateUnreadCount(newUnread);
       } catch (e) {
         console.error(e);
       }
@@ -79,14 +80,14 @@ export const NotificationModal = ({ userId, isOpen, onClose, onUpdateUnreadCount
   };
 
   const markAllAsRead = async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    if (onUpdateUnreadCount) onUpdateUnreadCount(0);
     try {
       await fetch('/api/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ markAll: true }),
       });
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-      if (onUpdateUnreadCount) onUpdateUnreadCount(0);
     } catch (e) {
       console.error(e);
     }

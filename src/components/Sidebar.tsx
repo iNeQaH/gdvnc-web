@@ -37,6 +37,30 @@ export const Sidebar = () => {
   const [announceUnread, setAnnounceUnread] = useState(0);
   const [isInboxOpen, setIsInboxOpen] = useState(false);
 
+  const handleUpdateUnreadCount = (count: number) => {
+    const newCount = Math.max(0, count);
+    setUnreadCount(newCount);
+    try {
+      const uStr = localStorage.getItem('gdvnc_user');
+      if (uStr) {
+        const u = JSON.parse(uStr);
+        const raw = sessionStorage.getItem('gdvnc_badges');
+        const cached = raw ? JSON.parse(raw) : {};
+        sessionStorage.setItem(
+          'gdvnc_badges',
+          JSON.stringify({
+            ...cached,
+            userId: u.id,
+            at: Date.now(),
+            unreadCount: newCount,
+          })
+        );
+      }
+    } catch {
+      /* ignore */
+    }
+  };
+
   const loadUserFromStorage = () => {
     const userStr = localStorage.getItem('gdvnc_user');
     if (userStr) {
@@ -381,7 +405,7 @@ export const Sidebar = () => {
           userId={currentUser.id}
           isOpen={isInboxOpen}
           onClose={() => setIsInboxOpen(false)}
-          onUpdateUnreadCount={setUnreadCount}
+          onUpdateUnreadCount={handleUpdateUnreadCount}
         />
       )}
     </>

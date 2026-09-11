@@ -51,6 +51,9 @@ export default function AnnouncementsPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ markAnnouncements: true }),
         });
+        try {
+          sessionStorage.removeItem('gdvnc_badges');
+        } catch {}
         window.dispatchEvent(new Event('gdvnc_user_update'));
       }
     } catch {
