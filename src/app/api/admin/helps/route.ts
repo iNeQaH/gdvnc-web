@@ -68,7 +68,7 @@ export async function PATCH(req: Request) {
           message:
             action === 'APPROVE'
               ? notifyWithNote(`Yêu cầu "${help.title}" đã được admin duyệt.`, reviewNote)
-              : `Yêu cầu "${help.title}" bị từ chối. Lý do: ${reviewNote}`,
+              : reviewNote || 'Yêu cầu hỗ trợ bị từ chối.',
         },
       });
     }

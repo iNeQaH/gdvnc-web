@@ -44,8 +44,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       await prisma.notification.create({
         data: {
           userId: submission.userId,
-          title: 'Submit Level bị từ chối',
-          message: `Level ID ${submission.gdLevelId} đã bị từ chối. Lý do: ${note || 'Không xác định'}`,
+          title: 'Submit Level Bị Từ Chối',
+          message: note || 'Không đạt quy chuẩn.',
         },
       });
       return NextResponse.json({ success: true, submission: updated });

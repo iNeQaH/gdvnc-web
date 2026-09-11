@@ -77,7 +77,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         data: {
           userId: work.userId,
           title: 'Tác Phẩm Bị Từ Chối',
-          message: `Tác phẩm "${work.levelName}" của bạn đã bị từ chối. Lý do: ${note || 'Không xác định'}`
+          message: note || 'Không đạt quy chuẩn Creator.',
         }
       });
 

@@ -74,7 +74,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         data: {
           userId: record.userId,
           title: 'Kỷ Lục Bị Từ Chối',
-          message: `Kỷ lục màn chơi "${record.level.name}" của bạn đã bị từ chối với lý do: "${note || 'Không đạt quy chuẩn bằng chứng hoặc thiếu thông tin.'}"`,
+          message: note || 'Không đạt quy chuẩn bằng chứng hoặc thiếu thông tin.',
         },
       });
     }
