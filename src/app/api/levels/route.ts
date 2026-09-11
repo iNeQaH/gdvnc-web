@@ -19,7 +19,6 @@ const dbLevelSelect = {
   isChallenge: true,
   placement: true,
   vnPlacement: true,
-  classicPlacement: true,
   basePp: true,
   minPercent: true,
   creatorName: true,
@@ -108,7 +107,7 @@ export async function GET(req: Request) {
       let filtered = levels.filter((lvl: any) => {
         if (filterModes.length > 0 && !filterModes.includes(lvl.mode)) return false;
 
-        const tierRank = classicRanking ? lvl.classicPlacement : vnRanking ? lvl.vnPlacement : lvl.placement;
+        const tierRank = vnRanking ? lvl.vnPlacement : lvl.placement;
         if (!placementMatchesTiers(tierRank, filterTiers)) return false;
 
         if (!matchesDifficultyFilter(lvl.difficultyFace ?? 10, filterFaces)) return false;
@@ -119,7 +118,7 @@ export async function GET(req: Request) {
             if (!lvl.isVN) return false;
             if (!lvl.vnPlacement && !isDemonDifficultyFace(lvl.difficultyFace ?? 0)) return false;
           } else if (tab === 'classic') {
-            if (lvl.mode !== 'CLASSIC' || lvl.isChallenge || !lvl.classicPlacement) return false;
+            if (lvl.mode !== 'CLASSIC' || lvl.isChallenge || !lvl.placement) return false;
           } else if (tab === 'demonlist') {
             if (lvl.mode !== 'CLASSIC' || !lvl.placement || lvl.placement > 150) return false;
           } else if (tab === 'pemonlist') {
@@ -148,8 +147,8 @@ export async function GET(req: Request) {
         }
         if (classicRanking) {
           return compareListLevels(
-            { placement: a.classicPlacement, difficultyFace: a.difficultyFace, name: a.name },
-            { placement: b.classicPlacement, difficultyFace: b.difficultyFace, name: b.name }
+            { placement: a.placement, difficultyFace: a.difficultyFace, name: a.name },
+            { placement: b.placement, difficultyFace: b.difficultyFace, name: b.name }
           );
         }
         if (vnRanking) return compareVnListLevels(a, b);

@@ -322,9 +322,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
         ) : (
           levels.map((lvl, idx) => {
             const listRank = (currentPage - 1) * pageSize + idx + 1;
-            const placement = classicRanking
-              ? (lvl.classicPlacement ? '#' + lvl.classicPlacement : '-')
-              : vnRanking
+            const placement = vnRanking
               ? (lvl.vnPlacement ? '#' + lvl.vnPlacement : '-')
               : searching || isChallengeList
                 ? '#' + listRank

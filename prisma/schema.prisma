@@ -98,7 +98,6 @@ model Level {
   isChallenge   Boolean    @default(false)
   placement     Int?       // 1, 2, 3... main / demonlist / pemonlist
   vnPlacement   Int?       // 1, 2, 3... VN tag list (independent of placement)
-  classicPlacement Int?    // 1, 2, 3... Classic List rank
   basePp        Float
   minPercent    Int        @default(100) // Qualifying %
   
@@ -119,7 +118,6 @@ model Level {
 
   @@index([placement])
   @@index([vnPlacement])
-  @@index([classicPlacement])
   @@index([mode])
   @@index([isChallenge])
   @@index([isVN])
@@ -249,7 +247,6 @@ model CreatorWork {
   minPercent     Int          @default(100)
   placement      Int?
   vnPlacement    Int?
-  classicPlacement Int?
   mode           LevelMode    @default(CLASSIC)
   isVN           Boolean      @default(false)
   isChallenge    Boolean      @default(false)
@@ -282,7 +279,6 @@ model LevelSubmission {
   minPercent     Int          @default(100)
   placement      Int?
   vnPlacement    Int?
-  classicPlacement Int?
   mode           LevelMode    @default(CLASSIC)
   isVN           Boolean      @default(false)
   isChallenge    Boolean      @default(false)
