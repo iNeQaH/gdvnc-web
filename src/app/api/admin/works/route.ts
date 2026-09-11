@@ -20,8 +20,15 @@ export async function GET(req: Request) {
     const skip = (page - 1) * ADMIN_LIST_LIMIT;
     const q = searchParams.get('q') || '';
     const sort = searchParams.get('sort') || 'newest';
+    const isChallengeParam = searchParams.get('isChallenge');
 
     const whereClause: any = status ? { status } : {};
+    if (isChallengeParam === 'true') {
+      whereClause.isChallenge = true;
+    } else if (isChallengeParam === 'false') {
+      whereClause.isChallenge = false;
+    }
+
     if (q) {
       whereClause.OR = [
         { name: { contains: q, mode: 'insensitive' } },

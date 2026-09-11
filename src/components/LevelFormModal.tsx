@@ -46,6 +46,8 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
   const [fetchedLevelName, setFetchedLevelName] = useState('');
   const [imageError, setImageError] = useState('');
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [hasFetchedGd, setHasFetchedGd] = useState(false);
+  const [fetchedRatingType, setFetchedRatingType] = useState<'NONE' | 'RATE' | 'FEATURE' | 'EPIC' | 'LEGENDARY' | 'MYTHIC'>('NONE');
 
   const fetchGdLevel = async (id: string, isInitialEdit = false) => {
     if (!id || !/^\d+$/.test(id)) return;
@@ -57,18 +59,22 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
       if (seq !== fetchSeq.current) return;
       if (data.success && data.level) {
         setFetchedLevelName(String(data.level.name || ''));
+        const fetchedFace = (data.level.difficultyFace && data.level.difficultyFace > 0)
+          ? data.level.difficultyFace
+          : (mapDifficultyFace(data.level) || 10);
+        const fetchedRating = (data.level.ratingType && data.level.ratingType !== 'NONE')
+          ? data.level.ratingType
+          : (mapRatingType(data.level) || 'NONE');
+
+        setHasFetchedGd(true);
+        setFetchedRatingType(fetchedRating as any);
+
         setForm((prev) => {
           if (prev.gdLevelId.trim() !== id) return prev;
           const nextName = String(data.level.name || '').trim();
           const nextCreator = String(data.level.creatorName || '').trim();
           const hasCustomName = isInitialEdit && prev.name && !/^unknown$/i.test(prev.name);
           const hasCustomCreator = isInitialEdit && prev.creatorName && !/^unknown$/i.test(prev.creatorName);
-          const fetchedFace = (data.level.difficultyFace && data.level.difficultyFace > 0)
-            ? data.level.difficultyFace
-            : (mapDifficultyFace(data.level) || prev.difficultyFace || 10);
-          const fetchedRating = (data.level.ratingType && data.level.ratingType !== 'NONE')
-            ? data.level.ratingType
-            : (mapRatingType(data.level) || prev.ratingType || 'NONE');
           return {
             ...prev,
             name: hasCustomName ? prev.name : (nextName || prev.name),
@@ -103,6 +109,10 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
       const initialRating = mappedRating !== 'NONE'
         ? mappedRating
         : (initialData.ratingType || 'NONE');
+
+      setHasFetchedGd(true);
+      setFetchedRatingType(initialRating as any);
+
       setForm({
         gdLevelId: gdId,
         name: initialData.name || '',
@@ -122,6 +132,8 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
         void fetchGdLevel(gdId, true);
       }
     } else {
+      setHasFetchedGd(false);
+      setFetchedRatingType('NONE');
       setForm({
         gdLevelId: '',
         name: '',
@@ -216,10 +228,13 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
       showToast(t('admin.need_level_id'), 'error');
       return;
     }
-    if (creatorSubmit && !form.gdLevelId.trim() && !workDesc.trim() && workImageUrls.length === 0) {
+    if (creatorSubmit && !form.gdLevelId.trim() && !workDesc.trim()) {
       showToast(t('submit.creator_need_content'), 'error');
       return;
     }
+
+    const finalRatingType = (hasFetchedGd && form.ratingType === fetchedRatingType) ? form.ratingType : 'NONE';
+
     setSaving(true);
     try {
       const res = await fetch(submitUrl || '/api/admin/levels', {
@@ -228,10 +243,11 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
         body: JSON.stringify({
           ...(extraPayload || {}),
           ...form,
+          ratingType: finalRatingType,
           ...(creatorSubmit
             ? {
                 description: workDesc.trim(),
-                imageUrls: workImageUrls,
+                imageUrls: [],
                 levelName: form.name.trim() || fetchedLevelName || workDesc.trim().slice(0, 80),
                 creatorName: form.creatorName.trim() || undefined,
               }
@@ -436,58 +452,16 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
           </div>
 
           {creatorSubmit && (
-            <>
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase ui-dim">{t('submit.work_desc')}</label>
-                <textarea
-                  rows={3}
-                  value={workDesc}
-                  onChange={(e) => setWorkDesc(e.target.value)}
-                  placeholder="Quá trình tạo, cảm hứng, collab..."
-                  className="w-full ui-input px-3 py-2 rounded-xl text-xs resize-none"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase ui-dim">{t('submit.work_images')}</label>
-                <div className="relative border-2 border-dashed rounded-xl p-5 text-center" style={{ borderColor: 'var(--border-ui)' }}>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    disabled={uploadingImages}
-                    onChange={handleCreatorImages}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-wait"
-                  />
-                  <div className="flex flex-col items-center gap-1 pointer-events-none">
-                    {uploadingImages ? (
-                      <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--accent)' }} />
-                    ) : (
-                      <ImageIcon className="w-6 h-6" style={{ color: 'var(--accent)' }} />
-                    )}
-                    <span className="text-[11px] font-bold ui-title">
-                      {uploadingImages ? '…' : t('submit.work_images')}
-                    </span>
-                  </div>
-                </div>
-                {imageError && <p className="text-[10px] text-red-500">{imageError}</p>}
-                {workImageUrls.length > 0 && (
-                  <div className="flex gap-2 overflow-x-auto">
-                    {workImageUrls.map((img, i) => (
-                      <div key={img} className="relative shrink-0">
-                        <img src={img} alt="" className="h-16 w-24 rounded-lg object-cover border ui-border" />
-                        <button
-                          type="button"
-                          onClick={() => setWorkImageUrls((prev) => prev.filter((_, idx) => idx !== i))}
-                          className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold uppercase ui-dim">Lưu ý / Ghi chú cho BQT</label>
+              <textarea
+                rows={3}
+                value={workDesc}
+                onChange={(e) => setWorkDesc(e.target.value)}
+                placeholder="Lưu ý hoặc ghi chú cho BQT khi duyệt tác phẩm..."
+                className="w-full ui-input px-3 py-2 rounded-xl text-xs resize-none"
+              />
+            </div>
           )}
 
           <div className="space-y-1.5">

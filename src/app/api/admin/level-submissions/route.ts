@@ -28,12 +28,21 @@ export async function GET(req: Request) {
     const page = parsePageParam(searchParams.get('page'));
     const skip = (page - 1) * ADMIN_LIST_LIMIT;
 
+    const isChallengeParam = searchParams.get('isChallenge');
+
     const pairSet = await creatorWorkPairSet();
     const tally = await prisma.levelSubmission.findMany({
-      select: { id: true, userId: true, gdLevelId: true, status: true, submittedAt: true, reviewedAt: true },
+      select: { id: true, userId: true, gdLevelId: true, isChallenge: true, status: true, submittedAt: true, reviewedAt: true },
     });
 
-    const unpairedAll = tally.filter((row) => !pairSet.has(`${row.userId}:${row.gdLevelId}`));
+    let tallyFiltered = tally;
+    if (isChallengeParam === 'true') {
+      tallyFiltered = tally.filter((row) => row.isChallenge === true);
+    } else if (isChallengeParam === 'false') {
+      tallyFiltered = tally.filter((row) => !row.isChallenge);
+    }
+
+    const unpairedAll = tallyFiltered.filter((row) => !pairSet.has(`${row.userId}:${row.gdLevelId}`));
     const counts = {
       pending: unpairedAll.filter((row) => row.status === RecordStatus.PENDING).length,
       approved: unpairedAll.filter((row) => row.status === RecordStatus.APPROVED).length,

@@ -52,5 +52,8 @@ next-env.d.ts
 /AGENTS.md
 /CLAUDE.md
 
+# Local user uploads & metrics
+/user-data/
+
 # Local-only helpers (FAQ markdown tool, etc.)
 /tools

@@ -329,6 +329,7 @@ export default function AdminPage() {
   const [workPage, setWorkPage] = useState(1);
   const [workQuery, setWorkQuery] = useState('');
   const [workSort, setWorkSort] = useState<'newest' | 'oldest'>('newest');
+  const [workChallengeFilter, setWorkChallengeFilter] = useState<'ALL' | 'CHALLENGE' | 'NON_CHALLENGE'>('ALL');
   const [workCounts, setWorkCounts] = useState<QueueCounts>({ pending: 0, approved: 0, rejected: 0 });
   const [loadingWorks, setLoadingWorks] = useState(true);
   const [workReviewData, setWorkReviewData] = useState<Record<string, { badgeIds?: string[], cpAwarded?: string, rejectReason?: string }>>({});
@@ -449,13 +450,20 @@ export default function AdminPage() {
       .catch(() => {});
   }, []);
 
-  const fetchWorks = async (status: QueueStatus = workFilter, page = 1) => {
+  const fetchWorks = async (
+    status: QueueStatus = workFilter,
+    page = 1,
+    q = workQuery,
+    sort = workSort,
+    challengeFilter = workChallengeFilter
+  ) => {
     setLoadingWorks(true);
     setLoadingLevelSubs(true);
     try {
+      const challengeParam = challengeFilter === 'CHALLENGE' ? '&isChallenge=true' : challengeFilter === 'NON_CHALLENGE' ? '&isChallenge=false' : '';
       const [wRes, lRes] = await Promise.all([
-        fetch(`/api/admin/works?status=${status}&page=${page}&q=${encodeURIComponent(workQuery)}&sort=${workSort}`),
-        fetch(`/api/admin/level-submissions?status=${status}&page=${page}`)
+        fetch(`/api/admin/works?status=${status}&page=${page}&q=${encodeURIComponent(q)}&sort=${sort}${challengeParam}`),
+        fetch(`/api/admin/level-submissions?status=${status}&page=${page}${challengeParam}`)
       ]);
       const data = await wRes.json();
       const lData = await lRes.json();
@@ -1430,10 +1438,29 @@ export default function AdminPage() {
                 style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+              <select
+                value={workChallengeFilter}
+                onChange={(e) => {
+                  const val = e.target.value as any;
+                  setWorkChallengeFilter(val);
+                  fetchWorks(workFilter, 1, workQuery, workSort, val);
+                }}
+                className="px-2.5 py-2 rounded-xl border text-[11px] font-semibold"
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+              >
+                <option value="ALL">Tất cả Tag</option>
+                <option value="CHALLENGE">Có tag Challenge</option>
+                <option value="NON_CHALLENGE">Không có Challenge</option>
+              </select>
+
               <select
                 value={workSort}
-                onChange={(e) => setWorkSort(e.target.value as any)}
+                onChange={(e) => {
+                  const val = e.target.value as any;
+                  setWorkSort(val);
+                  fetchWorks(workFilter, workPage, workQuery, val, workChallengeFilter);
+                }}
                 className="px-2.5 py-2 rounded-xl border text-[11px] font-semibold"
                 style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
               >
