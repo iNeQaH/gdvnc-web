@@ -245,10 +245,18 @@ function ReviewerLine({
 
 
 
-export default function WorksTab({ currentUser, badgesList }: { currentUser: any, badgesList: any[] }) {
+export default function WorksTab({ currentUser }: { currentUser: any }) {
   const { t, language } = useLanguage();
   const { showToast, showConfirm } = useToast();
   
+  const [badgesList, setBadgesList] = useState<any[]>([]);
+  useEffect(() => {
+    fetch('/api/admin/badges')
+      .then(res => res.json())
+      .then(data => { if (data.success) setBadgesList(data.badges || []); })
+      .catch(console.error);
+  }, []);
+
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState<{ [key: string]: string }>({});
   const [bulkConfirming, setBulkConfirming] = useState(false);
