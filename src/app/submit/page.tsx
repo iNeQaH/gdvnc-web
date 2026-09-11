@@ -43,11 +43,14 @@ function SubmitForm() {
   const [recentItems, setRecentItems] = useState<any[]>([]);
   const fetchSeq = useRef(0);
 
-  const [submitNoteHtml, setSubmitNoteHtml] = useState('');
+  const [playerNoteHtml, setPlayerNoteHtml] = useState('');
+  const [creatorNoteHtml, setCreatorNoteHtml] = useState('');
   const [noteDraft, setNoteDraft] = useState('');
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
   const isAdmin = currentUser?.role === 'ADMIN';
+
+  const currentSubmitNoteHtml = tab === 'CREATOR' ? creatorNoteHtml : playerNoteHtml;
 
   const loadRecent = async (currentTab: typeof tab) => {
     try {
@@ -59,16 +62,21 @@ function SubmitForm() {
     }
   };
 
+  const loadSubmitNotes = async () => {
+    try {
+      const [pRes, cRes] = await Promise.all([
+        fetch('/api/submit-note?type=PLAYER'),
+        fetch('/api/submit-note?type=CREATOR'),
+      ]);
+      const pData = await pRes.json();
+      const cData = await cRes.json();
+      if (pData.success && pData.html) setPlayerNoteHtml(pData.html);
+      if (cData.success && cData.html) setCreatorNoteHtml(cData.html);
+    } catch {}
+  };
+
   useEffect(() => {
-    fetch('/api/submit-note')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.html) {
-          setSubmitNoteHtml(data.html);
-          setNoteDraft(data.html);
-        }
-      })
-      .catch(() => {});
+    void loadSubmitNotes();
   }, []);
 
   const saveSubmitNote = async () => {
@@ -77,11 +85,15 @@ function SubmitForm() {
       const res = await fetch('/api/submit-note', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html: noteDraft }),
+        body: JSON.stringify({ type: tab, html: noteDraft }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setSubmitNoteHtml(data.html);
+        if (tab === 'CREATOR') {
+          setCreatorNoteHtml(data.html);
+        } else {
+          setPlayerNoteHtml(data.html);
+        }
         setIsEditingNote(false);
       }
     } finally {
@@ -264,21 +276,33 @@ function SubmitForm() {
             <AlertCircle className="w-4 h-4 text-sky-500 shrink-0 mt-0.5" />
             <div
               className="text-[11px] ui-dim leading-relaxed w-full whitespace-pre-wrap overflow-hidden [&_ul]:list-disc [&_ul]:list-inside [&_ol]:list-decimal [&_ol]:list-inside [&_a]:text-sky-400 [&_a]:underline"
-              dangerouslySetInnerHTML={{ __html: sanitizeFaqHtml(submitNoteHtml || `<div className="font-bold ui-title mb-1">${t('submit.guidelines_title')}</div><ul className="list-disc list-inside space-y-0.5"><li>${t('submit.guidelines_1')}</li><li>${t('submit.guidelines_2')}</li><li>${t('submit.guidelines_3')}</li></ul>`) }}
+              dangerouslySetInnerHTML={{
+                __html: sanitizeFaqHtml(
+                  currentSubmitNoteHtml ||
+                    (tab === 'CREATOR'
+                      ? `<div className="font-bold ui-title mb-1">Lưu ý khi nộp tác phẩm (Creator):</div><ul className="list-disc list-inside space-y-0.5"><li>Tác phẩm nộp phải do chính bạn hoặc nhóm tác giả tạo ra.</li><li>Điền chính xác ID màn chơi (GD Level ID) nếu level đã công bố trên GD.</li><li>Điền các thông tin lưu ý cần thiết cho BQT để tiện theo dõi và kiểm duyệt.</li></ul>`
+                      : `<div className="font-bold ui-title mb-1">${t('submit.guidelines_title')}</div><ul className="list-disc list-inside space-y-0.5"><li>${t('submit.guidelines_1')}</li><li>${t('submit.guidelines_2')}</li><li>${t('submit.guidelines_3')}</li></ul>`)
+                ),
+              }}
             />
           </div>
           {isAdmin && (
             <button
               type="button"
               onClick={() => {
-                setNoteDraft(submitNoteHtml || `<div className="font-bold ui-title mb-1">Lưu ý khi nộp:</div><ul className="list-disc list-inside space-y-0.5"><li>Video hoàn thành phải có tiếng clicks (micro) rõ ràng hoặc raw footage chưa cắt.</li><li>Điền chính xác tần số quét màn hình (Hz) và FPS (Physics Bypass).</li><li>Nếu dùng CBF thì để FPS là 0</li></ul>`);
+                setNoteDraft(
+                  currentSubmitNoteHtml ||
+                    (tab === 'CREATOR'
+                      ? `<div className="font-bold ui-title mb-1">Lưu ý khi nộp tác phẩm (Creator):</div><ul className="list-disc list-inside space-y-0.5"><li>Tác phẩm nộp phải do chính bạn hoặc nhóm tác giả tạo ra.</li><li>Điền chính xác ID màn chơi (GD Level ID) nếu level đã công bố trên GD.</li><li>Điền các thông tin lưu ý cần thiết cho BQT để tiện theo dõi và kiểm duyệt.</li></ul>`
+                      : `<div className="font-bold ui-title mb-1">Lưu ý khi nộp kỷ lục:</div><ul className="list-disc list-inside space-y-0.5"><li>Video hoàn thành phải có tiếng clicks (micro) rõ ràng hoặc raw footage chưa cắt.</li><li>Điền chính xác tần số quét màn hình (Hz) và FPS (Physics Bypass).</li><li>Nếu dùng CBF thì để FPS là 0</li></ul>`)
+                );
                 setIsEditingNote(true);
               }}
               className="px-2.5 py-1 rounded-lg border hover:opacity-80 shrink-0 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
               style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
             >
               <Pencil className="w-3.5 h-3.5" />
-              Sửa Note
+              Sửa Note ({tab})
             </button>
           )}
         </div>
