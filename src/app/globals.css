@@ -255,8 +255,25 @@ body {
 }
 
 select,
+option,
+optgroup,
+input,
+textarea,
+button {
+  font-family: inherit !important;
+}
+
+select {
+  font-weight: 700;
+  cursor: pointer;
+}
+
 option {
-  font-family: inherit;
+  font-family: inherit !important;
+  font-weight: 600;
+  background-color: var(--bg-card);
+  color: var(--text-title);
+  padding: 6px 12px;
 }
 
 /* Component base styles using variables */

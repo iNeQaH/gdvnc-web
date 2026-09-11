@@ -258,6 +258,66 @@ function SubmitForm() {
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
       <div className="lg:col-span-3 space-y-6 min-w-0">
+        {/* Guidelines / Submit Note Box */}
+        <div className="p-3.5 rounded-xl border flex items-start justify-between gap-3 ui-subtle ui-border">
+          <div className="flex items-start gap-2.5 min-w-0 flex-1">
+            <AlertCircle className="w-4 h-4 text-sky-500 shrink-0 mt-0.5" />
+            <div
+              className="text-[11px] ui-dim leading-relaxed w-full whitespace-pre-wrap overflow-hidden [&_ul]:list-disc [&_ul]:list-inside [&_ol]:list-decimal [&_ol]:list-inside [&_a]:text-sky-400 [&_a]:underline"
+              dangerouslySetInnerHTML={{ __html: sanitizeFaqHtml(submitNoteHtml || `<div className="font-bold ui-title mb-1">${t('submit.guidelines_title')}</div><ul className="list-disc list-inside space-y-0.5"><li>${t('submit.guidelines_1')}</li><li>${t('submit.guidelines_2')}</li><li>${t('submit.guidelines_3')}</li></ul>`) }}
+            />
+          </div>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => {
+                setNoteDraft(submitNoteHtml || `<div className="font-bold ui-title mb-1">Lưu ý khi nộp:</div><ul className="list-disc list-inside space-y-0.5"><li>Video hoàn thành phải có tiếng clicks (micro) rõ ràng hoặc raw footage chưa cắt.</li><li>Điền chính xác tần số quét màn hình (Hz) và FPS (Physics Bypass).</li><li>Nếu dùng CBF thì để FPS là 0</li></ul>`);
+                setIsEditingNote(true);
+              }}
+              className="px-2.5 py-1 rounded-lg border hover:opacity-80 shrink-0 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Sửa Note
+            </button>
+          )}
+        </div>
+
+        {isEditingNote && isAdmin && (
+          <div className="p-4 rounded-xl border space-y-3" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold ui-title">Sửa nội dung Note (HTML)</h3>
+              <span className="text-[10px] ui-dim">Hỗ trợ HTML và embed (iframe)</span>
+            </div>
+            <textarea
+              value={noteDraft}
+              onChange={(e) => setNoteDraft(e.target.value)}
+              rows={6}
+              className="w-full px-3 py-2 rounded-xl border text-xs font-mono resize-y"
+              style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsEditingNote(false)}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold ui-dim border"
+                style={{ borderColor: 'var(--border-ui)' }}
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={saveSubmitNote}
+                disabled={savingNote}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] cursor-pointer disabled:opacity-50"
+                style={{ backgroundColor: 'var(--accent)' }}
+              >
+                {savingNote ? t('common.saving') : t('common.save')}
+              </button>
+            </div>
+          </div>
+        )}
+
       {success ? (
         <div className="ui-card p-8 text-center space-y-4">
           <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto text-emerald-500">
@@ -313,64 +373,6 @@ function SubmitForm() {
           )}
 
           <div className="space-y-5">
-              <div className="p-3.5 rounded-xl border flex items-start justify-between gap-3 ui-subtle ui-border">
-                <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                  <AlertCircle className="w-4 h-4 text-sky-500 shrink-0 mt-0.5" />
-                  <div
-                    className="text-[11px] ui-dim leading-relaxed w-full whitespace-pre-wrap overflow-hidden [&_ul]:list-disc [&_ul]:list-inside [&_ol]:list-decimal [&_ol]:list-inside [&_a]:text-sky-400 [&_a]:underline"
-                    dangerouslySetInnerHTML={{ __html: sanitizeFaqHtml(submitNoteHtml || `<div className="font-bold ui-title mb-1">${t('submit.guidelines_title')}</div><ul className="list-disc list-inside space-y-0.5"><li>${t('submit.guidelines_1')}</li><li>${t('submit.guidelines_2')}</li><li>${t('submit.guidelines_3')}</li></ul>`) }}
-                  />
-                </div>
-                {isAdmin && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNoteDraft(submitNoteHtml || `<div className="font-bold ui-title mb-1">Lưu ý khi nộp:</div><ul className="list-disc list-inside space-y-0.5"><li>Video hoàn thành phải có tiếng clicks (micro) rõ ràng hoặc raw footage chưa cắt.</li><li>Điền chính xác tần số quét màn hình (Hz) và FPS (Physics Bypass).</li><li>Nếu dùng CBF thì để FPS là 0</li></ul>`);
-                      setIsEditingNote(true);
-                    }}
-                    className="px-2.5 py-1 rounded-lg border hover:opacity-80 shrink-0 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                    style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                    Sửa Note
-                  </button>
-                )}
-              </div>
-
-              {isEditingNote && isAdmin && (
-                <div className="p-4 rounded-xl border space-y-3" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}>
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold ui-title">Sửa nội dung Note (HTML)</h3>
-                    <span className="text-[10px] ui-dim">Hỗ trợ HTML và embed (iframe)</span>
-                  </div>
-                  <textarea
-                    value={noteDraft}
-                    onChange={(e) => setNoteDraft(e.target.value)}
-                    rows={6}
-                    className="w-full px-3 py-2 rounded-xl border text-xs font-mono resize-y"
-                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                  />
-                  <div className="flex justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingNote(false)}
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold ui-dim border"
-                      style={{ borderColor: 'var(--border-ui)' }}
-                    >
-                      {t('common.cancel')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={saveSubmitNote}
-                      disabled={savingNote}
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] cursor-pointer disabled:opacity-50"
-                      style={{ backgroundColor: 'var(--accent)' }}
-                    >
-                      {savingNote ? t('common.saving') : t('common.save')}
-                    </button>
-                  </div>
-                </div>
-              )}
 
               <div className="space-y-1">
                 <label className="text-xs font-bold ui-title flex items-center gap-1.5">
@@ -480,7 +482,7 @@ function SubmitForm() {
                   <select
                     value={device}
                     onChange={(e) => setDevice(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl text-xs ui-input"
+                    className="w-full px-3 py-2 rounded-xl text-xs ui-input font-bold"
                   >
                     <option value="PC">PC</option>
                     <option value="Android">{t('submit.device_android')}</option>

@@ -479,6 +479,7 @@ export default function AdminPage() {
       console.error(e);
     } finally {
       setLoadingWorks(false);
+      setLoadingLevelSubs(false);
     }
   };
 
@@ -1226,7 +1227,7 @@ export default function AdminPage() {
               <select
                 value={recordSort}
                 onChange={(e) => setRecordSort(e.target.value as any)}
-                className="px-2.5 py-2 rounded-xl border text-[11px] font-semibold"
+                className="px-2.5 py-2 rounded-xl border text-[11px] font-bold"
                 style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
               >
                 <option value="newest">Mới nhất</option>
@@ -1235,7 +1236,7 @@ export default function AdminPage() {
               <select
                 value={recordRole}
                 onChange={(e) => setRecordRole(e.target.value)}
-                className="px-2.5 py-2 rounded-xl border text-[11px] font-semibold"
+                className="px-2.5 py-2 rounded-xl border text-[11px] font-bold"
                 style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
               >
                 <option value="ALL">{t('admin.filter_all')}</option>
@@ -1446,7 +1447,7 @@ export default function AdminPage() {
                   setWorkChallengeFilter(val);
                   fetchWorks(workFilter, 1, workQuery, workSort, val);
                 }}
-                className="px-2.5 py-2 rounded-xl border text-[11px] font-semibold"
+                className="px-2.5 py-2 rounded-xl border text-[11px] font-bold"
                 style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
               >
                 <option value="ALL">Tất cả Tag</option>
@@ -1461,7 +1462,7 @@ export default function AdminPage() {
                   setWorkSort(val);
                   fetchWorks(workFilter, workPage, workQuery, val, workChallengeFilter);
                 }}
-                className="px-2.5 py-2 rounded-xl border text-[11px] font-semibold"
+                className="px-2.5 py-2 rounded-xl border text-[11px] font-bold"
                 style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
               >
                 <option value="newest">Mới nhất</option>
@@ -2035,7 +2036,7 @@ export default function AdminPage() {
               <select
                 value={badgeFilterCategory}
                 onChange={(e) => setBadgeFilterCategory(e.target.value)}
-                className="px-2.5 py-2 rounded-xl border text-[11px] font-semibold"
+                className="px-2.5 py-2 rounded-xl border text-[11px] font-bold"
                 style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
               >
                 <option value="ALL">{t('badge.filter_all_cats')}</option>
@@ -2047,7 +2048,7 @@ export default function AdminPage() {
               <select
                 value={badgeSort}
                 onChange={(e) => setBadgeSort(e.target.value as any)}
-                className="px-2.5 py-2 rounded-xl border text-[11px] font-semibold"
+                className="px-2.5 py-2 rounded-xl border text-[11px] font-bold"
                 style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
               >
                 <option value="quality">{t('badge.sort_quality')}</option>
