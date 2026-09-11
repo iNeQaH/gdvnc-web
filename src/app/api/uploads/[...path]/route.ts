@@ -47,12 +47,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ path: st
     }
 
     const userDataDir = getUserDataDir();
+    const uploadsDir = path.resolve(userDataDir, 'uploads');
     
     // Normalize and resolve the path
-    const targetPath = path.resolve(userDataDir, 'uploads', ...pathArray);
+    const targetPath = path.resolve(uploadsDir, ...pathArray);
 
-    // Security check: ensure the resolved path stays within the user-data directory
-    if (!targetPath.startsWith(userDataDir + path.sep) && targetPath !== userDataDir) {
+    // Security check: ensure the resolved path stays strictly within the uploads directory
+    if (!targetPath.startsWith(uploadsDir + path.sep)) {
       return new NextResponse('Forbidden', { status: 403 });
     }
 

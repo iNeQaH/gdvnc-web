@@ -122,6 +122,8 @@ model Level {
   @@index([isChallenge])
   @@index([isVN])
   @@index([creatorId])
+  @@index([mode, isChallenge, placement])
+  @@index([isVN, isChallenge, vnPlacement])
 }
 
 model Record {
@@ -162,6 +164,7 @@ model Record {
   @@index([reviewerId])
   @@index([userId, status])
   @@index([levelId, status])
+  @@index([status, prioritySp(sort: Desc), submittedAt(sort: Asc)])
 }
 
 model Notification {
@@ -232,6 +235,7 @@ model UserBadge {
   assignedBy String?
   
   @@unique([userId, badgeId])
+  @@index([badgeId])
 }
 
 model CreatorWork {
@@ -341,6 +345,7 @@ model SiteAnnouncement {
 
   @@index([createdAt])
   @@index([audience])
+  @@index([authorId])
 }
 
 model AnnouncementRead {

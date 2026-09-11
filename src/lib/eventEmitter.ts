@@ -10,6 +10,5 @@ export const appEventEmitter =
 // Ensure max listeners doesn't warn under concurrent clients
 appEventEmitter.setMaxListeners(200);
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForEvents.appEventEmitter = appEventEmitter;
-}
+globalForEvents.appEventEmitter = appEventEmitter;
+

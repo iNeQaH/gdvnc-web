@@ -11,6 +11,7 @@ import { requireAuth } from '@/lib/auth';
 import { clipText } from '@/lib/validate';
 import { deleteUploadthingKeys, isAllowedImageRef, uploadthingKeysFromRef } from '@/lib/uploadthing';
 import { deleteUserAccount } from '@/lib/deleteUser';
+import { isSuperAdminUser } from '@/lib/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -241,18 +242,27 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
     const { username } = await params;
     const body = await req.json();
 
-    const isSelf = auth.username === username;
-    const isAdmin = auth.role === 'ADMIN' || auth.role === 'MODERATOR';
-    if (!isSelf && !isAdmin) {
+    const isSelf = auth.username.toLowerCase() === username.toLowerCase();
+    const isStaff = auth.role === 'ADMIN' || auth.role === 'MODERATOR';
+    if (!isSelf && !isStaff) {
       return NextResponse.json({ error: 'Không có quyền sửa profile này' }, { status: 403 });
     }
 
     const current = await prisma.user.findUnique({
       where: { username },
-      select: { id: true, gdVerified: true, gdUsername: true, avatarUrl: true, coverUrl: true },
+      select: { id: true, role: true, username: true, gdVerified: true, gdUsername: true, avatarUrl: true, coverUrl: true },
     });
     if (!current) {
       return NextResponse.json({ error: 'Không tìm thấy người chơi.' }, { status: 404 });
+    }
+
+    if (!isSelf) {
+      if (isSuperAdminUser(current) && !isSuperAdminUser(auth)) {
+        return NextResponse.json({ error: 'Không thể sửa profile của Super Admin' }, { status: 403 });
+      }
+      if (current.role === 'ADMIN' && auth.role !== 'ADMIN' && !isSuperAdminUser(auth)) {
+        return NextResponse.json({ error: 'Moderator không thể sửa profile của Admin' }, { status: 403 });
+      }
     }
 
     let nextGdUsername: string | null | undefined =

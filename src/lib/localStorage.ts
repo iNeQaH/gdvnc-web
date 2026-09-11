@@ -64,16 +64,15 @@ export async function deleteLocalFiles(keys: string[]) {
   const unique = [...new Set(keys.filter(Boolean))];
   
   for (const key of unique) {
-    const safeKey = key.replace(/(\.\.[\/\\])/g, ''); // basic traversal protection
-    const filePath = path.join(uploads, safeKey);
+    const resolvedPath = path.resolve(/*turbopackIgnore: true*/ uploads, key);
     
-    // ensure path stays within uploads directory
-    if (filePath.startsWith(uploads + path.sep) || filePath === path.join(uploads, safeKey)) {
+    // ensure path stays strictly within uploads directory
+    if (resolvedPath.startsWith(uploads + path.sep)) {
       try {
-        await fs.promises.unlink(filePath);
+        await fs.promises.unlink(resolvedPath);
       } catch (err: any) {
         if (err.code !== 'ENOENT') {
-          console.error(`Failed to delete local file: ${filePath}`, err);
+          console.error(`Failed to delete local file: ${resolvedPath}`, err);
         }
       }
     }

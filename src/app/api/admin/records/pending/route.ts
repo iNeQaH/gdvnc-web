@@ -32,8 +32,10 @@ export async function GET(req: Request) {
       ];
     }
     
-    if (role !== 'ALL') {
+    if (role === 'ADMIN' || role === 'MODERATOR' || role === 'USER') {
       whereClause.user = { ...whereClause.user, role };
+    } else if (role === 'SUPPORTER') {
+      whereClause.user = { ...whereClause.user, supporterUntil: { gt: new Date() } };
     }
 
     const [records, grouped] = await Promise.all([

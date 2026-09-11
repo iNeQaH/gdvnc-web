@@ -280,8 +280,8 @@ function SubmitForm() {
                 __html: sanitizeFaqHtml(
                   currentSubmitNoteHtml ||
                     (tab === 'CREATOR'
-                      ? `<div className="font-bold ui-title mb-1">Lưu ý khi nộp tác phẩm (Creator):</div><ul className="list-disc list-inside space-y-0.5"><li>Tác phẩm nộp phải do chính bạn hoặc nhóm tác giả tạo ra.</li><li>Điền chính xác ID màn chơi (GD Level ID) nếu level đã công bố trên GD.</li><li>Điền các thông tin lưu ý cần thiết cho BQT để tiện theo dõi và kiểm duyệt.</li></ul>`
-                      : `<div className="font-bold ui-title mb-1">${t('submit.guidelines_title')}</div><ul className="list-disc list-inside space-y-0.5"><li>${t('submit.guidelines_1')}</li><li>${t('submit.guidelines_2')}</li><li>${t('submit.guidelines_3')}</li></ul>`)
+                      ? `<div class="font-bold ui-title mb-1">Lưu ý khi nộp tác phẩm (Creator):</div><ul class="list-disc list-inside space-y-0.5"><li>Tác phẩm nộp phải do chính bạn hoặc nhóm tác giả tạo ra.</li><li>Điền chính xác ID màn chơi (GD Level ID) nếu level đã công bố trên GD.</li><li>Điền các thông tin lưu ý cần thiết cho BQT để tiện theo dõi và kiểm duyệt.</li></ul>`
+                      : `<div class="font-bold ui-title mb-1">${t('submit.guidelines_title')}</div><ul class="list-disc list-inside space-y-0.5"><li>${t('submit.guidelines_1')}</li><li>${t('submit.guidelines_2')}</li><li>${t('submit.guidelines_3')}</li></ul>`)
                 ),
               }}
             />
@@ -293,8 +293,8 @@ function SubmitForm() {
                 setNoteDraft(
                   currentSubmitNoteHtml ||
                     (tab === 'CREATOR'
-                      ? `<div className="font-bold ui-title mb-1">Lưu ý khi nộp tác phẩm (Creator):</div><ul className="list-disc list-inside space-y-0.5"><li>Tác phẩm nộp phải do chính bạn hoặc nhóm tác giả tạo ra.</li><li>Điền chính xác ID màn chơi (GD Level ID) nếu level đã công bố trên GD.</li><li>Điền các thông tin lưu ý cần thiết cho BQT để tiện theo dõi và kiểm duyệt.</li></ul>`
-                      : `<div className="font-bold ui-title mb-1">Lưu ý khi nộp kỷ lục:</div><ul className="list-disc list-inside space-y-0.5"><li>Video hoàn thành phải có tiếng clicks (micro) rõ ràng hoặc raw footage chưa cắt.</li><li>Điền chính xác tần số quét màn hình (Hz) và FPS (Physics Bypass).</li><li>Nếu dùng CBF thì để FPS là 0</li></ul>`)
+                      ? `<div class="font-bold ui-title mb-1">Lưu ý khi nộp tác phẩm (Creator):</div><ul class="list-disc list-inside space-y-0.5"><li>Tác phẩm nộp phải do chính bạn hoặc nhóm tác giả tạo ra.</li><li>Điền chính xác ID màn chơi (GD Level ID) nếu level đã công bố trên GD.</li><li>Điền các thông tin lưu ý cần thiết cho BQT để tiện theo dõi và kiểm duyệt.</li></ul>`
+                      : `<div class="font-bold ui-title mb-1">Lưu ý khi nộp kỷ lục:</div><ul class="list-disc list-inside space-y-0.5"><li>Video hoàn thành phải có tiếng clicks (micro) rõ ràng hoặc raw footage chưa cắt.</li><li>Điền chính xác tần số quét màn hình (Hz) và FPS (Physics Bypass).</li><li>Nếu dùng CBF thì để FPS là 0</li></ul>`)
                 );
                 setIsEditingNote(true);
               }}

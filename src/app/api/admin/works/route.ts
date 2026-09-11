@@ -31,7 +31,7 @@ export async function GET(req: Request) {
 
     if (q) {
       whereClause.OR = [
-        { name: { contains: q, mode: 'insensitive' } },
+        { levelName: { contains: q, mode: 'insensitive' } },
         { user: { username: { contains: q, mode: 'insensitive' } } },
         { user: { gdUsername: { contains: q, mode: 'insensitive' } } }
       ];

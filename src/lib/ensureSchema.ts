@@ -10,6 +10,7 @@ async function columnSet(db: PrismaClient) {
       AND (
         (table_name = 'User' AND column_name IN ('tokenVersion', 'hardestClassicLevelId', 'hardestPlatformerLevelId'))
         OR (table_name = 'Otp' AND column_name = 'failedAttempts')
+        OR (table_name = 'PageVisit' AND column_name = 'id')
       )
   `;
   return new Set(rows.map((row) => `${row.table_name}.${row.column_name}`));
@@ -28,6 +29,18 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
   if (!have.has('User.hardestPlatformerLevelId')) {
     await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "hardestPlatformerLevelId" TEXT`);
   }
+  if (!have.has('PageVisit.id')) {
+    await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "PageVisit" (
+        "id" TEXT NOT NULL,
+        "path" TEXT NOT NULL,
+        "ipHash" TEXT NOT NULL,
+        "userAgent" TEXT,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "PageVisit_pkey" PRIMARY KEY ("id")
+      )
+    `);
+  }
 }
 
 /** Indexes/FKs — do not block the request that needed the new columns. */
@@ -37,6 +50,7 @@ async function addIndexesInBackground(db: PrismaClient) {
     `CREATE INDEX IF NOT EXISTS "Record_reviewerId_idx" ON "Record"("reviewerId")`,
     `CREATE INDEX IF NOT EXISTS "Record_userId_status_idx" ON "Record"("userId", "status")`,
     `CREATE INDEX IF NOT EXISTS "Record_levelId_status_idx" ON "Record"("levelId", "status")`,
+    `CREATE INDEX IF NOT EXISTS "Record_status_prioritySp_submittedAt_idx" ON "Record"("status", "prioritySp" DESC, "submittedAt" ASC)`,
     `CREATE INDEX IF NOT EXISTS "CreatorWork_reviewerId_idx" ON "CreatorWork"("reviewerId")`,
     `CREATE INDEX IF NOT EXISTS "CreatorWork_userId_status_idx" ON "CreatorWork"("userId", "status")`,
     `CREATE INDEX IF NOT EXISTS "LevelSubmission_reviewerId_idx" ON "LevelSubmission"("reviewerId")`,
@@ -49,6 +63,13 @@ async function addIndexesInBackground(db: PrismaClient) {
     `CREATE INDEX IF NOT EXISTS "HelpRequest_userId_idx" ON "HelpRequest"("userId")`,
     `CREATE INDEX IF NOT EXISTS "HelpRequest_status_idx" ON "HelpRequest"("status")`,
     `CREATE INDEX IF NOT EXISTS "HelpRequest_status_createdAt_idx" ON "HelpRequest"("status", "createdAt")`,
+    `CREATE INDEX IF NOT EXISTS "UserBadge_badgeId_idx" ON "UserBadge"("badgeId")`,
+    `CREATE INDEX IF NOT EXISTS "SiteAnnouncement_authorId_idx" ON "SiteAnnouncement"("authorId")`,
+    `CREATE INDEX IF NOT EXISTS "Level_mode_isChallenge_placement_idx" ON "Level"("mode", "isChallenge", "placement")`,
+    `CREATE INDEX IF NOT EXISTS "Level_isVN_isChallenge_vnPlacement_idx" ON "Level"("isVN", "isChallenge", "vnPlacement")`,
+    `CREATE INDEX IF NOT EXISTS "PageVisit_createdAt_idx" ON "PageVisit"("createdAt")`,
+    `CREATE INDEX IF NOT EXISTS "PageVisit_path_idx" ON "PageVisit"("path")`,
+    `CREATE INDEX IF NOT EXISTS "PageVisit_ipHash_idx" ON "PageVisit"("ipHash")`,
     `DO $$ BEGIN
       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'User_hardestClassicLevelId_fkey') THEN
         ALTER TABLE "User" ADD CONSTRAINT "User_hardestClassicLevelId_fkey"
@@ -70,7 +91,7 @@ async function addIndexesInBackground(db: PrismaClient) {
 }
 
 /**
- * Adds hotfix/phase-2 columns if Neon is behind Prisma schema.
+ * Adds hotfix/phase-2 columns if Neon/local DB is behind Prisma schema.
  * One catalog probe when everything is already there; indexes run in the background.
  */
 export async function applyPendingSchema(db: PrismaClient): Promise<void> {
@@ -79,7 +100,8 @@ export async function applyPendingSchema(db: PrismaClient): Promise<void> {
     have.has('User.tokenVersion') &&
     have.has('Otp.failedAttempts') &&
     have.has('User.hardestClassicLevelId') &&
-    have.has('User.hardestPlatformerLevelId');
+    have.has('User.hardestPlatformerLevelId') &&
+    have.has('PageVisit.id');
   if (complete) return;
   await addMissingColumns(db, have);
   void addIndexesInBackground(db);

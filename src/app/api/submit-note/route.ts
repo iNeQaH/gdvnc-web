@@ -8,9 +8,9 @@ import { bustPublicCache, cachedJson, CACHE_TAGS, PUBLIC_CACHE_HEADERS } from '@
 const SUBMIT_NOTE_PLAYER_KEY = 'submit-note';
 const SUBMIT_NOTE_CREATOR_KEY = 'submit-note-creator';
 
-const DEFAULT_PLAYER_NOTE_HTML = `<div className="font-bold ui-title mb-1">Lưu ý khi nộp kỷ lục (Player):</div><ul className="list-disc list-inside space-y-0.5"><li>Video hoàn thành phải có tiếng clicks (micro) rõ ràng hoặc raw footage chưa cắt.</li><li>Điền chính xác tần số quét màn hình (Hz) và FPS (Physics Bypass).</li><li>Nếu dùng CBF thì để FPS là 0.</li></ul>`;
+const DEFAULT_PLAYER_NOTE_HTML = `<div class="font-bold ui-title mb-1">Lưu ý khi nộp kỷ lục (Player):</div><ul class="list-disc list-inside space-y-0.5"><li>Video hoàn thành phải có tiếng clicks (micro) rõ ràng hoặc raw footage chưa cắt.</li><li>Điền chính xác tần số quét màn hình (Hz) và FPS (Physics Bypass).</li><li>Nếu dùng CBF thì để FPS là 0.</li></ul>`;
 
-const DEFAULT_CREATOR_NOTE_HTML = `<div className="font-bold ui-title mb-1">Lưu ý khi nộp tác phẩm (Creator):</div><ul className="list-disc list-inside space-y-0.5"><li>Tác phẩm nộp phải do chính bạn hoặc nhóm tác giả tạo ra.</li><li>Điền chính xác ID màn chơi (GD Level ID) nếu level đã công bố trên GD.</li><li>Điền các thông tin lưu ý cần thiết cho BQT để tiện theo dõi và kiểm duyệt.</li></ul>`;
+const DEFAULT_CREATOR_NOTE_HTML = `<div class="font-bold ui-title mb-1">Lưu ý khi nộp tác phẩm (Creator):</div><ul class="list-disc list-inside space-y-0.5"><li>Tác phẩm nộp phải do chính bạn hoặc nhóm tác giả tạo ra.</li><li>Điền chính xác ID màn chơi (GD Level ID) nếu level đã công bố trên GD.</li><li>Điền các thông tin lưu ý cần thiết cho BQT để tiện theo dõi và kiểm duyệt.</li></ul>`;
 
 export async function GET(req: Request) {
   try {

@@ -57,3 +57,12 @@ next-env.d.ts
 
 # Local-only helpers (FAQ markdown tool, etc.)
 /tools
+
+# Database dumps & local one-off scripts
+*.sql
+!prisma/migrations/**/*.sql
+sync-all.mjs
+sync-users.mjs
+test-db.mjs
+unlock.mjs
+migrate-ut-to-local.mjs

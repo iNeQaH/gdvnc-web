@@ -62,7 +62,7 @@ export async function GET() {
             select: highlightSelect,
           }),
           prisma.level.findFirst({
-            where: { isVN: true, isChallenge: false, mode: LevelMode.PLATFORMER },
+            where: { isVN: true, isChallenge: false, mode: LevelMode.PLATFORMER, vnPlacement: { not: null } },
             orderBy: [{ vnPlacement: 'asc' }, { placement: 'asc' }, { name: 'asc' }],
             select: highlightSelect,
           }),

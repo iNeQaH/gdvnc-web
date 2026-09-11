@@ -1,7 +1,7 @@
 import postgres from 'postgres';
 
-const neonUrl = 'postgresql://gdvnc_owner:npg_8QZvs0DjRPFi@ep-raspy-cake-azgyt08g.c-3.ap-southeast-1.aws.neon.tech/gdvnc?sslmode=require&channel_binding=require';
-const localUrl = 'postgresql://postgres:postgres@localhost:5432/gdvnc?sslmode=disable';
+const neonUrl = process.env.REMOTE_DATABASE_URL || '';
+const localUrl = process.env.LOCAL_DATABASE_URL || process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/gdvnc?sslmode=disable';
 
 const neon = postgres(neonUrl);
 const local = postgres(localUrl);
