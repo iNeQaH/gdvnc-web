@@ -19,6 +19,7 @@ const dbLevelSelect = {
   isChallenge: true,
   placement: true,
   vnPlacement: true,
+  classicPlacement: true,
   basePp: true,
   minPercent: true,
   creatorName: true,

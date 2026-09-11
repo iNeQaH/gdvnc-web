@@ -226,6 +226,7 @@ export async function upsertLevelFromForm(input: {
   difficultyFace?: number;
   ratingType?: string;
   vnPlacement?: number | string | null;
+  classicPlacement?: number | string | null;
 }) {
   const gdLevelId = parseInt(String(input.gdLevelId), 10);
   if (!gdLevelId) throw new Error('Thiếu Level ID.');
@@ -233,6 +234,7 @@ export async function upsertLevelFromForm(input: {
   const youtubeId = extractYoutubeId(input.videoUrl);
   const pMode = (input.mode as LevelMode) || LevelMode.CLASSIC;
   const targetPlacement = parseOptionalPositiveInt(input.placement);
+  const targetClassicPlacement = parseOptionalPositiveInt(input.classicPlacement);
 
   const isVirtualId = typeof input.id === 'string' && input.id.startsWith('gdlh:');
   const realId = input.id && !isVirtualId ? input.id : undefined;
@@ -329,6 +331,7 @@ export async function upsertLevelFromForm(input: {
     difficultyFace: derivedFace,
     ratingType: derivedRating,
     vnPlacement: targetVnPlacement,
+    classicPlacement: targetClassicPlacement,
   };
 
   const vnChanged =

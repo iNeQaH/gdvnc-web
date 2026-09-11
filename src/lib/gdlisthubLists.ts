@@ -136,7 +136,7 @@ export function applyGdlisthubRanksToLevels(
       difficultyFace: face,
       isVN: isVnExplicit ? level.isVN : Boolean(fl),
       vnPlacement: level.vnPlacement ?? (fl?.position ?? null),
-      classicPlacement: dl?.position ?? null,
+      classicPlacement: level.classicPlacement ?? (dl?.position ?? null),
       name: isMissingLevelText(level.name) && src?.name ? src.name : level.name,
       creatorName:
         isMissingLevelText(level.creatorName) && src?.creator ? src.creator : level.creatorName,

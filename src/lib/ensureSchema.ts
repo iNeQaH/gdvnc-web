@@ -10,6 +10,7 @@ async function columnSet(db: PrismaClient) {
       AND (
         (table_name = 'User' AND column_name IN ('tokenVersion', 'hardestClassicLevelId', 'hardestPlatformerLevelId'))
         OR (table_name = 'Otp' AND column_name = 'failedAttempts')
+        OR (table_name IN ('Level', 'CreatorWork', 'LevelSubmission') AND column_name = 'classicPlacement')
       )
   `;
   return new Set(rows.map((row) => `${row.table_name}.${row.column_name}`));
@@ -27,6 +28,15 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
   }
   if (!have.has('User.hardestPlatformerLevelId')) {
     await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "hardestPlatformerLevelId" TEXT`);
+  }
+  if (!have.has('Level.classicPlacement')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "Level" ADD COLUMN IF NOT EXISTS "classicPlacement" INTEGER`);
+  }
+  if (!have.has('CreatorWork.classicPlacement')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "CreatorWork" ADD COLUMN IF NOT EXISTS "classicPlacement" INTEGER`);
+  }
+  if (!have.has('LevelSubmission.classicPlacement')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "LevelSubmission" ADD COLUMN IF NOT EXISTS "classicPlacement" INTEGER`);
   }
 }
 

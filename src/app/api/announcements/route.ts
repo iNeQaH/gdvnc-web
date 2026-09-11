@@ -149,6 +149,11 @@ export async function POST(req: Request) {
       include: { author: { select: authorSelect } },
     });
 
+    try {
+      const { appEventEmitter } = require('@/lib/eventEmitter');
+      appEventEmitter.emit('notification', { announcementId: row.id, audience: row.audience });
+    } catch {}
+
     return NextResponse.json({
       success: true,
       announcement: serializeAnnouncement(row, { includeTargets: true }),

@@ -79,6 +79,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       });
     }
 
+    if (record.userId) {
+      try {
+        const { appEventEmitter } = require('@/lib/eventEmitter');
+        appEventEmitter.emit('notification', { userId: record.userId });
+      } catch {}
+    }
+
     return NextResponse.json({ success: true, record: updatedRecord });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Lỗi kiểm duyệt kỷ lục.' }, { status: 500 });

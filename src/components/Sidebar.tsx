@@ -115,7 +115,26 @@ export const Sidebar = () => {
     loadUserFromStorage();
     void refreshSessionUser();
     window.addEventListener('gdvnc_user_update', loadUserFromStorage);
-    return () => window.removeEventListener('gdvnc_user_update', loadUserFromStorage);
+
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource('/api/stream');
+      es.addEventListener('notification', () => {
+        try {
+          sessionStorage.removeItem('gdvnc_badges');
+        } catch {
+          /* ignore */
+        }
+        loadUserFromStorage();
+      });
+    } catch {
+      /* ignore */
+    }
+
+    return () => {
+      window.removeEventListener('gdvnc_user_update', loadUserFromStorage);
+      if (es) es.close();
+    };
   }, []);
 
   // Close mobile drawer on route change

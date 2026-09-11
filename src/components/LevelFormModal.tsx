@@ -31,6 +31,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
     minPercent: '100',
     placement: '',
     vnPlacement: '',
+    classicPlacement: '',
     mode: 'CLASSIC',
     isVN: false,
     isChallenge: false,
@@ -121,6 +122,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
         minPercent: initialData.minPercent?.toString() || '100',
         placement: initialData.placement?.toString() || '',
         vnPlacement: initialData.vnPlacement?.toString() || '',
+        classicPlacement: initialData.classicPlacement?.toString() || '',
         mode: initialData.mode || 'CLASSIC',
         isVN: initialData.isVN || false,
         isChallenge: initialData.isChallenge || false,
@@ -142,6 +144,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
         minPercent: '100',
         placement: '',
         vnPlacement: '',
+        classicPlacement: '',
         mode: 'CLASSIC',
         isVN: false,
         isChallenge: false,
@@ -407,13 +410,23 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase ui-dim">Vị trí (Top)</label>
+              <label className="text-[11px] font-bold uppercase ui-dim">Vị trí (Top Global)</label>
               <input 
                 type="number" 
                 value={form.placement}
                 onChange={e => setForm({...form, placement: e.target.value})}
                 className="w-full ui-input px-3 py-2 rounded-xl text-xs font-bold"
                 placeholder="Không xếp hạng"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold uppercase ui-dim">Vị trí (Classic List)</label>
+              <input 
+                type="number" 
+                value={form.classicPlacement}
+                onChange={e => setForm({...form, classicPlacement: e.target.value})}
+                className="w-full ui-input px-3 py-2 rounded-xl text-xs font-bold"
+                placeholder="Tự động từ GDListHub"
               />
             </div>
             {form.isVN && !form.isChallenge && (
