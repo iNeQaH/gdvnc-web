@@ -34,50 +34,54 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: 'Submit này đã được xử lý.' }, { status: 400 });
     }
 
-    if (action === 'APPROVE') {
-      const consolidation = await consolidateBeforeApprove(id);
-      if (!consolidation.ok) {
-        return NextResponse.json({ error: consolidation.reason }, { status: 400 });
+    let updatedRecord;
+    await prisma.$transaction(async (tx) => {
+      if (action === 'APPROVE') {
+        const consolidation = await consolidateBeforeApprove(id, tx);
+        if (!consolidation.ok) {
+          throw new Error(consolidation.reason);
+        }
       }
-    }
 
-    const newStatus = action === 'APPROVE' ? RecordStatus.APPROVED : RecordStatus.REJECTED;
+      const newStatus = action === 'APPROVE' ? RecordStatus.APPROVED : RecordStatus.REJECTED;
 
-    const updatedRecord = await prisma.record.update({
-      where: { id },
-      data: {
-        status: newStatus,
-        rejectReason: note || (action === 'REJECT' ? 'Không đạt quy chuẩn bằng chứng.' : null),
-        reviewerId,
-        reviewedAt: new Date(),
-      },
-    });
+      updatedRecord = await tx.record.update({
+        where: { id },
+        data: {
+          status: newStatus,
+          rejectReason: note || (action === 'REJECT' ? 'Không đạt quy chuẩn bằng chứng.' : null),
+          reviewerId,
+          reviewedAt: new Date(),
+        },
+      });
 
-    if (action === 'APPROVE') {
-        await recalculateUserPp(record.userId);
+      if (action === 'APPROVE') {
+        await recalculateUserPp(record.userId, tx);
 
-      if (record.userId) {
-        await prisma.notification.create({
+        if (record.userId) {
+          await tx.notification.create({
+            data: {
+              userId: record.userId,
+              title: 'Kỷ Lục Được Phê Duyệt',
+              message: notifyWithNote(
+                `Kỷ lục hoàn thành màn chơi "${record.level.name}" của bạn đã được Admin phê duyệt và cập nhật điểm Points vào Bảng Xếp Hạng!`,
+                note
+              ),
+            },
+          });
+        }
+      } else if (record.userId) {
+        await tx.notification.create({
           data: {
             userId: record.userId,
-            title: 'Kỷ Lục Được Phê Duyệt',
-            message: notifyWithNote(
-              `Kỷ lục hoàn thành màn chơi "${record.level.name}" của bạn đã được Admin phê duyệt và cập nhật điểm Points vào Bảng Xếp Hạng!`,
-              note
-            ),
+            title: 'Kỷ Lục Bị Từ Chối',
+            message: note || 'Không đạt quy chuẩn bằng chứng hoặc thiếu thông tin.',
           },
         });
       }
-      clearLeaderboardCache();
-    } else if (record.userId) {
-      await prisma.notification.create({
-        data: {
-          userId: record.userId,
-          title: 'Kỷ Lục Bị Từ Chối',
-          message: note || 'Không đạt quy chuẩn bằng chứng hoặc thiếu thông tin.',
-        },
-      });
-    }
+    });
+
+    clearLeaderboardCache();
 
     if (record.userId) {
       try {
@@ -101,8 +105,11 @@ export async function DELETE(req: Request, context: any) {
     const record = await prisma.record.findUnique({ where: { id } });
     if (!record) return NextResponse.json({ error: 'Không tìm thấy kỷ lục.' }, { status: 404 });
 
-    await prisma.record.delete({ where: { id } });
-    await recalculateUserPp(record.userId);
+    await prisma.$transaction(async (tx) => {
+      await tx.record.delete({ where: { id } });
+      await recalculateUserPp(record.userId, tx);
+    });
+
     clearLeaderboardCache();
 
     return NextResponse.json({ success: true, message: 'Đã xóa kỷ lục và cập nhật Points.' });

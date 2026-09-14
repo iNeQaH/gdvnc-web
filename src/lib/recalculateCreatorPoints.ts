@@ -10,10 +10,18 @@ export async function recalculateCreatorPoints(userId: string): Promise<number> 
 
   const total = Math.round(works.reduce((sum, work) => sum + (work.cpGranted || 0), 0) * 10) / 10;
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { creatorPoints: total },
-  });
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { creatorPoints: total },
+    });
+  } catch (error: any) {
+    if (error?.code === 'P2025') {
+      console.warn(`recalculateCreatorPoints: User ${userId} not found.`);
+      return total;
+    }
+    throw error;
+  }
 
   return total;
 }

@@ -15,6 +15,7 @@ export async function GET(request: Request) {
       const encoder = new TextEncoder();
 
       const cleanup = () => {
+        request.signal.removeEventListener('abort', cleanup);
         if (interval) {
           clearInterval(interval);
           interval = null;

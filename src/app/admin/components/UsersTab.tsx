@@ -87,25 +87,6 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
   const [deletingUser, setDeletingUser] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // Badges state
-  const [badgesList, setBadgesList] = useState<any[]>([]);
-  const [loadingBadges, setLoadingBadges] = useState(true);
-  const emptyBadgeForm = { imageUrl: '', id: '', name: '', description: '', color: '', glow: false, categoryId: '', sortOrder: '' };
-  const [badgeForm, setBadgeForm] = useState(emptyBadgeForm);
-  const [isIconModalOpen, setIsIconModalOpen] = useState(false);
-  const [iconSearch, setIconSearch] = useState('');
-  const [badgeCategories, setBadgeCategories] = useState<any[]>([]);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [badgeSearch, setBadgeSearch] = useState('');
-  const [badgeFilterCategory, setBadgeFilterCategory] = useState('ALL');
-  const [badgeSort, setBadgeSort] = useState<'quality' | 'name' | 'category'>('quality');
-  const [badgesViewMode, setBadgesViewMode] = useState<'list' | 'grid'>('list');
-  const [showBadgeCreate, setShowBadgeCreate] = useState(false);
-  const [badgePage, setBadgePage] = useState(1);
-  const [isBadgeEditMode, setIsBadgeEditMode] = useState(false);
-  const [isBadgeEditModalOpen, setIsBadgeEditModalOpen] = useState(false);
-  const [draggedBadgeId, setDraggedBadgeId] = useState<string | null>(null);
-
   const fetchUsers = async (q: string, role = roleFilter) => {
     setLoadingUsers(true);
     try {
@@ -178,146 +159,6 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
     // Stub per request
   };
 
-  const fetchBadges = async () => {
-    setLoadingBadges(true);
-    try {
-      const res = await fetch('/api/admin/badges');
-      const data = await res.json();
-      if (data.success) setBadgesList(data.badges || []);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoadingBadges(false);
-    }
-  };
-
-  const fetchBadgeCategories = async () => {
-    try {
-      const res = await fetch('/api/admin/badge-categories');
-      const data = await res.json();
-      if (data.success) setBadgeCategories(data.categories || []);
-    } catch (e) {}
-  };
-
-  const handleSaveBadge = async () => {
-    setActionLoading('badge');
-    try {
-      const url = badgeForm.id ? `/api/admin/badges/${badgeForm.id}` : `/api/admin/badges`;
-      const method = badgeForm.id ? 'PATCH' : 'POST';
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(badgeForm),
-      });
-      const data = await res.json();
-      if (data.success) {
-        showToast(badgeForm.id ? 'Đã cập nhật huy hiệu' : 'Đã tạo huy hiệu', 'success');
-        setBadgeForm(emptyBadgeForm);
-        setShowBadgeCreate(false);
-        fetchBadges();
-      } else {
-        showToast(data.error || 'Lỗi', 'error');
-      }
-    } catch (e) {
-      showToast('Lỗi kết nối', 'error');
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleDeleteBadge = async (id: string) => {
-    showConfirm('Xóa huy hiệu này?', async () => {
-      try {
-        const res = await fetch(`/api/admin/badges/${id}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success) {
-          showToast('Đã xóa huy hiệu', 'success');
-          fetchBadges();
-        }
-      } catch (e) {
-        showToast('Lỗi kết nối', 'error');
-      }
-    });
-  };
-
-  const handleMoveBadge = async (id: string, direction: 'up' | 'down') => {
-    try {
-      const res = await fetch(`/api/admin/badges/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ direction }),
-      });
-      const data = await res.json();
-      if (data.success && data.badges) setBadgesList(data.badges);
-    } catch (e) {
-      showToast('Lỗi sắp xếp huy hiệu', 'error');
-    }
-  };
-
-  const handleDropBadge = (targetId: string) => {
-    if (!draggedBadgeId || draggedBadgeId === targetId) return;
-    const sourceIndex = badgesList.findIndex(b => b.id === draggedBadgeId);
-    const targetIndex = badgesList.findIndex(b => b.id === targetId);
-    if (sourceIndex === -1 || targetIndex === -1) return;
-
-    const newBadges = [...badgesList];
-    const [movedItem] = newBadges.splice(sourceIndex, 1);
-    newBadges.splice(targetIndex, 0, movedItem);
-    setBadgesList(newBadges.map((b, i) => ({ ...b, sortOrder: i + 1 })));
-    setDraggedBadgeId(null);
-  };
-
-  const persistBadgeOrder = async () => {
-    try {
-      const orderedIds = badgesList.map((b) => b.id);
-      await fetch('/api/admin/badges', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderedIds }),
-      });
-      fetchBadges();
-    } catch (e) {
-      console.error(e);
-      showToast('Lỗi cập nhật thứ tự', 'error');
-    }
-  };
-
-  const handleCreateCategory = async () => {
-    if (!newCategoryName.trim()) return;
-    try {
-      const res = await fetch('/api/admin/badge-categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newCategoryName.trim() }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setNewCategoryName('');
-        fetchBadgeCategories();
-        showToast(t('badge.cat_created'), 'success');
-      } else {
-        showToast(data.error || t('admin.action_fail'), 'error');
-      }
-    } catch (e) {
-      showToast(t('common.server_error'), 'error');
-    }
-  };
-
-  const handleDeleteCategory = async (id: string) => {
-    showConfirm(t('badge.cat_delete_confirm'), async () => {
-      try {
-        const res = await fetch(`/api/admin/badge-categories/${id}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success) {
-          fetchBadgeCategories();
-          fetchBadges();
-        }
-      } catch (e) {
-        showToast(t('common.server_error'), 'error');
-      }
-    });
-  };
-
   useEffect(() => {
     fetchUsers(userQuery, roleFilter);
     setUserPage(1);
@@ -326,15 +167,6 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
   useEffect(() => {
     setUserPage(1);
   }, [userQuery, userSort, userSortOrder]);
-
-  useEffect(() => {
-    setBadgePage(1);
-  }, [badgeSearch, badgeFilterCategory, badgeSort]);
-
-  useEffect(() => {
-    fetchBadges();
-    fetchBadgeCategories();
-  }, []);
 
   const filteredUsers = usersList.filter((u) => {
     if (roleFilter === 'ALL') return true;
@@ -358,25 +190,6 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
       return userSortOrder === 'desc' ? timeB - timeA : timeA - timeB;
     }
   });
-
-  const filteredBadges = badgesList
-    .filter((b) => {
-      const q = badgeSearch.trim().toLowerCase();
-      const nameOk = !q || b.name.toLowerCase().includes(q) || (b.description || '').toLowerCase().includes(q);
-      const catOk =
-        badgeFilterCategory === 'ALL' ||
-        b.categoryId === badgeFilterCategory ||
-        (badgeFilterCategory === 'NONE' && !b.categoryId);
-      return nameOk && catOk;
-    })
-    .slice()
-    .sort((a, b) => {
-      if (badgeSort === 'name') return a.name.localeCompare(b.name);
-      if (badgeSort === 'category') {
-        return (a.badgeCategory?.name || '').localeCompare(b.badgeCategory?.name || '') || (a.sortOrder || 0) - (b.sortOrder || 0);
-      }
-      return (a.sortOrder || 0) - (b.sortOrder || 0);
-    });
 
   return (
     <>

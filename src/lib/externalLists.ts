@@ -343,7 +343,7 @@ async function applyListedLevelsToDb(mode: 'CLASSIC' | 'PLATFORMER', external: E
 
   for (let i = 0; i < toUpdate.length; i += 50) {
     const chunk = toUpdate.slice(i, i + 50);
-    await Promise.all(
+    await prisma.$transaction(
       chunk.map((u) =>
         prisma.level.update({
           where: { id: u.id },

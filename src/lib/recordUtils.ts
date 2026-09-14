@@ -74,7 +74,7 @@ export function pickHardestLevel(
       minPercent: number;
       placement: number | null;
       name: string;
-      gdLevelId: number;
+      gdLevelId?: number | null;
       isChallenge?: boolean;
     };
   }>
@@ -95,7 +95,7 @@ export function pickHardestLevel(
     id: level.id,
     name: level.name,
     placement: level.placement,
-    gdLevelId: level.gdLevelId,
+    gdLevelId: level.gdLevelId ?? 0,
   };
 }
 
@@ -147,9 +147,11 @@ export function dedupeRecordsByUser<T extends RecordWithLevel>(records: T[]): T[
   return Array.from(byUser.values());
 }
 
-export async function recalculateUserPp(userId: string | null | undefined) {
+export async function recalculateUserPp(userId: string | null | undefined, tx: any = prisma) {
   if (!userId) return;
-  const userRecords = await prisma.record.findMany({
+  const db = tx || prisma;
+
+  const userRecords = await db.record.findMany({
     where: { userId, status: RecordStatus.APPROVED },
     include: { level: true },
   });
@@ -158,38 +160,46 @@ export async function recalculateUserPp(userId: string | null | undefined) {
 
   const classicBasePps = deduped
     .filter(
-      (r) =>
+      (r: any) =>
         !r.level.isChallenge &&
         r.level.mode === LevelMode.CLASSIC &&
         r.level.placement != null &&
         isQualifyingClassicRecord(r, r.level)
     )
-    .map((r) => awardedPpForProgress(r.progress, r.level.minPercent, r.level.basePp))
-    .filter((pp) => pp > 0);
+    .map((r: any) => awardedPpForProgress(r.progress, r.level.minPercent, r.level.basePp))
+    .filter((pp: number) => pp > 0);
 
   const platformerBasePps = deduped
     .filter(
-      (r) =>
+      (r: any) =>
         !r.level.isChallenge &&
         r.level.mode === LevelMode.PLATFORMER &&
         r.level.placement != null &&
         isQualifyingPlatformerRecord(r)
     )
-    .map((r) => r.level.basePp)
-    .filter((pp) => pp > 0);
+    .map((r: any) => r.level.basePp)
+    .filter((pp: number) => pp > 0);
 
-  const classicHardest = pickHardestLevel(deduped.filter((r) => r.level.mode === LevelMode.CLASSIC));
-  const platformerHardest = pickHardestLevel(deduped.filter((r) => r.level.mode === LevelMode.PLATFORMER));
+  const classicHardest = pickHardestLevel(deduped.filter((r: any) => r.level.mode === LevelMode.CLASSIC));
+  const platformerHardest = pickHardestLevel(deduped.filter((r: any) => r.level.mode === LevelMode.PLATFORMER));
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      classicPp: calculateTotalPp(classicBasePps),
-      platformerPp: calculateTotalPp(platformerBasePps),
-      hardestClassicLevelId: classicHardest?.id || null,
-      hardestPlatformerLevelId: platformerHardest?.id || null,
-    },
-  });
+  try {
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        classicPp: calculateTotalPp(classicBasePps),
+        platformerPp: calculateTotalPp(platformerBasePps),
+        hardestClassicLevelId: classicHardest?.id || null,
+        hardestPlatformerLevelId: platformerHardest?.id || null,
+      },
+    });
+  } catch (error: any) {
+    if (error?.code === 'P2025') {
+      console.warn(`recalculateUserPp: User ${userId} not found in database.`);
+      return;
+    }
+    throw error;
+  }
 
   try {
     const { bustPublicCache, CACHE_TAGS } = await import('@/lib/publicCache');
@@ -197,11 +207,12 @@ export async function recalculateUserPp(userId: string | null | undefined) {
   } catch {}
 }
 
-export async function consolidateBeforeApprove(recordId: string): Promise<
-  | { ok: true }
-  | { ok: false; reason: string }
-> {
-  const record = await prisma.record.findUnique({
+export async function consolidateBeforeApprove(
+  recordId: string,
+  tx: any = prisma
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const db = tx || prisma;
+  const record = await db.record.findUnique({
     where: { id: recordId },
     include: { level: true },
   });
@@ -214,7 +225,7 @@ export async function consolidateBeforeApprove(recordId: string): Promise<
     return { ok: true };
   }
 
-  const siblings = await prisma.record.findMany({
+  const siblings = await db.record.findMany({
     where: {
       userId: record.userId,
       levelId: record.levelId,
@@ -223,15 +234,19 @@ export async function consolidateBeforeApprove(recordId: string): Promise<
     },
   });
 
-    for (const old of siblings.filter((s) => s.status === RecordStatus.APPROVED)) {
+  const approvedOld = siblings.filter((s: any) => s.status === RecordStatus.APPROVED);
+  for (const old of approvedOld) {
     if (!isRecordBetter(record, old, record.level.mode)) {
       return {
         ok: false,
         reason: 'Người chơi đã có kỷ lục tốt hơn hoặc bằng được phê duyệt trước đó.',
       };
     }
-    await prisma.record.update({
-      where: { id: old.id },
+  }
+
+  if (approvedOld.length > 0) {
+    await db.record.updateMany({
+      where: { id: { in: approvedOld.map((s: any) => s.id) } },
       data: {
         status: RecordStatus.REJECTED,
         rejectReason: 'Thay thế bởi kỷ lục tốt hơn.',
@@ -240,9 +255,9 @@ export async function consolidateBeforeApprove(recordId: string): Promise<
     });
   }
 
-  const pendingIds = siblings.filter((s) => s.status === RecordStatus.PENDING).map((s) => s.id);
+  const pendingIds = siblings.filter((s: any) => s.status === RecordStatus.PENDING).map((s: any) => s.id);
   if (pendingIds.length > 0) {
-    await prisma.record.updateMany({
+    await db.record.updateMany({
       where: { id: { in: pendingIds } },
       data: {
         status: RecordStatus.REJECTED,

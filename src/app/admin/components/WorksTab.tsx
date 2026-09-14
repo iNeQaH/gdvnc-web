@@ -245,7 +245,13 @@ function ReviewerLine({
 
 
 
-export default function WorksTab({ currentUser }: { currentUser: any }) {
+export default function WorksTab({
+  currentUser,
+  onPendingCountChange,
+}: {
+  currentUser: any;
+  onPendingCountChange?: (count: number) => void;
+}) {
   const { t, language } = useLanguage();
   const { showToast, showConfirm } = useToast();
   
@@ -312,7 +318,10 @@ const fetchWorks = async (
       const lData = await lRes.json();
       if (data.success) {
         setPendingWorks(data.works || []);
-        if (data.counts) setWorkCounts(data.counts);
+        if (data.counts) {
+          setWorkCounts(data.counts);
+          onPendingCountChange?.(data.counts.pending || 0);
+        }
         setWorkPage(data.page || page);
       }
       if (lData.success) {

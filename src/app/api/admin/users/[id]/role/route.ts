@@ -44,7 +44,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (!grantSupporterMonths && target.role === Role.ADMIN && target.id !== actor.id) {
       if (!isSuperAdminUser(actor)) {
         return NextResponse.json({
-          error: 'Admin không thể gỡ quyền của một Admin khác. Chỉ Super Admin (iNeQaH) mới có quyền này.',
+          error: 'Admin không thể gỡ quyền của một Admin khác. Chỉ Super Admin mới có quyền này.',
+        }, { status: 403 });
+      }
+    }
+
+    // Rule 3: Promoting a user to ADMIN requires Super Admin
+    if (!grantSupporterMonths && newRole === 'ADMIN' && target.role !== Role.ADMIN) {
+      if (!isSuperAdminUser(actor)) {
+        return NextResponse.json({
+          error: 'Chỉ Super Admin mới có quyền phong vị trí Admin.',
         }, { status: 403 });
       }
     }

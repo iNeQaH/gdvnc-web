@@ -90,22 +90,27 @@ export async function GET(req: Request) {
       orderBy: { createdAt: 'asc' }
     });
     
-    // Get Online Users (last 5 minutes)
+    // Get Online Users (last 5 minutes) directly in DB
     const fiveMinsAgo = new Date();
     fiveMinsAgo.setMinutes(fiveMinsAgo.getMinutes() - 5);
-    const onlineVisits = await prisma.pageVisit.findMany({
-      where: { createdAt: { gte: fiveMinsAgo } },
-      select: { ipHash: true }
-    });
-    const onlineUsers = new Set(onlineVisits.map(v => v.ipHash)).size;
+    const onlineResult = await prisma.$queryRaw<Array<{ count: bigint }>>`
+      SELECT COUNT(DISTINCT "ipHash")::bigint AS count
+      FROM "PageVisit"
+      WHERE "createdAt" >= ${fiveMinsAgo};
+    `;
+    const onlineUsers = Number(onlineResult[0]?.count || 0);
 
-    // Load metrics.jsonl if available
+    // Load metrics.jsonl using streaming (readline) to avoid OOM
+    const readline = await import('readline');
     const metricsFilePath = path.join(process.cwd(), 'user-data', 'metrics.jsonl');
     const jsonlSnapshots: any[] = [];
     if (fs.existsSync(metricsFilePath)) {
       try {
-        const lines = fs.readFileSync(metricsFilePath, 'utf8').trim().split('\n').filter(Boolean);
-        for (const line of lines) {
+        const fileStream = fs.createReadStream(metricsFilePath, { encoding: 'utf8' });
+        const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+
+        for await (const line of rl) {
+          if (!line) continue;
           try {
             const parsed = JSON.parse(line);
             const ts = new Date(parsed.timestamp);
@@ -115,7 +120,7 @@ export async function GET(req: Request) {
           } catch {}
         }
       } catch (err) {
-        console.error('Error reading metrics.jsonl:', err);
+        console.error('Error reading metrics.jsonl stream:', err);
       }
     }
 

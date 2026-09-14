@@ -8,7 +8,7 @@ export const appEventEmitter =
   globalForEvents.appEventEmitter || new EventEmitter();
 
 // Ensure max listeners doesn't warn under concurrent clients
-appEventEmitter.setMaxListeners(200);
+appEventEmitter.setMaxListeners(1000);
 
 globalForEvents.appEventEmitter = appEventEmitter;
 

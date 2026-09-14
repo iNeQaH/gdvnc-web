@@ -123,15 +123,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     await purgeWorkImages(work.imageUrl);
 
-    for (const bId of badgeIds) {
-      const existingBadge = await prisma.userBadge.findUnique({
-        where: { userId_badgeId: { userId: work.userId, badgeId: bId } }
+    if (badgeIds.length > 0) {
+      await prisma.userBadge.createMany({
+        data: badgeIds.map((bId) => ({ userId: work.userId, badgeId: bId })),
+        skipDuplicates: true,
       });
-      if (!existingBadge) {
-        await prisma.userBadge.create({
-          data: { userId: work.userId, badgeId: bId }
-        });
-      }
     }
 
     let totalCp = work.user.creatorPoints || 0;

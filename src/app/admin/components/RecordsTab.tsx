@@ -188,7 +188,13 @@ function ReviewerLine({
   );
 }
 
-export default function RecordsTab({ currentUser }: { currentUser: any }) {
+export default function RecordsTab({
+  currentUser,
+  onPendingCountChange,
+}: {
+  currentUser: any;
+  onPendingCountChange?: (count: number) => void;
+}) {
   const { t } = useLanguage();
   const { showToast } = useToast();
 
@@ -213,7 +219,10 @@ export default function RecordsTab({ currentUser }: { currentUser: any }) {
       const data = await res.json();
       if (data.success) {
         setPendingRecords(data.records || []);
-        if (data.counts) setRecordCounts(data.counts);
+        if (data.counts) {
+          setRecordCounts(data.counts);
+          onPendingCountChange?.(data.counts.pending || 0);
+        }
         setRecordPage(data.page || page);
       }
     } catch (e) {

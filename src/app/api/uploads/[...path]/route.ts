@@ -76,6 +76,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ path: st
         'Content-Type': mimeType,
         'Cache-Control': 'public, max-age=31536000, immutable',
         'Content-Length': stat.size.toString(),
+        'X-Content-Type-Options': 'nosniff',
       },
     });
   } catch (err) {

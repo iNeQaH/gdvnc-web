@@ -163,6 +163,7 @@ model Record {
   @@index([legacyPlayerName])
   @@index([reviewerId])
   @@index([userId, status])
+  @@index([userId, levelId, status])
   @@index([levelId, status])
   @@index([status, prioritySp(sort: Desc), submittedAt(sort: Asc)])
 }
@@ -390,4 +391,6 @@ model PageVisit {
   @@index([createdAt])
   @@index([path])
   @@index([ipHash])
+  @@index([createdAt, ipHash])
+  @@index([createdAt, path])
 }

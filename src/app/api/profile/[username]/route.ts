@@ -355,7 +355,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ usern
       return NextResponse.json({ error: 'Không tìm thấy người dùng.' }, { status: 404 });
     }
 
-    const isSelf = auth.username === username;
+    const isSelf = auth.username.toLowerCase() === username.toLowerCase();
     const isAdmin = auth.role === 'ADMIN';
     if (!isSelf && !isAdmin) {
       return NextResponse.json({ error: 'Không có quyền xoá tài khoản này.' }, { status: 403 });

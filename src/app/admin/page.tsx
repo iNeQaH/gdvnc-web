@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { ShieldCheck, Shield, LifeBuoy, Users, Wrench, Activity } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { isSuperAdminUsername } from '@/lib/roles';
@@ -163,8 +162,8 @@ export default function AdminPage() {
 
       {/* Tabs Content */}
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-        {tab === 'records' && <RecordsTab currentUser={currentUser} />}
-        {tab === 'works' && <WorksTab currentUser={currentUser} />}
+        {tab === 'records' && <RecordsTab currentUser={currentUser} onPendingCountChange={setRecordCount} />}
+        {tab === 'works' && <WorksTab currentUser={currentUser} onPendingCountChange={setWorkCount} />}
         {tab === 'users' && <UsersTab currentUser={currentUser} />}
         {tab === 'levels' && isSuperAdmin && <LevelsTab currentUser={currentUser} isSuperAdmin={isSuperAdmin} />}
         {tab === 'helps' && <HelpsTab onTotalChange={setHelpsTotal} />}

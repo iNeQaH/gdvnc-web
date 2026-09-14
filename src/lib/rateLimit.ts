@@ -3,9 +3,22 @@ type Bucket = { count: number; resetAt: number };
 const buckets = new Map<string, Bucket>();
 
 function prune(now: number) {
-  if (buckets.size < 4000) return;
+  if (buckets.size < 1000) return;
   for (const [key, bucket] of buckets) {
     if (bucket.resetAt <= now) buckets.delete(key);
+  }
+}
+
+// Background cleanup every 60 seconds
+if (typeof setInterval !== 'undefined') {
+  const globalForRateLimit = globalThis as unknown as { rateLimitCleanupInterval?: NodeJS.Timeout };
+  if (!globalForRateLimit.rateLimitCleanupInterval) {
+    globalForRateLimit.rateLimitCleanupInterval = setInterval(() => {
+      const now = Date.now();
+      for (const [key, bucket] of buckets) {
+        if (bucket.resetAt <= now) buckets.delete(key);
+      }
+    }, 60000);
   }
 }
 

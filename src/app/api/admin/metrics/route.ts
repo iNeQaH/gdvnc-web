@@ -11,10 +11,7 @@ import prisma from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const isDev = process.env.NODE_ENV !== 'production';
-    if (!isDev) {
-      await requireSuperAdmin();
-    }
+    await requireSuperAdmin();
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

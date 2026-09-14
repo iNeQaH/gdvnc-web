@@ -12,7 +12,15 @@ export async function triggerBackgroundPpRecalc(levelIds: string[], mode: LevelM
     select: { userId: true },
     distinct: ['userId'],
   });
-  Promise.all(records.filter((r) => r.userId).map((r) => recalcUserPp(r.userId!))).catch(console.error);
+  const userIds = records.map((r) => r.userId).filter((id): id is string => Boolean(id));
+
+  // Process in chunks of 5 users concurrently to prevent connection pool exhaustion
+  (async () => {
+    for (let i = 0; i < userIds.length; i += 5) {
+      const chunk = userIds.slice(i, i + 5);
+      await Promise.all(chunk.map((id) => recalcUserPp(id)));
+    }
+  })().catch(console.error);
 }
 
 export function extractYoutubeId(videoUrl?: string | null): string | null {
