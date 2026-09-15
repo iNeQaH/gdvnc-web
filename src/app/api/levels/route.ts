@@ -118,7 +118,7 @@ export async function GET(req: Request) {
             if (!lvl.isVN) return false;
             if (!lvl.vnPlacement && !isDemonDifficultyFace(lvl.difficultyFace ?? 0)) return false;
           } else if (tab === 'classic') {
-            if (lvl.mode !== 'CLASSIC' || lvl.isChallenge || !lvl.placement) return false;
+            if (lvl.mode !== 'CLASSIC' || lvl.isChallenge || !lvl.victorCount) return false;
           } else if (tab === 'demonlist') {
             if (lvl.mode !== 'CLASSIC' || !lvl.placement || lvl.placement > 150) return false;
           } else if (tab === 'pemonlist') {
