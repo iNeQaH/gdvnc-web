@@ -9,6 +9,14 @@ import { estimateDataUrlBytes } from '@/lib/profileEmbed';
 import { storeDataUrlAsImage } from '@/lib/workImages';
 import { isAllowedImageRef } from '@/lib/uploadthing';
 import { getOrCreateStubLevel } from '@/lib/upsertLevel';
+import {
+  parseSubmitFps,
+  parseSubmitGdLevelId,
+  parseSubmitHz,
+  parseSubmitProgress,
+  parseSubmitTimeMs,
+} from '@/lib/submitValidation';
+import { publicApiError } from '@/lib/apiError';
 
 export async function POST(req: Request) {
   let auth;
@@ -35,27 +43,51 @@ export async function POST(req: Request) {
     if (type === 'PLAYER') {
       const { gdLevelId, levelName, creatorName, isPlatformer, progress, timeMs, videoUrl, rawProofUrl, hz, fps, device, comment } = data;
 
-      if (!gdLevelId || !isHttpsUrl(videoUrl)) {
+      const parsedGdId = parseSubmitGdLevelId(gdLevelId);
+      if (!parsedGdId || !isHttpsUrl(videoUrl)) {
         return NextResponse.json({ error: 'Vui lòng điền ID màn chơi và link video HTTPS.' }, { status: 400 });
+      }
+      const parsedProgress = parseSubmitProgress(progress);
+      if (progress != null && progress !== '' && parsedProgress === null) {
+        return NextResponse.json({ error: 'Progress phải từ 0 đến 100.' }, { status: 400 });
+      }
+      const parsedTimeMs = parseSubmitTimeMs(timeMs);
+      if (timeMs != null && timeMs !== '' && parsedTimeMs === null) {
+        return NextResponse.json({ error: 'Thời gian không hợp lệ.' }, { status: 400 });
+      }
+      const parsedFps = parseSubmitFps(fps);
+      if (fps != null && fps !== '' && parsedFps === null) {
+        return NextResponse.json({ error: 'FPS không hợp lệ.' }, { status: 400 });
       }
 
       const level = await getOrCreateStubLevel({
-        gdLevelId: parseInt(gdLevelId, 10),
+        gdLevelId: parsedGdId,
         name: clipText(levelName, 120) || 'Unknown Level',
         creatorName: clipText(creatorName, 80) || 'Unknown',
         isPlatformer: !!isPlatformer,
       });
 
+      const duplicate = await prisma.record.findFirst({
+        where: { userId, levelId: level.id, status: RecordStatus.PENDING },
+        select: { id: true },
+      });
+      if (duplicate) {
+        return NextResponse.json(
+          { error: 'Bạn đã có kỷ lục đang chờ duyệt cho màn chơi này.' },
+          { status: 409 }
+        );
+      }
+
       const record = await prisma.record.create({
         data: {
           userId,
           levelId: level.id,
-          progress: progress ? parseInt(progress, 10) : null,
-          timeMs: timeMs ? parseInt(timeMs, 10) : null,
+          progress: parsedProgress,
+          timeMs: parsedTimeMs,
           videoUrl: clipText(videoUrl, 500),
           rawProofUrl: isHttpsUrl(rawProofUrl) ? clipText(rawProofUrl, 500) : null,
-          hz: hz === '' || hz == null ? 60 : parseInt(String(hz), 10) || 60,
-          fps: fps === '' || fps == null || Number.isNaN(Number(fps)) ? null : parseInt(String(fps), 10),
+          hz: parseSubmitHz(hz),
+          fps: parsedFps,
           device: clipText(device, 40) || 'PC',
           comment: clipText(comment, 1000) || null,
           status: RecordStatus.PENDING,
@@ -155,7 +187,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ error: 'Invalid submit type' }, { status: 400 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi khi gửi.' }, { status: 500 });
+  } catch (error: unknown) {
+    return publicApiError(error, 'Lỗi khi gửi.');
   }
 }

@@ -71,6 +71,21 @@ async function addIndexesInBackground(db: PrismaClient) {
     `CREATE INDEX IF NOT EXISTS "PageVisit_path_idx" ON "PageVisit"("path")`,
     `CREATE INDEX IF NOT EXISTS "PageVisit_ipHash_idx" ON "PageVisit"("ipHash")`,
     `DO $$ BEGIN
+      IF EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'SiteAnnouncement_authorId_fkey'
+      ) THEN
+        ALTER TABLE "SiteAnnouncement" DROP CONSTRAINT "SiteAnnouncement_authorId_fkey";
+      END IF;
+      ALTER TABLE "SiteAnnouncement" ALTER COLUMN "authorId" DROP NOT NULL;
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'SiteAnnouncement_authorId_fkey'
+      ) THEN
+        ALTER TABLE "SiteAnnouncement"
+          ADD CONSTRAINT "SiteAnnouncement_authorId_fkey"
+          FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+      END IF;
+    END $$`,
+    `DO $$ BEGIN
       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'User_hardestClassicLevelId_fkey') THEN
         ALTER TABLE "User" ADD CONSTRAINT "User_hardestClassicLevelId_fkey"
           FOREIGN KEY ("hardestClassicLevelId") REFERENCES "Level"("id") ON DELETE SET NULL ON UPDATE CASCADE;

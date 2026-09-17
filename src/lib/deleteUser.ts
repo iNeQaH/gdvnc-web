@@ -1,9 +1,15 @@
 import { Role } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { isSuperAdminUser } from '@/lib/roles';
 import { clipText } from '@/lib/validate';
 
-export async function deleteUserAccount(actorId: string, targetId: string, reason: string) {
+export async function deleteUserAccount(
+  actorId: string,
+  targetId: string,
+  reason: string,
+  options?: { password?: string }
+) {
   const trimmedReason = clipText(reason, 500);
   if (!trimmedReason || trimmedReason.length < 3) {
     return { error: 'Vui lòng nhập lý do xoá tài khoản (tối thiểu 3 ký tự).', status: 400 as const };
@@ -32,6 +38,20 @@ export async function deleteUserAccount(actorId: string, targetId: string, reaso
   }
   if (target.role === Role.ADMIN && !isSuperAdminUser(actor) && !isSelf) {
     return { error: 'Chỉ Super Admin mới có thể xoá tài khoản Admin khác.', status: 403 as const };
+  }
+
+  if (isSelf) {
+    const password = typeof options?.password === 'string' ? options.password : '';
+    if (!password || password.length > 128) {
+      return { error: 'Vui lòng nhập mật khẩu để xác nhận xoá tài khoản.', status: 400 as const };
+    }
+    if (!target.passwordHash) {
+      return { error: 'Tài khoản không có mật khẩu.', status: 400 as const };
+    }
+    const ok = await bcrypt.compare(password, target.passwordHash);
+    if (!ok) {
+      return { error: 'Mật khẩu xác nhận không đúng.', status: 403 as const };
+    }
   }
 
   const actorName = actor.username;

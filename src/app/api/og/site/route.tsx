@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { renderSiteOgImage } from '@/lib/siteOg';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   const title = req.nextUrl.searchParams.get('title') || 'GDVN';

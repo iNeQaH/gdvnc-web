@@ -338,8 +338,8 @@ model SiteAnnouncement {
   body          String                 @db.Text
   audience      AnnouncementAudience   @default(ALL)
   targetUserIds String[]               @default([])
-  authorId      String
-  author        User                   @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  authorId      String?
+  author        User?                  @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: SetNull)
   createdAt     DateTime               @default(now())
   updatedAt     DateTime               @updatedAt
   reads         AnnouncementRead[]

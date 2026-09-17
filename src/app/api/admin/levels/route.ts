@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { calculateBasePp } from '@/lib/ScoringEngine';
 import { upsertLevelFromForm, triggerBackgroundPpRecalc } from '@/lib/upsertLevel';
-import { persistLocalListSnapshot } from '@/lib/listSnapshot';
+import { schedulePersistLocalListSnapshot } from '@/lib/listSnapshot';
 import { LevelMode, Prisma } from '@prisma/client';
 import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 
@@ -113,9 +113,7 @@ export async function DELETE(req: Request) {
     bustPublicCache(CACHE_TAGS.levels, CACHE_TAGS.highlights, CACHE_TAGS.leaderboard);
 
     if (!level.isChallenge) {
-      void persistLocalListSnapshot(mode === LevelMode.PLATFORMER ? 'PLATFORMER' : 'CLASSIC').catch((err) =>
-        console.error('Failed to persist local list snapshot', err)
-      );
+      schedulePersistLocalListSnapshot(mode === LevelMode.PLATFORMER ? 'PLATFORMER' : 'CLASSIC');
     }
 
     return NextResponse.json({ success: true });

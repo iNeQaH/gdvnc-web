@@ -388,7 +388,8 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ usern
       return NextResponse.json({ error: 'Vui lòng nhập lý do xoá tài khoản.' }, { status: 400 });
     }
 
-    const result = await deleteUserAccount(auth.userId, targetUser.id, reason);
+    const password = typeof body?.password === 'string' ? body.password : undefined;
+    const result = await deleteUserAccount(auth.userId, targetUser.id, reason, { password });
     if ('error' in result) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }

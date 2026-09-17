@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { getUserDataDir } from '@/lib/localStorage';
+import { getUserDataDir } from '@/lib/localFileStorage';
 import { Readable } from 'stream';
 
 function getMimeType(filePath: string): string {

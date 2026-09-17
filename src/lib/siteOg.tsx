@@ -1,8 +1,13 @@
 import { ImageResponse } from 'next/og';
+import { loadOgVietnameseFont, ogFontOptions } from '@/lib/ogFonts';
 
 export const SITE_OG_SIZE = { width: 1200, height: 630 };
 
-export function renderSiteOgImage(title: string, description: string) {
+export async function renderSiteOgImage(title: string, description: string) {
+  const fontData = await loadOgVietnameseFont();
+  const fonts = ogFontOptions(fontData);
+  const fontFamily = fonts ? 'Noto Sans' : 'system-ui';
+
   return new ImageResponse(
     (
       <div
@@ -15,19 +20,18 @@ export function renderSiteOgImage(title: string, description: string) {
           padding: 80,
           background: '#0b1120',
           color: '#ffffff',
+          fontFamily,
         }}
       >
         <div style={{ display: 'flex', fontSize: 28, color: '#60a5fa', marginBottom: 20, fontWeight: 700 }}>
           GDVN
         </div>
-        <div style={{ display: 'flex', fontSize: 58, fontWeight: 800, lineHeight: 1.15 }}>
-          {title}
-        </div>
+        <div style={{ display: 'flex', fontSize: 58, fontWeight: 800, lineHeight: 1.15 }}>{title}</div>
         <div style={{ display: 'flex', fontSize: 28, color: '#94a3b8', marginTop: 24, lineHeight: 1.35 }}>
           {description}
         </div>
       </div>
     ),
-    SITE_OG_SIZE
+    { ...SITE_OG_SIZE, fonts }
   );
 }

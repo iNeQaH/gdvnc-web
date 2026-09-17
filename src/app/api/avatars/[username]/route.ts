@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { isSafeExternalAvatarUrl } from '@/lib/safeAvatarUrl';
 
 function bufferFromDataUrl(dataUrl: string) {
   const parts = dataUrl.split(',');
@@ -43,7 +44,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ usernam
       });
     }
 
-    if (dataUrl.startsWith('http://') || dataUrl.startsWith('https://')) {
+    if (dataUrl.startsWith('/api/uploads/') || dataUrl.startsWith('/uploads/')) {
+      return NextResponse.redirect(new URL(dataUrl, new URL(_req.url).origin), 302);
+    }
+
+    if (dataUrl.startsWith('https://') && isSafeExternalAvatarUrl(dataUrl)) {
       return NextResponse.redirect(dataUrl, 302);
     }
 

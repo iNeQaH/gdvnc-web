@@ -104,6 +104,7 @@ export default function ProfilePage() {
   // Delete Account States
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteAccountReason, setDeleteAccountReason] = useState('');
+  const [deleteAccountPassword, setDeleteAccountPassword] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
 
   useEffect(() => {
@@ -351,6 +352,7 @@ export default function ProfilePage() {
   const openDeleteModal = () => {
     if (!currentUser || (!isOwner && !isFullAdmin) || !data) return;
     setDeleteAccountReason('');
+    setDeleteAccountPassword('');
     setShowDeleteModal(true);
   };
 
@@ -366,7 +368,10 @@ export default function ProfilePage() {
       const res = await fetch(`/api/profile/${data.username}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason }),
+        body: JSON.stringify({
+          reason,
+          ...(isOwner ? { password: deleteAccountPassword } : {}),
+        }),
       });
       const resData = await res.json();
       if (res.ok && resData.success) {
@@ -1490,6 +1495,20 @@ export default function ProfilePage() {
               />
             </div>
 
+            {isOwner && (
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold ui-title">Mật khẩu xác nhận (bắt buộc):</label>
+                <input
+                  type="password"
+                  value={deleteAccountPassword}
+                  onChange={(e) => setDeleteAccountPassword(e.target.value)}
+                  placeholder="Nhập mật khẩu đăng nhập"
+                  className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                />
+              </div>
+            )}
+
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 type="button"
@@ -1501,7 +1520,11 @@ export default function ProfilePage() {
               </button>
               <button
                 type="button"
-                disabled={deletingAccount || !deleteAccountReason.trim()}
+                disabled={
+                  deletingAccount ||
+                  !deleteAccountReason.trim() ||
+                  (isOwner && !deleteAccountPassword.trim())
+                }
                 onClick={confirmDeleteAccount}
                 className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50 cursor-pointer"
               >

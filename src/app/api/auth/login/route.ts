@@ -7,6 +7,9 @@ import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { publicApiError } from '@/lib/apiError';
 
+/** Constant-time padding when user is missing (mitigates login enumeration). */
+const DUMMY_PASSWORD_HASH = '$2b$10$20mcQhifvE3Tbmulxl25WuJKjcwe0FOqBxWVDK08snzvv.UgK.lbK';
+
 export async function POST(req: Request) {
   try {
     if (!isBrowserSameOriginFetch(req)) {
@@ -56,13 +59,17 @@ export async function POST(req: Request) {
         })
       : null;
 
-    if (!user || !user.passwordHash) {
-      return NextResponse.json({ error: en ? 'Incorrect username / email or password.' : 'Tên người dùng / Email hoặc mật khẩu không chính xác.' }, { status: 401 });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) {
-      return NextResponse.json({ error: en ? 'Incorrect username / email or password.' : 'Tên người dùng / Email hoặc mật khẩu không chính xác.' }, { status: 401 });
+    const hashToCheck = user?.passwordHash || DUMMY_PASSWORD_HASH;
+    const isMatch = await bcrypt.compare(password, hashToCheck);
+    if (!user?.passwordHash || !isMatch) {
+      return NextResponse.json(
+        {
+          error: en
+            ? 'Incorrect username / email or password.'
+            : 'Tên người dùng / Email hoặc mật khẩu không chính xác.',
+        },
+        { status: 401 }
+      );
     }
 
     const safeUser = {

@@ -51,10 +51,10 @@ export async function uploadBufferToLocal(
   const ownerPrefix = ownerUserId ? localUploadOwnerPrefix(ownerUserId) : '';
   const key = `${ownerPrefix}${Date.now()}-${uuid}-${safeFilename}`;
   const finalKey = key.includes('.') ? key : `${key}.${ext}`;
-  
+
   const destPath = path.join(uploads, finalKey);
   await fs.promises.writeFile(destPath, buffer);
-  
+
   return { url: `/api/uploads/${finalKey}`, key: finalKey };
 }
 
@@ -77,16 +77,16 @@ export async function deleteLocalFiles(keys: string[]) {
   if (!keys || keys.length === 0) return;
   const { uploads } = ensureLocalDirs();
   const unique = [...new Set(keys.filter(Boolean))];
-  
+
   for (const key of unique) {
     const resolvedPath = path.resolve(/*turbopackIgnore: true*/ uploads, key);
-    
-    // ensure path stays strictly within uploads directory
+
     if (resolvedPath.startsWith(uploads + path.sep)) {
       try {
         await fs.promises.unlink(resolvedPath);
-      } catch (err: any) {
-        if (err.code !== 'ENOENT') {
+      } catch (err: unknown) {
+        const code = err && typeof err === 'object' && 'code' in err ? String((err as { code: string }).code) : '';
+        if (code !== 'ENOENT') {
           console.error(`Failed to delete local file: ${resolvedPath}`, err);
         }
       }

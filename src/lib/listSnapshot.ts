@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import type { ExternalListLevel } from '@/lib/externalLists';
 import fs from 'fs';
 import path from 'path';
-import { getUserDataDir } from '@/lib/localStorage';
+import { getUserDataDir } from '@/lib/localFileStorage';
 
 const SITE_KEY = (mode: 'CLASSIC' | 'PLATFORMER') => `list-snapshot:${mode}`;
 
@@ -134,4 +134,19 @@ export async function loadListSnapshot(mode: 'CLASSIC' | 'PLATFORMER'): Promise<
     }
     return null;
   }
+}
+
+const snapshotTimers = new Map<'CLASSIC' | 'PLATFORMER', ReturnType<typeof setTimeout>>();
+
+/** Debounced snapshot write — avoids full-table scan on every level save. */
+export function schedulePersistLocalListSnapshot(mode: 'CLASSIC' | 'PLATFORMER', delayMs = 8000) {
+  const prev = snapshotTimers.get(mode);
+  if (prev) clearTimeout(prev);
+  snapshotTimers.set(
+    mode,
+    setTimeout(() => {
+      snapshotTimers.delete(mode);
+      void persistLocalListSnapshot(mode).catch((err) => console.error('persistLocalListSnapshot', err));
+    }, delayMs)
+  );
 }

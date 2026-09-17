@@ -1,14 +1,31 @@
 import { appEventEmitter } from '@/lib/eventEmitter';
 import { getSessionUser } from '@/lib/auth';
+import { getClientIp } from '@/lib/requestIp';
+import { acquireSseConnection, releaseSseConnection } from '@/lib/sseLimit';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
+  const ip = getClientIp(request);
+  if (!acquireSseConnection(ip, 5)) {
+    return new Response(JSON.stringify({ error: 'Too many live connections.' }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   const authUser = await getSessionUser().catch(() => null);
 
   let interval: NodeJS.Timeout | null = null;
-  let onNotify: ((payload: any) => void) | null = null;
-  let onLevelUpdate: ((payload: any) => void) | null = null;
+  let onNotify: ((payload: unknown) => void) | null = null;
+  let onLevelUpdate: (() => void) | null = null;
+  let released = false;
+
+  const releaseSlot = () => {
+    if (released) return;
+    released = true;
+    releaseSseConnection(ip);
+  };
 
   const stream = new ReadableStream({
     start(controller) {
@@ -28,12 +45,15 @@ export async function GET(request: Request) {
           appEventEmitter.off('level-update', onLevelUpdate);
           onLevelUpdate = null;
         }
+        releaseSlot();
         try {
           controller.close();
-        } catch {}
+        } catch {
+          /* closed */
+        }
       };
 
-      const sendEvent = (event: string, data: any) => {
+      const sendEvent = (event: string, data: unknown) => {
         try {
           controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
         } catch {
@@ -41,12 +61,11 @@ export async function GET(request: Request) {
         }
       };
 
-      onNotify = (payload: any) => {
-        // If notification is targeted to a specific user, only deliver to that user
-        if (payload?.userId && (!authUser || authUser.userId !== payload.userId)) {
+      onNotify = (payload: unknown) => {
+        const p = payload as { userId?: string } | null;
+        if (p?.userId && (!authUser || authUser.userId !== p.userId)) {
           return;
         }
-        // Don't leak internal IDs to client
         sendEvent('notification', { at: Date.now() });
       };
 
@@ -57,7 +76,6 @@ export async function GET(request: Request) {
       appEventEmitter.on('notification', onNotify);
       appEventEmitter.on('level-update', onLevelUpdate);
 
-      // Send initial heartbeat
       sendEvent('ping', { connected: true, at: Date.now() });
 
       interval = setInterval(() => {
@@ -79,6 +97,7 @@ export async function GET(request: Request) {
         appEventEmitter.off('level-update', onLevelUpdate);
         onLevelUpdate = null;
       }
+      releaseSlot();
     },
   });
 
@@ -91,4 +110,3 @@ export async function GET(request: Request) {
     },
   });
 }
-

@@ -3,7 +3,7 @@ import { requireSuperAdmin } from '@/lib/auth';
 import { migrateMediaToUt } from '@/lib/migrateMediaToUt';
 import fs from 'fs';
 import path from 'path';
-import { getUserDataDir, deleteLocalFiles } from '@/lib/localStorage';
+import { getUserDataDir, deleteLocalFiles } from '@/lib/localFileStorage';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

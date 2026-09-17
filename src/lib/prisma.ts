@@ -5,6 +5,7 @@ const globalForPrisma = globalThis as unknown as {
   prismaGdvnc?: PrismaClient;
   prismaGdvncReady?: Promise<void>;
   prismaGdvncExt?: PrismaClient;
+  prismaSchemaReady?: boolean;
 };
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -36,7 +37,10 @@ const prisma =
     query: {
       $allModels: {
         async $allOperations({ args, query }) {
-          await globalForPrisma.prismaGdvncReady;
+          if (!globalForPrisma.prismaSchemaReady) {
+            await globalForPrisma.prismaGdvncReady;
+            globalForPrisma.prismaSchemaReady = true;
+          }
           return query(args);
         },
       },

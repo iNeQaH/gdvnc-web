@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { uploadBufferToLocal } from '@/lib/localStorage';
+import { uploadBufferToLocal } from '@/lib/localFileStorage';
 import { validateImageUpload } from '@/lib/imageUploadValidate';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 

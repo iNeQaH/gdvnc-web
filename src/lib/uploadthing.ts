@@ -3,7 +3,7 @@ import {
   uploadDataUrlToLocal,
   deleteLocalFiles,
   uploadKeyBelongsToUser,
-} from './localStorage';
+} from './localFileStorage';
 
 export { uploadKeyBelongsToUser };
 

@@ -2,6 +2,19 @@ import prisma from '@/lib/prisma';
 import { LevelMode, RecordStatus } from '@prisma/client';
 import { awardedPpForProgress, calculateTotalPp } from '@/lib/ScoringEngine';
 
+export const RECORD_SCORING_LEVEL_SELECT = {
+  id: true,
+  gdLevelId: true,
+  name: true,
+  mode: true,
+  minPercent: true,
+  basePp: true,
+  placement: true,
+  isChallenge: true,
+} as const;
+
+const recordLevelInclude = { level: { select: RECORD_SCORING_LEVEL_SELECT } } as const;
+
 type RecordLike = {
   progress: number | null;
   timeMs: number | null;
@@ -153,7 +166,7 @@ export async function recalculateUserPp(userId: string | null | undefined, tx: a
 
   const userRecords = await db.record.findMany({
     where: { userId, status: RecordStatus.APPROVED },
-    include: { level: true },
+    ...recordLevelInclude,
   });
 
   const deduped = dedupeRecordsByLevel(userRecords);
@@ -214,7 +227,7 @@ export async function consolidateBeforeApprove(
   const db = tx || prisma;
   const record = await db.record.findUnique({
     where: { id: recordId },
-    include: { level: true },
+    ...recordLevelInclude,
   });
 
   if (!record) {

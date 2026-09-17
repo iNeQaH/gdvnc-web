@@ -9,7 +9,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { SiteLockGate } from "@/components/SiteLockGate";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ['latin', 'vietnamese'] });
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:8088"),

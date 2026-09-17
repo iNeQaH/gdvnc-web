@@ -2,7 +2,7 @@ import prisma from '@/lib/prisma';
 import { LevelMode, Prisma, RecordStatus } from '@prisma/client';
 import { calculateBasePp } from '@/lib/ScoringEngine';
 import { recalculateUserPp as recalcUserPp } from '@/lib/recordUtils';
-import { persistLocalListSnapshot } from '@/lib/listSnapshot';
+import { schedulePersistLocalListSnapshot } from '@/lib/listSnapshot';
 import { formatDifficultyLabel, mapDifficultyFace, mapRatingType, pickGdCreatorName, pickGdLevelName } from '@/lib/gdDifficulty';
 import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 
@@ -396,9 +396,7 @@ export async function upsertLevelFromForm(input: {
   }
 
   if (!isChallengeLevel) {
-    void persistLocalListSnapshot(pMode === LevelMode.PLATFORMER ? 'PLATFORMER' : 'CLASSIC').catch((err) =>
-      console.error('Failed to persist local list snapshot', err)
-    );
+    schedulePersistLocalListSnapshot(pMode === LevelMode.PLATFORMER ? 'PLATFORMER' : 'CLASSIC');
   }
 
   bustPublicCache(CACHE_TAGS.levels, CACHE_TAGS.highlights, CACHE_TAGS.leaderboard);
