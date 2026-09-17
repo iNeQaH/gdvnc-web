@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import { LevelMode } from '@prisma/client';
 import { requireSuperAdmin } from '@/lib/auth';
@@ -52,9 +53,6 @@ export async function POST(req: Request) {
     bustPublicCache(CACHE_TAGS.levels, CACHE_TAGS.highlights, CACHE_TAGS.leaderboard);
     return NextResponse.json({ success: true, results });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Không lấy được danh sách từ API.' },
-      { status: 502 }
-    );
+    return publicApiError(error, 'Không lấy được danh sách từ API.', 502);
   }
 }

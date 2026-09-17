@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import prisma from '@/lib/prisma';
@@ -294,6 +295,6 @@ export async function GET(req: Request) {
 
   } catch (error: any) {
     console.error('Analytics API Error:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return publicApiError(error, "Internal Server Error", 500);
   }
 }

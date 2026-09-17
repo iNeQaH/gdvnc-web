@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import { requireSuperAdmin } from '@/lib/auth';
 import { getClientIp } from '@/lib/requestIp';
@@ -27,9 +28,6 @@ export async function POST(req: Request) {
     const result = await refreshLevelCreatorNames(cursor);
     return NextResponse.json({ success: true, ...result });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Không lấy được tên creator từ GD.' },
-      { status: 502 }
-    );
+    return publicApiError(error, 'Không lấy được tên creator từ GD.', 502);
   }
 }

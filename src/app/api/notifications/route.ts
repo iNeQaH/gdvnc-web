@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
@@ -100,7 +101,7 @@ export async function GET() {
         unreadCount,
       });
     }
-    return NextResponse.json({ error: error.message || 'Lỗi lấy thông báo.' }, { status: 500 });
+    return publicApiError(error, 'Lỗi lấy thông báo.', 500);
   }
 }
 
@@ -179,6 +180,6 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json({ error: 'Thiếu thông tin cập nhật.' }, { status: 400 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi cập nhật thông báo.' }, { status: 500 });
+    return publicApiError(error, 'Lỗi cập nhật thông báo.', 500);
   }
 }

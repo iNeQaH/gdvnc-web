@@ -41,7 +41,12 @@ function safeUrl(attr: string, raw: string): string | null {
   if (!value) return null;
   if (/[\s\\]/.test(value) || /[\u0000-\u001f]/.test(value)) return null;
   const lowered = value.toLowerCase();
-  if (lowered.startsWith('javascript:') || lowered.startsWith('vbscript:') || lowered.startsWith('data:')) {
+  if (
+    lowered.startsWith('javascript:') ||
+    lowered.startsWith('vbscript:') ||
+    lowered.startsWith('data:') ||
+    value.startsWith('//')
+  ) {
     return null;
   }
   if (attr === 'href') {

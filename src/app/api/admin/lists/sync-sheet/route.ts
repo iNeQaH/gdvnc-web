@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import { requireSuperAdmin } from '@/lib/auth';
 import { getClientIp } from '@/lib/requestIp';
@@ -22,9 +23,6 @@ export async function POST(req: Request) {
     bustPublicCache(CACHE_TAGS.levels, CACHE_TAGS.highlights, CACHE_TAGS.timeline);
     return NextResponse.json({ success: true, result });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Không đồng bộ được Google Sheet.' },
-      { status: 502 }
-    );
+    return publicApiError(error, 'Không đồng bộ được Google Sheet.', 502);
   }
 }

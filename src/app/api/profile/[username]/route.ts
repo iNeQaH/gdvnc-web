@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { RecordStatus, LevelMode } from '@prisma/client';
@@ -238,7 +239,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       { headers: { 'Cache-Control': 'no-store' } }
     );
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi truy vấn thông tin người chơi.' }, { status: 500 });
+    return publicApiError(error, 'Lỗi truy vấn thông tin người chơi.', 500);
   }
 }
 
@@ -360,7 +361,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
     if (error?.message === 'UNAUTHORIZED') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    return NextResponse.json({ error: error.message || 'Lỗi cập nhật profile.' }, { status: 500 });
+    return publicApiError(error, 'Lỗi cập nhật profile.', 500);
   }
 }
 
@@ -399,6 +400,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ usern
     if (error?.message === 'UNAUTHORIZED') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    return NextResponse.json({ error: error.message || 'Lỗi xoá tài khoản.' }, { status: 500 });
+    return publicApiError(error, 'Lỗi xoá tài khoản.', 500);
   }
 }

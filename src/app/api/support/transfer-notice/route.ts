@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
@@ -51,9 +52,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Không gửi được thông báo chuyển khoản.' },
-      { status: 500 }
-    );
+    return publicApiError(error, 'Không gửi được thông báo chuyển khoản.', 500);
   }
 }

@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { requireAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -92,6 +93,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     return NextResponse.json({ success: true, submission: updated, level: result });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi xử lý submit level' }, { status: 500 });
+    return publicApiError(error, 'Lỗi xử lý submit level', 500);
   }
 }

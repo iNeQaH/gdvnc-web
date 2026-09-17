@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
@@ -100,6 +101,6 @@ export async function POST(req: Request) {
           : `Đã gửi mã đặt lại mật khẩu tới ${cleanEmail}.`,
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi khi gửi mã.' }, { status: 500 });
+    return publicApiError(error, 'Lỗi khi gửi mã.', 500);
   }
 }

@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { requireAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -58,6 +59,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       claimed,
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi xác minh người dùng.' }, { status: 500 });
+    return publicApiError(error, 'Lỗi xác minh người dùng.', 500);
   }
 }

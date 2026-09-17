@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import { getCreatorLeaderboard, getPlayerLeaderboard } from '@/lib/leaderboard';
 import { checkSiteLockAndBlock } from '@/lib/siteLock';
@@ -25,6 +26,6 @@ export async function GET(req: Request) {
 
     return NextResponse.json(body, { headers: PUBLIC_CACHE_HEADERS });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi tải Bảng Xếp Hạng.' }, { status: 500 });
+    return publicApiError(error, 'Lỗi tải Bảng Xếp Hạng.', 500);
   }
 }

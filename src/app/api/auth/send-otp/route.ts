@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
@@ -110,9 +111,6 @@ export async function POST(req: Request) {
     });
   } catch (error: any) {
     console.error('Send OTP error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Lỗi khi gửi mã OTP.' },
-      { status: 500 }
-    );
+    return publicApiError(error, 'Lỗi khi gửi mã OTP.', 500);
   }
 }

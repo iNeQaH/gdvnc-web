@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
@@ -136,6 +137,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, user: safeUser });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi khi tạo tài khoản.' }, { status: 500 });
+    return publicApiError(error, 'Lỗi khi tạo tài khoản.', 500);
   }
 }

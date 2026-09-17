@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireFullAdmin } from '@/lib/auth';
@@ -68,7 +69,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     bustPublicCache(CACHE_TAGS.timeline);
     return NextResponse.json({ success: true, event: toChronicleEvent(row) });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to update event.' }, { status: 500 });
+    return publicApiError(error, 'Failed to update event.', 500);
   }
 }
 
@@ -94,6 +95,6 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     bustPublicCache(CACHE_TAGS.timeline);
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to delete event.' }, { status: 500 });
+    return publicApiError(error, 'Failed to delete event.', 500);
   }
 }

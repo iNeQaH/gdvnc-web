@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { requireAdmin, requireSuperAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -26,7 +27,7 @@ export async function GET() {
 
     return NextResponse.json({ success: true, categories });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi server' }, { status: 500 });
+    return publicApiError(error, 'Lỗi server', 500);
   }
 }
 
@@ -49,6 +50,6 @@ export async function POST(req: Request) {
     });
     return NextResponse.json({ success: true, category });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi tạo phân loại' }, { status: 500 });
+    return publicApiError(error, 'Lỗi tạo phân loại', 500);
   }
 }

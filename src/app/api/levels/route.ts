@@ -10,6 +10,7 @@ import { applyGdlisthubRanksToLevels } from '@/lib/gdlisthubLists';
 import { checkSiteLockAndBlock } from '@/lib/siteLock';
 import { cachedJson, CACHE_TAGS, PUBLIC_CACHE_HEADERS } from '@/lib/publicCache';
 import { isDemonDifficultyFace, mapDifficultyFace, matchesDifficultyFilter } from '@/lib/gdDifficulty';
+import { publicApiError } from '@/lib/apiError';
 
 const dbLevelSelect = {
   id: true,
@@ -316,7 +317,6 @@ export async function GET(req: Request) {
       { headers: PUBLIC_CACHE_HEADERS }
     );
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Lỗi truy xuất Levels List.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return publicApiError(error, 'Lỗi truy xuất Levels List.');
   }
 }

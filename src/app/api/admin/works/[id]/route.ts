@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { requireAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -158,7 +159,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     return NextResponse.json({ success: true, work: { ...updated, imageUrl: null } });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi xử lý Work' }, { status: 500 });
+    return publicApiError(error, 'Lỗi xử lý Work', 500);
   }
 }
 
@@ -198,6 +199,6 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     }
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi xoá Work' }, { status: 500 });
+    return publicApiError(error, 'Lỗi xoá Work', 500);
   }
 }

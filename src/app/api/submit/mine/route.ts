@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { requireAuth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -70,6 +71,6 @@ export async function GET(req: Request) {
       })),
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi tải danh sách.' }, { status: 500 });
+    return publicApiError(error, 'Lỗi tải danh sách.', 500);
   }
 }

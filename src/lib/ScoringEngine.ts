@@ -7,6 +7,7 @@
 export const MAX_PP = 2500;   // Base PP for Top 1 Extreme Demon
 export const MIN_PP = 10;     // Base PP for lowest rated Demon (#500)
 export const LIST_SIZE = 500; // Main list size
+const BASE_PP_EXP_K = Math.log(MAX_PP / MIN_PP) / (LIST_SIZE - 1);
 /** Pointercrate: reaching the requirement awards 10% of the level's points. */
 export const MIN_PROGRESS_SCORE_RATIO = 0.1;
 
@@ -37,8 +38,7 @@ export function calculateBasePp(placement: number | null | undefined): number {
   if (placement == null || placement < 1) return 0;
   if (placement > LIST_SIZE) return MIN_PP;
 
-  const k = Math.log(MAX_PP / MIN_PP) / (LIST_SIZE - 1);
-  const pp = MIN_PP * Math.exp(k * (LIST_SIZE - placement));
+  const pp = MIN_PP * Math.exp(BASE_PP_EXP_K * (LIST_SIZE - placement));
   return Number(pp.toFixed(2));
 }
 

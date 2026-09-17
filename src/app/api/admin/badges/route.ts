@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { requireAdmin, requireSuperAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -27,7 +28,7 @@ export async function GET() {
 
     return NextResponse.json({ success: true, badges });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi server' }, { status: 500 });
+    return publicApiError(error, 'Lỗi server', 500);
   }
 }
 
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
     });
     return NextResponse.json({ success: true, badge });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi tạo huy hiệu' }, { status: 500 });
+    return publicApiError(error, 'Lỗi tạo huy hiệu', 500);
   }
 }
 
@@ -76,6 +77,6 @@ export async function PATCH(req: Request) {
     );
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi server' }, { status: 500 });
+    return publicApiError(error, 'Lỗi server', 500);
   }
 }

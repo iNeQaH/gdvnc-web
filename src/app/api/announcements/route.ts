@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser, requireFullAdmin } from '@/lib/auth';
@@ -114,7 +115,7 @@ export async function GET(req: Request) {
     if (error?.code === 'P2021' || String(error?.message || '').includes('SiteAnnouncement')) {
       return NextResponse.json({ success: true, announcements: [], unreadCount: 0 });
     }
-    return NextResponse.json({ error: error.message || 'Failed to load announcements.' }, { status: 500 });
+    return publicApiError(error, 'Failed to load announcements.', 500);
   }
 }
 
@@ -159,6 +160,6 @@ export async function POST(req: Request) {
       announcement: serializeAnnouncement(row, { includeTargets: true }),
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to create announcement.' }, { status: 500 });
+    return publicApiError(error, 'Failed to create announcement.', 500);
   }
 }

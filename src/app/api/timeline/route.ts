@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireFullAdmin } from '@/lib/auth';
@@ -69,7 +70,7 @@ export async function GET(req: Request) {
       { headers: PUBLIC_CACHE_HEADERS }
     );
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to load timeline.' }, { status: 500 });
+    return publicApiError(error, 'Failed to load timeline.', 500);
   }
 }
 
@@ -90,6 +91,6 @@ export async function POST(req: Request) {
     }
     return NextResponse.json({ error: parsed.error || 'Invalid event.' }, { status: 400 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to create event.' }, { status: 500 });
+    return publicApiError(error, 'Failed to create event.', 500);
   }
 }

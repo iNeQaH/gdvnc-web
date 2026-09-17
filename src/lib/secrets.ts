@@ -1,3 +1,5 @@
+import crypto from 'crypto';
+
 function requireSecret(name: string, devFallback: string): string {
   const value = process.env[name];
   if (value && value.length >= 32) return value;
@@ -11,10 +13,10 @@ export function jwtSecretBytes(): Uint8Array {
   return new TextEncoder().encode(requireSecret('JWT_SECRET', 'dev-only-jwt-secret-change-me'));
 }
 
+/** Dedicated CAPTCHA secret, or HMAC-derived from JWT (never reuse JWT bytes directly). */
 export function captchaSecret(): string {
   const dedicated = process.env.CAPTCHA_SECRET;
-  if (dedicated && dedicated.length >= 8) return dedicated;
-  const jwt = process.env.JWT_SECRET;
-  if (jwt && jwt.length >= 8) return jwt;
-  return requireSecret('CAPTCHA_SECRET', 'dev-only-captcha-secret');
+  if (dedicated && dedicated.length >= 32) return dedicated;
+  const jwt = requireSecret('JWT_SECRET', 'dev-only-jwt-secret-change-me');
+  return crypto.createHmac('sha256', jwt).update('gdvnc-captcha-v1').digest('hex');
 }

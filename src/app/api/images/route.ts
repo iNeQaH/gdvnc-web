@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import { estimateDataUrlBytes } from '@/lib/profileEmbed';
 import { requireAuth } from '@/lib/auth';
@@ -44,6 +45,6 @@ export async function POST(req: Request) {
     );
     return NextResponse.json({ success: true, url });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Server Error' }, { status: 500 });
+    return publicApiError(error, 'Server Error', 500);
   }
 }

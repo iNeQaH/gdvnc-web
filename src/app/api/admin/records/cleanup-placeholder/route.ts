@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { requireAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -30,6 +31,6 @@ export async function POST() {
     clearLeaderboardCache();
     return NextResponse.json({ success: true, deleted: ids.length });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi dọn kỷ lục giả.' }, { status: 500 });
+    return publicApiError(error, 'Lỗi dọn kỷ lục giả.', 500);
   }
 }

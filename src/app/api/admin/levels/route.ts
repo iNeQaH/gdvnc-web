@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { requireAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
     const result = await upsertLevelFromForm(body);
     return NextResponse.json({ success: true, level: result });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi server' }, { status: 500 });
+    return publicApiError(error, 'Lỗi server', 500);
   }
 }
 
@@ -43,7 +44,7 @@ export async function PATCH(req: Request) {
     }
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi server' }, { status: 500 });
+    return publicApiError(error, 'Lỗi server', 500);
   }
 }
 
@@ -118,6 +119,6 @@ export async function DELETE(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 });
+    return publicApiError(error, 'Server error', 500);
   }
 }

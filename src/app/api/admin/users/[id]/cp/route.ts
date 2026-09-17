@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { requireFullAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -45,6 +46,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     return NextResponse.json({ error: 'Hành động không hợp lệ.' }, { status: 400 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi cập nhật Creator Points.' }, { status: 500 });
+    return publicApiError(error, 'Lỗi cập nhật Creator Points.', 500);
   }
 }

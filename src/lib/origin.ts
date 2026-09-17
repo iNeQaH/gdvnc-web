@@ -1,13 +1,3 @@
-export function isSameOriginRequest(req: Request): boolean {
-  const origin = req.headers.get('origin');
-  if (!origin) return false;
-  try {
-    return new URL(origin).origin === new URL(req.url).origin;
-  } catch {
-    return false;
-  }
-}
-
 /**
  * Same-origin browser fetch. Missing Origin / sec-fetch-site is common on
  * iOS Safari and in-app browsers (Zalo, Facebook) — only reject when headers

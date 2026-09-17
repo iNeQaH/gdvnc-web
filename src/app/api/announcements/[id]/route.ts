@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireFullAdmin } from '@/lib/auth';
@@ -85,7 +86,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       announcement: serializeAnnouncement(row, { includeTargets: true }),
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to update announcement.' }, { status: 500 });
+    return publicApiError(error, 'Failed to update announcement.', 500);
   }
 }
 
@@ -101,6 +102,6 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     await prisma.siteAnnouncement.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to delete announcement.' }, { status: 500 });
+    return publicApiError(error, 'Failed to delete announcement.', 500);
   }
 }

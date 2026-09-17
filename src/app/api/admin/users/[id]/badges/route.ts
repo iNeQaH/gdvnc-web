@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { requireFullAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -48,6 +49,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     return NextResponse.json({ success: true, creatorPoints: user?.creatorPoints ?? 0 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi cập nhật huy hiệu.' }, { status: 500 });
+    return publicApiError(error, 'Lỗi cập nhật huy hiệu.', 500);
   }
 }

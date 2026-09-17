@@ -80,7 +80,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ success: true, users });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi tìm kiếm người dùng.' }, { status: 500 });
+    return publicApiError(error, 'Lỗi tìm kiếm người dùng.', 500);
   }
 }
 

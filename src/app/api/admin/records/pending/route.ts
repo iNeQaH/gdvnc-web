@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { requireAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -77,6 +78,6 @@ export async function GET(req: Request) {
       total: queueFilterTotal(counts, status),
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi tải danh sách kỷ lục.' }, { status: 500 });
+    return publicApiError(error, 'Lỗi tải danh sách kỷ lục.', 500);
   }
 }

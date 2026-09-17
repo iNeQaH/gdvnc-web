@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { requireSuperAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -54,7 +55,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
     return NextResponse.json({ success: true, badge });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi cập nhật huy hiệu' }, { status: 500 });
+    return publicApiError(error, 'Lỗi cập nhật huy hiệu', 500);
   }
 }
 
@@ -66,6 +67,6 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     await prisma.badge.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi xóa huy hiệu' }, { status: 500 });
+    return publicApiError(error, 'Lỗi xóa huy hiệu', 500);
   }
 }

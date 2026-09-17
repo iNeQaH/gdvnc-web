@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { publicApiError } from '@/lib/apiError';
 import { requireAdmin } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import os from 'os';
@@ -159,6 +160,6 @@ export async function GET(req: Request) {
     });
 
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return publicApiError(error, "Internal Server Error", 500);
   }
 }

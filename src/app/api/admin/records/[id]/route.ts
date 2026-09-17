@@ -1,3 +1,4 @@
+import { publicApiError } from '@/lib/apiError';
 import { requireAdmin } from '@/lib/auth';
 import { clipReviewNote, notifyWithNote } from '@/lib/reviewNote';
 import { NextResponse } from 'next/server';
@@ -92,7 +93,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     return NextResponse.json({ success: true, record: updatedRecord });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi kiểm duyệt kỷ lục.' }, { status: 500 });
+    return publicApiError(error, 'Lỗi kiểm duyệt kỷ lục.', 500);
   }
 }
 
@@ -114,6 +115,6 @@ export async function DELETE(req: Request, context: any) {
 
     return NextResponse.json({ success: true, message: 'Đã xóa kỷ lục và cập nhật Points.' });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Lỗi server' }, { status: 500 });
+    return publicApiError(error, 'Lỗi server', 500);
   }
 }

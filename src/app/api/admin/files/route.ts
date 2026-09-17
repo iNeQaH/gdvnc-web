@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { publicApiError } from '@/lib/apiError';
 import { requireSuperAdmin } from '@/lib/auth';
 import { migrateMediaToUt } from '@/lib/migrateMediaToUt';
 import fs from 'fs';
@@ -66,7 +67,7 @@ export async function GET() {
       files: files.slice(0, 100),
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to list files.' }, { status: 500 });
+    return publicApiError(error, 'Failed to list files.', 500);
   }
 }
 
@@ -91,7 +92,7 @@ export async function DELETE(req: Request) {
     await deleteLocalFiles(keys);
     return NextResponse.json({ success: true, deleted: keys.length });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to delete files.' }, { status: 500 });
+    return publicApiError(error, 'Failed to delete files.', 500);
   }
 }
 
@@ -107,10 +108,7 @@ export async function POST(req: Request) {
     const batch = Math.min(30, Math.max(1, Number(body?.batch) || 20));
     const result = await migrateMediaToUt(batch);
     return NextResponse.json({ success: true, ...result });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Failed to migrate images.' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    return publicApiError(error, 'Failed to migrate images.', 500);
   }
 }
