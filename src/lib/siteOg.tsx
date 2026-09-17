@@ -76,6 +76,7 @@ export async function renderLevelOgImage(
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={ratingSrc}
+              alt=""
               width={iconSize}
               height={iconSize}
               style={{ position: 'absolute', left: 0, top: 0, objectFit: 'contain' }}
@@ -84,6 +85,7 @@ export async function renderLevelOgImage(
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={faceSrc}
+            alt=""
             width={iconSize}
             height={iconSize}
             style={{ position: 'absolute', left: 0, top: 0, objectFit: 'contain' }}
