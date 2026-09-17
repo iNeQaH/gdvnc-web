@@ -83,7 +83,6 @@ export default function LevelsTab({
   const [siteLockBusy, setSiteLockBusy] = useState(false);
   const [syncingLists, setSyncingLists] = useState(false);
   const [syncingSheet, setSyncingSheet] = useState(false);
-  const [syncingGdlisthub, setSyncingGdlisthub] = useState(false);
   const [refreshingCreators, setRefreshingCreators] = useState(false);
   const [refreshingTimelineCopy, setRefreshingTimelineCopy] = useState(false);
 
@@ -302,31 +301,6 @@ export default function LevelsTab({
     });
   };
 
-  const handleSyncGdlisthub = () => {
-    showConfirm(t('admin.sync_gdlisthub_confirm'), async () => {
-      setSyncingGdlisthub(true);
-      try {
-        const res = await fetch('/api/admin/lists/sync-gdlisthub', { method: 'POST' });
-        const data = await res.json();
-        if (!res.ok || !data.success) {
-          showToast(data.error || t('admin.sync_gdlisthub_fail'), 'error');
-          return;
-        }
-        showToast(
-          t('admin.sync_gdlisthub_ok', {
-            fl: data.results?.find((r: any) => r.type === 'Featured List')?.synced || 0,
-            dl: data.results?.find((r: any) => r.type === 'Demon List')?.synced || 0,
-          }),
-          'success'
-        );
-      } catch {
-        showToast(t('admin.sync_gdlisthub_fail'), 'error');
-      } finally {
-        setSyncingGdlisthub(false);
-      }
-    });
-  };
-
   const handleSyncSheet = () => {
     showConfirm(t('admin.sync_sheet_confirm'), async () => {
       setSyncingSheet(true);
@@ -420,16 +394,6 @@ export default function LevelsTab({
           >
             <RefreshCw className={`w-3.5 h-3.5 ${syncingLists ? 'animate-spin' : ''}`} />
             {syncingLists ? t('admin.syncing') : t('admin.sync_all_lists')}
-          </button>
-          <button
-            type="button"
-            disabled={syncingGdlisthub}
-            onClick={handleSyncGdlisthub}
-            className="px-4 py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-            style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${syncingGdlisthub ? 'animate-spin' : ''}`} />
-            {syncingGdlisthub ? t('admin.syncing') : t('admin.sync_gdlisthub')}
           </button>
           <button
             type="button"

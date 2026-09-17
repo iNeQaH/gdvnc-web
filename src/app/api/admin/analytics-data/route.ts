@@ -80,16 +80,58 @@ export async function GET(req: Request) {
     const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
     const isHourly = diffDays <= 1;
     
-    const visits = await prisma.pageVisit.findMany({
-      where: { 
-        createdAt: { 
-          gte: startDate,
-          lte: endDate
-        } 
-      },
-      orderBy: { createdAt: 'asc' }
-    });
-    
+    const totalsRaw = await prisma.$queryRaw<Array<{ total_views: bigint; total_visitors: bigint }>>`
+      SELECT COUNT(*)::bigint AS total_views, COUNT(DISTINCT "ipHash")::bigint AS total_visitors
+      FROM "PageVisit"
+      WHERE "createdAt" >= ${startDate} AND "createdAt" <= ${endDate}
+    `;
+    const totalViews = Number(totalsRaw[0]?.total_views || 0);
+    const totalVisitors = Number(totalsRaw[0]?.total_visitors || 0);
+
+    type BucketRow = { bucket: Date; views: number; visitors: number };
+    const bucketRows = isHourly
+      ? await prisma.$queryRaw<BucketRow[]>`
+          SELECT date_trunc('hour', "createdAt") AS bucket,
+                 COUNT(*)::int AS views,
+                 COUNT(DISTINCT "ipHash")::int AS visitors
+          FROM "PageVisit"
+          WHERE "createdAt" >= ${startDate} AND "createdAt" <= ${endDate}
+          GROUP BY 1
+          ORDER BY 1 ASC
+        `
+      : await prisma.$queryRaw<BucketRow[]>`
+          SELECT date_trunc('day', "createdAt") AS bucket,
+                 COUNT(*)::int AS views,
+                 COUNT(DISTINCT "ipHash")::int AS visitors
+          FROM "PageVisit"
+          WHERE "createdAt" >= ${startDate} AND "createdAt" <= ${endDate}
+          GROUP BY 1
+          ORDER BY 1 ASC
+        `;
+
+    const pathRows = await prisma.$queryRaw<Array<{ path: string; count: number }>>`
+      SELECT path, COUNT(*)::int AS count
+      FROM "PageVisit"
+      WHERE "createdAt" >= ${startDate} AND "createdAt" <= ${endDate}
+      GROUP BY path
+      ORDER BY count DESC
+      LIMIT 5
+    `;
+
+    const uaRows = await prisma.$queryRaw<Array<{ userAgent: string | null; count: number }>>`
+      SELECT "userAgent", COUNT(*)::int AS count
+      FROM "PageVisit"
+      WHERE "createdAt" >= ${startDate} AND "createdAt" <= ${endDate}
+      GROUP BY "userAgent"
+    `;
+
+    const formatBucketLabel = (date: Date) =>
+      isHourly
+        ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+          ' ' +
+          date.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true })
+        : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
     // Get Online Users (last 5 minutes) directly in DB
     const fiveMinsAgo = new Date();
     fiveMinsAgo.setMinutes(fiveMinsAgo.getMinutes() - 5);
@@ -126,9 +168,8 @@ export async function GET(req: Request) {
 
     // Aggregate Traffic & Metrics Data
     const viewsByTime: Record<string, number> = {};
-    const visitorsByTime: Record<string, Set<string>> = {};
+    const visitorsByTime: Record<string, number> = {};
     const metricsByTime: Record<string, any[]> = {};
-    const pathCounts: Record<string, number> = {};
     const osCounts: Record<string, number> = {};
     const deviceCounts: Record<string, number> = {};
 
@@ -139,7 +180,7 @@ export async function GET(req: Request) {
         const ts = current.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + 
                    current.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
         viewsByTime[ts] = 0;
-        visitorsByTime[ts] = new Set();
+        visitorsByTime[ts] = 0;
         metricsByTime[ts] = [];
         current.setHours(current.getHours() + 1);
       }
@@ -147,10 +188,17 @@ export async function GET(req: Request) {
       while (current <= endDate) {
         const ds = current.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         viewsByTime[ds] = 0;
-        visitorsByTime[ds] = new Set();
+        visitorsByTime[ds] = 0;
         metricsByTime[ds] = [];
         current.setDate(current.getDate() + 1);
       }
+    }
+
+    for (const row of bucketRows) {
+      const label = formatBucketLabel(new Date(row.bucket));
+      if (viewsByTime[label] === undefined) continue;
+      viewsByTime[label] = row.views;
+      visitorsByTime[label] = row.visitors;
     }
 
     // Assign jsonlSnapshots to time slots
@@ -164,27 +212,11 @@ export async function GET(req: Request) {
       }
     });
 
-    let totalViews = 0;
-    const allUniqueVisitors = new Set<string>();
-
-    visits.forEach(v => {
-      totalViews++;
-      allUniqueVisitors.add(v.ipHash);
-      
-      const timeStr = isHourly 
-        ? v.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + v.createdAt.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true })
-        : v.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        
-      if (viewsByTime[timeStr] !== undefined) {
-        viewsByTime[timeStr]++;
-        visitorsByTime[timeStr].add(v.ipHash);
-      }
-      
-      pathCounts[v.path] = (pathCounts[v.path] || 0) + 1;
-      const { os: osName, device } = parseUserAgent(v.userAgent || '');
-      osCounts[osName] = (osCounts[osName] || 0) + 1;
-      deviceCounts[device] = (deviceCounts[device] || 0) + 1;
-    });
+    for (const row of uaRows) {
+      const { os: osName, device } = parseUserAgent(row.userAgent || '');
+      osCounts[osName] = (osCounts[osName] || 0) + row.count;
+      deviceCounts[device] = (deviceCounts[device] || 0) + row.count;
+    }
 
     const currentRssMb = Math.round((process.memoryUsage().rss / 1024 / 1024) * 10) / 10;
     const currentCpu = os.loadavg()[0];
@@ -194,7 +226,7 @@ export async function GET(req: Request) {
 
     const trafficChart = Object.keys(viewsByTime).map(time => {
       const views = viewsByTime[time];
-      const visitors = visitorsByTime[time].size;
+      const visitors = visitorsByTime[time] || 0;
       const queries = views > 0 ? (views * 12) : (visitors > 0 ? 10 : 0);
       totalQueries += queries;
 
@@ -227,7 +259,7 @@ export async function GET(req: Request) {
       };
     });
 
-    const topPages = Object.entries(pathCounts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([path, count]) => ({ path, count }));
+    const topPages = pathRows.map((row) => ({ path: row.path, count: row.count }));
     const osStats = Object.entries(osCounts).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count }));
     const deviceStats = Object.entries(deviceCounts).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count }));
 
@@ -251,7 +283,7 @@ export async function GET(req: Request) {
       },
       traffic: {
         totalViews,
-        totalVisitors: allUniqueVisitors.size,
+        totalVisitors,
         totalQueries,
         chart: trafficChart,
         topPages,

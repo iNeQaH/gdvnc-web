@@ -21,8 +21,10 @@ export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
     const content = supportTransferContent(auth.username);
-    const note = clipText(body.content, 80) || content;
-    const message = `${auth.username} · ${note}`;
+    const rawNote = typeof body.content === 'string' ? body.content : '';
+    const plainNote = rawNote.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const note = clipText(plainNote, 80) || content;
+    const message = clipText(`${auth.username} · ${note}`, 500);
 
     const admins = await prisma.user.findMany({
       where: { role: Role.ADMIN },

@@ -32,10 +32,6 @@ export function cachedJson<T>(
   tags: string[],
   revalidateSeconds = 300
 ): Promise<T> {
-  const cached = unstable_cache(
-    async () => JSON.parse(JSON.stringify(await fn())) as T,
-    keyParts,
-    { revalidate: revalidateSeconds, tags }
-  );
+  const cached = unstable_cache(fn, keyParts, { revalidate: revalidateSeconds, tags });
   return cached();
 }

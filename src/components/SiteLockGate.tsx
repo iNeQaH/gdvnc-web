@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import NationalDayLock from '@/components/NationalDayLock';
-import { isSuperAdminUsername } from '@/lib/roles';
+import { isSuperAdminUser } from '@/lib/roles';
 
 const LOCK_KEY = 'gdvnc_site_lock';
 const LOCK_AT_KEY = 'gdvnc_site_lock_at';
@@ -37,7 +37,7 @@ export function SiteLockGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const user = JSON.parse(localStorage.getItem('gdvnc_user') || 'null');
-      setCanUnlock(isSuperAdminUsername(user?.username));
+      setCanUnlock(isSuperAdminUser(user));
     } catch {
       setCanUnlock(false);
     }

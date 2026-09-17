@@ -25,10 +25,17 @@ export function isSuperAdminUsername(username?: string | null) {
   return superAdminUsernames().some((s) => s.toLowerCase() === lower);
 }
 
-export function isSuperAdminUser(user?: { id?: string | null; userId?: string | null; username?: string | null } | null) {
+export function isSuperAdminUser(
+  user?: { id?: string | null; userId?: string | null; username?: string | null; role?: string | null } | null
+) {
   if (!user) return false;
+  if (!isFullAdminRole(user.role)) return false;
+
   const id = user.id || user.userId;
-  if (id && superAdminUserIds().includes(id)) return true;
+  const configuredIds = superAdminUserIds();
+  if (configuredIds.length > 0) {
+    return Boolean(id && configuredIds.includes(id));
+  }
   return isSuperAdminUsername(user.username);
 }
 

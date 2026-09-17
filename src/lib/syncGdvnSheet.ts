@@ -8,7 +8,7 @@ import { parseYoutubeVideoField } from '@/lib/timeline/glow';
 import { purgeSheetTimelineEvents } from '@/lib/timeline/purgeSheetEvents';
 
 const CREATE_CHUNK = 80;
-const UPDATE_CHUNK = 40;
+const UPDATE_CHUNK = 5;
 const EPIC_PLUS = new Set(['EPIC', 'LEGENDARY', 'MYTHIC']);
 const GDB_FETCH_CAP = 24;
 
@@ -44,7 +44,7 @@ async function resolveEpicYoutubeIds(rows: GdvnSheetRow[]) {
   }
 
   const missing = levels.filter((l) => !l.youtubeId).slice(0, GDB_FETCH_CAP);
-  await chunked(missing, 6, async (chunk) => {
+  await chunked(missing, 5, async (chunk) => {
     await Promise.all(
       chunk.map(async (level) => {
         const gdb = await fetchGdBrowser(level.gdLevelId);

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getAuthUser, requireFullAdmin } from '@/lib/auth';
+import { getSessionUser, requireFullAdmin } from '@/lib/auth';
 import { clipText } from '@/lib/validate';
 import { sanitizeFaqHtml } from '@/lib/faqSanitize';
 import { getClientIp } from '@/lib/requestIp';
@@ -16,7 +16,7 @@ import type { AnnouncementAudience } from '@prisma/client';
 const authorSelect = { username: true } as const;
 
 async function loadViewer(): Promise<Viewer | null> {
-  const auth = await getAuthUser();
+  const auth = await getSessionUser();
   if (!auth) return null;
   const user = await prisma.user.findUnique({
     where: { id: auth.userId },

@@ -1,14 +1,8 @@
-/** Client IP from the edge/proxy, not spoofable X-Forwarded-For. */
+/** Client IP — production trusts Cloudflare only; dev may use X-Forwarded-For. */
 export function getClientIp(req: Request): string {
-  const trusted =
-    req.headers.get('cf-connecting-ip') ||
-    req.headers.get('true-client-ip') ||
-    req.headers.get('x-real-ip') ||
-    req.headers.get('x-vercel-forwarded-for');
-  if (trusted) {
-    const first = trusted.split(',')[0]?.trim();
-    if (first) return first.slice(0, 64);
-  }
+  const cfIp = req.headers.get('cf-connecting-ip')?.trim();
+  if (cfIp) return cfIp.slice(0, 64);
+
   if (process.env.NODE_ENV !== 'production') {
     const forwarded = req.headers.get('x-forwarded-for');
     if (forwarded) {

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ShieldCheck, Shield, LifeBuoy, Users, Wrench, Activity } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
-import { isSuperAdminUsername } from '@/lib/roles';
+import { isSuperAdminUser } from '@/lib/roles';
 import { refreshSessionUser } from '@/lib/sessionClient';
 
 import RecordsTab from './components/RecordsTab';
@@ -35,7 +35,7 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (currentUser && tab === 'levels' && !isSuperAdminUsername(currentUser.username)) {
+    if (currentUser && tab === 'levels' && !isSuperAdminUser(currentUser)) {
       setTabState('records');
       localStorage.setItem('adminTab', 'records');
     }
@@ -69,7 +69,7 @@ export default function AdminPage() {
 
   if (!currentUser) return <div className="p-10 text-center font-bold">Đang tải / Loading...</div>;
 
-  const isSuperAdmin = isSuperAdminUsername(currentUser.username);
+  const isSuperAdmin = isSuperAdminUser(currentUser);
 
   return (
     <div className="space-y-6">

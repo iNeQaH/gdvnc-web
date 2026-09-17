@@ -3,10 +3,8 @@ import prisma from '@/lib/prisma';
 import { isAllDigitsId, UUID_RE } from '@/lib/levelUrl';
 import { RecordStatus } from '@prisma/client';
 import { dedupeRecordsByUser } from '@/lib/recordUtils';
-import { formatDifficultyLabel, mapDifficultyFace, pickGdCreatorName } from '@/lib/gdDifficulty';
-import { fetchGdBrowser, getOrCreateStubLevel } from '@/lib/upsertLevel';
+import { getOrCreateStubLevel } from '@/lib/upsertLevel';
 import { gdlisthubItemMaps, hubYoutubeId, isMissingLevelText } from '@/lib/gdlisthubLists';
-import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 
 const levelInclude = {
   records: {
@@ -35,27 +33,6 @@ async function refreshDifficultyFromGd<T extends { id: string; gdLevelId: number
   level: T
 ): Promise<T> {
   if (!needsDifficultyRefresh(level)) return level;
-  void (async () => {
-    const gdb = await fetchGdBrowser(level.gdLevelId);
-    if (!gdb?.difficulty) {
-      if (level.difficultyFace > 0) {
-        const label = formatDifficultyLabel(level.difficultyFace, level.difficulty);
-        if (label !== level.difficulty) {
-          await prisma.level.update({ where: { id: level.id }, data: { difficulty: label } }).then(() => bustPublicCache(CACHE_TAGS.levels, CACHE_TAGS.highlights)).catch(() => {});
-        }
-      }
-      return;
-    }
-    const difficultyFace = mapDifficultyFace(gdb.difficulty);
-    const difficulty = String(gdb.difficulty);
-    await prisma.level
-      .update({
-        where: { id: level.id },
-        data: { difficulty, difficultyFace },
-      })
-      .then(() => bustPublicCache(CACHE_TAGS.levels, CACHE_TAGS.highlights))
-      .catch(() => {});
-  })();
   return level;
 }
 
@@ -74,20 +51,6 @@ async function fillMissingCreatorFromHub<
   if (needCreator && item?.creator) patch.creatorName = item.creator;
   const yt = hubYoutubeId(item?.videoID);
   if (needVideo && yt) patch.youtubeId = yt;
-
-  if (needCreator && !patch.creatorName) {
-    void (async () => {
-      const gdb = await fetchGdBrowser(level.gdLevelId);
-      const fromGd = pickGdCreatorName(gdb);
-      const gdName = gdb ? String(gdb.name || '').trim() : '';
-      const later: { name?: string; creatorName?: string } = {};
-      if (fromGd) later.creatorName = fromGd;
-      if (needName && !patch.name && gdName) later.name = gdName;
-      if (Object.keys(later).length) {
-        await prisma.level.update({ where: { id: level.id }, data: later }).catch(() => {});
-      }
-    })();
-  }
 
   if (!Object.keys(patch).length) return level;
   void prisma.level.update({ where: { id: level.id }, data: patch }).catch(() => {});

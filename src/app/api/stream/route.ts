@@ -1,10 +1,10 @@
 import { appEventEmitter } from '@/lib/eventEmitter';
-import { getAuthUser } from '@/lib/auth';
+import { getSessionUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-  const authUser = await getAuthUser().catch(() => null);
+  const authUser = await getSessionUser().catch(() => null);
 
   let interval: NodeJS.Timeout | null = null;
   let onNotify: ((payload: any) => void) | null = null;

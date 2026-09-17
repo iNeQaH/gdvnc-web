@@ -1,10 +1,11 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { en, vi, type DictKey } from '@/lib/dictionaries';
+import { en, type DictKey } from '@/lib/dictionaries';
 
 type Language = 'en' | 'vi';
 type Vars = Record<string, string | number>;
+type Dictionary = Record<DictKey, string>;
 
 interface LanguageContextType {
   language: Language;
@@ -27,6 +28,7 @@ const LanguageContext = createContext<LanguageContextType>({
 
 export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
   const [language, setLanguageState] = useState<Language>('vi');
+  const [activeDictionary, setActiveDictionary] = useState<Dictionary>(en);
 
   useEffect(() => {
     const saved = localStorage.getItem('gdvnc_language') as Language;
@@ -41,6 +43,20 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
     document.documentElement.lang = language;
   }, [language]);
 
+  useEffect(() => {
+    let cancelled = false;
+    if (language === 'en') {
+      setActiveDictionary(en);
+      return;
+    }
+    import('@/lib/dictionaries/vi').then((mod) => {
+      if (!cancelled) setActiveDictionary(mod.default);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [language]);
+
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem('gdvnc_language', lang);
@@ -48,11 +64,10 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
 
   const t = useCallback(
     (key: DictKey, vars?: Vars): string => {
-      const dictionary = language === 'en' ? en : vi;
-      const raw = dictionary[key] || en[key] || key;
+      const raw = activeDictionary[key] || en[key] || key;
       return interpolate(raw, vars);
     },
-    [language]
+    [activeDictionary]
   );
 
   return (

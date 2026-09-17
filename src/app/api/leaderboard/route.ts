@@ -1,10 +1,5 @@
 import { NextResponse } from 'next/server';
-import {
-  getCreatorLeaderboard,
-  getPlayerLeaderboard,
-  getCachedLeaderboard,
-  setCachedLeaderboard,
-} from '@/lib/leaderboard';
+import { getCreatorLeaderboard, getPlayerLeaderboard } from '@/lib/leaderboard';
 import { checkSiteLockAndBlock } from '@/lib/siteLock';
 import { cachedJson, CACHE_TAGS, PUBLIC_CACHE_HEADERS } from '@/lib/publicCache';
 
@@ -15,11 +10,6 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const mode = searchParams.get('mode') || 'CLASSIC';
-    const memory = getCachedLeaderboard(mode);
-    if (memory) {
-      return NextResponse.json(memory, { headers: PUBLIC_CACHE_HEADERS });
-    }
-
     const body = await cachedJson(
       async () => {
         const leaderboard =
@@ -33,7 +23,6 @@ export async function GET(req: Request) {
       300
     );
 
-    setCachedLeaderboard(mode, body);
     return NextResponse.json(body, { headers: PUBLIC_CACHE_HEADERS });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Lỗi tải Bảng Xếp Hạng.' }, { status: 500 });

@@ -361,20 +361,6 @@ export async function getCreatorLeaderboard() {
   });
 }
 
-const CACHE_MS = 120_000;
-const cache = new Map<string, { at: number; body: unknown }>();
-
-export function getCachedLeaderboard(mode: string) {
-  const cached = cache.get(mode);
-  if (cached && Date.now() - cached.at < CACHE_MS) return cached.body;
-  return null;
-}
-
-export function setCachedLeaderboard(mode: string, body: unknown) {
-  cache.set(mode, { at: Date.now(), body });
-}
-
 export function clearLeaderboardCache() {
-  cache.clear();
   bustPublicCache(CACHE_TAGS.leaderboard, CACHE_TAGS.highlights);
 }
