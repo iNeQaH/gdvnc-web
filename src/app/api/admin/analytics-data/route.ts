@@ -295,6 +295,6 @@ export async function GET(req: Request) {
 
   } catch (error: any) {
     console.error('Analytics API Error:', error);
-    return publicApiError(error, "Internal Server Error", 500);
+    return publicApiError(error, 'Không thể tải dữ liệu analytics.', 500);
   }
 }

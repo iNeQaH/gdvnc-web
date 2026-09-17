@@ -160,6 +160,6 @@ export async function GET(req: Request) {
     });
 
   } catch (error: any) {
-    return publicApiError(error, "Internal Server Error", 500);
+    return publicApiError(error, 'Không thể xuất dữ liệu analytics.', 500);
   }
 }

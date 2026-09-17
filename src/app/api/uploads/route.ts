@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth';
 import { uploadBufferToLocal } from '@/lib/localFileStorage';
 import { validateImageUpload } from '@/lib/imageUploadValidate';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { publicApiError } from '@/lib/apiError';
 
 export async function POST(req: Request) {
   let auth;
@@ -52,8 +53,6 @@ export async function POST(req: Request) {
       files: uploadedData,
     });
   } catch (err: unknown) {
-    console.error('Local file upload error:', err);
-    const message = err instanceof Error ? err.message : 'Server Error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return publicApiError(err, 'Không thể tải file lên.', 500);
   }
 }

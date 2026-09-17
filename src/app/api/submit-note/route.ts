@@ -4,6 +4,7 @@ import { requireFullAdmin } from '@/lib/auth';
 import { clipText } from '@/lib/validate';
 import { sanitizeFaqHtml } from '@/lib/faqSanitize';
 import { bustPublicCache, cachedJson, CACHE_TAGS, PUBLIC_CACHE_HEADERS } from '@/lib/publicCache';
+import { publicApiError } from '@/lib/apiError';
 
 const SUBMIT_NOTE_PLAYER_KEY = 'submit-note';
 const SUBMIT_NOTE_CREATOR_KEY = 'submit-note-creator';
@@ -55,7 +56,6 @@ export async function PUT(req: Request) {
     bustPublicCache(CACHE_TAGS.faq);
     return NextResponse.json({ success: true, html: row.html, type });
   } catch (error) {
-    console.error('Submit note PUT error', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return publicApiError(error, 'Không thể lưu ghi chú nộp bài.', 500);
   }
 }

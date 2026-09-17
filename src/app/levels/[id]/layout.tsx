@@ -20,11 +20,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       type: 'website',
       url: embed.url,
       siteName: 'GDVN',
+      images: [{ url: embed.image, width: 1200, height: 630, alt: embed.title }],
     },
     twitter: {
-      card: 'summary',
+      card: 'summary_large_image',
       title: embed.title,
       description: embed.description,
+      images: [embed.image],
     },
   };
 }

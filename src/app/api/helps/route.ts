@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { clipText } from '@/lib/validate';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { publicApiError } from '@/lib/apiError';
 
 export async function POST(req: Request) {
   let auth;
@@ -31,8 +32,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ success: true, data: helpReq });
-  } catch (error: any) {
-    console.error('Help create error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  } catch (error: unknown) {
+    return publicApiError(error, 'Không thể gửi yêu cầu hỗ trợ.', 500);
   }
 }

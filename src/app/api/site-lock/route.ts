@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireSuperAdmin } from '@/lib/auth';
 import { isSiteLocked, setSiteLocked } from '@/lib/siteLock';
 import { SHORT_CACHE_HEADERS } from '@/lib/publicCache';
+import { publicApiError } from '@/lib/apiError';
 
 export async function GET() {
   try {
@@ -25,7 +26,6 @@ export async function PATCH(req: Request) {
     await setSiteLocked(locked);
     return NextResponse.json({ success: true, locked });
   } catch (error) {
-    console.error('site-lock PATCH', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return publicApiError(error, 'Không thể cập nhật trạng thái khoá site.', 500);
   }
 }

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ADMIN_LIST_LIMIT, parsePageParam } from '@/lib/adminQueue';
 import { clipReviewNote, notifyWithNote } from '@/lib/reviewNote';
+import { publicApiError } from '@/lib/apiError';
 
 const pending = { status: 'PENDING' };
 
@@ -28,9 +29,8 @@ export async function GET(req: Request) {
     ]);
 
     return NextResponse.json({ success: true, helps, page, limit: ADMIN_LIST_LIMIT, total });
-  } catch (error: any) {
-    console.error('Admin helps GET error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  } catch (error: unknown) {
+    return publicApiError(error, 'Không thể tải yêu cầu hỗ trợ.', 500);
   }
 }
 
@@ -74,8 +74,7 @@ export async function PATCH(req: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error('Admin helps PATCH error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  } catch (error: unknown) {
+    return publicApiError(error, 'Không thể cập nhật yêu cầu hỗ trợ.', 500);
   }
 }

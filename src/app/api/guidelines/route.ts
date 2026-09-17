@@ -4,6 +4,7 @@ import { requireFullAdmin } from '@/lib/auth';
 import { clipText } from '@/lib/validate';
 import { sanitizeFaqHtml } from '@/lib/faqSanitize';
 import { bustPublicCache, cachedJson, CACHE_TAGS, PUBLIC_CACHE_HEADERS } from '@/lib/publicCache';
+import { publicApiError } from '@/lib/apiError';
 
 const GUIDELINES_KEY = 'site-guidelines';
 
@@ -57,7 +58,6 @@ export async function PUT(req: Request) {
     bustPublicCache(CACHE_TAGS.faq);
     return NextResponse.json({ success: true, html: row.html });
   } catch (error) {
-    console.error('Guidelines PUT error', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return publicApiError(error, 'Không thể lưu quy định.', 500);
   }
 }
