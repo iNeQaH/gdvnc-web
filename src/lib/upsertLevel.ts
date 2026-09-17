@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { LevelMode, Prisma, RecordStatus } from '@prisma/client';
-import { calculateBasePp } from '@/lib/ScoringEngine';
+import { calculateBasePp, calculateLevelBasePp } from '@/lib/ScoringEngine';
 import { recalculateUserPp as recalcUserPp } from '@/lib/recordUtils';
 import { schedulePersistLocalListSnapshot } from '@/lib/listSnapshot';
 import { formatDifficultyLabel, mapDifficultyFace, mapRatingType, pickGdCreatorName, pickGdLevelName } from '@/lib/gdDifficulty';
@@ -21,6 +21,31 @@ export async function triggerBackgroundPpRecalc(levelIds: string[], mode: LevelM
       await Promise.all(chunk.map((id) => recalcUserPp(id)));
     }
   })().catch(console.error);
+}
+
+export async function refreshAllLevelBasePp() {
+  const levels = await prisma.level.findMany({
+    select: { id: true, placement: true, difficultyFace: true, isChallenge: true, basePp: true },
+  });
+  const updates: { id: string; correctPp: number }[] = [];
+  for (const lvl of levels) {
+    const correctPp = calculateLevelBasePp(lvl.placement, lvl.difficultyFace, lvl.isChallenge);
+    if (Math.abs(correctPp - lvl.basePp) > 0.01) {
+      updates.push({ id: lvl.id, correctPp });
+    }
+  }
+  for (let i = 0; i < updates.length; i += 500) {
+    const chunk = updates.slice(i, i + 500);
+    const caseSql = Prisma.join(
+      chunk.map((u) => Prisma.sql`WHEN ${u.id} THEN ${u.correctPp}`),
+      ' '
+    );
+    const ids = Prisma.join(chunk.map((u) => Prisma.sql`${u.id}`));
+    await prisma.$executeRaw`
+      UPDATE "Level" SET "basePp" = CASE "id" ${caseSql} END WHERE "id" IN (${ids})
+    `;
+  }
+  return updates.length;
 }
 
 export function extractYoutubeId(videoUrl?: string | null): string | null {
@@ -294,7 +319,6 @@ export async function upsertLevelFromForm(input: {
       existingLevel.placement !== targetPlacement ||
       existingLevel.mode !== pMode);
 
-  const finalPp = targetPlacement ? calculateBasePp(targetPlacement) : 0;
   const affectedLevelIds: string[] = [];
 
   let derivedFace = 10;
@@ -320,6 +344,8 @@ export async function upsertLevelFromForm(input: {
   } else if (existingLevel?.ratingType) {
     derivedRating = existingLevel.ratingType;
   }
+
+  const finalPp = calculateLevelBasePp(targetPlacement, derivedFace, isChallengeLevel);
 
   const updateData: any = {
     gdLevelId,
@@ -376,7 +402,7 @@ export async function upsertLevelFromForm(input: {
     { maxWait: 15000, timeout: 30000 }
   );
 
-  if (affectedLevelIds.length > 0 && placementChanged) {
+  if (affectedLevelIds.length > 0 && (placementChanged || !existingLevel || Math.abs((existingLevel.basePp ?? 0) - finalPp) > 0.01)) {
     await triggerBackgroundPpRecalc(affectedLevelIds, pMode);
   }
 

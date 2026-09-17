@@ -1,3 +1,4 @@
+import { calculateLevelBasePp } from '@/lib/ScoringEngine';
 import { LevelMode } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { clipText } from '@/lib/validate';
@@ -105,6 +106,8 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
       description: true,
       youtubeId: true,
       mode: true,
+      placement: true,
+      isChallenge: true,
     },
   });
   const levelByGd = new Map(existingLevels.map((l) => [l.gdLevelId, l]));
@@ -130,7 +133,7 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
         isVN: true,
         isChallenge: false,
         placement: null,
-        basePp: 0,
+        basePp: calculateLevelBasePp(null, row.difficultyFace, false),
         minPercent: 100,
         mode: LevelMode.CLASSIC,
       })),
@@ -142,19 +145,29 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
   let levelsUpdated = 0;
   await chunked(toUpdateLevels, UPDATE_CHUNK, async (chunk) => {
     await Promise.all(
-      chunk.map(({ id, row }) =>
-        prisma.level.update({
-          where: { id },
-          data: {
-            name: clipText(row.name, 160),
-            creatorName: clipText(creatorNameForRow(row), 80),
-            difficulty: clipText(row.difficulty, 40),
-            difficultyFace: row.difficultyFace,
-            ratingType: row.ratingType,
-            isVN: true,
-          },
-        })
-      )
+      chunk.map(({ id, row }) => {
+            const cur = existingLevels.find((l) => l.id === id);
+            const data: {
+              name: string;
+              creatorName: string;
+              difficulty: string;
+              difficultyFace: number;
+              ratingType: string;
+              isVN: boolean;
+              basePp?: number;
+            } = {
+              name: clipText(row.name, 160),
+              creatorName: clipText(creatorNameForRow(row), 80),
+              difficulty: clipText(row.difficulty, 40),
+              difficultyFace: row.difficultyFace,
+              ratingType: row.ratingType,
+              isVN: true,
+            };
+            if (cur && cur.placement == null) {
+              data.basePp = calculateLevelBasePp(null, row.difficultyFace, cur.isChallenge);
+            }
+            return prisma.level.update({ where: { id }, data });
+          })
     );
     levelsUpdated += chunk.length;
   });

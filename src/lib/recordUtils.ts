@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { LevelMode, RecordStatus } from '@prisma/client';
-import { awardedPpForProgress, calculateTotalPp } from '@/lib/ScoringEngine';
+import { awardedPpForProgress, calculatePlayerPp } from '@/lib/ScoringEngine';
 
 export const RECORD_SCORING_LEVEL_SELECT = {
   id: true,
@@ -47,6 +47,45 @@ export type HardestLevel = {
   gdLevelId: number;
 };
 
+function collectModeAwardedPp(
+  records: Array<{
+    progress: number | null;
+    timeMs: number | null;
+    submittedAt: Date;
+    levelId: string;
+    level: {
+      mode: LevelMode;
+      minPercent: number;
+      basePp: number;
+      isChallenge?: boolean;
+      placement?: number | null;
+    };
+  }>,
+  mode: LevelMode
+): { ranked: number[]; unranked: number[] } {
+  const deduped = dedupeRecordsByLevel(records as RecordWithLevel[]).filter(
+    (r) => !r.level.isChallenge && r.level.mode === mode
+  );
+  const ranked: number[] = [];
+  const unranked: number[] = [];
+
+  for (const rec of deduped) {
+    const pp =
+      mode === LevelMode.PLATFORMER
+        ? isQualifyingPlatformerRecord(rec)
+          ? rec.level.basePp
+          : 0
+        : isQualifyingClassicRecord(rec, rec.level)
+          ? awardedPpForProgress(rec.progress, rec.level.minPercent, rec.level.basePp)
+          : 0;
+    if (pp <= 0) continue;
+    if (rec.level.placement != null) ranked.push(pp);
+    else unranked.push(pp);
+  }
+
+  return { ranked, unranked };
+}
+
 export function calculateModePp(
   records: Array<{
     progress: number | null;
@@ -63,18 +102,8 @@ export function calculateModePp(
   }>,
   mode: LevelMode
 ): number {
-  const deduped = dedupeRecordsByLevel(records as RecordWithLevel[]).filter(
-    (r) => !r.level.isChallenge && r.level.mode === mode
-  );
-  const pps =
-    mode === LevelMode.PLATFORMER
-      ? deduped
-          .filter((r) => isQualifyingPlatformerRecord(r) && r.level.placement != null)
-          .map((r) => r.level.basePp)
-      : deduped
-          .filter((r) => isQualifyingClassicRecord(r, r.level) && r.level.placement != null)
-          .map((r) => awardedPpForProgress(r.progress, r.level.minPercent, r.level.basePp));
-  return calculateTotalPp(pps.filter((pp) => pp > 0));
+  const { ranked, unranked } = collectModeAwardedPp(records, mode);
+  return calculatePlayerPp(ranked, unranked);
 }
 
 export function pickHardestLevel(
@@ -166,32 +195,13 @@ export async function recalculateUserPp(userId: string | null | undefined, tx: a
 
   const userRecords = await db.record.findMany({
     where: { userId, status: RecordStatus.APPROVED },
-    ...recordLevelInclude,
+    include: recordLevelInclude,
   });
 
   const deduped = dedupeRecordsByLevel(userRecords);
 
-  const classicBasePps = deduped
-    .filter(
-      (r: any) =>
-        !r.level.isChallenge &&
-        r.level.mode === LevelMode.CLASSIC &&
-        r.level.placement != null &&
-        isQualifyingClassicRecord(r, r.level)
-    )
-    .map((r: any) => awardedPpForProgress(r.progress, r.level.minPercent, r.level.basePp))
-    .filter((pp: number) => pp > 0);
-
-  const platformerBasePps = deduped
-    .filter(
-      (r: any) =>
-        !r.level.isChallenge &&
-        r.level.mode === LevelMode.PLATFORMER &&
-        r.level.placement != null &&
-        isQualifyingPlatformerRecord(r)
-    )
-    .map((r: any) => r.level.basePp)
-    .filter((pp: number) => pp > 0);
+  const classic = collectModeAwardedPp(deduped, LevelMode.CLASSIC);
+  const platformer = collectModeAwardedPp(deduped, LevelMode.PLATFORMER);
 
   const classicHardest = pickHardestLevel(deduped.filter((r: any) => r.level.mode === LevelMode.CLASSIC));
   const platformerHardest = pickHardestLevel(deduped.filter((r: any) => r.level.mode === LevelMode.PLATFORMER));
@@ -200,8 +210,8 @@ export async function recalculateUserPp(userId: string | null | undefined, tx: a
     await db.user.update({
       where: { id: userId },
       data: {
-        classicPp: calculateTotalPp(classicBasePps),
-        platformerPp: calculateTotalPp(platformerBasePps),
+        classicPp: calculatePlayerPp(classic.ranked, classic.unranked),
+        platformerPp: calculatePlayerPp(platformer.ranked, platformer.unranked),
         hardestClassicLevelId: classicHardest?.id || null,
         hardestPlatformerLevelId: platformerHardest?.id || null,
       },
@@ -220,6 +230,18 @@ export async function recalculateUserPp(userId: string | null | undefined, tx: a
   } catch {}
 }
 
+export async function recalculateAllUsersPp() {
+  const users = await prisma.user.findMany({
+    where: { records: { some: { status: RecordStatus.APPROVED } } },
+    select: { id: true },
+  });
+  for (let i = 0; i < users.length; i += 5) {
+    const chunk = users.slice(i, i + 5);
+    await Promise.all(chunk.map((user) => recalculateUserPp(user.id)));
+  }
+  return users.length;
+}
+
 export async function consolidateBeforeApprove(
   recordId: string,
   tx: any = prisma
@@ -227,7 +249,7 @@ export async function consolidateBeforeApprove(
   const db = tx || prisma;
   const record = await db.record.findUnique({
     where: { id: recordId },
-    ...recordLevelInclude,
+    include: recordLevelInclude,
   });
 
   if (!record) {

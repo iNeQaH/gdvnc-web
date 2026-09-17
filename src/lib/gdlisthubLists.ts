@@ -1,6 +1,7 @@
 import featuredPack from '@/lib/data/gdlisthub-fl.json';
 import classicPack from '@/lib/data/gdlisthub-dl.json';
 import { mapDifficultyFace } from '@/lib/gdDifficulty';
+import { calculateBasePp, unrankedBonusPp } from '@/lib/ScoringEngine';
 
 function youtubeId(value?: string | null) {
   const raw = String(value || '').trim();
@@ -107,7 +108,7 @@ function virtualFromGdlisthub(
     isChallenge: Boolean(src?.isChallenge),
     placement: classic?.position ?? null,
     vnPlacement: featured?.position ?? null,
-    basePp: 0,
+    basePp: classic?.position ? calculateBasePp(classic.position) : unrankedBonusPp(face),
     minPercent: 100,
     description: null,
     victorCount: 0,

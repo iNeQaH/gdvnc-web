@@ -1,6 +1,6 @@
 import { LevelMode } from '@prisma/client';
 import prisma from '@/lib/prisma';
-import { calculateBasePp } from '@/lib/ScoringEngine';
+import { calculateBasePp, calculateLevelBasePp } from '@/lib/ScoringEngine';
 import { extractYoutubeId, preferMinPercent, preferText, preferYoutubeId } from '@/lib/upsertLevel';
 import { loadListSnapshot, persistLocalListSnapshot } from '@/lib/listSnapshot';
 import classicMedia from '@/lib/data/pointercrateClassicMedia.json';
@@ -257,6 +257,8 @@ async function applyListedLevelsToDb(mode: 'CLASSIC' | 'PLATFORMER', external: E
       youtubeId: true,
       minPercent: true,
       basePp: true,
+      difficultyFace: true,
+      isChallenge: true,
     },
   });
   const byGd = new Map(existing.map((l) => [l.gdLevelId, l]));
@@ -359,12 +361,23 @@ async function applyListedLevelsToDb(mode: 'CLASSIC' | 'PLATFORMER', external: E
     updated += chunk.length;
   }
 
-  const staleIds = existing.filter((l) => l.placement != null && !seen.has(l.gdLevelId)).map((l) => l.id);
-  if (staleIds.length > 0) {
-    await prisma.level.updateMany({
-      where: { id: { in: staleIds } },
-      data: { placement: null, basePp: 0 },
-    });
+  const staleLevels = existing.filter((l) => l.placement != null && !seen.has(l.gdLevelId));
+  const staleIds = staleLevels.map((l) => l.id);
+  if (staleLevels.length > 0) {
+    for (let i = 0; i < staleLevels.length; i += 50) {
+      const chunk = staleLevels.slice(i, i + 50);
+      await Promise.all(
+        chunk.map((lvl) =>
+          prisma.level.update({
+            where: { id: lvl.id },
+            data: {
+              placement: null,
+              basePp: calculateLevelBasePp(null, lvl.difficultyFace, lvl.isChallenge),
+            },
+          })
+        )
+      );
+    }
     affectedIds.push(...staleIds);
   }
 
