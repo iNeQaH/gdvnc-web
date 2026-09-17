@@ -5,6 +5,14 @@ const extraOrigins = (process.env.ALLOWED_DEV_ORIGINS || "")
   .map((s) => s.trim())
   .filter(Boolean);
 
+const isDev = process.env.NODE_ENV !== "production";
+const scriptSrc = [
+  "'self'",
+  "'unsafe-inline'",
+  "https://challenges.cloudflare.com",
+  ...(isDev ? ["'unsafe-eval'", "blob:"] : []),
+].join(" ");
+
 const nextConfig: NextConfig = {
   devIndicators: false,
   async headers() {
@@ -22,13 +30,14 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+              `script-src ${scriptSrc}`,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data: https:",
-              "connect-src 'self' https: wss:",
+              "connect-src 'self' https: wss: ws:",
               "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://open.spotify.com https://discord.com https://challenges.cloudflare.com",
               "media-src 'self' https: blob:",
+              "worker-src 'self' blob:",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
