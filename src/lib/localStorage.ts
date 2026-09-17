@@ -16,6 +16,15 @@ export function ensureLocalDirs() {
   return { base, uploads, snapshots };
 }
 
+export function localUploadOwnerPrefix(userId: string) {
+  const safe = userId.replace(/[^a-zA-Z0-9_-]/g, '');
+  return `u_${safe}_`;
+}
+
+export function uploadKeyBelongsToUser(key: string, userId: string): boolean {
+  return key.startsWith(localUploadOwnerPrefix(userId));
+}
+
 function mimeToExt(mime: string, fallback = 'jpg') {
   if (!mime) return fallback;
   const match = mime.match(/\/(jpeg|jpg|png|webp|gif|json)/i);
@@ -29,16 +38,18 @@ function mimeToExt(mime: string, fallback = 'jpg') {
 export async function uploadBufferToLocal(
   buffer: Buffer,
   mime = 'image/jpeg',
-  originalFilename?: string
+  originalFilename?: string,
+  ownerUserId?: string
 ): Promise<{ url: string; key: string }> {
   const { uploads } = ensureLocalDirs();
   const ext = mimeToExt(mime);
   const uuid = crypto.randomUUID().split('-')[0];
-  const safeFilename = originalFilename 
-    ? originalFilename.replace(/[^a-zA-Z0-9.\-_]/g, '') 
+  const safeFilename = originalFilename
+    ? originalFilename.replace(/[^a-zA-Z0-9.\-_]/g, '')
     : `file`;
-  
-  const key = `${Date.now()}-${uuid}-${safeFilename}`;
+
+  const ownerPrefix = ownerUserId ? localUploadOwnerPrefix(ownerUserId) : '';
+  const key = `${ownerPrefix}${Date.now()}-${uuid}-${safeFilename}`;
   const finalKey = key.includes('.') ? key : `${key}.${ext}`;
   
   const destPath = path.join(uploads, finalKey);
@@ -47,14 +58,18 @@ export async function uploadBufferToLocal(
   return { url: `/api/uploads/${finalKey}`, key: finalKey };
 }
 
-export async function uploadDataUrlToLocal(dataUrl: string, filename?: string): Promise<string> {
+export async function uploadDataUrlToLocal(
+  dataUrl: string,
+  filename?: string,
+  ownerUserId?: string
+): Promise<string> {
   const parts = dataUrl.split(',');
   if (parts.length !== 2) throw new Error('Invalid image data');
   const mimeMatch = parts[0].match(/:(.*?);/);
   const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
   const buffer = Buffer.from(parts[1], 'base64');
-  
-  const uploaded = await uploadBufferToLocal(buffer, mime, filename);
+
+  const uploaded = await uploadBufferToLocal(buffer, mime, filename, ownerUserId);
   return uploaded.url;
 }
 

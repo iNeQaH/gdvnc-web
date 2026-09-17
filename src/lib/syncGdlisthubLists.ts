@@ -87,28 +87,37 @@ export async function syncGdlisthubLists() {
     data: { vnPlacement: null },
   });
 
+  const featuredRows = await prisma.level.findMany({
+    where: { gdLevelId: { in: featuredIds } },
+    select: { gdLevelId: true, name: true, creatorName: true, youtubeId: true },
+  });
+  const featuredByGd = new Map(featuredRows.map((row) => [row.gdLevelId, row]));
+
   let featuredUpdated = 0;
-  for (const item of featuredItems) {
-    const row = await prisma.level.findUnique({
-      where: { gdLevelId: item.gdLevelId },
-      select: { name: true, creatorName: true, youtubeId: true },
-    });
-    if (!row) continue;
-    await prisma.level.update({
-      where: { gdLevelId: item.gdLevelId },
-      data: {
-        isVN: true,
-        isChallenge: false,
-        vnPlacement: item.position,
-        name: preferText(item.name, isMissingLevelText(row.name) ? null : row.name) || row.name,
-        creatorName: preferText(
-          item.creator,
-          isMissingLevelText(row.creatorName) ? null : row.creatorName
-        ),
-        youtubeId: preferYoutubeId(extractYoutubeId(item.videoID), row.youtubeId),
-      },
-    });
-    featuredUpdated += 1;
+  const UPDATE_CHUNK = 40;
+  for (let i = 0; i < featuredItems.length; i += UPDATE_CHUNK) {
+    const chunk = featuredItems.slice(i, i + UPDATE_CHUNK);
+    await Promise.all(
+      chunk.map(async (item) => {
+        const row = featuredByGd.get(item.gdLevelId);
+        if (!row) return;
+        featuredUpdated += 1;
+        await prisma.level.update({
+          where: { gdLevelId: item.gdLevelId },
+          data: {
+            isVN: true,
+            isChallenge: false,
+            vnPlacement: item.position,
+            name: preferText(item.name, isMissingLevelText(row.name) ? null : row.name) || row.name,
+            creatorName: preferText(
+              item.creator,
+              isMissingLevelText(row.creatorName) ? null : row.creatorName
+            ),
+            youtubeId: preferYoutubeId(extractYoutubeId(item.videoID), row.youtubeId),
+          },
+        });
+      })
+    );
   }
 
   return {

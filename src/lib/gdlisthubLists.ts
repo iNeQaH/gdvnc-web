@@ -117,8 +117,10 @@ function virtualFromGdlisthub(
 export function applyGdlisthubRanksToLevels(
   levels: Array<Record<string, any>>,
   featured = GDLISTHUB_FEATURED,
-  classic = GDLISTHUB_CLASSIC
+  classic = GDLISTHUB_CLASSIC,
+  options?: { addMissingVirtual?: boolean }
 ) {
+  const addMissingVirtual = options?.addMissingVirtual !== false;
   const maps = gdlisthubItemMaps(featured, classic);
   const seen = new Set<number>();
   const next: Array<Record<string, any>> = levels.map((level) => {
@@ -142,9 +144,11 @@ export function applyGdlisthubRanksToLevels(
       youtubeId: level.youtubeId || youtubeId(src?.videoID),
     };
   });
-  for (const gdLevelId of new Set([...maps.featured.keys(), ...maps.classic.keys()])) {
-    if (seen.has(gdLevelId)) continue;
-    next.push(virtualFromGdlisthub(gdLevelId, maps.featured.get(gdLevelId), maps.classic.get(gdLevelId)));
+  if (addMissingVirtual) {
+    for (const gdLevelId of new Set([...maps.featured.keys(), ...maps.classic.keys()])) {
+      if (seen.has(gdLevelId)) continue;
+      next.push(virtualFromGdlisthub(gdLevelId, maps.featured.get(gdLevelId), maps.classic.get(gdLevelId)));
+    }
   }
   return next;
 }

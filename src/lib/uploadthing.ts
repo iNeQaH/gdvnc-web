@@ -1,8 +1,11 @@
 import {
   uploadBufferToLocal,
   uploadDataUrlToLocal,
-  deleteLocalFiles
+  deleteLocalFiles,
+  uploadKeyBelongsToUser,
 } from './localStorage';
+
+export { uploadKeyBelongsToUser };
 
 const IMAGE_ID_RE = /\/api\/images\/([A-Za-z0-9_-]+)/g;
 const UT_HOST = /(^|\.)((utfs\.io)|(ufs\.sh))$/i;
@@ -63,13 +66,38 @@ export function publicUrlForKey(key: string) {
 export async function uploadBufferToUt(
   buffer: Buffer,
   mime = 'image/jpeg',
-  filename?: string
+  filename?: string,
+  ownerUserId?: string
 ): Promise<{ url: string; key: string }> {
-  return uploadBufferToLocal(buffer, mime, filename);
+  return uploadBufferToLocal(buffer, mime, filename, ownerUserId);
 }
 
-export async function uploadDataUrlToUt(dataUrl: string, filename?: string): Promise<string> {
-  return uploadDataUrlToLocal(dataUrl, filename);
+export async function uploadDataUrlToUt(
+  dataUrl: string,
+  filename?: string,
+  ownerUserId?: string
+): Promise<string> {
+  return uploadDataUrlToLocal(dataUrl, filename, ownerUserId);
+}
+
+export function isLocalUploadRef(ref: string | null | undefined): boolean {
+  const value = String(ref ?? '').trim();
+  return value.startsWith('/api/uploads/') || value.startsWith('/uploads/');
+}
+
+export function localUploadRefAllowedForProfile(
+  ref: string | null | undefined,
+  profileUserId: string,
+  actorUserId: string,
+  actorIsStaff: boolean
+): boolean {
+  const value = String(ref ?? '').trim();
+  if (!value || !isLocalUploadRef(value)) return true;
+  const key = uploadthingKeyFromUrl(value);
+  if (!key) return false;
+  if (uploadKeyBelongsToUser(key, profileUserId)) return true;
+  if (actorIsStaff && uploadKeyBelongsToUser(key, actorUserId)) return true;
+  return false;
 }
 
 export function imageIdsFromRef(ref: string | null | undefined): string[] {

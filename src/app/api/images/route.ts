@@ -37,7 +37,11 @@ export async function POST(req: Request) {
       );
     }
 
-    const url = await uploadDataUrlToUt(dataUrl, kind === 'cover' ? 'cover.jpg' : 'avatar.jpg');
+    const url = await uploadDataUrlToUt(
+      dataUrl,
+      kind === 'cover' ? 'cover.jpg' : 'avatar.jpg',
+      auth.userId
+    );
     return NextResponse.json({ success: true, url });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Server Error' }, { status: 500 });

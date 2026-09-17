@@ -9,7 +9,13 @@ import {
 } from '@/lib/recordUtils';
 import { requireAuth } from '@/lib/auth';
 import { clipText } from '@/lib/validate';
-import { deleteUploadthingKeys, isAllowedImageRef, uploadthingKeysFromRef } from '@/lib/uploadthing';
+import {
+  deleteUploadthingKeys,
+  isAllowedImageRef,
+  localUploadRefAllowedForProfile,
+  uploadKeyBelongsToUser,
+  uploadthingKeysFromRef,
+} from '@/lib/uploadthing';
 import { deleteUserAccount } from '@/lib/deleteUser';
 import { isSuperAdminUser } from '@/lib/roles';
 
@@ -282,6 +288,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
     if (body.coverUrl !== undefined && !isAllowedImageRef(body.coverUrl)) {
       return NextResponse.json({ error: 'Cover URL không hợp lệ.' }, { status: 400 });
     }
+    if (
+      body.avatarUrl !== undefined &&
+      !localUploadRefAllowedForProfile(body.avatarUrl, current.id, auth.userId, isStaff)
+    ) {
+      return NextResponse.json({ error: 'Avatar URL không thuộc tài khoản này.' }, { status: 403 });
+    }
+    if (
+      body.coverUrl !== undefined &&
+      !localUploadRefAllowedForProfile(body.coverUrl, current.id, auth.userId, isStaff)
+    ) {
+      return NextResponse.json({ error: 'Cover URL không thuộc tài khoản này.' }, { status: 403 });
+    }
 
     const nextAvatar =
       body.avatarUrl !== undefined ? clipText(body.avatarUrl, 500) : undefined;
@@ -328,7 +346,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
       const used = new Set(
         stillUsed.flatMap((row) => [row.avatarUrl, row.coverUrl]).filter((url): url is string => Boolean(url))
       );
-      const ownedKeys = staleRefs.filter((url) => !used.has(url)).flatMap((url) => uploadthingKeysFromRef(url));
+      const ownedKeys = staleRefs
+        .filter((url) => !used.has(url))
+        .flatMap((url) => uploadthingKeysFromRef(url))
+        .filter((key) => uploadKeyBelongsToUser(key, current.id));
       if (ownedKeys.length > 0) {
         void deleteUploadthingKeys(ownedKeys).catch(() => {});
       }
