@@ -62,7 +62,7 @@ export async function GET() {
         title: a.title,
         message: a.excerpt,
         body: a.body,
-        author: a.author.username,
+        author: a.author?.username || 'Hệ thống',
         isRead: readIds.has(a.id),
         createdAt: a.createdAt.toISOString(),
       })),

@@ -40,7 +40,7 @@ export function serializeAnnouncement(
     targetUserIds: string[];
     createdAt: Date;
     updatedAt: Date;
-    author: { username: string };
+    author: { username: string } | null;
   },
   opts?: { includeTargets?: boolean; isRead?: boolean }
 ) {
@@ -50,7 +50,7 @@ export function serializeAnnouncement(
     excerpt: row.excerpt,
     body: row.body,
     audience: row.audience,
-    author: row.author.username,
+    author: row.author?.username || 'Hệ thống',
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     ...(opts?.includeTargets ? { targetUserIds: row.targetUserIds } : {}),
