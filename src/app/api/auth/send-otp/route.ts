@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
 import { isMailConfigured, sendOtpEmail } from '@/lib/mail';
-import { consumeCaptchaToken, isHoneypotFilled } from '@/lib/captcha';
+import { isHoneypotFilled } from '@/lib/captcha';
 import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     const limited = rateLimit(`otp:${ip}`, 3, 60 * 60_000);
     if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
-    const { email, locale, captchaToken, website } = await req.json();
+    const { email, locale, website } = await req.json();
     const lang = locale === 'en' ? 'en' : 'vi';
 
     if (isHoneypotFilled(website)) {
@@ -48,13 +48,6 @@ export async function POST(req: Request) {
               ? 'This email is already used by another account.'
               : 'Email này đã được sử dụng cho một tài khoản khác.',
         },
-        { status: 400 }
-      );
-    }
-
-    if (!consumeCaptchaToken(captchaToken, ip)) {
-      return NextResponse.json(
-        { error: lang === 'en' ? 'Anti-bot verification required.' : 'Vui lòng xác thực chống bot trước.' },
         { status: 400 }
       );
     }
