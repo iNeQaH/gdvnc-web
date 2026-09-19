@@ -56,65 +56,75 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: en ? 'Password must be 6–128 characters.' : 'Mật khẩu phải từ 6 đến 128 ký tự.' }, { status: 400 });
     }
 
-    const validOtp = await prisma.otp.findFirst({
-      where: {
-        email: cleanEmail,
-        expiresAt: { gt: new Date() },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    if (!validOtp) {
-      return NextResponse.json({ error: en ? 'OTP is incorrect or has expired.' : 'Mã xác nhận OTP không đúng hoặc đã hết hạn.' }, { status: 400 });
-    }
-    if (validOtp.failedAttempts >= 5) {
-      await prisma.otp.deleteMany({ where: { email: cleanEmail } });
-      return NextResponse.json({ error: en ? 'Too many incorrect codes. Request a new OTP.' : 'Nhập sai quá nhiều lần. Hãy yêu cầu mã OTP mới.' }, { status: 429 });
-    }
-    if (validOtp.code !== cleanOtp) {
-      const next = validOtp.failedAttempts + 1;
-      if (next >= 5) {
-        await prisma.otp.deleteMany({ where: { email: cleanEmail } });
-        return NextResponse.json({ error: en ? 'Too many incorrect codes. Request a new OTP.' : 'Nhập sai quá nhiều lần. Hãy yêu cầu mã OTP mới.' }, { status: 429 });
-      }
-      await prisma.otp.update({ where: { id: validOtp.id }, data: { failedAttempts: next } });
-      return NextResponse.json({ error: en ? 'OTP is incorrect or has expired.' : 'Mã xác nhận OTP không đúng hoặc đã hết hạn.' }, { status: 400 });
-    }
-
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { username: { equals: cleanUsername, mode: 'insensitive' } },
-          { email: cleanEmail },
-        ],
-      },
-    });
-
-    if (existingUser) {
-      if (existingUser.username.toLowerCase() === cleanUsername.toLowerCase()) {
-        return NextResponse.json({ error: en ? 'This username is already taken.' : 'Tên người dùng đã được sử dụng.' }, { status: 400 });
-      }
-      return NextResponse.json({ error: en ? 'This email is already used by another account.' : 'Email đã được sử dụng cho tài khoản khác.' }, { status: 400 });
-    }
-
-    await prisma.otp.deleteMany({
-      where: { email: cleanEmail },
-    });
-
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const newUser = await prisma.user.create({
-      data: {
-        username: cleanUsername,
-        email: cleanEmail,
-        passwordHash,
-        role: Role.USER,
-        gdUsername: cleanGd || null,
-        gdVerified: false,
-        discordTag: discordTag?.trim() || null,
-        country: en ? 'Vietnam' : 'Việt Nam',
-      },
+    const result = await prisma.$transaction(async (tx) => {
+      const validOtp = await tx.otp.findFirst({
+        where: {
+          email: cleanEmail,
+          expiresAt: { gt: new Date() },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!validOtp) {
+        return { error: en ? 'OTP is incorrect or has expired.' : 'Mã xác nhận OTP không đúng hoặc đã hết hạn.', status: 400 };
+      }
+      if (validOtp.failedAttempts >= 5) {
+        await tx.otp.deleteMany({ where: { email: cleanEmail } });
+        return { error: en ? 'Too many incorrect codes. Request a new OTP.' : 'Nhập sai quá nhiều lần. Hãy yêu cầu mã OTP mới.', status: 429 };
+      }
+      if (validOtp.code !== cleanOtp) {
+        const next = validOtp.failedAttempts + 1;
+        if (next >= 5) {
+          await tx.otp.deleteMany({ where: { email: cleanEmail } });
+          return { error: en ? 'Too many incorrect codes. Request a new OTP.' : 'Nhập sai quá nhiều lần. Hãy yêu cầu mã OTP mới.', status: 429 };
+        }
+        await tx.otp.update({ where: { id: validOtp.id }, data: { failedAttempts: next } });
+        return { error: en ? 'OTP is incorrect or has expired.' : 'Mã xác nhận OTP không đúng hoặc đã hết hạn.', status: 400 };
+      }
+
+      const existingUser = await tx.user.findFirst({
+        where: {
+          OR: [
+            { username: { equals: cleanUsername, mode: 'insensitive' } },
+            { email: cleanEmail },
+          ],
+        },
+      });
+
+      if (existingUser) {
+        if (existingUser.username.toLowerCase() === cleanUsername.toLowerCase()) {
+          return { error: en ? 'This username is already taken.' : 'Tên người dùng đã được sử dụng.', status: 400 };
+        }
+        return { error: en ? 'This email is already used by another account.' : 'Email đã được sử dụng cho tài khoản khác.', status: 400 };
+      }
+
+      await tx.otp.deleteMany({
+        where: { email: cleanEmail },
+      });
+
+      const newUser = await tx.user.create({
+        data: {
+          username: cleanUsername,
+          email: cleanEmail,
+          passwordHash,
+          role: Role.USER,
+          gdUsername: cleanGd || null,
+          gdVerified: false,
+          discordTag: discordTag?.trim() || null,
+          country: en ? 'Vietnam' : 'Việt Nam',
+        },
+      });
+
+      return { user: newUser };
     });
+
+    if ('error' in result && result.error) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+
+    const newUser = result.user!;
 
     const safeUser = {
       id: newUser.id,

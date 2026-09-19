@@ -82,12 +82,13 @@ export async function POST(req: Request) {
       await sendResetPasswordEmail(cleanEmail, otpCode, lang);
     } catch (mailErr: any) {
       await prisma.otp.deleteMany({ where: { email: cleanEmail } });
+      console.error('SMTP sending error:', mailErr);
       return NextResponse.json(
         {
           error:
             lang === 'en'
-              ? `Failed to send email: ${mailErr.message || 'SMTP error'}`
-              : `Không gửi được email: ${mailErr.message || 'Lỗi SMTP'}`,
+              ? 'Failed to send email. Please try again later.'
+              : 'Không gửi được email. Vui lòng thử lại sau.',
         },
         { status: 502 }
       );

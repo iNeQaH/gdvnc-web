@@ -149,6 +149,11 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
       return;
     }
 
+    if (!captchaToken) {
+      setError(t('auth.captcha_wrong' as any) || 'Vui lòng xác thực chống bot');
+      return;
+    }
+
     setSendingOtp(true);
     try {
       const res = await fetch('/api/auth/send-otp', {
@@ -551,7 +556,7 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
                 <button
                   type="button"
                   onClick={handleSendOtp}
-                  disabled={sendingOtp || otpCooldown > 0 || !regEmail}
+                  disabled={sendingOtp || otpCooldown > 0 || !regEmail || !captchaToken}
                   className="px-3.5 py-2 min-h-11 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1 shrink-0 disabled:opacity-50 cursor-pointer"
                   style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                 >
@@ -565,6 +570,15 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
                   {otpSentMsg}
                 </p>
               )}
+            </div>
+
+            {/* Anti-bot Security Challenge */}
+            <div className="space-y-1">
+              <label className="text-xs font-bold ui-title flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-sky-500" />
+                {t('auth.antibot')} *
+              </label>
+              <SmartCaptcha onVerify={(token) => setCaptchaToken(token)} />
             </div>
 
             {/* OTP Input */}

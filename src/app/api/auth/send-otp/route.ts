@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
 import { isMailConfigured, sendOtpEmail } from '@/lib/mail';
-import { isHoneypotFilled } from '@/lib/captcha';
+import { consumeCaptchaToken, isHoneypotFilled } from '@/lib/captcha';
 import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
@@ -19,12 +19,20 @@ export async function POST(req: Request) {
     const limited = rateLimit(`otp:${ip}`, 3, 60 * 60_000);
     if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
-    const { email, locale, website } = await req.json();
+    const { email, locale, captchaToken, website } = await req.json();
     const lang = locale === 'en' ? 'en' : 'vi';
 
     if (isHoneypotFilled(website)) {
       return NextResponse.json({ success: true, message: lang === 'en' ? 'Check your inbox.' : 'Vui lòng kiểm tra email.' });
     }
+
+    if (!consumeCaptchaToken(captchaToken, ip)) {
+      return NextResponse.json(
+        { error: lang === 'en' ? 'Anti-bot verification required.' : 'Vui lòng xác thực chống bot trước.' },
+        { status: 400 }
+      );
+    }
+
     const cleanEmail = normalizeEmail(email);
     if (!cleanEmail) {
       return NextResponse.json(
@@ -36,20 +44,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: untrustedEmailMessage(lang) }, { status: 400 });
     }
 
+    const limitedEmail = rateLimit(`otp-email:${cleanEmail}`, 3, 60 * 60_000);
+    if (!limitedEmail.ok) return rateLimitResponse(limitedEmail.retryAfterSec);
+
     const existing = await prisma.user.findUnique({
       where: { email: cleanEmail },
     });
 
+    // Mitigate email enumeration: return generic success without sending email if account exists
     if (existing) {
-      return NextResponse.json(
-        {
-          error:
-            lang === 'en'
-              ? 'This email is already used by another account.'
-              : 'Email này đã được sử dụng cho một tài khoản khác.',
-        },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        success: true,
+        message:
+          lang === 'en'
+            ? `A verification code was sent to ${cleanEmail}. Please check your inbox (and spam folder).`
+            : `Đã gửi mã xác nhận tới ${cleanEmail}. Vui lòng kiểm tra hộp thư (kể cả mục spam)!`,
+      });
     }
 
     if (!isMailConfigured()) {
@@ -88,8 +98,8 @@ export async function POST(req: Request) {
         {
           error:
             lang === 'en'
-              ? `Failed to send email: ${mailErr.message || 'SMTP error'}`
-              : `Không gửi được email: ${mailErr.message || 'Lỗi SMTP'}`,
+              ? 'Failed to send email. Please try again later.'
+              : 'Không gửi được email. Vui lòng thử lại sau.',
         },
         { status: 502 }
       );
@@ -107,3 +117,4 @@ export async function POST(req: Request) {
     return publicApiError(error, 'Lỗi khi gửi mã OTP.', 500);
   }
 }
+
