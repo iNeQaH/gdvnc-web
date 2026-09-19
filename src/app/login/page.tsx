@@ -275,7 +275,7 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
       {/* Tabs */}
       <div className="flex items-center justify-center p-1 rounded-2xl border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
         <button
-          onClick={() => { setTab('login'); setError(''); }}
+          onClick={() => { setTab('login'); setError(''); setCaptchaToken(null); }}
           className="flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center"
           style={{
             backgroundColor: tab === 'login' ? 'var(--bg-card)' : 'transparent',
@@ -286,7 +286,7 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
           {t('auth.login')}
         </button>
         <button
-          onClick={() => { setTab('register'); setError(''); }}
+          onClick={() => { setTab('register'); setError(''); setCaptchaToken(null); }}
           className="flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center"
           style={{
             backgroundColor: tab === 'register' ? 'var(--bg-card)' : 'transparent',
