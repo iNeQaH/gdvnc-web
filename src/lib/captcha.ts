@@ -102,23 +102,20 @@ export function consumeCaptchaToken(token: unknown, ip: string): boolean {
 }
 
 export async function verifyTurnstile(token: unknown, ip: string): Promise<boolean> {
-  const secret = process.env.TURNSTILE_SECRET_KEY || '1x0000000000000000000000000000000AA';
-  if (typeof token !== 'string' || token.length < 4) return false;
-  try {
-    const body = new URLSearchParams({
-      secret,
-      response: token,
-      remoteip: ip,
-    });
-    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-      method: 'POST',
-      body,
-    });
-    const data = (await res.json()) as { success?: boolean };
-    return data.success === true;
-  } catch {
-    return false;
-  }
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) return process.env.NODE_ENV !== 'production';
+  if (typeof token !== 'string' || token.length < 8) return false;
+  const body = new URLSearchParams({
+    secret,
+    response: token,
+    remoteip: ip,
+  });
+  const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method: 'POST',
+    body,
+  });
+  const data = (await res.json()) as { success?: boolean };
+  return data.success === true;
 }
 
 export function isHoneypotFilled(value: unknown): boolean {
