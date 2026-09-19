@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import {
   issueCaptchaToken,
-  issuePowChallenge,
-  verifyPowSolution,
   verifyTurnstile,
 } from '@/lib/captcha';
 import { isBrowserSameOriginFetch } from '@/lib/origin';
@@ -20,7 +18,6 @@ export async function GET(req: Request) {
     const turnstileRequired = Boolean(process.env.TURNSTILE_SECRET_KEY);
     return NextResponse.json({
       success: true,
-      ...issuePowChallenge(ip),
       turnstileRequired,
     });
   } catch {
@@ -35,15 +32,16 @@ export async function POST(req: Request) {
     }
 
     const ip = getClientIp(req);
-    const limited = rateLimit(`captcha:${ip}`, 12, 60 * 60_000);
+    const limited = rateLimit(`captcha:${ip}`, 20, 60 * 60_000);
     if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
-    const body = await req.json();
-    if (!verifyPowSolution(ip, body.seed, body.nonce)) {
-      return NextResponse.json({ success: false, error: 'Challenge failed.' }, { status: 400 });
-    }
-    if (!(await verifyTurnstile(body.turnstileToken, ip))) {
-      return NextResponse.json({ success: false, error: 'Captcha failed.' }, { status: 400 });
+    const body = await req.json().catch(() => ({}));
+    const turnstileToken = body.turnstileToken || body.token;
+
+    if (process.env.TURNSTILE_SECRET_KEY) {
+      if (!turnstileToken || !(await verifyTurnstile(turnstileToken, ip))) {
+        return NextResponse.json({ success: false, error: 'Xác thực Cloudflare thất bại.' }, { status: 400 });
+      }
     }
 
     return NextResponse.json({ success: true, token: issueCaptchaToken(ip) });
