@@ -42,6 +42,8 @@ export async function POST(req: Request) {
       if (!turnstileToken || !(await verifyTurnstile(turnstileToken, ip))) {
         return NextResponse.json({ success: false, error: 'Xác thực Cloudflare thất bại.' }, { status: 400 });
       }
+    } else if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ success: false, error: 'Turnstile chưa được cấu hình.' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, token: issueCaptchaToken(ip) });

@@ -160,6 +160,16 @@
   --accent-fg: #ffffff;
 }
 
+/* GD Tsumiki Texture Pack Styling for Lavender Theme */
+[data-theme="lavender"] button,
+[data-theme="lavender"] .ui-card,
+[data-theme="lavender"] .ui-subtle {
+  transition: all 0.15s ease-in-out;
+}
+[data-theme="lavender"] button:hover {
+  filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.4));
+}
+
 /* 5. MONO THEME */
 [data-theme="mono"] {
   --bg-page: #ffffff;

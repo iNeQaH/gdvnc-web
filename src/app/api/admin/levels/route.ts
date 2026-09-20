@@ -75,35 +75,42 @@ export async function DELETE(req: Request) {
       }
 
       if (oldPlacement !== null) {
-        await tx.level.updateMany({
-          where: { mode, isChallenge: false, placement: { gt: oldPlacement } },
-          data: { placement: { decrement: 1 } },
-        });
+        if (level.isChallenge) {
+          await tx.level.updateMany({
+            where: { isChallenge: true, placement: { gt: oldPlacement } },
+            data: { placement: { decrement: 1 } },
+          });
+        } else {
+          await tx.level.updateMany({
+            where: { mode, isChallenge: false, placement: { gt: oldPlacement } },
+            data: { placement: { decrement: 1 } },
+          });
 
-        const allRankedLevels = await tx.level.findMany({
-          where: { mode, isChallenge: false, placement: { not: null } },
-          select: { id: true, placement: true, basePp: true },
-        });
+          const allRankedLevels = await tx.level.findMany({
+            where: { mode, isChallenge: false, placement: { not: null } },
+            select: { id: true, placement: true, basePp: true },
+          });
 
-        const updatesToRun: { id: string; correctPp: number }[] = [];
-        for (const lvl of allRankedLevels) {
-          const correctPp = calculateBasePp(lvl.placement!);
-          if (Math.abs(correctPp - lvl.basePp) > 0.01) {
-            affectedLevelIds.push(lvl.id);
-            updatesToRun.push({ id: lvl.id, correctPp });
+          const updatesToRun: { id: string; correctPp: number }[] = [];
+          for (const lvl of allRankedLevels) {
+            const correctPp = calculateBasePp(lvl.placement!);
+            if (Math.abs(correctPp - lvl.basePp) > 0.01) {
+              affectedLevelIds.push(lvl.id);
+              updatesToRun.push({ id: lvl.id, correctPp });
+            }
           }
-        }
-        if (updatesToRun.length > 0) {
-          for (let i = 0; i < updatesToRun.length; i += 500) {
-            const chunk = updatesToRun.slice(i, i + 500);
-            const caseSql = Prisma.join(
-              chunk.map((u) => Prisma.sql`WHEN ${u.id} THEN ${u.correctPp}`),
-              ' '
-            );
-            const ids = Prisma.join(chunk.map((u) => Prisma.sql`${u.id}`));
-            await tx.$executeRaw`
-              UPDATE "Level" SET "basePp" = CASE "id" ${caseSql} END WHERE "id" IN (${ids})
-            `;
+          if (updatesToRun.length > 0) {
+            for (let i = 0; i < updatesToRun.length; i += 500) {
+              const chunk = updatesToRun.slice(i, i + 500);
+              const caseSql = Prisma.join(
+                chunk.map((u) => Prisma.sql`WHEN ${u.id} THEN ${u.correctPp}`),
+                ' '
+              );
+              const ids = Prisma.join(chunk.map((u) => Prisma.sql`${u.id}`));
+              await tx.$executeRaw`
+                UPDATE "Level" SET "basePp" = CASE "id" ${caseSql} END WHERE "id" IN (${ids})
+              `;
+            }
           }
         }
       }

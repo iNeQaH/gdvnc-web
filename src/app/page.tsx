@@ -46,14 +46,20 @@ export default function HomePage() {
       .catch(() => {});
   }, []);
 
+  const [deviceFilter, setDeviceFilter] = useState<'ALL' | 'PC' | 'MOBILE'>('ALL');
+
   useEffect(() => {
     setCurrentPage(1);
-  }, [search]);
+  }, [search, deviceFilter]);
 
-  const fetchLeaderboard = async (currentMode: string) => {
+  useEffect(() => {
+    fetchLeaderboard(mode, deviceFilter);
+  }, [mode, deviceFilter]);
+
+  const fetchLeaderboard = async (currentMode: string, currentDevice: string = 'ALL') => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/leaderboard?mode=${currentMode}`);
+      const res = await fetch(`/api/leaderboard?mode=${currentMode}&device=${currentDevice}`);
       const data = await res.json();
       if (data.success) {
         setLeaderboard(data.leaderboard || []);
@@ -264,6 +270,45 @@ export default function HomePage() {
             {t('leaderboard.creator')}
           </button>
         </div>
+
+        {/* Device Filter (Hidden in CREATOR mode) */}
+        {mode !== 'CREATOR' && (
+          <div className="flex items-center gap-1 p-1 rounded-2xl border shrink-0" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+            <button
+              onClick={() => setDeviceFilter('ALL')}
+              className="px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              style={{
+                backgroundColor: deviceFilter === 'ALL' ? 'var(--bg-card)' : 'transparent',
+                color: deviceFilter === 'ALL' ? 'var(--accent)' : 'var(--text-dim)',
+                boxShadow: deviceFilter === 'ALL' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+              }}
+            >
+              Tất cả
+            </button>
+            <button
+              onClick={() => setDeviceFilter('PC')}
+              className="px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              style={{
+                backgroundColor: deviceFilter === 'PC' ? 'var(--bg-card)' : 'transparent',
+                color: deviceFilter === 'PC' ? 'var(--accent)' : 'var(--text-dim)',
+                boxShadow: deviceFilter === 'PC' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+              }}
+            >
+              PC
+            </button>
+            <button
+              onClick={() => setDeviceFilter('MOBILE')}
+              className="px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              style={{
+                backgroundColor: deviceFilter === 'MOBILE' ? 'var(--bg-card)' : 'transparent',
+                color: deviceFilter === 'MOBILE' ? 'var(--accent)' : 'var(--text-dim)',
+                boxShadow: deviceFilter === 'MOBILE' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+              }}
+            >
+              Mobile
+            </button>
+          </div>
+        )}
 
         {/* Search Bar */}
         <div className="relative min-w-60">

@@ -42,49 +42,56 @@ export async function POST(req: Request) {
     }
 
     const cleanOtp = String(otp).trim();
-
-    const user = await prisma.user.findUnique({ where: { email: cleanEmail } });
-    if (!user) {
-      return NextResponse.json(
-        { error: en ? 'Account not found.' : 'Không tìm thấy tài khoản.' },
-        { status: 404 }
-      );
-    }
-
-    const row = await prisma.otp.findFirst({
-      where: { email: cleanEmail, expiresAt: { gt: new Date() } },
-      orderBy: { createdAt: 'desc' },
-    });
-
     const lockedMsg = en
       ? 'Too many incorrect codes. Request a new OTP.'
       : 'Nhập sai quá nhiều lần. Hãy yêu cầu mã OTP mới.';
     const invalidMsg = en ? 'OTP is incorrect or has expired.' : 'Mã OTP không đúng hoặc đã hết hạn.';
 
-    if (!row) {
-      return NextResponse.json({ error: invalidMsg }, { status: 400 });
-    }
-    if (row.failedAttempts >= OTP_MAX_ATTEMPTS) {
-      await prisma.otp.deleteMany({ where: { email: cleanEmail } });
-      return NextResponse.json({ error: lockedMsg }, { status: 429 });
-    }
-    if (row.code !== cleanOtp) {
-      const next = row.failedAttempts + 1;
-      if (next >= OTP_MAX_ATTEMPTS) {
-        await prisma.otp.deleteMany({ where: { email: cleanEmail } });
-        return NextResponse.json({ error: lockedMsg }, { status: 429 });
-      }
-      await prisma.otp.update({ where: { id: row.id }, data: { failedAttempts: next } });
-      return NextResponse.json({ error: invalidMsg }, { status: 400 });
-    }
-
-    await prisma.otp.deleteMany({ where: { email: cleanEmail } });
-
     const passwordHash = await bcrypt.hash(password, 10);
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { passwordHash, tokenVersion: { increment: 1 } },
+
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({ where: { email: cleanEmail } });
+      if (!user) {
+        return { error: invalidMsg, status: 400 };
+      }
+
+      const row = await tx.otp.findFirst({
+        where: { email: cleanEmail, expiresAt: { gt: new Date() } },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!row) {
+        return { error: invalidMsg, status: 400 };
+      }
+
+      if (row.failedAttempts >= OTP_MAX_ATTEMPTS) {
+        await tx.otp.deleteMany({ where: { email: cleanEmail } });
+        return { error: lockedMsg, status: 429 };
+      }
+
+      if (row.code !== cleanOtp) {
+        const next = row.failedAttempts + 1;
+        if (next >= OTP_MAX_ATTEMPTS) {
+          await tx.otp.deleteMany({ where: { email: cleanEmail } });
+          return { error: lockedMsg, status: 429 };
+        }
+        await tx.otp.update({ where: { id: row.id }, data: { failedAttempts: next } });
+        return { error: invalidMsg, status: 400 };
+      }
+
+      await tx.otp.deleteMany({ where: { email: cleanEmail } });
+
+      await tx.user.update({
+        where: { id: user.id },
+        data: { passwordHash, tokenVersion: { increment: 1 } },
+      });
+
+      return { success: true };
     });
+
+    if ('error' in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
 
     return NextResponse.json({
       success: true,

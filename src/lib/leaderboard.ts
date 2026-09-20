@@ -110,9 +110,85 @@ async function backfillMissingHardest(
   }
 }
 
-export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER') {
+export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER', device: 'ALL' | 'PC' | 'MOBILE' = 'ALL') {
   const levelMode = mode === 'PLATFORMER' ? LevelMode.PLATFORMER : LevelMode.CLASSIC;
   const ppField = mode === 'PLATFORMER' ? 'platformerPp' : 'classicPp';
+
+  if (device !== 'ALL') {
+    const deviceWhere = device === 'PC' ? { device: 'PC' } : { device: { in: ['Android', 'iOS'] } };
+    const userRecords = await prisma.record.findMany({
+      where: {
+        status: RecordStatus.APPROVED,
+        userId: { not: null },
+        level: { mode: levelMode, isChallenge: false },
+        ...deviceWhere,
+      },
+      select: recordSelect,
+    });
+
+    const byUser = new Map<string, typeof userRecords>();
+    for (const rec of userRecords) {
+      if (!rec.userId) continue;
+      const list = byUser.get(rec.userId);
+      if (list) list.push(rec);
+      else byUser.set(rec.userId, [rec]);
+    }
+
+    if (byUser.size === 0) return [];
+
+    const userIds = Array.from(byUser.keys());
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: {
+        ...publicUser,
+        classicPp: true,
+        platformerPp: true,
+        userBadges: { include: { badge: true } },
+      },
+    });
+
+    const result = users.map((player) => {
+      const recs = byUser.get(player.id) || [];
+      const calculatedPp = calculateModePp(recs, levelMode);
+      return {
+        id: player.id,
+        username: player.username,
+        gdUsername: player.gdUsername,
+        avatarUrl: player.avatarUrl,
+        role: player.role,
+        country: player.country,
+        supporterUntil: player.supporterUntil,
+        gdVerified: player.gdVerified,
+        classicPp: mode === 'CLASSIC' ? calculatedPp : player.classicPp,
+        platformerPp: mode === 'PLATFORMER' ? calculatedPp : player.platformerPp,
+        displayName: playerDisplayName(player),
+        isLegacy: false as const,
+        hardestLevel: pickHardestLevel(recs),
+        topBadges: (() => {
+          const roles = [];
+          if (player.role === 'ADMIN') {
+            roles.push({ id: 'role-admin', name: 'Admin', icon: 'Shield', bgColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)', sortOrder: 9999 });
+          } else if (player.role === 'MODERATOR') {
+            roles.push({ id: 'role-mod', name: 'Moderator', icon: 'ShieldCheck', bgColor: 'var(--badge-green-bg)', color: 'var(--badge-green-text)', sortOrder: 9998 });
+          }
+          if (player.supporterUntil && new Date(player.supporterUntil) > new Date()) {
+            roles.push({ id: 'role-supporter', name: 'Supporter', icon: 'Heart', bgColor: 'rgba(236, 72, 153, 0.15)', color: '#ec4899', sortOrder: 9997 });
+          }
+          return [...(player.userBadges || []).map(ub => ub.badge), ...roles]
+            .sort((a, b) => b.sortOrder - a.sortOrder)
+            .slice(0, 3);
+        })()
+      };
+    });
+
+    return result
+      .filter((p) => (mode === 'PLATFORMER' ? p.platformerPp : p.classicPp) > 0.005)
+      .sort((a, b) => {
+        const ap = mode === 'PLATFORMER' ? a.platformerPp : a.classicPp;
+        const bp = mode === 'PLATFORMER' ? b.platformerPp : b.classicPp;
+        return bp - ap;
+      });
+  }
 
   const [players, orphanRecords, claimedUsers] = await Promise.all([
     prisma.user.findMany({

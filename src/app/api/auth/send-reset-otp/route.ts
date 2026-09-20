@@ -52,8 +52,8 @@ export async function POST(req: Request) {
         success: true,
         message:
           lang === 'en'
-            ? `If an account exists, a reset code was sent.`
-            : `Nếu tài khoản tồn tại, mã đặt lại mật khẩu đã được gửi.`,
+            ? 'If an account exists with this email, a reset code was sent.'
+            : 'Nếu tài khoản tồn tại với email này, mã đặt lại mật khẩu đã được gửi.',
       });
     }
 
@@ -94,12 +94,14 @@ export async function POST(req: Request) {
       );
     }
 
+    const genericMessage =
+      lang === 'en'
+        ? 'If an account exists with this email, a reset code was sent.'
+        : 'Nếu tài khoản tồn tại với email này, mã đặt lại mật khẩu đã được gửi.';
+
     return NextResponse.json({
       success: true,
-      message:
-        lang === 'en'
-          ? `A reset code was sent to ${cleanEmail}.`
-          : `Đã gửi mã đặt lại mật khẩu tới ${cleanEmail}.`,
+      message: genericMessage,
     });
   } catch (error: any) {
     return publicApiError(error, 'Lỗi khi gửi mã.', 500);

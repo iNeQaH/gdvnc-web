@@ -31,6 +31,8 @@ export async function POST(req: Request) {
     }
 
     const lowered = loginInput.toLowerCase();
+    const limitedId = rateLimit(`login-id:${lowered}`, 5, 60_000);
+    if (!limitedId.ok) return rateLimitResponse(limitedId.retryAfterSec);
     const matches = await prisma.$queryRaw<Array<{ id: string }>>`
       SELECT id FROM "User"
       WHERE LOWER("username") = ${lowered}

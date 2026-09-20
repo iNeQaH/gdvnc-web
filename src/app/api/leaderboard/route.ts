@@ -11,15 +11,18 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const mode = searchParams.get('mode') || 'CLASSIC';
+    const deviceParam = searchParams.get('device');
+    const device = deviceParam === 'PC' || deviceParam === 'MOBILE' ? deviceParam : 'ALL';
+
     const body = await cachedJson(
       async () => {
         const leaderboard =
           mode === 'CREATOR'
             ? await getCreatorLeaderboard()
-            : await getPlayerLeaderboard(mode === 'PLATFORMER' ? 'PLATFORMER' : 'CLASSIC');
+            : await getPlayerLeaderboard(mode === 'PLATFORMER' ? 'PLATFORMER' : 'CLASSIC', device);
         return { success: true, leaderboard };
       },
-      ['leaderboard', mode],
+      ['leaderboard', mode, device],
       [CACHE_TAGS.leaderboard],
       300
     );

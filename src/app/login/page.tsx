@@ -93,6 +93,7 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
       setError(t('auth.otp_send_error'));
     } finally {
       setSendingResetOtp(false);
+      setCaptchaToken(null);
     }
   };
 
@@ -174,6 +175,7 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
       setError(t('auth.otp_send_error'));
     } finally {
       setSendingOtp(false);
+      setCaptchaToken(null);
     }
   };
 

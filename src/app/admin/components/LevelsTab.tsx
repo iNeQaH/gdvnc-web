@@ -272,7 +272,7 @@ export default function LevelsTab({
     });
   };
 
-  const handleSyncLists = (mode: 'ALL' | 'CLASSIC' | 'PLATFORMER') => {
+  const handleSyncLists = (mode: 'ALL' | 'CLASSIC' | 'PLATFORMER' | 'POINTERCRATE' | 'PEMONLIST' | 'AREDL_CLASSIC' | 'AREDL_PLATFORMER') => {
     showConfirm(t('admin.sync_lists_confirm'), async () => {
       setSyncingLists(true);
       try {
@@ -384,7 +384,47 @@ export default function LevelsTab({
         icon={<Wrench className="w-4 h-4" />}
         desc={t('admin.sync_fn_desc')}
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+          <button
+            type="button"
+            disabled={syncingLists}
+            onClick={() => handleSyncLists('POINTERCRATE')}
+            className="px-4 py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+            style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${syncingLists ? 'animate-spin' : ''}`} />
+            Đồng bộ Pointercrate
+          </button>
+          <button
+            type="button"
+            disabled={syncingLists}
+            onClick={() => handleSyncLists('PEMONLIST')}
+            className="px-4 py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+            style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${syncingLists ? 'animate-spin' : ''}`} />
+            Đồng bộ Pemonlist
+          </button>
+          <button
+            type="button"
+            disabled={syncingLists}
+            onClick={() => handleSyncLists('AREDL_CLASSIC')}
+            className="px-4 py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+            style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${syncingLists ? 'animate-spin' : ''}`} />
+            Đồng bộ AREDL Classic
+          </button>
+          <button
+            type="button"
+            disabled={syncingLists}
+            onClick={() => handleSyncLists('AREDL_PLATFORMER')}
+            className="px-4 py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+            style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${syncingLists ? 'animate-spin' : ''}`} />
+            Đồng bộ AREDL Platformer
+          </button>
           <button
             type="button"
             disabled={syncingLists}

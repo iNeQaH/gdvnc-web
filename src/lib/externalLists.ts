@@ -200,16 +200,29 @@ export function clearExternalListCache(mode?: 'CLASSIC' | 'PLATFORMER') {
 
 export async function getExternalList(
   mode: 'CLASSIC' | 'PLATFORMER',
-  opts?: { force?: boolean }
+  opts?: { force?: boolean; source?: 'POINTERCRATE' | 'PEMONLIST' | 'AREDL_CLASSIC' | 'AREDL_PLATFORMER' }
 ): Promise<ExternalListLevel[]> {
-  const cached = cache[mode];
+  const cacheKey = opts?.source || mode;
+  const cached = cache[cacheKey];
   if (!opts?.force && cached && Date.now() - cached.at < CACHE_MS) return cached.levels;
 
-  const levels = mode === 'CLASSIC' ? await fetchClassicListed() : await fetchPlatformerListed();
-  if (levels.length === 0) {
-    throw new Error(`Empty ${mode} list from upstream`);
+  let levels: ExternalListLevel[] = [];
+  if (opts?.source === 'POINTERCRATE') {
+    levels = applyClassicMedia(await fetchPointercrateListed());
+  } else if (opts?.source === 'PEMONLIST') {
+    levels = await fetchPemonlist();
+  } else if (opts?.source === 'AREDL_CLASSIC') {
+    levels = applyClassicMedia(await fetchAredl('CLASSIC'));
+  } else if (opts?.source === 'AREDL_PLATFORMER') {
+    levels = await fetchAredl('PLATFORMER');
+  } else {
+    levels = mode === 'CLASSIC' ? await fetchClassicListed() : await fetchPlatformerListed();
   }
-  cache[mode] = { at: Date.now(), levels };
+
+  if (levels.length === 0) {
+    throw new Error(`Empty ${mode} list from upstream (${opts?.source || 'default'})`);
+  }
+  cache[cacheKey] = { at: Date.now(), levels };
   return levels;
 }
 
@@ -394,7 +407,7 @@ async function applyListedLevelsToDb(mode: 'CLASSIC' | 'PLATFORMER', external: E
 /** Sync rank from Pointercrate / Pemonlist. Only placement/PP on update; fill empty youtubeId; create new levels. */
 export async function syncExternalListToDb(
   mode: 'CLASSIC' | 'PLATFORMER',
-  opts?: { force?: boolean }
+  opts?: { force?: boolean; source?: 'POINTERCRATE' | 'PEMONLIST' | 'AREDL_CLASSIC' | 'AREDL_PLATFORMER' }
 ) {
   let external: ExternalListLevel[] = [];
   let source: 'upstream' | 'uploadthing' = 'upstream';

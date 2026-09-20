@@ -58,13 +58,22 @@ export default function AdminPage() {
       if (u) setCurrentUser(u);
     });
 
-    // Fetch initial counts for the badges if needed (optional)
-    fetch('/api/admin/helps?page=1')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) setHelpsTotal(data.total || 0);
-      })
-      .catch(() => {});
+    // Fetch initial counts for all tab badges in parallel
+    Promise.allSettled([
+      fetch('/api/admin/helps?page=1').then((r) => r.json()),
+      fetch('/api/admin/records/pending?page=1').then((r) => r.json()),
+      fetch('/api/admin/works?page=1').then((r) => r.json()),
+    ]).then(([helpsRes, recordsRes, worksRes]) => {
+      if (helpsRes.status === 'fulfilled' && helpsRes.value?.success) {
+        setHelpsTotal(helpsRes.value.total || 0);
+      }
+      if (recordsRes.status === 'fulfilled' && recordsRes.value?.counts?.pending !== undefined) {
+        setRecordCount(recordsRes.value.counts.pending || 0);
+      }
+      if (worksRes.status === 'fulfilled' && worksRes.value?.counts?.pending !== undefined) {
+        setWorkCount(worksRes.value.counts.pending || 0);
+      }
+    });
   }, []);
 
   if (!currentUser) return <div className="p-10 text-center font-bold">Đang tải / Loading...</div>;

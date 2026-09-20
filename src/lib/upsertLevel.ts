@@ -217,6 +217,41 @@ async function shiftVnPlacements(
   }
 }
 
+async function shiftChallengePlacements(
+  tx: any,
+  targetPlacement: number | null,
+  existingLevel: { id: string; placement: number | null } | null
+) {
+  if (targetPlacement === null) return;
+  const excludeId = existingLevel?.id;
+  const baseWhere = {
+    isChallenge: true,
+    ...(excludeId ? { id: { not: excludeId } } : {}),
+  };
+
+  if (!existingLevel || existingLevel.placement === null) {
+    await tx.level.updateMany({
+      where: { ...baseWhere, placement: { gte: targetPlacement } },
+      data: { placement: { increment: 1 } },
+    });
+  } else {
+    const oldPlacement = existingLevel.placement;
+    if (oldPlacement !== null && oldPlacement !== targetPlacement) {
+      if (oldPlacement < targetPlacement) {
+        await tx.level.updateMany({
+          where: { ...baseWhere, placement: { gt: oldPlacement, lte: targetPlacement } },
+          data: { placement: { decrement: 1 } },
+        });
+      } else {
+        await tx.level.updateMany({
+          where: { ...baseWhere, placement: { gte: targetPlacement, lt: oldPlacement } },
+          data: { placement: { increment: 1 } },
+        });
+      }
+    }
+  }
+}
+
 export async function getOrCreateStubLevel(input: {
   gdLevelId: number;
   name?: string;
@@ -319,6 +354,11 @@ export async function upsertLevelFromForm(input: {
       existingLevel.placement !== targetPlacement ||
       existingLevel.mode !== pMode);
 
+  const challengePlacementChanged =
+    isChallengeLevel &&
+    (!existingLevel ||
+      existingLevel.placement !== targetPlacement);
+
   const affectedLevelIds: string[] = [];
 
   let derivedFace = 10;
@@ -376,6 +416,9 @@ export async function upsertLevelFromForm(input: {
       if (placementChanged) {
         const shifted = await shiftPlacementsAndRecalcPp(tx, pMode, targetPlacement, existingLevel);
         affectedLevelIds.push(...shifted);
+      }
+      if (challengePlacementChanged) {
+        await shiftChallengePlacements(tx, targetPlacement, existingLevel);
       }
       if (vnChanged) {
         await shiftVnPlacements(tx, targetVnPlacement, existingLevel, isVnLevel && !isChallengeLevel);
