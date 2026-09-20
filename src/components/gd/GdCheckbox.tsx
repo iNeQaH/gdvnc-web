@@ -41,7 +41,7 @@ export default function GdCheckbox({
       <span
         className="w-6 h-6 inline-block shrink-0 transition-all"
         style={{
-          backgroundImage: `url(${checked ? '/gd-assets/check-on.png' : '/gd-assets/check-off.png'})`,
+          backgroundImage: `url(${checked ? '/assets/tsumiki/GJ_checkOn_001.png' : '/assets/tsumiki/GJ_checkOff_001.png'})`,
           backgroundSize: 'contain',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',

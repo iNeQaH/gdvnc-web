@@ -45,8 +45,8 @@ export default function GdDialog({
       <div
         className={`relative w-full max-w-lg p-8 shadow-2xl ${className}`}
         style={{
-          borderImageSource: 'url(/gd-assets/dialog-frame.png)',
-          borderImageSlice: '30 fill',
+          borderImageSource: 'url(/assets/tsumiki/GJ_square01-uhd.png)',
+          borderImageSlice: '45 fill',
           borderImageWidth: '24px',
           borderImageRepeat: 'stretch',
           color: '#ffffff',
@@ -57,7 +57,7 @@ export default function GdDialog({
           onClick={onClose}
           className="absolute -top-3 -right-3 w-8 h-8 cursor-pointer hover:scale-110 active:scale-95 transition-transform z-20"
           style={{
-            backgroundImage: 'url(/gd-assets/close-btn.png)',
+            backgroundImage: 'url(/assets/tsumiki/GJ_closeBtn_001.png)',
             backgroundSize: 'contain',
             backgroundRepeat: 'no-repeat',
           }}

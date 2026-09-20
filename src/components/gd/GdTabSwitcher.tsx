@@ -63,7 +63,7 @@ export default function GdTabSwitcher<T extends string>({
             onClick={() => onChange(tab.key)}
             className="relative px-4 py-2 text-xs font-black tracking-wide transition-all cursor-pointer select-none active:scale-95 hover:scale-105 shrink-0"
             style={{
-              backgroundImage: `url(${active ? '/gd-assets/tab-on.png' : '/gd-assets/tab-off.png'})`,
+              backgroundImage: `url(${active ? '/assets/tsumiki/GJ_tabOn_001.png' : '/assets/tsumiki/GJ_tabOff_001.png'})`,
               backgroundSize: '100% 100%',
               backgroundRepeat: 'no-repeat',
               color: active ? '#ffffff' : '#d8b4fe',

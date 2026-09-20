@@ -16,7 +16,7 @@ export default function HomePage() {
   const { t } = useLanguage();
   const { showConfirm, showToast } = useToast();
   const router = useRouter();
-  const [mode, setMode] = useState<'CLASSIC' | 'PLATFORMER' | 'CREATOR'>('CLASSIC');
+  const [mode, setMode] = useState<'CLASSIC' | 'PLATFORMER' | 'CHALLENGE' | 'CREATOR'>('CLASSIC');
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -87,7 +87,7 @@ export default function HomePage() {
           .some((name: string) => name.toLowerCase().includes(q))
       );
     }
-    const pts = mode === 'PLATFORMER' ? item.platformerPp : item.classicPp;
+    const pts = mode === 'PLATFORMER' ? item.platformerPp : mode === 'CHALLENGE' ? item.challengePp : item.classicPp;
     if (!(pts > 0.005)) return false;
     const q = search.toLowerCase();
     if (!q) return true;
@@ -256,6 +256,17 @@ export default function HomePage() {
           >
             <Moon className="w-3.5 h-3.5 fill-current -rotate-12" />
             {t('leaderboard.platformer')}
+          </button>
+          <button
+            onClick={() => setMode('CHALLENGE')}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            style={{
+              backgroundColor: mode === 'CHALLENGE' ? 'var(--accent)' : 'transparent',
+              color: mode === 'CHALLENGE' ? 'var(--accent-fg)' : 'var(--text-title)',
+              opacity: mode === 'CHALLENGE' ? 1 : 0.6,
+            }}
+          >
+            {t('levels.mode.challenge')}
           </button>
           <button
             onClick={() => setMode('CREATOR')}
@@ -524,7 +535,7 @@ export default function HomePage() {
                             )}
                           </td>
                           <td className="px-5 py-3.5 text-right font-black text-sm" style={{ color: 'var(--accent)' }}>
-                            {(mode === 'CLASSIC' ? (player.classicPp || 0) : (player.platformerPp || 0)).toFixed(2)}
+                            {(mode === 'PLATFORMER' ? (player.platformerPp || 0) : mode === 'CHALLENGE' ? (player.challengePp || 0) : (player.classicPp || 0)).toFixed(2)}
                           </td>
                         </>
                       )}

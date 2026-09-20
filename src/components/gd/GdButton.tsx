@@ -55,11 +55,11 @@ export default function GdButton({
 
   // GD Texture Pack button rendering for Lavender theme
   const spriteMap = {
-    primary: '/gd-assets/btn-purple.png',
-    confirm: '/gd-assets/btn-green.png',
-    danger: '/gd-assets/btn-red.png',
-    secondary: '/gd-assets/btn-gray.png',
-    gold: '/gd-assets/btn-gold.png',
+    primary: '/assets/tsumiki/Square_button.png',
+    confirm: '/assets/tsumiki/GJ_square04-uhd.png',
+    danger: '/assets/tsumiki/GJ_square06-uhd.png',
+    secondary: '/assets/tsumiki/GJ_square05-uhd.png',
+    gold: '/assets/tsumiki/GJ_square03-uhd.png',
   };
 
   const sizePadding = {

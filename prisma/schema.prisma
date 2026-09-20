@@ -51,13 +51,16 @@ model User {
   // Points and rankings
   classicPp     Float     @default(0)
   platformerPp  Float     @default(0)
+  challengePp   Float     @default(0)
   creatorPoints Float     @default(0)
   spPoints      Int       @default(0)
   tokenVersion  Int       @default(0)
   hardestClassicLevelId    String?
   hardestPlatformerLevelId String?
+  hardestChallengeLevelId  String?
   hardestClassicLevel      Level?  @relation("UserHardestClassic", fields: [hardestClassicLevelId], references: [id], onDelete: SetNull)
   hardestPlatformerLevel   Level?  @relation("UserHardestPlatformer", fields: [hardestPlatformerLevelId], references: [id], onDelete: SetNull)
+  hardestChallengeLevel    Level?  @relation("UserHardestChallenge", fields: [hardestChallengeLevelId], references: [id], onDelete: SetNull)
 
   // Relationships
   records         Record[]        @relation("UserRecords")
@@ -112,6 +115,7 @@ model Level {
   records       Record[]
   hardestClassicFor  User[] @relation("UserHardestClassic")
   hardestPlatformerFor User[] @relation("UserHardestPlatformer")
+  hardestChallengeFor User[] @relation("UserHardestChallenge")
 
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt

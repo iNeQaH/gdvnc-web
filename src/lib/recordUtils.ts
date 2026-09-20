@@ -61,17 +61,18 @@ function collectModeAwardedPp(
       placement?: number | null;
     };
   }>,
-  mode: LevelMode
+  mode: LevelMode | 'CHALLENGE'
 ): { ranked: number[]; unranked: number[] } {
-  const deduped = dedupeRecordsByLevel(records as RecordWithLevel[]).filter(
-    (r) => !r.level.isChallenge && r.level.mode === mode
-  );
+  const deduped = dedupeRecordsByLevel(records as RecordWithLevel[]).filter((r) => {
+    if (mode === 'CHALLENGE') return r.level.isChallenge;
+    return !r.level.isChallenge && r.level.mode === mode;
+  });
   const ranked: number[] = [];
   const unranked: number[] = [];
 
   for (const rec of deduped) {
     const pp =
-      mode === LevelMode.PLATFORMER
+      rec.level.mode === LevelMode.PLATFORMER
         ? isQualifyingPlatformerRecord(rec)
           ? rec.level.basePp
           : 0
@@ -100,7 +101,7 @@ export function calculateModePp(
       placement?: number | null;
     };
   }>,
-  mode: LevelMode
+  mode: LevelMode | 'CHALLENGE'
 ): number {
   const { ranked, unranked } = collectModeAwardedPp(records, mode);
   return calculatePlayerPp(ranked, unranked);
@@ -119,10 +120,16 @@ export function pickHardestLevel(
       gdLevelId?: number | null;
       isChallenge?: boolean;
     };
-  }>
+  }>,
+  mode?: 'CHALLENGE'
 ): HardestLevel | null {
   const qualifying = records.filter((r) => {
-    if (r.level.isChallenge) return false;
+    if (mode === 'CHALLENGE') {
+      if (!r.level.isChallenge) return false;
+    } else {
+      if (r.level.isChallenge) return false;
+    }
+    
     if (r.level.mode === LevelMode.PLATFORMER) return isQualifyingPlatformerRecord(r);
     return isQualifyingClassicRecord(r, r.level);
   });
@@ -202,9 +209,11 @@ export async function recalculateUserPp(userId: string | null | undefined, tx: a
 
   const classic = collectModeAwardedPp(deduped, LevelMode.CLASSIC);
   const platformer = collectModeAwardedPp(deduped, LevelMode.PLATFORMER);
+  const challenge = collectModeAwardedPp(deduped, 'CHALLENGE');
 
-  const classicHardest = pickHardestLevel(deduped.filter((r: any) => r.level.mode === LevelMode.CLASSIC));
-  const platformerHardest = pickHardestLevel(deduped.filter((r: any) => r.level.mode === LevelMode.PLATFORMER));
+  const classicHardest = pickHardestLevel(deduped.filter((r: any) => r.level.mode === LevelMode.CLASSIC && !r.level.isChallenge));
+  const platformerHardest = pickHardestLevel(deduped.filter((r: any) => r.level.mode === LevelMode.PLATFORMER && !r.level.isChallenge));
+  const challengeHardest = pickHardestLevel(deduped, 'CHALLENGE');
 
   try {
     await db.user.update({
@@ -212,8 +221,10 @@ export async function recalculateUserPp(userId: string | null | undefined, tx: a
       data: {
         classicPp: calculatePlayerPp(classic.ranked, classic.unranked),
         platformerPp: calculatePlayerPp(platformer.ranked, platformer.unranked),
+        challengePp: calculatePlayerPp(challenge.ranked, challenge.unranked),
         hardestClassicLevelId: classicHardest?.id || null,
         hardestPlatformerLevelId: platformerHardest?.id || null,
+        hardestChallengeLevelId: challengeHardest?.id || null,
       },
     });
   } catch (error: any) {

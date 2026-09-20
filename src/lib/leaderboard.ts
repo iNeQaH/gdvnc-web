@@ -64,7 +64,7 @@ function hardestFromLevel(
 
 async function backfillMissingHardest(
   players: Array<{ id: string; hardestLevel: HardestLevel | null }>,
-  mode: 'CLASSIC' | 'PLATFORMER'
+  mode: 'CLASSIC' | 'PLATFORMER' | 'CHALLENGE'
 ) {
   const missingIds = players.filter((p) => !p.hardestLevel).map((p) => p.id);
   if (!missingIds.length) return;
@@ -74,7 +74,10 @@ async function backfillMissingHardest(
     where: {
       userId: { in: missingIds },
       status: RecordStatus.APPROVED,
-      level: { mode: levelMode, isChallenge: false },
+      level: { 
+        mode: mode === 'CHALLENGE' ? undefined : levelMode, 
+        isChallenge: mode === 'CHALLENGE' 
+      },
     },
     select: recordSelect,
   });
@@ -91,7 +94,7 @@ async function backfillMissingHardest(
   const updates: Array<ReturnType<typeof prisma.user.update>> = [];
   for (const player of players) {
     if (player.hardestLevel) continue;
-    const hardest = pickHardestLevel(byUser.get(player.id) || []);
+    const hardest = pickHardestLevel(byUser.get(player.id) || [], mode === 'CHALLENGE' ? 'CHALLENGE' : undefined);
     player.hardestLevel = hardest;
     if (hardest?.id) {
       updates.push(
@@ -110,9 +113,9 @@ async function backfillMissingHardest(
   }
 }
 
-export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER', device: 'ALL' | 'PC' | 'MOBILE' = 'ALL') {
+export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER' | 'CHALLENGE', device: 'ALL' | 'PC' | 'MOBILE' = 'ALL') {
   const levelMode = mode === 'PLATFORMER' ? LevelMode.PLATFORMER : LevelMode.CLASSIC;
-  const ppField = mode === 'PLATFORMER' ? 'platformerPp' : 'classicPp';
+  const ppField = mode === 'PLATFORMER' ? 'platformerPp' : mode === 'CHALLENGE' ? 'challengePp' : 'classicPp';
 
   if (device !== 'ALL') {
     const deviceWhere = device === 'PC' ? { device: 'PC' } : { device: { in: ['Android', 'iOS'] } };
@@ -120,7 +123,10 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER', devic
       where: {
         status: RecordStatus.APPROVED,
         userId: { not: null },
-        level: { mode: levelMode, isChallenge: false },
+        level: { 
+          mode: mode === 'CHALLENGE' ? undefined : levelMode, 
+          isChallenge: mode === 'CHALLENGE' 
+        },
         ...deviceWhere,
       },
       select: recordSelect,
@@ -149,7 +155,7 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER', devic
 
     const result = users.map((player) => {
       const recs = byUser.get(player.id) || [];
-      const calculatedPp = calculateModePp(recs, levelMode);
+      const calculatedPp = calculateModePp(recs, mode);
       return {
         id: player.id,
         username: player.username,
@@ -163,7 +169,7 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER', devic
         platformerPp: mode === 'PLATFORMER' ? calculatedPp : player.platformerPp,
         displayName: playerDisplayName(player),
         isLegacy: false as const,
-        hardestLevel: pickHardestLevel(recs),
+        hardestLevel: pickHardestLevel(recs, mode === 'CHALLENGE' ? 'CHALLENGE' : undefined),
         topBadges: (() => {
           const roles = [];
           if (player.role === 'ADMIN') {
@@ -198,8 +204,10 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER', devic
         ...publicUser,
         classicPp: true,
         platformerPp: true,
+        challengePp: true,
         hardestClassicLevel: { select: hardestLevelSelect },
         hardestPlatformerLevel: { select: hardestLevelSelect },
+        hardestChallengeLevel: { select: hardestLevelSelect },
         userBadges: { include: { badge: true } },
       },
     }),
@@ -208,7 +216,10 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER', devic
         userId: null,
         status: RecordStatus.APPROVED,
         legacyPlayerName: { not: null },
-        level: { mode: levelMode, isChallenge: false },
+        level: { 
+          mode: mode === 'CHALLENGE' ? undefined : levelMode, 
+          isChallenge: mode === 'CHALLENGE' 
+        },
       },
       select: {
         legacyPlayerName: true,
@@ -241,7 +252,11 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER', devic
 
   const registered = players.map((player) => {
     const stored =
-      mode === 'PLATFORMER' ? player.hardestPlatformerLevel : player.hardestClassicLevel;
+      mode === 'PLATFORMER' 
+        ? player.hardestPlatformerLevel 
+        : mode === 'CHALLENGE'
+          ? player.hardestChallengeLevel
+          : player.hardestClassicLevel;
     return {
       id: player.id,
       username: player.username,
@@ -253,6 +268,7 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER', devic
       gdVerified: player.gdVerified,
       classicPp: player.classicPp,
       platformerPp: player.platformerPp,
+      challengePp: player.challengePp,
       displayName: playerDisplayName(player),
       isLegacy: false as const,
       hardestLevel: hardestFromLevel(stored),
@@ -277,7 +293,7 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER', devic
 
   const legacy = [];
   for (const [key, recs] of byLegacy) {
-    const pp = calculateModePp(recs, levelMode);
+    const pp = calculateModePp(recs, mode);
     if (pp <= 0) continue;
     const displayName = (recs[0].legacyPlayerName || key).trim();
     legacy.push({
@@ -291,16 +307,17 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER', devic
       supporterUntil: null as Date | null,
       classicPp: mode === 'CLASSIC' ? pp : 0,
       platformerPp: mode === 'PLATFORMER' ? pp : 0,
+      challengePp: mode === 'CHALLENGE' ? pp : 0,
       isLegacy: true as const,
-      hardestLevel: pickHardestLevel(recs),
+      hardestLevel: pickHardestLevel(recs, mode === 'CHALLENGE' ? 'CHALLENGE' : undefined),
     });
   }
 
   return [...registered, ...legacy]
-    .filter((p) => (mode === 'PLATFORMER' ? p.platformerPp : p.classicPp) > 0.005)
+    .filter((p) => (mode === 'PLATFORMER' ? p.platformerPp : mode === 'CHALLENGE' ? p.challengePp : p.classicPp) > 0.005)
     .sort((a, b) => {
-      const ap = mode === 'PLATFORMER' ? a.platformerPp : a.classicPp;
-      const bp = mode === 'PLATFORMER' ? b.platformerPp : b.classicPp;
+      const ap = mode === 'PLATFORMER' ? a.platformerPp : mode === 'CHALLENGE' ? a.challengePp : a.classicPp;
+      const bp = mode === 'PLATFORMER' ? b.platformerPp : mode === 'CHALLENGE' ? b.challengePp : b.classicPp;
       return bp - ap;
     });
 }
