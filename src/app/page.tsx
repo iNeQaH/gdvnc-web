@@ -266,7 +266,7 @@ export default function HomePage() {
               opacity: mode === 'CHALLENGE' ? 1 : 0.6,
             }}
           >
-            {t('levels.mode.challenge')}
+            {t('tags.challenge')}
           </button>
           <button
             onClick={() => setMode('CREATOR')}
