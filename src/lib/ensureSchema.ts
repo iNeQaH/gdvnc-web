@@ -8,7 +8,7 @@ async function columnSet(db: PrismaClient) {
     FROM information_schema.columns
     WHERE table_schema = 'public'
       AND (
-        (table_name = 'User' AND column_name IN ('tokenVersion', 'hardestClassicLevelId', 'hardestPlatformerLevelId'))
+        (table_name = 'User' AND column_name IN ('tokenVersion', 'hardestClassicLevelId', 'hardestPlatformerLevelId', 'isBanned', 'banReason'))
         OR (table_name = 'Otp' AND column_name = 'failedAttempts')
         OR (table_name = 'PageVisit' AND column_name = 'id')
       )
@@ -19,6 +19,12 @@ async function columnSet(db: PrismaClient) {
 async function addMissingColumns(db: PrismaClient, have: Set<string>) {
   if (!have.has('User.tokenVersion')) {
     await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "tokenVersion" INTEGER NOT NULL DEFAULT 0`);
+  }
+  if (!have.has('User.isBanned')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isBanned" BOOLEAN NOT NULL DEFAULT false`);
+  }
+  if (!have.has('User.banReason')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "banReason" TEXT`);
   }
   if (!have.has('Otp.failedAttempts')) {
     await db.$executeRawUnsafe(`ALTER TABLE "Otp" ADD COLUMN IF NOT EXISTS "failedAttempts" INTEGER NOT NULL DEFAULT 0`);
@@ -113,6 +119,7 @@ export async function applyPendingSchema(db: PrismaClient): Promise<void> {
   const have = await columnSet(db);
   const complete =
     have.has('User.tokenVersion') &&
+    have.has('User.isBanned') &&
     have.has('Otp.failedAttempts') &&
     have.has('User.hardestClassicLevelId') &&
     have.has('User.hardestPlatformerLevelId') &&

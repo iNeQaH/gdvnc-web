@@ -47,6 +47,8 @@ model User {
   gdVerified    Boolean   @default(false)
   country       String?   @default("Vietnam")
   supporterUntil DateTime?
+  isBanned       Boolean   @default(false)
+  banReason      String?   @db.Text
 
   // Points and rankings
   classicPp     Float     @default(0)

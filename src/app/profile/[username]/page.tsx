@@ -13,7 +13,7 @@ import { formatCp } from '@/lib/creatorPoints';
 import { levelPath } from '@/lib/levelUrl';
 import { type DictKey } from '@/lib/dictionaries';
 import GdUnverifiedNotice from '@/components/GdUnverifiedNotice';
-import { isFullAdminRole, isStaffRole } from '@/lib/roles';
+import { isFullAdminRole, isStaffRole, isSuperAdminUser } from '@/lib/roles';
 import { logoutClient } from '@/lib/sessionClient';
 
 const RECORD_PAGE_SIZE = 10;
@@ -71,6 +71,7 @@ export default function ProfilePage() {
   const isStaff = isStaffRole(currentUser?.role);
   const isFullAdmin = isFullAdminRole(currentUser?.role);
   const isAdmin = isFullAdmin;
+  const isSuperAdmin = isSuperAdminUser(currentUser);
   const canEditInfo = isOwner || isStaff;
 
   // Direct editing states
@@ -78,6 +79,14 @@ export default function ProfilePage() {
   const [bioInput, setBioInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [verifyingGd, setVerifyingGd] = useState(false);
+
+  // Super Admin Password Reset & Ban States
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
+  const [showBanModal, setShowBanModal] = useState(false);
+  const [banReasonInput, setBanReasonInput] = useState('');
+  const [banningUser, setBanningUser] = useState(false);
 
   // Image Editor Modal state
   const [imageModal, setImageModal] = useState<{
@@ -418,6 +427,60 @@ export default function ProfilePage() {
     });
   };
 
+  const handleResetPassword = async () => {
+    if (!currentUser || !isSuperAdmin || !data) return;
+    const pwd = newPasswordInput.trim();
+    if (!pwd || pwd.length < 6) {
+      showToast('Mật khẩu mới phải từ 6 ký tự trở lên.', 'error');
+      return;
+    }
+    setResettingPassword(true);
+    try {
+      const res = await fetch(`/api/admin/users/${data.id}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword: pwd }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        showToast(json.message || 'Đã đổi mật khẩu thành công!', 'success');
+        setShowResetPasswordModal(false);
+        setNewPasswordInput('');
+      } else {
+        showToast(json.error || 'Lỗi đặt lại mật khẩu.', 'error');
+      }
+    } catch {
+      showToast('Lỗi kết nối khi đặt lại mật khẩu.', 'error');
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
+  const handleToggleBan = async (action: 'ban' | 'unban', reason?: string) => {
+    if (!currentUser || !isFullAdmin || !data) return;
+    setBanningUser(true);
+    try {
+      const res = await fetch(`/api/admin/users/${data.id}/ban`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, reason }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        showToast(json.message || 'Cập nhật trạng thái thành công!', 'success');
+        setShowBanModal(false);
+        setBanReasonInput('');
+        fetchProfile();
+      } else {
+        showToast(json.error || 'Lỗi cập nhật trạng thái.', 'error');
+      }
+    } catch {
+      showToast('Lỗi kết nối.', 'error');
+    } finally {
+      setBanningUser(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-12 text-center ui-dim text-xs font-medium">
@@ -451,6 +514,19 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
+      {data.isBanned && (
+        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-500 space-y-1">
+          <div className="text-xs font-extrabold uppercase flex items-center gap-2">
+            <Flame className="w-4 h-4" />
+            Tài khoản này đã bị đình chỉ hoạt động
+          </div>
+          {data.banReason && (
+            <div className="text-xs font-medium opacity-90">
+              Lý do: {data.banReason}
+            </div>
+          )}
+        </div>
+      )}
       {isOwner && data.gdUsername && !data.gdVerified && <GdUnverifiedNotice />}
       {/* Image Editor Modal Dialog */}
       <ImageEditorModal
@@ -684,14 +760,46 @@ export default function ProfilePage() {
                       </button>
                     )}
                     {isFullAdmin && (
-                    <button 
-                      onClick={handleOpenManageModal}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm hover:opacity-90 transition-opacity"
-                      style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}
-                    >
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      Quản Lý Role & Badge
-                    </button>
+                      <button 
+                        onClick={handleOpenManageModal}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm hover:opacity-90 transition-opacity"
+                        style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        Quản Lý Role & Badge
+                      </button>
+                    )}
+                    {isSuperAdmin && (
+                      <button 
+                        type="button"
+                        onClick={() => { setNewPasswordInput(''); setShowResetPasswordModal(true); }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-500 border border-amber-500/20 bg-amber-500/10 shadow-sm hover:bg-amber-500/20 transition-colors"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        Reset Mật Khẩu
+                      </button>
+                    )}
+                    {isFullAdmin && !isOwner && (
+                      data.isBanned ? (
+                        <button
+                          type="button"
+                          disabled={banningUser}
+                          onClick={() => handleToggleBan('unban')}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-500 border border-emerald-500/20 bg-emerald-500/10 shadow-sm hover:bg-emerald-500/20 transition-colors"
+                        >
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          Bỏ đình chỉ
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => { setBanReasonInput(''); setShowBanModal(true); }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-red-500 border border-red-500/20 bg-red-500/10 shadow-sm hover:bg-red-500/20 transition-colors"
+                        >
+                          <Flame className="w-3.5 h-3.5" />
+                          Đình chỉ tài khoản
+                        </button>
+                      )
                     )}
                     {(isOwner || isFullAdmin) && (
                       <button 
@@ -1529,6 +1637,118 @@ export default function ProfilePage() {
                 className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {deletingAccount ? 'Đang xoá...' : 'Xác nhận xoá'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showResetPasswordModal && (
+        <div className="fixed inset-0 z-[999999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150" onClick={() => setShowResetPasswordModal(false)}>
+          <div
+            className="w-full max-w-md rounded-3xl border shadow-2xl p-6 space-y-4"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-sm sm:text-base ui-title text-amber-500 flex items-center gap-2">
+                <RotateCcw className="w-5 h-5" />
+                Reset mật khẩu: {data.username}
+              </h3>
+              <button type="button" onClick={() => setShowResetPasswordModal(false)} className="p-1 rounded-xl border ui-dim cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-500 leading-relaxed font-semibold">
+              Với quyền Super Admin, bạn có thể thiết lập trực tiếp mật khẩu mới cho tài khoản này. Sau khi đổi, phiên đăng nhập hiện tại của người dùng sẽ bị thu hồi.
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold ui-title">Mật khẩu mới (tối thiểu 6 ký tự):</label>
+              <input
+                type="text"
+                value={newPasswordInput}
+                onChange={(e) => setNewPasswordInput(e.target.value)}
+                placeholder="Nhập mật khẩu mới..."
+                className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                autoFocus
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowResetPasswordModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border cursor-pointer"
+                style={{ borderColor: 'var(--border-ui)' }}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={resettingPassword || newPasswordInput.trim().length < 6}
+                onClick={handleResetPassword}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                {resettingPassword ? 'Đang cập nhật...' : 'Xác nhận đổi mật khẩu'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBanModal && (
+        <div className="fixed inset-0 z-[999999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150" onClick={() => setShowBanModal(false)}>
+          <div
+            className="w-full max-w-md rounded-3xl border shadow-2xl p-6 space-y-4"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-sm sm:text-base ui-title text-red-500 flex items-center gap-2">
+                <Flame className="w-5 h-5" />
+                Đình chỉ tài khoản: {data.username}
+              </h3>
+              <button type="button" onClick={() => setShowBanModal(false)} className="p-1 rounded-xl border ui-dim cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-500 leading-relaxed font-semibold">
+              Tài khoản bị đình chỉ sẽ không thể đăng nhập hoặc thao tác trên hệ thống. Phiên làm việc hiện tại của người dùng sẽ bị hủy ngay lập tức.
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold ui-title">Lý do đình chỉ (tùy chọn):</label>
+              <textarea
+                rows={3}
+                value={banReasonInput}
+                onChange={(e) => setBanReasonInput(e.target.value)}
+                placeholder="Nhập lý do đình chỉ..."
+                className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-red-500/50 resize-y"
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                autoFocus
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowBanModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border cursor-pointer"
+                style={{ borderColor: 'var(--border-ui)' }}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={banningUser}
+                onClick={() => handleToggleBan('ban', banReasonInput)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                {banningUser ? 'Đang xử lý...' : 'Xác nhận đình chỉ'}
               </button>
             </div>
           </div>

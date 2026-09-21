@@ -106,9 +106,9 @@ export async function getSessionUser(): Promise<JwtPayload | null> {
   if (!jwt?.userId) return null;
   const user = await prisma.user.findUnique({
     where: { id: jwt.userId },
-    select: { id: true, username: true, role: true, tokenVersion: true },
+    select: { id: true, username: true, role: true, tokenVersion: true, isBanned: true },
   });
-  if (!user) return null;
+  if (!user || user.isBanned) return null;
   if ((jwt.tokenVersion ?? 0) !== user.tokenVersion) return null;
   return {
     userId: user.id,

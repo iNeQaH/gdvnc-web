@@ -57,6 +57,8 @@ export async function POST(req: Request) {
             supporterUntil: true,
             passwordHash: true,
             tokenVersion: true,
+            isBanned: true,
+            banReason: true,
           },
         })
       : null;
@@ -71,6 +73,17 @@ export async function POST(req: Request) {
             : 'Tên người dùng / Email hoặc mật khẩu không chính xác.',
         },
         { status: 401 }
+      );
+    }
+
+    if (user.isBanned) {
+      return NextResponse.json(
+        {
+          error: en
+            ? `Your account has been suspended.${user.banReason ? ' Reason: ' + user.banReason : ''}`
+            : `Tài khoản của bạn đã bị đình chỉ hoạt động.${user.banReason ? ' Lý do: ' + user.banReason : ''}`,
+        },
+        { status: 403 }
       );
     }
 
