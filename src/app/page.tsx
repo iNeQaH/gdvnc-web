@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Star, Moon, Wrench, Search, CheckCircle2, User, Trash2 } from 'lucide-react';
+import { Star, Moon, Wrench, Swords, Search, CheckCircle2, User, Trash2 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { formatCp } from '@/lib/creatorPoints';
 import { levelPath } from '@/lib/levelUrl';
@@ -261,11 +261,12 @@ export default function HomePage() {
             onClick={() => setMode('CHALLENGE')}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
             style={{
-              backgroundColor: mode === 'CHALLENGE' ? 'var(--accent)' : 'transparent',
-              color: mode === 'CHALLENGE' ? 'var(--accent-fg)' : 'var(--text-title)',
-              opacity: mode === 'CHALLENGE' ? 1 : 0.6,
+              backgroundColor: mode === 'CHALLENGE' ? 'var(--bg-card)' : 'transparent',
+              color: mode === 'CHALLENGE' ? 'var(--accent)' : 'var(--text-dim)',
+              boxShadow: mode === 'CHALLENGE' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
             }}
           >
+            <Swords className="w-3.5 h-3.5" />
             {t('tags.challenge')}
           </button>
           <button

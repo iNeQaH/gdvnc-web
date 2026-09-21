@@ -125,19 +125,9 @@
 }
 
 /* 4. LAVENDER THEME */
-[data-theme="lavender"] body {
-  background-image: url('/assets/tsumiki/menu-background.png');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-}
-.dark[data-theme="lavender"] body {
-  background-blend-mode: multiply;
-  background-color: #2e1f40; /* Dark purple tint */
-}
 [data-theme="lavender"] {
-  --bg-page: transparent;
-  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-page: #f5f3ff;
+  --bg-card: #ffffff;
   --bg-subtle: #faf5ff;
   --border-ui: #ddd6fe;
   --border-subtle: #ede9fe;
@@ -153,19 +143,19 @@
   --accent-fg: #ffffff;
 }
 .dark[data-theme="lavender"] {
-  --bg-page: transparent;
-  --bg-card: rgba(35, 30, 53, 0.85);
-  --bg-subtle: #1a1728;
-  --border-ui: #4c3d6e;
-  --border-subtle: #332a4a;
+  --bg-page: #130d21;
+  --bg-card: #1f1733;
+  --bg-subtle: #19122b;
+  --border-ui: #3f2f63;
+  --border-subtle: #2d2147;
   
   --text-title: #f5f3ff;
   --text-body: #ede9fe;
-  --text-dim: #ddd6fe;
+  --text-dim: #a78bfa;
 
   --accent: #a78bfa;
   --accent-hover: #8b5cf6;
-  --accent-bg: #5b21b6;
+  --accent-bg: #4c1d95;
   --accent-text: #ede9fe;
   --accent-fg: #ffffff;
 }
