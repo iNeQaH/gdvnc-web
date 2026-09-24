@@ -11,6 +11,7 @@ const en = {
   'nav.announcements': 'Announcements',
   'nav.admin': 'Admin Panel',
   'nav.guidelines': 'Guidelines & Rules',
+  'nav.changelog': 'Change Log',
   'nav.login': 'Login / Register',
   'nav.logout': 'Logout',
   'nav.profile': 'My Profile',

@@ -17,6 +17,7 @@ import { compareListLevels, compareVnListLevels, placementMatchesTiers } from '@
 import { levelPath } from '@/lib/levelUrl';
 import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
 import { isStaffRole } from '@/lib/roles';
+import ChangeLogTab from '@/components/ChangeLogTab';
 
 const tabNames: Record<string, string> = {
   featured: 'Featured List',
@@ -25,6 +26,7 @@ const tabNames: Record<string, string> = {
   pemonlist: 'Pemon List',
   vn: 'Made in VN',
   challenge: 'Challenge List',
+  changelog: 'Nhật ký',
 };
 
 const tabDescriptions: Record<string, string> = {
@@ -34,6 +36,7 @@ const tabDescriptions: Record<string, string> = {
   pemonlist: 'Danh sách Platformer Demon trên thế giới',
   vn: 'Tổng hợp tất cả các level được đánh giá bới người Việt',
   challenge: 'Danh sách các màn chơi Challenge',
+  changelog: 'Lịch sử thay đổi xếp hạng, thứ hạng top 150 và rating của Demon List & Pemon List',
 };
 
 export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main' | 'challenge' }) {
@@ -45,7 +48,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
 
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-  const [listTab, setListTab] = useState<'featured' | 'classic' | 'demonlist' | 'pemonlist' | 'vn' | 'challenge'>(
+  const [listTab, setListTab] = useState<'featured' | 'classic' | 'demonlist' | 'pemonlist' | 'vn' | 'challenge' | 'changelog'>(
     listKind === 'challenge' ? 'challenge' : 'featured'
   );
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -67,7 +70,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab');
-      if (tabParam && ['featured', 'classic', 'demonlist', 'pemonlist', 'vn', 'challenge'].includes(tabParam)) {
+      if (tabParam && ['featured', 'classic', 'demonlist', 'pemonlist', 'vn', 'challenge', 'changelog'].includes(tabParam)) {
         setListTab(tabParam as any);
       }
     }
@@ -99,6 +102,10 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
   }, [search, listTab, currentPage, filterModes, filterTiers, filterFaces, filterVN]);
 
   const fetchLevels = () => {
+    if (listTab === 'changelog') {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const params = new URLSearchParams();
     params.set('ssp', '1');
@@ -216,7 +223,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-1 p-0.5 rounded-xl border w-fit max-w-full overflow-x-auto" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-            {(['featured', 'classic', 'demonlist', 'pemonlist', 'vn', 'challenge'] as const).map((tab) => (
+            {(['featured', 'classic', 'demonlist', 'pemonlist', 'vn', 'challenge', 'changelog'] as const).map((tab) => (
               <button
                 key={tab}
                 type="button"
@@ -242,63 +249,70 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
           </div>
           <p className="text-[13px] font-medium ui-dim px-1">{tabDescriptions[listTab]}</p>
         </div>
-        <div className="flex flex-col lg:flex-row justify-between gap-3 items-stretch lg:items-center">
-          <div className="flex flex-1 flex-wrap sm:flex-nowrap items-center gap-2">
-            <div className="relative flex-1 min-w-[180px] max-w-md">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ui-dim" />
-              <input
-                type="text"
-                placeholder={t('levelslist.search_demon')}
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-9 pr-14 py-2 rounded-xl text-xs font-semibold ui-input focus:ring-2 focus:ring-red-500/20 bg-[var(--bg-subtle)] border border-[var(--border-ui)]"
-              />
-              {searchInput && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchInput('');
-                    setSearch('');
-                    setCurrentPage(1);
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-bold ui-dim hover:opacity-100 px-1.5 py-0.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10"
-                >
-                  {t('common.clear')}
-                </button>
-              )}
+
+        {listTab !== 'changelog' && (
+          <div className="flex flex-col lg:flex-row justify-between gap-3 items-stretch lg:items-center">
+            <div className="flex flex-1 flex-wrap sm:flex-nowrap items-center gap-2">
+              <div className="relative flex-1 min-w-[180px] max-w-md">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ui-dim" />
+                <input
+                  type="text"
+                  placeholder={t('levelslist.search_demon')}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="w-full pl-9 pr-14 py-2 rounded-xl text-xs font-semibold ui-input focus:ring-2 focus:ring-red-500/20 bg-[var(--bg-subtle)] border border-[var(--border-ui)]"
+                />
+                {searchInput && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchInput('');
+                      setSearch('');
+                      setCurrentPage(1);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-bold ui-dim hover:opacity-100 px-1.5 py-0.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10"
+                  >
+                    {t('common.clear')}
+                  </button>
+                )}
+              </div>
+
+              <button
+                onClick={() => setIsFilterModalOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ui-subtle hover:bg-black/5 dark:hover:bg-white/5 shrink-0 cursor-pointer"
+                style={{ borderColor: 'var(--border-ui)' }}
+              >
+                <Settings className="w-3.5 h-3.5" />
+                <span>Filters</span>
+                {isAnyFilterActive && (
+                  <span className="w-2 h-2 rounded-full bg-red-500 ml-0.5"></span>
+                )}
+              </button>
             </div>
 
-            <button
-              onClick={() => setIsFilterModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ui-subtle hover:bg-black/5 dark:hover:bg-white/5 shrink-0 cursor-pointer"
-              style={{ borderColor: 'var(--border-ui)' }}
-            >
-              <Settings className="w-3.5 h-3.5" />
-              <span>Filters</span>
-              {isAnyFilterActive && (
-                <span className="w-2 h-2 rounded-full bg-red-500 ml-0.5"></span>
-              )}
-            </button>
+            <div className="flex items-center justify-end gap-2 shrink-0">
+              <button
+                onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
+                className="p-2 rounded-xl border transition-all flex items-center justify-center cursor-pointer hover:bg-black/5 dark:hover:bg-white/5"
+                style={{
+                  backgroundColor: 'var(--bg-subtle)',
+                  borderColor: 'var(--border-ui)',
+                  color: 'var(--text-title)',
+                }}
+                title="Chuyển chế độ xem Lưới / Danh sách"
+              >
+                {viewMode === 'list' ? <LayoutGrid className="w-4 h-4" /> : <List className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
-
-          <div className="flex items-center justify-end gap-2 shrink-0">
-            <button
-              onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
-              className="p-2 rounded-xl border transition-all flex items-center justify-center cursor-pointer hover:bg-black/5 dark:hover:bg-white/5"
-              style={{
-                backgroundColor: 'var(--bg-subtle)',
-                borderColor: 'var(--border-ui)',
-                color: 'var(--text-title)',
-              }}
-              title="Chuyển chế độ xem Lưới / Danh sách"
-            >
-              {viewMode === 'list' ? <LayoutGrid className="w-4 h-4" /> : <List className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Level List */}
+      {listTab === 'changelog' ? (
+        <ChangeLogTab />
+      ) : (
+        <>
+          {/* Level List */}
       <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'ui-zebra-list flex flex-col'}>
         {loading ? (
           <div className="col-span-full p-16 text-center ui-dim text-xs font-medium">{t('levelslist.loading')}</div>
@@ -588,8 +602,10 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
           onPageChange={setCurrentPage} 
           onJumpToRank={jumpToRank}
         />
+        </>
+      )}
 
-        {/* Modals */}
+      {/* Modals */}
       <LevelFormModal
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}

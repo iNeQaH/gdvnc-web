@@ -4,6 +4,7 @@ import { calculateBasePp, calculateLevelBasePp } from '@/lib/ScoringEngine';
 import { extractYoutubeId, preferMinPercent, preferText, preferYoutubeId } from '@/lib/upsertLevel';
 import { loadListSnapshot, persistLocalListSnapshot } from '@/lib/listSnapshot';
 import classicMedia from '@/lib/data/pointercrateClassicMedia.json';
+import { diffAndLogListChanges, LevelSnapshot } from '@/lib/listChangeLog';
 
 export type ExternalListLevel = {
   gdLevelId: number;
@@ -271,9 +272,17 @@ async function applyListedLevelsToDb(mode: 'CLASSIC' | 'PLATFORMER', external: E
       minPercent: true,
       basePp: true,
       difficultyFace: true,
+      ratingType: true,
       isChallenge: true,
     },
   });
+  const existingSnapshot: LevelSnapshot[] = existing.map((l) => ({
+    gdLevelId: l.gdLevelId,
+    name: l.name,
+    placement: l.placement,
+    ratingType: l.ratingType,
+    difficultyFace: l.difficultyFace,
+  }));
   const byGd = new Map(existing.map((l) => [l.gdLevelId, l]));
   const seen = new Set<number>();
   const affectedIds: string[] = [];
@@ -392,6 +401,26 @@ async function applyListedLevelsToDb(mode: 'CLASSIC' | 'PLATFORMER', external: E
       );
     }
     affectedIds.push(...staleIds);
+  }
+
+  try {
+    const newLevels = await prisma.level.findMany({
+      where: { isChallenge: false, mode: levelMode },
+      select: {
+        gdLevelId: true,
+        name: true,
+        placement: true,
+        ratingType: true,
+        difficultyFace: true,
+      },
+    });
+    await diffAndLogListChanges(
+      mode === 'PLATFORMER' ? 'PEMON' : 'DEMON',
+      existingSnapshot,
+      newLevels
+    );
+  } catch (err) {
+    console.error('Failed to diff and log list changes:', err);
   }
 
   return {

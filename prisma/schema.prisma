@@ -400,3 +400,27 @@ model PageVisit {
   @@index([createdAt, ipHash])
   @@index([createdAt, path])
 }
+
+model ListChangeLog {
+  id                 String   @id @default(uuid())
+  list               String   // "DEMON" | "PEMON"
+  eventType          String   // "LEVEL_ADDED" | "LEVEL_REMOVED" | "LEVEL_MOVED" | "LEVEL_DROPPED" | "RATING_UPDATED"
+  gdLevelId          Int
+  levelName          String
+  oldPlacement       Int?
+  newPlacement       Int?
+  aboveLevelName     String?
+  belowLevelName     String?
+  pushedOutLevelName String?
+  causedByLevelName  String?
+  causedByPlacement  Int?
+  oldRating          String?
+  newRating          String?
+  details            String?  @db.Text
+  createdAt          DateTime @default(now())
+
+  @@index([list, createdAt(sort: Desc)])
+  @@index([list])
+  @@index([gdLevelId])
+  @@index([eventType])
+}

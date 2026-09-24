@@ -5,6 +5,7 @@ import { recalculateUserPp as recalcUserPp } from '@/lib/recordUtils';
 import { schedulePersistLocalListSnapshot } from '@/lib/listSnapshot';
 import { formatDifficultyLabel, mapDifficultyFace, mapRatingType, pickGdCreatorName, pickGdLevelName } from '@/lib/gdDifficulty';
 import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
+import { diffAndLogListChanges } from '@/lib/listChangeLog';
 
 export async function triggerBackgroundPpRecalc(levelIds: string[], mode: LevelMode) {
   const records = await prisma.record.findMany({
@@ -411,6 +412,14 @@ export async function upsertLevelFromForm(input: {
     existingLevel.vnPlacement !== targetVnPlacement ||
     existingLevel.isChallenge !== isChallengeLevel;
 
+  const oldRankedSnapshot =
+    !isChallengeLevel && (targetPlacement != null || existingLevel?.placement != null)
+      ? await prisma.level.findMany({
+          where: { mode: pMode, isChallenge: false, placement: { not: null } },
+          select: { gdLevelId: true, name: true, placement: true, ratingType: true, difficultyFace: true },
+        })
+      : [];
+
   await prisma.$transaction(
     async (tx) => {
       if (placementChanged) {
@@ -462,6 +471,22 @@ export async function upsertLevelFromForm(input: {
   }
   if (diffs.length > 0) {
     await triggerBackgroundPpRecalc(diffs.map((d) => d.id), pMode);
+  }
+
+  if (!isChallengeLevel && (oldRankedSnapshot.length > 0 || (targetPlacement != null && targetPlacement <= 150))) {
+    try {
+      const newRankedSnapshot = await prisma.level.findMany({
+        where: { mode: pMode, isChallenge: false, placement: { not: null } },
+        select: { gdLevelId: true, name: true, placement: true, ratingType: true, difficultyFace: true },
+      });
+      void diffAndLogListChanges(
+        pMode === LevelMode.PLATFORMER ? 'PEMON' : 'DEMON',
+        oldRankedSnapshot,
+        newRankedSnapshot
+      ).catch(console.error);
+    } catch (err) {
+      console.error('Failed to log admin level diff:', err);
+    }
   }
 
   if (!isChallengeLevel) {

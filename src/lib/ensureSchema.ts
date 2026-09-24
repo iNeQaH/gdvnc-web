@@ -11,6 +11,7 @@ async function columnSet(db: PrismaClient) {
         (table_name = 'User' AND column_name IN ('tokenVersion', 'hardestClassicLevelId', 'hardestPlatformerLevelId', 'isBanned', 'banReason'))
         OR (table_name = 'Otp' AND column_name = 'failedAttempts')
         OR (table_name = 'PageVisit' AND column_name = 'id')
+        OR (table_name = 'ListChangeLog' AND column_name = 'id')
       )
   `;
   return new Set(rows.map((row) => `${row.table_name}.${row.column_name}`));
@@ -47,6 +48,29 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
       )
     `);
   }
+  if (!have.has('ListChangeLog.id')) {
+    await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "ListChangeLog" (
+        "id" TEXT NOT NULL,
+        "list" TEXT NOT NULL,
+        "eventType" TEXT NOT NULL,
+        "gdLevelId" INTEGER NOT NULL,
+        "levelName" TEXT NOT NULL,
+        "oldPlacement" INTEGER,
+        "newPlacement" INTEGER,
+        "aboveLevelName" TEXT,
+        "belowLevelName" TEXT,
+        "pushedOutLevelName" TEXT,
+        "causedByLevelName" TEXT,
+        "causedByPlacement" INTEGER,
+        "oldRating" TEXT,
+        "newRating" TEXT,
+        "details" TEXT,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "ListChangeLog_pkey" PRIMARY KEY ("id")
+      )
+    `);
+  }
 }
 
 /** Indexes/FKs — do not block the request that needed the new columns. */
@@ -76,6 +100,10 @@ async function addIndexesInBackground(db: PrismaClient) {
     `CREATE INDEX IF NOT EXISTS "PageVisit_createdAt_idx" ON "PageVisit"("createdAt")`,
     `CREATE INDEX IF NOT EXISTS "PageVisit_path_idx" ON "PageVisit"("path")`,
     `CREATE INDEX IF NOT EXISTS "PageVisit_ipHash_idx" ON "PageVisit"("ipHash")`,
+    `CREATE INDEX IF NOT EXISTS "ListChangeLog_list_createdAt_idx" ON "ListChangeLog"("list", "createdAt" DESC)`,
+    `CREATE INDEX IF NOT EXISTS "ListChangeLog_list_idx" ON "ListChangeLog"("list")`,
+    `CREATE INDEX IF NOT EXISTS "ListChangeLog_gdLevelId_idx" ON "ListChangeLog"("gdLevelId")`,
+    `CREATE INDEX IF NOT EXISTS "ListChangeLog_eventType_idx" ON "ListChangeLog"("eventType")`,
     `DO $$ BEGIN
       IF EXISTS (
         SELECT 1 FROM pg_constraint WHERE conname = 'SiteAnnouncement_authorId_fkey'
@@ -123,7 +151,8 @@ export async function applyPendingSchema(db: PrismaClient): Promise<void> {
     have.has('Otp.failedAttempts') &&
     have.has('User.hardestClassicLevelId') &&
     have.has('User.hardestPlatformerLevelId') &&
-    have.has('PageVisit.id');
+    have.has('PageVisit.id') &&
+    have.has('ListChangeLog.id');
   if (complete) return;
   await addMissingColumns(db, have);
   void addIndexesInBackground(db);

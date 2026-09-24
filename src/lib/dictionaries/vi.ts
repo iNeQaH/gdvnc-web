@@ -12,6 +12,7 @@ const vi: Record<DictKey, string> = {
   'nav.announcements': 'Thông báo',
   'nav.admin': 'Quản Trị',
   'nav.guidelines': 'Luật & Quy Định',
+  'nav.changelog': 'Nhật ký',
   'nav.login': 'Đăng Nhập / Đăng Ký',
   'nav.logout': 'Đăng Xuất',
   'nav.profile': 'Hồ sơ cá nhân',
