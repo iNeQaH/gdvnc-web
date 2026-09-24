@@ -20,6 +20,7 @@ import {
   History,
   Mail,
   Bell,
+  ScrollText,
 } from 'lucide-react';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { useLanguage } from './LanguageContext';
@@ -180,6 +181,7 @@ export const Sidebar = () => {
   const navLinks = [
     { href: '/announcements', label: t('nav.announcements'), icon: Bell },
     { href: '/', label: t('nav.leaderboard'), icon: Star },
+    { href: '/changelog', label: t('nav.changelog'), icon: ScrollText },
     { href: '/levels', label: t('nav.demonlist'), icon: Folder },
     { href: '/guidelines', label: t('nav.guidelines'), icon: BookOpen },
     { href: '/timeline', label: t('nav.timeline'), icon: History },
