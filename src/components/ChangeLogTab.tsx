@@ -5,11 +5,9 @@ import Link from 'next/link';
 import {
   Flame,
   Gamepad2,
+  Swords,
   Plus,
   ArrowDownRight,
-  ArrowUpDown,
-  Trash2,
-  Sparkles,
   RefreshCw,
   ChevronLeft,
   ChevronRight,
@@ -19,10 +17,12 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 
+export type ChangeLogListType = 'DEMON' | 'PEMON' | 'CHALLENGE';
+
 export type ChangeLogEntry = {
   id: string;
-  list: 'DEMON' | 'PEMON';
-  eventType: 'LEVEL_ADDED' | 'LEVEL_REMOVED' | 'LEVEL_MOVED' | 'LEVEL_DROPPED' | 'RATING_UPDATED';
+  list: ChangeLogListType;
+  eventType: 'LEVEL_ADDED' | 'LEVEL_REMOVED';
   gdLevelId: number;
   levelName: string;
   oldPlacement?: number | null;
@@ -32,22 +32,20 @@ export type ChangeLogEntry = {
   pushedOutLevelName?: string | null;
   causedByLevelName?: string | null;
   causedByPlacement?: number | null;
-  oldRating?: string | null;
-  newRating?: string | null;
   details?: string | null;
   createdAt: string;
 };
 
 export default function ChangeLogTab() {
   const { t } = useLanguage();
-  const [activeSubTab, setActiveSubTab] = useState<'DEMON' | 'PEMON'>('DEMON');
+  const [activeSubTab, setActiveSubTab] = useState<ChangeLogListType>('DEMON');
   const [logs, setLogs] = useState<ChangeLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalLogs, setTotalLogs] = useState(0);
 
-  const fetchLogs = async (targetList: 'DEMON' | 'PEMON', targetPage: number) => {
+  const fetchLogs = async (targetList: ChangeLogListType, targetPage: number) => {
     setLoading(true);
     try {
       const res = await fetch(`/api/changelog?list=${targetList}&page=${targetPage}&limit=25`);
@@ -71,7 +69,7 @@ export default function ChangeLogTab() {
     fetchLogs(activeSubTab, page);
   }, [activeSubTab, page]);
 
-  const handleSubTabChange = (list: 'DEMON' | 'PEMON') => {
+  const handleSubTabChange = (list: ChangeLogListType) => {
     if (list === activeSubTab) return;
     setActiveSubTab(list);
     setPage(1);
@@ -115,19 +113,30 @@ export default function ChangeLogTab() {
     return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const getSubTabLabel = (list: ChangeLogListType) => {
+    switch (list) {
+      case 'DEMON':
+        return 'Demon List';
+      case 'PEMON':
+        return 'Pemon List';
+      case 'CHALLENGE':
+        return 'Challenge List';
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Sub-tab Header & Filter */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        {/* Toggle Demon / Pemon */}
+        {/* Toggle Demon / Pemon / Challenge */}
         <div
-          className="flex items-center gap-1 p-1 rounded-xl border w-fit"
+          className="flex items-center gap-1 p-1 rounded-xl border w-fit max-w-full overflow-x-auto"
           style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
         >
           <button
             type="button"
             onClick={() => handleSubTabChange('DEMON')}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0"
             style={{
               backgroundColor: activeSubTab === 'DEMON' ? 'var(--bg-card)' : 'transparent',
               color: activeSubTab === 'DEMON' ? 'var(--accent)' : 'var(--text-dim)',
@@ -140,7 +149,7 @@ export default function ChangeLogTab() {
           <button
             type="button"
             onClick={() => handleSubTabChange('PEMON')}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0"
             style={{
               backgroundColor: activeSubTab === 'PEMON' ? 'var(--bg-card)' : 'transparent',
               color: activeSubTab === 'PEMON' ? 'var(--accent)' : 'var(--text-dim)',
@@ -150,12 +159,25 @@ export default function ChangeLogTab() {
             <Gamepad2 className="w-3.5 h-3.5" />
             Pemon List
           </button>
+          <button
+            type="button"
+            onClick={() => handleSubTabChange('CHALLENGE')}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0"
+            style={{
+              backgroundColor: activeSubTab === 'CHALLENGE' ? 'var(--bg-card)' : 'transparent',
+              color: activeSubTab === 'CHALLENGE' ? 'var(--accent)' : 'var(--text-dim)',
+              boxShadow: activeSubTab === 'CHALLENGE' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+            }}
+          >
+            <Swords className="w-3.5 h-3.5" />
+            Challenge List
+          </button>
         </div>
 
         {/* Counter & Refresh */}
         <div className="flex items-center gap-3 text-xs ui-dim">
           <span>
-            Tổng cộng: <strong className="ui-title">{totalLogs}</strong> sự kiện
+            {getSubTabLabel(activeSubTab)}: <strong className="ui-title">{totalLogs}</strong> sự kiện
           </span>
           <button
             type="button"
@@ -181,9 +203,9 @@ export default function ChangeLogTab() {
           style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
         >
           <Clock className="w-8 h-8 mx-auto ui-dim" />
-          <p className="text-sm font-bold ui-title">Chưa có thay đổi nào được ghi nhận</p>
+          <p className="text-sm font-bold ui-title">Chưa có thay đổi nào cho {getSubTabLabel(activeSubTab)}</p>
           <p className="text-xs ui-dim max-w-sm mx-auto">
-            Các thay đổi về xếp hạng, thêm màn chơi, vị trí top 150 và rating sẽ tự động được lưu lại tại đây.
+            Hệ thống chỉ ghi nhận khi có level mới được thêm vào hoặc level bị đẩy ra khỏi top 150.
           </p>
         </div>
       ) : (
@@ -239,33 +261,6 @@ export default function ChangeLogTab() {
                             <ArrowDownRight className="w-4 h-4" />
                           </div>
                         )}
-                        {log.eventType === 'LEVEL_MOVED' && (
-                          <div
-                            className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs"
-                            style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}
-                            title="Thay đổi vị trí"
-                          >
-                            <ArrowUpDown className="w-4 h-4" />
-                          </div>
-                        )}
-                        {log.eventType === 'LEVEL_DROPPED' && (
-                          <div
-                            className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs"
-                            style={{ backgroundColor: '#ef444418', color: '#ef4444' }}
-                            title="Gỡ khỏi danh sách"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </div>
-                        )}
-                        {log.eventType === 'RATING_UPDATED' && (
-                          <div
-                            className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs"
-                            style={{ backgroundColor: '#f59e0b18', color: '#d97706' }}
-                            title="Cập nhật rating"
-                          >
-                            <Sparkles className="w-4 h-4" />
-                          </div>
-                        )}
                       </div>
 
                       {/* Content details */}
@@ -290,37 +285,9 @@ export default function ChangeLogTab() {
                             </span>
                           )}
 
-                          {log.eventType === 'LEVEL_MOVED' && log.oldPlacement && log.newPlacement && (
-                            <span
-                              className="px-2 py-0.5 rounded-md text-[11px] font-extrabold tracking-tight flex items-center gap-1"
-                              style={{
-                                backgroundColor:
-                                  log.newPlacement < log.oldPlacement ? '#22c55e15' : '#ef444415',
-                                color: log.newPlacement < log.oldPlacement ? '#16a34a' : '#ef4444',
-                              }}
-                            >
-                              #{log.oldPlacement} → #{log.newPlacement}{' '}
-                              {log.newPlacement < log.oldPlacement
-                                ? `(▲ ${log.oldPlacement - log.newPlacement})`
-                                : `(▼ ${log.newPlacement - log.oldPlacement})`}
-                            </span>
-                          )}
-
                           {log.eventType === 'LEVEL_REMOVED' && (
                             <span className="px-2 py-0.5 rounded-md text-[11px] font-extrabold tracking-tight bg-red-500/10 text-red-600 dark:text-red-400">
                               Rớt khỏi Top 150
-                            </span>
-                          )}
-
-                          {log.eventType === 'LEVEL_DROPPED' && (
-                            <span className="px-2 py-0.5 rounded-md text-[11px] font-extrabold tracking-tight bg-red-500/10 text-red-600 dark:text-red-400">
-                              Đã gỡ khỏi list
-                            </span>
-                          )}
-
-                          {log.eventType === 'RATING_UPDATED' && (
-                            <span className="px-2 py-0.5 rounded-md text-[11px] font-extrabold tracking-tight bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                              Rating: {log.oldRating || 'None'} → {log.newRating || 'None'}
                             </span>
                           )}
                         </div>
@@ -377,26 +344,8 @@ export default function ChangeLogTab() {
                                   (vào #{log.causedByPlacement})
                                 </>
                               ) : (
-                                'Bị đẩy khỏi top 150 do thay đổi thứ hạng.'
+                                'Bị đẩy khỏi top 150 do có màn chơi mới lọt vào danh sách.'
                               )}
-                            </span>
-                          )}
-
-                          {log.eventType === 'LEVEL_MOVED' && (
-                            <span>
-                              Đổi thứ hạng trên bảng xếp hạng {activeSubTab === 'DEMON' ? 'Demon List' : 'Pemon List'}.
-                            </span>
-                          )}
-
-                          {log.eventType === 'LEVEL_DROPPED' && (
-                            <span>
-                              Màn chơi không còn thuộc danh sách xếp hạng.
-                            </span>
-                          )}
-
-                          {log.eventType === 'RATING_UPDATED' && (
-                            <span>
-                              Thay đổi cấp độ đánh giá màn chơi.
                             </span>
                           )}
                         </div>

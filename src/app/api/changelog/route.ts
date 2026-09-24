@@ -8,7 +8,7 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const rawList = (searchParams.get('list') || 'DEMON').toUpperCase();
-    const list = rawList === 'PEMON' ? 'PEMON' : 'DEMON';
+    const list = rawList === 'PEMON' ? 'PEMON' : rawList === 'CHALLENGE' ? 'CHALLENGE' : 'DEMON';
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '30', 10) || 30));
     const offset = (page - 1) * limit;

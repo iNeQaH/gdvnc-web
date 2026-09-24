@@ -1,16 +1,13 @@
 import prisma from '@/lib/prisma';
 import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 
-export type ChangeLogEvent =
-  | 'LEVEL_ADDED'
-  | 'LEVEL_REMOVED'
-  | 'LEVEL_MOVED'
-  | 'LEVEL_DROPPED'
-  | 'RATING_UPDATED';
+export type ChangeLogEvent = 'LEVEL_ADDED' | 'LEVEL_REMOVED';
+
+export type ChangeLogListType = 'DEMON' | 'PEMON' | 'CHALLENGE';
 
 export type ChangeLogItem = {
   id?: string;
-  list: 'DEMON' | 'PEMON';
+  list: ChangeLogListType;
   eventType: ChangeLogEvent;
   gdLevelId: number;
   levelName: string;
@@ -28,7 +25,8 @@ export type ChangeLogItem = {
 };
 
 /**
- * Format concise, beautiful human-readable description for change log entries
+ * Format concise, human-readable description for change log entries
+ * ONLY for LEVEL_ADDED and LEVEL_REMOVED
  */
 export function formatChangeLogDetails(item: {
   eventType: ChangeLogEvent;
@@ -40,20 +38,15 @@ export function formatChangeLogDetails(item: {
   pushedOutLevelName?: string | null;
   causedByLevelName?: string | null;
   causedByPlacement?: number | null;
-  oldRating?: string | null;
-  newRating?: string | null;
 }): string {
   const {
     eventType,
     newPlacement,
-    oldPlacement,
     aboveLevelName,
     belowLevelName,
     pushedOutLevelName,
     causedByLevelName,
     causedByPlacement,
-    oldRating,
-    newRating,
   } = item;
 
   switch (eventType) {
@@ -98,29 +91,6 @@ export function formatChangeLogDetails(item: {
       return `Bị đẩy khỏi top 150`;
     }
 
-    case 'LEVEL_MOVED': {
-      if (oldPlacement && newPlacement) {
-        const diff = oldPlacement - newPlacement; // positive = moved up, negative = moved down
-        const changeStr =
-          diff > 0 ? `▲ ${diff} bậc` : diff < 0 ? `▼ ${Math.abs(diff)} bậc` : 'giữ nguyên';
-        return `#${oldPlacement} → #${newPlacement} (${changeStr})`;
-      }
-      return `Thay đổi vị trí xếp hạng`;
-    }
-
-    case 'LEVEL_DROPPED': {
-      if (oldPlacement) {
-        return `Bị gỡ khỏi danh sách (trước đó #${oldPlacement})`;
-      }
-      return `Bị gỡ khỏi danh sách`;
-    }
-
-    case 'RATING_UPDATED': {
-      const o = oldRating || 'None';
-      const n = newRating || 'None';
-      return `Rating: ${o} → ${n}`;
-    }
-
     default:
       return '';
   }
@@ -139,7 +109,7 @@ export async function recordChangeLogs(entries: ChangeLogItem[]): Promise<number
       }
     }
 
-    // Insert safely using raw SQL query (compatible with both current and generated prisma client)
+    // Insert safely using raw SQL query
     for (let i = 0; i < entries.length; i += 50) {
       const chunk = entries.slice(i, i + 50);
       await Promise.all(
@@ -180,10 +150,14 @@ export type LevelSnapshot = {
 };
 
 /**
- * Compare old list state with new list state and generate change logs
+ * Compare old list state with new list state and generate change logs.
+ * ONLY records:
+ * 1) LEVEL_ADDED: Level mới thêm vào top 150 (kèm vị trí trên/dưới và level bị đẩy ra nếu có).
+ * 2) LEVEL_REMOVED: Level bị đẩy ra khỏi top 150 (bởi level mới nào).
+ * Các level khác dù bị dịch chuyển vị trí (LEVEL_MOVED) sẽ KHÔNG ghi vào log theo yêu cầu.
  */
 export async function diffAndLogListChanges(
-  list: 'DEMON' | 'PEMON',
+  list: ChangeLogListType,
   oldLevels: LevelSnapshot[],
   newLevels: LevelSnapshot[]
 ): Promise<number> {
@@ -206,7 +180,7 @@ export async function diffAndLogListChanges(
 
   const logs: ChangeLogItem[] = [];
 
-  // Find levels previously in top 150 that got pushed out (placement > 150 or null)
+  // Find levels previously in top 150 that got pushed out (new placement > 150 or null)
   const pushedOutLevels: LevelSnapshot[] = [];
   for (const old of oldLevels) {
     if (old.placement != null && old.placement >= 1 && old.placement <= 150) {
@@ -245,7 +219,6 @@ export async function diffAndLogListChanges(
   }
 
   // Correlate pushed out levels with newly added levels
-  // If 1 level is pushed out and 1 level added:
   let pushedOutIndex = 0;
   for (const added of newlyAdded) {
     const pushed = pushedOutLevels[pushedOutIndex];
@@ -281,57 +254,7 @@ export async function diffAndLogListChanges(
     });
   }
 
-  // 2. Check for levels moved within top 150
-  for (const l of newRanked) {
-    const old = oldByGd.get(l.gdLevelId);
-    if (old && old.placement != null && old.placement >= 1 && old.placement <= 150) {
-      if (old.placement !== l.placement) {
-        logs.push({
-          list,
-          eventType: 'LEVEL_MOVED',
-          gdLevelId: l.gdLevelId,
-          levelName: l.name,
-          oldPlacement: old.placement,
-          newPlacement: l.placement,
-        });
-      }
-
-      // Check rating changes
-      if (old.ratingType && l.ratingType && old.ratingType !== l.ratingType && l.ratingType !== 'NONE') {
-        logs.push({
-          list,
-          eventType: 'RATING_UPDATED',
-          gdLevelId: l.gdLevelId,
-          levelName: l.name,
-          oldPlacement: l.placement,
-          newPlacement: l.placement,
-          oldRating: old.ratingType,
-          newRating: l.ratingType,
-        });
-      }
-    }
-  }
-
-  // 3. Check for dropped levels (placement set to null from DB)
-  for (const old of oldLevels) {
-    if (old.placement != null && old.placement >= 1 && old.placement <= 150) {
-      const nowInAll = newLevels.find((n) => n.gdLevelId === old.gdLevelId);
-      if (!nowInAll || nowInAll.placement == null) {
-        // Only log if not already logged in pushedOutLevels
-        const alreadyPushed = pushedOutLevels.some((p) => p.gdLevelId === old.gdLevelId);
-        if (!alreadyPushed) {
-          logs.push({
-            list,
-            eventType: 'LEVEL_DROPPED',
-            gdLevelId: old.gdLevelId,
-            levelName: old.name,
-            oldPlacement: old.placement,
-            newPlacement: null,
-          });
-        }
-      }
-    }
-  }
+  // NOTE: LEVEL_MOVED, RATING_UPDATED, LEVEL_DROPPED are intentionally omitted as per requirement.
 
   if (logs.length > 0) {
     return await recordChangeLogs(logs);

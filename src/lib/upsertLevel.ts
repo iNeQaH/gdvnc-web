@@ -413,9 +413,11 @@ export async function upsertLevelFromForm(input: {
     existingLevel.isChallenge !== isChallengeLevel;
 
   const oldRankedSnapshot =
-    !isChallengeLevel && (targetPlacement != null || existingLevel?.placement != null)
+    (targetPlacement != null || existingLevel?.placement != null)
       ? await prisma.level.findMany({
-          where: { mode: pMode, isChallenge: false, placement: { not: null } },
+          where: isChallengeLevel
+            ? { isChallenge: true, placement: { not: null } }
+            : { mode: pMode, isChallenge: false, placement: { not: null } },
           select: { gdLevelId: true, name: true, placement: true, ratingType: true, difficultyFace: true },
         })
       : [];
@@ -473,14 +475,21 @@ export async function upsertLevelFromForm(input: {
     await triggerBackgroundPpRecalc(diffs.map((d) => d.id), pMode);
   }
 
-  if (!isChallengeLevel && (oldRankedSnapshot.length > 0 || (targetPlacement != null && targetPlacement <= 150))) {
+  if (oldRankedSnapshot.length > 0 || (targetPlacement != null && targetPlacement <= 150)) {
     try {
       const newRankedSnapshot = await prisma.level.findMany({
-        where: { mode: pMode, isChallenge: false, placement: { not: null } },
+        where: isChallengeLevel
+          ? { isChallenge: true, placement: { not: null } }
+          : { mode: pMode, isChallenge: false, placement: { not: null } },
         select: { gdLevelId: true, name: true, placement: true, ratingType: true, difficultyFace: true },
       });
+      const listType = isChallengeLevel
+        ? 'CHALLENGE'
+        : pMode === LevelMode.PLATFORMER
+        ? 'PEMON'
+        : 'DEMON';
       void diffAndLogListChanges(
-        pMode === LevelMode.PLATFORMER ? 'PEMON' : 'DEMON',
+        listType,
         oldRankedSnapshot,
         newRankedSnapshot
       ).catch(console.error);
