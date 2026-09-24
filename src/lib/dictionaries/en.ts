@@ -175,7 +175,7 @@ const en = {
   'submit.querying': 'Looking up...',
   'submit.fetch_first': 'Please enter a Level ID and look it up before submitting.',
   'submit.fail': 'Failed to submit the record.',
-  'submit.level_fetch_fail': 'Failed to fetch level',
+  'submit.level_fetch_fail': "Can't fetch level, please submit manually",
   'submit.api_error': 'Error connecting to API',
   'submit.page_desc': 'Submit a player record or a Creator entry for review.',
   'submit.work_gd_match': 'If this GD username matches yours, staff can grant a badge and add CP manually when approving.',

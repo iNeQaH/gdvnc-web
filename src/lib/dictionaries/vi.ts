@@ -171,7 +171,7 @@ const vi: Record<DictKey, string> = {
   'submit.querying': 'Đang tìm...',
   'submit.fetch_first': 'Vui lòng nhập ID và truy vấn Level trước khi nộp.',
   'submit.fail': 'Nộp kỷ lục thất bại.',
-  'submit.level_fetch_fail': 'Không lấy được thông tin màn chơi',
+  'submit.level_fetch_fail': 'Không thể lấy thông tin level, vui lòng nộp thủ công',
   'submit.api_error': 'Lỗi kết nối API',
   'submit.page_desc': 'Nộp kỷ lục người chơi hoặc mục Creator để xét duyệt.',
   'submit.work_gd_match': 'Nếu GD username trùng với tài khoản của bạn, khi duyệt admin có thể trao huy hiệu và cộng CP thủ công.',

@@ -19,14 +19,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) {
-      return NextResponse.json({ error: 'Level not found or GDBrowser is down' }, { status: 404 });
+      return NextResponse.json({ error: "Can't fetch level, please submit manually" }, { status: 404 });
     }
 
     const data = await res.json();
 
     // Workaround for GDBrowser's "Generation Retro" meme when the GD server fails or level is not found
     if (String(data.id) !== String(id)) {
-      return NextResponse.json({ error: 'Level not found on GD Servers (GDBrowser returned fallback)' }, { status: 404 });
+      return NextResponse.json({ error: "Can't fetch level, please submit manually" }, { status: 404 });
     }
 
     return NextResponse.json({

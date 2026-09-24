@@ -148,7 +148,7 @@ function SubmitForm() {
           setIsPlatformer(data.level.isPlatformer || false);
         } else {
           setFetchedLevel(null);
-          setFetchError(data.error || t('submit.level_fetch_fail'));
+          setFetchError(t('submit.level_fetch_fail'));
         }
       } catch {
         if (seq !== fetchSeq.current) return;
