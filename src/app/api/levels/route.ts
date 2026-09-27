@@ -6,7 +6,6 @@ import {
   compareVnListLevels,
   placementMatchesTiers,
 } from '@/lib/levelSort';
-import { applyGdlisthubRanksToLevels } from '@/lib/gdlisthubLists';
 import { checkSiteLockAndBlock } from '@/lib/siteLock';
 import { cachedJson, CACHE_TAGS, PUBLIC_CACHE_HEADERS } from '@/lib/publicCache';
 import { isDemonDifficultyFace, mapDifficultyFace, matchesDifficultyFilter } from '@/lib/gdDifficulty';
@@ -110,18 +109,19 @@ function buildSspWhere(input: {
   const tierClause = tierFieldWhere(rankField, input.filterTiers);
   if (tierClause) and.push(tierClause);
 
-  if (!input.challenge && !input.searching) {
+  if (input.tab === 'classic') {
+    and.push({
+      mode: LevelMode.CLASSIC,
+      isChallenge: false,
+      difficultyFace: { gte: 14 },
+      records: { some: { status: RecordStatus.APPROVED } },
+    });
+  } else if (!input.challenge && !input.searching) {
     if (input.tab === 'featured') {
       and.push({
         isVN: true,
         isChallenge: false,
         OR: [{ vnPlacement: { not: null } }, { difficultyFace: { gte: 10 } }],
-      });
-    } else if (input.tab === 'classic') {
-      and.push({
-        mode: LevelMode.CLASSIC,
-        isChallenge: false,
-        records: { some: { status: RecordStatus.APPROVED } },
       });
     } else if (input.tab === 'demonlist') {
       and.push({
@@ -187,9 +187,7 @@ async function loadSspLevelsPage(searchParams: URLSearchParams) {
 
   let mapped = mapLevelFaces(rows);
   mapped = await attachVictorCounts(mapped);
-  let enriched = applyGdlisthubRanksToLevels(mapped, undefined, undefined, {
-    addMissingVirtual: false,
-  });
+  let enriched = mapped;
 
   let filtered = enriched.filter((lvl: Record<string, unknown>) => {
     const tierRank = vnRanking ? (lvl.vnPlacement as number | null) : (lvl.placement as number | null);
@@ -198,18 +196,21 @@ async function loadSspLevelsPage(searchParams: URLSearchParams) {
     const face = (lvl.difficultyFace as number | null) ?? 10;
     if (!matchesDifficultyFilter(face, filterFaces)) return false;
 
-    if (!challenge && !searching) {
-      if (tab === 'featured') {
-        if (!lvl.isVN) return false;
-        if (!lvl.vnPlacement && !isDemonDifficultyFace(face)) return false;
-      } else if (tab === 'classic') {
+    if (!challenge) {
+      if (tab === 'classic') {
         if (lvl.mode !== 'CLASSIC' || lvl.isChallenge || !(lvl.victorCount as number)) return false;
-      } else if (tab === 'demonlist') {
-        if (lvl.mode !== 'CLASSIC' || !lvl.placement || (lvl.placement as number) > 150) return false;
-      } else if (tab === 'pemonlist') {
-        if (lvl.mode !== 'PLATFORMER' || !lvl.placement || (lvl.placement as number) > 150) return false;
-      } else if (tab === 'vn') {
-        if (!lvl.isVN || lvl.isChallenge) return false;
+        if (((lvl.difficultyFace as number) ?? 0) < 14) return false;
+      } else if (!searching) {
+        if (tab === 'featured') {
+          if (!lvl.isVN) return false;
+          if (!lvl.vnPlacement && !isDemonDifficultyFace(face)) return false;
+        } else if (tab === 'demonlist') {
+          if (lvl.mode !== 'CLASSIC' || !lvl.placement || (lvl.placement as number) > 150) return false;
+        } else if (tab === 'pemonlist') {
+          if (lvl.mode !== 'PLATFORMER' || !lvl.placement || (lvl.placement as number) > 150) return false;
+        } else if (tab === 'vn') {
+          if (!lvl.isVN || lvl.isChallenge) return false;
+        }
       }
     }
 
@@ -235,6 +236,12 @@ async function loadSspLevelsPage(searchParams: URLSearchParams) {
     if (am !== bm) return am === 'CLASSIC' ? -1 : 1;
     return compareListLevels(a, b);
   });
+
+  if (classicRanking) {
+    filtered.forEach((lvl, idx) => {
+      (lvl as Record<string, unknown>).classicRank = idx + 1;
+    });
+  }
 
   const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -263,8 +270,7 @@ async function loadDbLevels(mode: string, tier: string | null, challenge: boolea
   });
 
   const withCounts = await attachVictorCounts(mapLevelFaces(levels));
-  if (challenge) return withCounts.sort(compareListLevels);
-  return applyGdlisthubRanksToLevels(withCounts).sort(compareListLevels);
+  return withCounts.sort(compareListLevels);
 }
 
 export async function GET(req: Request) {

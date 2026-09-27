@@ -4,7 +4,6 @@ import prisma from '@/lib/prisma';
 import { clipText } from '@/lib/validate';
 import { fetchGdBrowser } from '@/lib/upsertLevel';
 import { fetchGdvnSheetRows, type GdvnSheetRow } from '@/lib/gdvnSheet';
-import { gdlisthubItemMaps, isMissingLevelText } from '@/lib/gdlisthubLists';
 import { parseYoutubeVideoField } from '@/lib/timeline/glow';
 import { purgeSheetTimelineEvents } from '@/lib/timeline/purgeSheetEvents';
 
@@ -61,13 +60,7 @@ async function resolveEpicYoutubeIds(rows: GdvnSheetRow[]) {
 }
 
 function creatorNameForRow(row: GdvnSheetRow) {
-  if (!isMissingLevelText(row.creatorName)) return row.creatorName;
-  const maps = gdlisthubItemMaps();
-  return (
-    maps.featured.get(row.gdLevelId)?.creator ||
-    maps.classic.get(row.gdLevelId)?.creator ||
-    row.creatorName
-  );
+  return row.creatorName;
 }
 
 function levelChanged(cur: {

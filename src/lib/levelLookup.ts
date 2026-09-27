@@ -3,8 +3,6 @@ import prisma from '@/lib/prisma';
 import { isAllDigitsId, UUID_RE } from '@/lib/levelUrl';
 import { RecordStatus } from '@prisma/client';
 import { dedupeRecordsByUser } from '@/lib/recordUtils';
-import { getOrCreateStubLevel } from '@/lib/upsertLevel';
-import { gdlisthubItemMaps, hubYoutubeId, isMissingLevelText } from '@/lib/gdlisthubLists';
 
 const levelInclude = {
   records: {
@@ -36,66 +34,15 @@ async function refreshDifficultyFromGd<T extends { id: string; gdLevelId: number
   return level;
 }
 
-async function fillMissingCreatorFromHub<
-  T extends { id: string; gdLevelId: number; name: string; creatorName: string | null; youtubeId: string | null },
->(level: T): Promise<T> {
-  const needCreator = isMissingLevelText(level.creatorName);
-  const needName = isMissingLevelText(level.name);
-  const needVideo = !level.youtubeId;
-  if (!needCreator && !needName && !needVideo) return level;
-
-  const maps = gdlisthubItemMaps();
-  const item = maps.featured.get(level.gdLevelId) || maps.classic.get(level.gdLevelId);
-  const patch: { name?: string; creatorName?: string; youtubeId?: string } = {};
-  if (needName && item?.name) patch.name = item.name;
-  if (needCreator && item?.creator) patch.creatorName = item.creator;
-  const yt = hubYoutubeId(item?.videoID);
-  if (needVideo && yt) patch.youtubeId = yt;
-
-  if (!Object.keys(patch).length) return level;
-  void prisma.level.update({ where: { id: level.id }, data: patch }).catch(() => {});
-  return { ...level, ...patch };
-}
-
 export async function resolvePublicLevel(id: string) {
   if (isAllDigitsId(id)) {
     const gdLevelId = Number(id);
-    let level = await prisma.level.findUnique({
+    const level = await prisma.level.findUnique({
       where: { gdLevelId },
       include: levelInclude,
     });
-    if (!level) {
-      const maps = gdlisthubItemMaps();
-      const item = maps.featured.get(gdLevelId) || maps.classic.get(gdLevelId);
-      if (!item) notFound();
-      await getOrCreateStubLevel({
-        gdLevelId,
-        name: item.name || undefined,
-        creatorName: item.creator || undefined,
-        isPlatformer: item.isPlatformer,
-      });
-      if (item === maps.featured.get(gdLevelId)) {
-        await prisma.level.update({
-          where: { gdLevelId },
-          data: {
-            isVN: true,
-            vnPlacement: item.position,
-            youtubeId: item.videoID && /^[\w-]{11}$/.test(item.videoID) ? item.videoID : undefined,
-          },
-        });
-      } else if (item.videoID && /^[\w-]{11}$/.test(item.videoID)) {
-        await prisma.level.update({
-          where: { gdLevelId },
-          data: { youtubeId: item.videoID },
-        });
-      }
-      level = await prisma.level.findUnique({
-        where: { gdLevelId },
-        include: levelInclude,
-      });
-    }
     if (!level) notFound();
-    return refreshDifficultyFromGd(await fillMissingCreatorFromHub(level));
+    return refreshDifficultyFromGd(level);
   }
 
   if (UUID_RE.test(id)) {

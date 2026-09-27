@@ -303,7 +303,7 @@ export async function upsertLevelFromForm(input: {
   const pMode = (input.mode as LevelMode) || LevelMode.CLASSIC;
   const targetPlacement = parseOptionalPositiveInt(input.placement);
 
-  const isVirtualId = typeof input.id === 'string' && input.id.startsWith('gdlh:');
+  const isVirtualId = typeof input.id === 'string' && input.id.includes(':');
   const realId = input.id && !isVirtualId ? input.id : undefined;
 
   const existingLevel = realId

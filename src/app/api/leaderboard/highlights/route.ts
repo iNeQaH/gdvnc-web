@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { LevelMode } from '@prisma/client';
 import { playerDisplayName } from '@/lib/leaderboard';
-import { GDLISTHUB_CLASSIC, GDLISTHUB_FEATURED, isMissingLevelText } from '@/lib/gdlisthubLists';
 import { publicApiError } from '@/lib/apiError';
 import { cachedJson, CACHE_TAGS, PUBLIC_CACHE_HEADERS } from '@/lib/publicCache';
 
@@ -25,31 +24,6 @@ const userHighlightSelect = {
   classicPp: true,
   creatorPoints: true,
 } as const;
-
-function withHubCreator<T extends { gdLevelId: number; creatorName: string | null }>(level: T | null): T | null {
-  if (!level || !isMissingLevelText(level.creatorName)) return level;
-  const hub =
-    GDLISTHUB_FEATURED.items.find((it) => it.gdLevelId === level.gdLevelId) ||
-    GDLISTHUB_CLASSIC.items.find((it) => it.gdLevelId === level.gdLevelId);
-  if (!hub?.creator) return level;
-  return { ...level, creatorName: hub.creator };
-}
-
-function hubFeaturedTop(mode: 'CLASSIC' | 'PLATFORMER') {
-  const wantPlat = mode === 'PLATFORMER';
-  const item = GDLISTHUB_FEATURED.items.find((it) => Boolean(it.isPlatformer) === wantPlat);
-  if (!item) return null;
-  return {
-    id: `gdlh:${item.gdLevelId}`,
-    gdLevelId: item.gdLevelId,
-    name: item.name,
-    creatorName: item.creator,
-    placement: item.position,
-    vnPlacement: item.position,
-    basePp: 0,
-    mode,
-  };
-}
 
 export async function GET() {
   try {
@@ -78,8 +52,8 @@ export async function GET() {
           }),
         ]);
 
-        const topClassicLevel = withHubCreator(dbClassic) || hubFeaturedTop('CLASSIC');
-        const topPlatformerLevel = withHubCreator(dbPlatformer) || hubFeaturedTop('PLATFORMER');
+        const topClassicLevel = dbClassic;
+        const topPlatformerLevel = dbPlatformer;
 
         const topPlayer = topPlayerRow
           ? {

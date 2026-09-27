@@ -28,7 +28,7 @@ const tabNames: Record<string, string> = {
 
 const tabDescriptions: Record<string, string> = {
   featured: 'Danh sách các Demon được đánh giá của người Việt',
-  classic: 'Danh sách các Demon đã được đánh bại bởi người Việt',
+  classic: 'Danh sách các Extreme Demon đã được đánh bại bởi người Việt',
   demonlist: 'Danh sách demon trên thế giới',
   pemonlist: 'Danh sách Platformer Demon trên thế giới',
   vn: 'Tổng hợp tất cả các level được đánh giá bới người Việt',
@@ -328,8 +328,8 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
             const listRank = (currentPage - 1) * pageSize + idx + 1;
             const placement = vnRanking
               ? (lvl.vnPlacement ? '#' + lvl.vnPlacement : '-')
-              : searching || isChallengeList
-                ? '#' + listRank
+              : searching || isChallengeList || listTab === 'classic'
+                ? '#' + (lvl.classicRank || listRank)
                 : (lvl.placement ? '#' + lvl.placement : '#' + listRank);
             if (viewMode === 'list') {
               return (
