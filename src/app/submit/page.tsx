@@ -483,6 +483,8 @@ function SubmitForm() {
                   <label className="text-xs font-bold ui-title">{t('submit.hz')} *</label>
                   <input
                     type="number"
+                    min="1"
+                    max="999"
                     required
                     value={hz}
                     onChange={(e) => setHz(e.target.value)}
@@ -494,6 +496,8 @@ function SubmitForm() {
                   <label className="text-xs font-bold ui-title">{t('submit.fps')} *</label>
                   <input
                     type="number"
+                    min="0"
+                    max="999"
                     required
                     value={fps}
                     onChange={(e) => setFps(e.target.value)}

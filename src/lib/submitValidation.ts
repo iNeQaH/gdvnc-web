@@ -31,6 +31,7 @@ export function parseSubmitHz(raw: unknown, fallback = 60): number {
 export function parseSubmitFps(raw: unknown): number | null {
   if (raw === '' || raw == null || Number.isNaN(Number(raw))) return null;
   const n = parseInt(String(raw), 10);
-  if (!Number.isFinite(n) || n < 1 || n > 999) return null;
+  if (!Number.isFinite(n) || n < 0 || n > 999) return null;
   return n;
 }
+

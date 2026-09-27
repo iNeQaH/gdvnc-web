@@ -278,7 +278,7 @@ export default function RecordsTab({
                   )}
                   {rec.hz && (
                     <span className="px-2 py-0.5 rounded ui-subtle font-semibold text-[10px] ui-dim">
-                      {rec.hz}Hz " {rec.fps ? `${rec.fps} FPS " ` : ''}{rec.device || 'PC'}
+                      {rec.hz}Hz • {rec.fps != null ? `${rec.fps} FPS • ` : ''}{rec.device || 'PC'}
                     </span>
                   )}
                 </div>
