@@ -31,6 +31,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
     minPercent: '100',
     placement: '',
     vnPlacement: '',
+    classicRank: '',
     mode: 'CLASSIC',
     isVN: false,
     isChallenge: false,
@@ -121,6 +122,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
         minPercent: initialData.minPercent?.toString() || '100',
         placement: initialData.placement?.toString() || '',
         vnPlacement: initialData.vnPlacement?.toString() || '',
+        classicRank: initialData.classicRank?.toString() || '',
         mode: initialData.mode || 'CLASSIC',
         isVN: initialData.isVN || false,
         isChallenge: initialData.isChallenge || false,
@@ -142,6 +144,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
         minPercent: '100',
         placement: '',
         vnPlacement: '',
+        classicRank: '',
         mode: 'CLASSIC',
         isVN: false,
         isChallenge: false,
@@ -425,6 +428,18 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
                 onChange={e => setForm({...form, vnPlacement: e.target.value})}
                 className="w-full ui-input px-3 py-2 rounded-xl text-xs font-bold"
                 placeholder={t('admin.vn_placement_ph')}
+              />
+            </div>
+            )}
+            {form.mode === 'CLASSIC' && !form.isChallenge && (
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold uppercase ui-dim">Classic Rank</label>
+              <input 
+                type="number" 
+                value={form.classicRank}
+                onChange={e => setForm({...form, classicRank: e.target.value})}
+                className="w-full ui-input px-3 py-2 rounded-xl text-xs font-bold"
+                placeholder="Classic List #"
               />
             </div>
             )}

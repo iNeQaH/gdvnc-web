@@ -12,6 +12,7 @@ async function columnSet(db: PrismaClient) {
         OR (table_name = 'Otp' AND column_name = 'failedAttempts')
         OR (table_name = 'PageVisit' AND column_name = 'id')
         OR (table_name = 'ListChangeLog' AND column_name = 'id')
+        OR (table_name = 'Level' AND column_name = 'classicRank')
       )
   `;
   return new Set(rows.map((row) => `${row.table_name}.${row.column_name}`));
@@ -71,6 +72,9 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
       )
     `);
   }
+  if (!have.has('Level.classicRank')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "Level" ADD COLUMN IF NOT EXISTS "classicRank" INTEGER`);
+  }
 }
 
 /** Indexes/FKs — do not block the request that needed the new columns. */
@@ -97,6 +101,7 @@ async function addIndexesInBackground(db: PrismaClient) {
     `CREATE INDEX IF NOT EXISTS "SiteAnnouncement_authorId_idx" ON "SiteAnnouncement"("authorId")`,
     `CREATE INDEX IF NOT EXISTS "Level_mode_isChallenge_placement_idx" ON "Level"("mode", "isChallenge", "placement")`,
     `CREATE INDEX IF NOT EXISTS "Level_isVN_isChallenge_vnPlacement_idx" ON "Level"("isVN", "isChallenge", "vnPlacement")`,
+    `CREATE INDEX IF NOT EXISTS "Level_classicRank_idx" ON "Level"("classicRank")`,
     `CREATE INDEX IF NOT EXISTS "PageVisit_createdAt_idx" ON "PageVisit"("createdAt")`,
     `CREATE INDEX IF NOT EXISTS "PageVisit_path_idx" ON "PageVisit"("path")`,
     `CREATE INDEX IF NOT EXISTS "PageVisit_ipHash_idx" ON "PageVisit"("ipHash")`,
@@ -152,7 +157,8 @@ export async function applyPendingSchema(db: PrismaClient): Promise<void> {
     have.has('User.hardestClassicLevelId') &&
     have.has('User.hardestPlatformerLevelId') &&
     have.has('PageVisit.id') &&
-    have.has('ListChangeLog.id');
+    have.has('ListChangeLog.id') &&
+    have.has('Level.classicRank');
   if (complete) return;
   await addMissingColumns(db, have);
   void addIndexesInBackground(db);

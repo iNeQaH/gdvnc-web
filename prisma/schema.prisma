@@ -103,6 +103,7 @@ model Level {
   isChallenge   Boolean    @default(false)
   placement     Int?       // 1, 2, 3... main / demonlist / pemonlist
   vnPlacement   Int?       // 1, 2, 3... VN tag list (independent of placement)
+  classicRank   Int?       // 1, 2, 3... Classic List rank (independent, persistent)
   basePp        Float
   minPercent    Int        @default(100) // Qualifying %
   
@@ -124,6 +125,7 @@ model Level {
 
   @@index([placement])
   @@index([vnPlacement])
+  @@index([classicRank])
   @@index([mode])
   @@index([isChallenge])
   @@index([isVN])

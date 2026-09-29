@@ -253,6 +253,49 @@ async function shiftChallengePlacements(
   }
 }
 
+async function shiftClassicRankPlacements(
+  tx: any,
+  target: number | null,
+  existing: { id: string; classicRank: number | null } | null
+) {
+  const exclude = existing?.id;
+  const notSelf = exclude ? { id: { not: exclude } } : {};
+  const baseWhere = { mode: LevelMode.CLASSIC, isChallenge: false, ...notSelf };
+  const old = existing?.classicRank ?? null;
+  const next = target;
+
+  if (old != null && old !== next) {
+    if (next == null) {
+      // Removing from Classic List — shift everything above down
+      await tx.level.updateMany({
+        where: { ...baseWhere, classicRank: { gt: old } },
+        data: { classicRank: { decrement: 1 } },
+      });
+      return;
+    }
+    if (old < next) {
+      await tx.level.updateMany({
+        where: { ...baseWhere, classicRank: { gt: old, lte: next } },
+        data: { classicRank: { decrement: 1 } },
+      });
+    } else {
+      await tx.level.updateMany({
+        where: { ...baseWhere, classicRank: { gte: next, lt: old } },
+        data: { classicRank: { increment: 1 } },
+      });
+    }
+    return;
+  }
+
+  if (old == null && next != null) {
+    // New entry — push everything at or below down
+    await tx.level.updateMany({
+      where: { ...baseWhere, classicRank: { gte: next } },
+      data: { classicRank: { increment: 1 } },
+    });
+  }
+}
+
 export async function getOrCreateStubLevel(input: {
   gdLevelId: number;
   name?: string;
@@ -295,6 +338,7 @@ export async function upsertLevelFromForm(input: {
   difficultyFace?: number;
   ratingType?: string;
   vnPlacement?: number | string | null;
+  classicRank?: number | string | null;
 }) {
   const gdLevelId = parseInt(String(input.gdLevelId), 10);
   if (!gdLevelId) throw new Error('Thiếu Level ID.');
@@ -348,6 +392,10 @@ export async function upsertLevelFromForm(input: {
   const isVnLevel = input.isVN !== undefined ? !!input.isVN : !!existingLevel?.isVN;
   const targetVnPlacement =
     isVnLevel && !isChallengeLevel ? parseOptionalPositiveInt(input.vnPlacement) : null;
+  const targetClassicRank =
+    pMode === LevelMode.CLASSIC && !isChallengeLevel
+      ? parseOptionalPositiveInt(input.classicRank)
+      : null;
 
   const placementChanged =
     !isChallengeLevel &&
@@ -359,6 +407,10 @@ export async function upsertLevelFromForm(input: {
     isChallengeLevel &&
     (!existingLevel ||
       existingLevel.placement !== targetPlacement);
+
+  const classicRankChanged =
+    !existingLevel ||
+    (existingLevel as any).classicRank !== targetClassicRank;
 
   const affectedLevelIds: string[] = [];
 
@@ -404,6 +456,7 @@ export async function upsertLevelFromForm(input: {
     difficultyFace: derivedFace,
     ratingType: derivedRating,
     vnPlacement: targetVnPlacement,
+    classicRank: targetClassicRank,
   };
 
   const vnChanged =
@@ -433,6 +486,9 @@ export async function upsertLevelFromForm(input: {
       }
       if (vnChanged) {
         await shiftVnPlacements(tx, targetVnPlacement, existingLevel, isVnLevel && !isChallengeLevel);
+      }
+      if (classicRankChanged) {
+        await shiftClassicRankPlacements(tx, targetClassicRank, existingLevel as any);
       }
 
       let upserted;

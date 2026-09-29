@@ -61,6 +61,7 @@ export async function DELETE(req: Request) {
 
     const oldPlacement = level.placement;
     const oldVnPlacement = level.vnPlacement;
+    const oldClassicRank = (level as any).classicRank as number | null;
     const mode = level.mode;
     let affectedLevelIds: string[] = [];
 
@@ -71,6 +72,13 @@ export async function DELETE(req: Request) {
         await tx.level.updateMany({
           where: { isVN: true, isChallenge: false, vnPlacement: { gt: oldVnPlacement } },
           data: { vnPlacement: { decrement: 1 } },
+        });
+      }
+
+      if (oldClassicRank !== null) {
+        await tx.level.updateMany({
+          where: { mode: LevelMode.CLASSIC, isChallenge: false, classicRank: { gt: oldClassicRank } },
+          data: { classicRank: { decrement: 1 } },
         });
       }
 

@@ -23,6 +23,7 @@ const dbLevelSelect = {
   isChallenge: true,
   placement: true,
   vnPlacement: true,
+  classicRank: true,
   basePp: true,
   minPercent: true,
   creatorName: true,
@@ -38,7 +39,7 @@ const dbLevelSelect = {
 type DbLevelRow = Prisma.LevelGetPayload<{ select: typeof dbLevelSelect }>;
 
 function tierFieldWhere(
-  field: 'placement' | 'vnPlacement',
+  field: 'placement' | 'vnPlacement' | 'classicRank',
   tiers: string[]
 ): Prisma.LevelWhereInput | null {
   if (!tiers.length) return null;
@@ -105,7 +106,7 @@ function buildSspWhere(input: {
     and.push({ isVN: true });
   }
 
-  const rankField = input.vnRanking ? 'vnPlacement' : 'placement';
+  const rankField = input.tab === 'classic' ? 'classicRank' : input.vnRanking ? 'vnPlacement' : 'placement';
   const tierClause = tierFieldWhere(rankField, input.filterTiers);
   if (tierClause) and.push(tierClause);
 
@@ -113,8 +114,7 @@ function buildSspWhere(input: {
     and.push({
       mode: LevelMode.CLASSIC,
       isChallenge: false,
-      difficultyFace: { gte: 14 },
-      records: { some: { status: RecordStatus.APPROVED } },
+      classicRank: { not: null },
     });
   } else if (!input.challenge && !input.searching) {
     if (input.tab === 'featured') {
@@ -190,7 +190,9 @@ async function loadSspLevelsPage(searchParams: URLSearchParams) {
   let enriched = mapped;
 
   let filtered = enriched.filter((lvl: Record<string, unknown>) => {
-    const tierRank = vnRanking ? (lvl.vnPlacement as number | null) : (lvl.placement as number | null);
+    const tierRank = classicRanking
+      ? (lvl.classicRank as number | null)
+      : vnRanking ? (lvl.vnPlacement as number | null) : (lvl.placement as number | null);
     if (!placementMatchesTiers(tierRank, filterTiers)) return false;
 
     const face = (lvl.difficultyFace as number | null) ?? 10;
@@ -198,8 +200,7 @@ async function loadSspLevelsPage(searchParams: URLSearchParams) {
 
     if (!challenge) {
       if (tab === 'classic') {
-        if (lvl.mode !== 'CLASSIC' || lvl.isChallenge || !(lvl.victorCount as number)) return false;
-        if (((lvl.difficultyFace as number) ?? 0) < 14) return false;
+        if (!(lvl.classicRank as number | null)) return false;
       } else if (!searching) {
         if (tab === 'featured') {
           if (!lvl.isVN) return false;
@@ -225,10 +226,9 @@ async function loadSspLevelsPage(searchParams: URLSearchParams) {
       return String(a.creatorName || '').localeCompare(String(b.creatorName || ''));
     }
     if (classicRanking) {
-      return compareListLevels(
-        { placement: a.placement as number | null, difficultyFace: a.difficultyFace as number, name: a.name as string },
-        { placement: b.placement as number | null, difficultyFace: b.difficultyFace as number, name: b.name as string }
-      );
+      const aRank = (a.classicRank as number | null) ?? 999999;
+      const bRank = (b.classicRank as number | null) ?? 999999;
+      return aRank - bRank;
     }
     if (vnRanking) return compareVnListLevels(a, b);
     const am = String(a.mode || '');
@@ -236,12 +236,6 @@ async function loadSspLevelsPage(searchParams: URLSearchParams) {
     if (am !== bm) return am === 'CLASSIC' ? -1 : 1;
     return compareListLevels(a, b);
   });
-
-  if (classicRanking) {
-    filtered.forEach((lvl, idx) => {
-      (lvl as Record<string, unknown>).classicRank = idx + 1;
-    });
-  }
 
   const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / limit));
