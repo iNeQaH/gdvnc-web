@@ -602,6 +602,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
         initialData={editingLevel}
+        editSource={listTab}
         onSaved={() => {
           setIsFormOpen(false);
           fetchLevels();

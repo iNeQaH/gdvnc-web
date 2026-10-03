@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { pageMetadata } from '@/lib/pageMeta';
 import { getSessionUser, isStaffRole } from '@/lib/auth';
+import AdminClientWrapper from './AdminClientWrapper';
 
 export const metadata = pageMetadata(
   'GDVN Admin',
@@ -14,5 +15,5 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   if (!user || !isStaffRole(user.role)) {
     redirect('/login');
   }
-  return <>{children}</>;
+  return <AdminClientWrapper initialUser={user}>{children}</AdminClientWrapper>;
 }

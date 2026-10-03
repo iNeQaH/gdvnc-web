@@ -188,7 +188,7 @@ export const Sidebar = () => {
     { href: '/submit', label: t('nav.submit'), icon: ClipboardList },
     { href: '/support', label: t('nav.supporter'), icon: Heart, highlight: false, isPink: true },
     { href: '/helps', label: t('nav.helps'), icon: Send},
-    ...(isStaffRole(currentUser?.role) ? [{ href: '/admin', label: t('nav.admin'), icon: ShieldCheck }] : []),
+    ...(isStaffRole(currentUser?.role) ? [{ href: '/admin/records', label: t('nav.admin'), icon: ShieldCheck }] : []),
   ];
 
   return (

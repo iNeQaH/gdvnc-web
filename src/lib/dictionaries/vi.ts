@@ -520,6 +520,12 @@ const vi: Record<DictKey, string> = {
   'admin.placement_ph': 'Ví dụ: 1 (Top 1)',
   'admin.vn_placement': 'Top list VN',
   'admin.vn_placement_ph': 'Ví dụ: 1 (VN #1)',
+  'admin.featured_rank': 'H?ng Featured',
+  'admin.classic_rank': 'H?ng Classic',
+  'admin.demonlist_rank': 'H?ng Demonlist',
+  'admin.pemonlist_rank': 'H?ng Pemonlist',
+  'admin.challenge_rank': 'H?ng Challenge',
+    
   'admin.base_pp': 'Base Points (Điểm cơ bản)',
   'admin.min_percent': 'Tiến độ tối thiểu (%)',
   'admin.min_percent_ph': 'Mặc định: 100',

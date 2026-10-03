@@ -17,9 +17,10 @@ interface LevelFormModalProps {
   extraPayload?: Record<string, any>;
   title?: string;
   creatorSubmit?: boolean;
+  editSource?: 'featured' | 'classic' | 'demonlist' | 'pemonlist' | 'challenge' | 'vn' | null;
 }
 
-export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, embedded, submitUrl, extraPayload, title, creatorSubmit }: LevelFormModalProps) {
+export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, embedded, submitUrl, extraPayload, title, creatorSubmit, editSource }: LevelFormModalProps) {
   const { t } = useLanguage();
   const { showToast } = useToast();
   
@@ -409,40 +410,74 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase ui-dim">Top</label>
-              <input 
-                type="number" 
-                value={form.placement}
-                onChange={e => setForm({...form, placement: e.target.value})}
-                className="w-full ui-input px-3 py-2 rounded-xl text-xs font-bold"
-                placeholder="Không xếp hạng"
-              />
-            </div>
-            {form.isVN && !form.isChallenge && (
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase ui-dim">{t('admin.vn_placement')}</label>
-              <input 
-                type="number" 
-                value={form.vnPlacement}
-                onChange={e => setForm({...form, vnPlacement: e.target.value})}
-                className="w-full ui-input px-3 py-2 rounded-xl text-xs font-bold"
-                placeholder={t('admin.vn_placement_ph')}
-              />
-            </div>
-            )}
-            {form.mode === 'CLASSIC' && !form.isChallenge && (
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase ui-dim">Classic Rank</label>
-              <input 
-                type="number" 
-                value={form.classicRank}
-                onChange={e => setForm({...form, classicRank: e.target.value})}
-                className="w-full ui-input px-3 py-2 rounded-xl text-xs font-bold"
-                placeholder="Classic List #"
-              />
-            </div>
-            )}
+            {/* Rank Fields Ordering Logic */}
+            {(() => {
+              const vnField = form.isVN && !form.isChallenge && (
+                <div key="vn" className="space-y-1.5">
+                  <label className={`text-[11px] font-bold uppercase ${editSource === 'featured' || editSource === 'vn' ? 'text-[var(--accent)]' : 'ui-dim'}`}>
+                    {editSource === 'featured' ? t('admin.featured_rank') : t('admin.vn_placement')}
+                  </label>
+                  <input 
+                    type="number" 
+                    value={form.vnPlacement}
+                    onChange={e => setForm({...form, vnPlacement: e.target.value})}
+                    className={`w-full ui-input px-3 py-2 rounded-xl text-xs font-bold ${editSource === 'featured' || editSource === 'vn' ? 'border-[var(--accent)] ring-1 ring-[var(--accent)]' : ''}`}
+                    placeholder={t('admin.vn_placement_ph')}
+                    autoFocus={editSource === 'featured' || editSource === 'vn'}
+                  />
+                </div>
+              );
+
+              const classicField = form.mode === 'CLASSIC' && !form.isChallenge && (
+                <div key="classic" className="space-y-1.5">
+                  <label className={`text-[11px] font-bold uppercase ${editSource === 'classic' ? 'text-[var(--accent)]' : 'ui-dim'}`}>
+                    {t('admin.classic_rank')}
+                  </label>
+                  <input 
+                    type="number" 
+                    value={form.classicRank}
+                    onChange={e => setForm({...form, classicRank: e.target.value})}
+                    className={`w-full ui-input px-3 py-2 rounded-xl text-xs font-bold ${editSource === 'classic' ? 'border-[var(--accent)] ring-1 ring-[var(--accent)]' : ''}`}
+                    placeholder="Classic List #"
+                    autoFocus={editSource === 'classic'}
+                  />
+                </div>
+              );
+
+              const placementField = (
+                <div key="placement" className="space-y-1.5">
+                  <label className={`text-[11px] font-bold uppercase ${['demonlist', 'pemonlist', 'challenge'].includes(editSource as string) ? 'text-[var(--accent)]' : 'ui-dim'}`}>
+                    {editSource === 'demonlist' ? t('admin.demonlist_rank') : editSource === 'pemonlist' ? t('admin.pemonlist_rank') : editSource === 'challenge' ? t('admin.challenge_rank') : 'Top'}
+                  </label>
+                  <input 
+                    type="number" 
+                    value={form.placement}
+                    onChange={e => setForm({...form, placement: e.target.value})}
+                    className={`w-full ui-input px-3 py-2 rounded-xl text-xs font-bold ${['demonlist', 'pemonlist', 'challenge'].includes(editSource as string) ? 'border-[var(--accent)] ring-1 ring-[var(--accent)]' : ''}`}
+                    placeholder="Không xếp hạng"
+                    autoFocus={['demonlist', 'pemonlist', 'challenge'].includes(editSource as string)}
+                  />
+                </div>
+              );
+
+              const fields = [];
+              if (editSource === 'featured' || editSource === 'vn') {
+                if (vnField) fields.push(vnField);
+                fields.push(placementField);
+                if (classicField) fields.push(classicField);
+              } else if (editSource === 'classic') {
+                if (classicField) fields.push(classicField);
+                fields.push(placementField);
+                if (vnField) fields.push(vnField);
+              } else {
+                fields.push(placementField);
+                if (vnField) fields.push(vnField);
+                if (classicField) fields.push(classicField);
+              }
+
+              return fields;
+            })()}
+
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold uppercase ui-dim">{t('admin.min_percent')}</label>
               <input 

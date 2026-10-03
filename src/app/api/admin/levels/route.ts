@@ -137,3 +137,16 @@ export async function DELETE(req: Request) {
     return publicApiError(error, 'Server error', 500);
   }
 }
+
+export async function GET(req: Request) {
+  try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
+
+  try {
+    const levels = await prisma.level.findMany({
+      orderBy: [{ placement: 'asc' }, { vnPlacement: 'asc' }]
+    });
+    return NextResponse.json({ success: true, levels });
+  } catch (error: any) {
+    return publicApiError(error, 'Server error', 500);
+  }
+}
