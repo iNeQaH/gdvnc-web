@@ -415,7 +415,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
               const vnField = form.isVN && !form.isChallenge && (
                 <div key="vn" className="space-y-1.5">
                   <label className={`text-[11px] font-bold uppercase ${editSource === 'featured' || editSource === 'vn' ? 'text-[var(--accent)]' : 'ui-dim'}`}>
-                    {editSource === 'featured' ? t('admin.featured_rank') : t('admin.vn_placement')}
+                    {editSource === 'featured' ? t('admin.featured_rank_label') : t('admin.vn_placement')}
                   </label>
                   <input 
                     type="number" 
@@ -431,7 +431,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
               const classicField = form.mode === 'CLASSIC' && !form.isChallenge && (
                 <div key="classic" className="space-y-1.5">
                   <label className={`text-[11px] font-bold uppercase ${editSource === 'classic' ? 'text-[var(--accent)]' : 'ui-dim'}`}>
-                    {t('admin.classic_rank')}
+                    {t('admin.classic_rank_label')}
                   </label>
                   <input 
                     type="number" 
@@ -447,7 +447,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
               const placementField = (
                 <div key="placement" className="space-y-1.5">
                   <label className={`text-[11px] font-bold uppercase ${['demonlist', 'pemonlist', 'challenge'].includes(editSource as string) ? 'text-[var(--accent)]' : 'ui-dim'}`}>
-                    {editSource === 'demonlist' ? t('admin.demonlist_rank') : editSource === 'pemonlist' ? t('admin.pemonlist_rank') : editSource === 'challenge' ? t('admin.challenge_rank') : 'Top'}
+                    {editSource === 'demonlist' ? t('admin.demonlist_rank_label') : editSource === 'pemonlist' ? t('admin.pemonlist_rank_label') : editSource === 'challenge' ? t('admin.challenge_rank_label') : 'Top'}
                   </label>
                   <input 
                     type="number" 
