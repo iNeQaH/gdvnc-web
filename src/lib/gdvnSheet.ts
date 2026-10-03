@@ -12,6 +12,7 @@ export { gdvnSheetSourceKey };
 export type GdvnSheetRating = 'RATE' | 'FEATURE' | 'EPIC' | 'LEGENDARY' | 'MYTHIC';
 
 export type GdvnSheetRow = {
+  vnPlacement?: number | null;
   gdLevelId: number;
   name: string;
   creatorName: string;
@@ -154,6 +155,7 @@ export function parseGdvnSheetCsv(csv: string): GdvnSheetRow[] {
   const colDiff = headerIndex(headers, 'difficulty');
   const colRating = headerIndex(headers, 'star rated', 'star');
   const colDate = headerIndex(headers, 'date rated', 'date');
+  const colVnPlacement = headerIndex(headers, 'featured rank', 'vn rank', 'vn top', 'top', '#');
   if (colId < 0 || colName < 0 || colRating < 0) {
     throw new Error('Không tìm thấy cột ID / Name / Star Rated trên tab sheet.');
   }
@@ -178,6 +180,13 @@ export function parseGdvnSheetCsv(csv: string): GdvnSheetRow[] {
     const { difficulty, difficultyFace } = parseDifficulty(colDiff >= 0 ? cells[colDiff] || '' : '');
     const ratedAt = colDate >= 0 ? parseRatedAt(cells[colDate] || '') : null;
 
+    const vnPlacementRaw = colVnPlacement >= 0 ? (cells[colVnPlacement] || '').trim() : '';
+    let vnPlacement: number | null = null;
+    if (/^\d+$/.test(vnPlacementRaw)) {
+      vnPlacement = Number(vnPlacementRaw);
+      if (vnPlacement <= 0) vnPlacement = null;
+    }
+
     out.push({
       gdLevelId,
       name,
@@ -188,6 +197,7 @@ export function parseGdvnSheetCsv(csv: string): GdvnSheetRow[] {
       ratingLabel: rating.label,
       ratedAt,
       timelineTier: rating.tier,
+      vnPlacement,
     });
   }
 

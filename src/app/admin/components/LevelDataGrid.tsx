@@ -44,6 +44,8 @@ export default function LevelDataGrid({ currentUser }: { currentUser: any }) {
   const [editCell, setEditCell] = useState<EditCell | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const inputRef = useRef<HTMLInputElement | HTMLSelectElement | null>(null);
 
   const fetchLevels = useCallback(() => {
@@ -83,19 +85,36 @@ export default function LevelDataGrid({ currentUser }: { currentUser: any }) {
       );
     }
     items.sort((a, b) => {
-      let va = a[sortKey] ?? (typeof a[sortKey] === 'number' ? 999999 : '');
-      let vb = b[sortKey] ?? (typeof b[sortKey] === 'number' ? 999999 : '');
-      if (typeof va === 'string') va = va.toLowerCase();
-      if (typeof vb === 'string') vb = vb.toLowerCase();
-      if (typeof va === 'boolean') { va = va ? 1 : 0; vb = vb ? 1 : 0; }
-      if (va == null) va = sortKey === 'placement' || sortKey === 'vnPlacement' || sortKey === 'classicRank' ? 999999 : '';
-      if (vb == null) vb = sortKey === 'placement' || sortKey === 'vnPlacement' || sortKey === 'classicRank' ? 999999 : '';
-      if (va < vb) return sortDir === 'asc' ? -1 : 1;
-      if (va > vb) return sortDir === 'asc' ? 1 : -1;
+      const isNumeric = sortKey === "placement" || sortKey === "vnPlacement" || sortKey === "classicRank" || sortKey === "gdLevelId" || sortKey === "difficultyFace" || sortKey === "minPercent" || sortKey === "basePp";
+      
+      let va = a[sortKey];
+      let vb = b[sortKey];
+
+      if (isNumeric) {
+        va = (va == null || va === "") ? 999999 : Number(va);
+        vb = (vb == null || vb === "") ? 999999 : Number(vb);
+      } else {
+        if (typeof va === "string") va = va.toLowerCase();
+        if (typeof vb === "string") vb = vb.toLowerCase();
+        if (typeof va === "boolean") { va = va ? 1 : 0; vb = vb ? 1 : 0; }
+        va = va ?? "";
+        vb = vb ?? "";
+      }
+
+      if (va < vb) return sortDir === "asc" ? -1 : 1;
+      if (va > vb) return sortDir === "asc" ? 1 : -1;
       return 0;
     });
     return items;
   }, [levels, sortKey, sortDir, search]);
+
+  const paginatedLevels = useMemo(() => {
+    if (pageSize === -1) return sortedLevels;
+    const start = (page - 1) * pageSize;
+    return sortedLevels.slice(start, start + pageSize);
+  }, [sortedLevels, page, pageSize]);
+
+  const totalPages = pageSize === -1 ? 1 : Math.ceil(sortedLevels.length / pageSize);
 
   // --- Save ---
   const saveLevel = async (lvl: any) => {
@@ -368,7 +387,7 @@ export default function LevelDataGrid({ currentUser }: { currentUser: any }) {
             type="text"
             placeholder="Search by name, creator, ID..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setPage(1); }}
             className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border bg-transparent focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
             style={{ borderColor: 'var(--border-ui)' }}
           />
@@ -404,7 +423,7 @@ export default function LevelDataGrid({ currentUser }: { currentUser: any }) {
               {COLUMNS.map(col => (
                 <th
                   key={col.key}
-                  className={`px-2 py-2.5 font-bold text-[10px] uppercase cursor-pointer group hover:bg-[var(--bg-subtle)] transition-colors ${col.w}`}
+                  className={`px-2 py-2.5 font-bold text-[10px] uppercase cursor-pointer group hover:bg-[var(--bg-subtle)] transition-colors ${col.w}`} style={{ resize: "horizontal", overflow: "auto", minWidth: "80px", maxWidth: "400px" }}
                   onClick={() => handleSort(col.key)}
                 >
                   <div className="flex items-center gap-1">
@@ -416,14 +435,14 @@ export default function LevelDataGrid({ currentUser }: { currentUser: any }) {
             </tr>
           </thead>
           <tbody className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
-            {sortedLevels.length === 0 ? (
+            {paginatedLevels.length === 0 ? (
               <tr>
                 <td colSpan={COLUMNS.length + 1} className="py-12 text-center ui-dim">
                   No levels found
                 </td>
               </tr>
             ) : (
-              sortedLevels.map((lvl, idx) => (
+              paginatedLevels.map((lvl, idx) => (
                 <tr
                   key={lvl.id}
                   className={`transition-colors ${savingId === lvl.id ? 'opacity-50' : 'hover:bg-[var(--bg-subtle)]'}`}
@@ -431,7 +450,7 @@ export default function LevelDataGrid({ currentUser }: { currentUser: any }) {
                   <td className="px-2 py-1.5 font-mono text-[10px] opacity-40 text-center">
                     {savingId === lvl.id
                       ? <Loader2 className="w-3 h-3 animate-spin text-[var(--accent)] inline" />
-                      : idx + 1
+                      : (pageSize === -1 ? 0 : (page - 1) * pageSize) + idx + 1
                     }
                   </td>
                   {COLUMNS.map(col => renderCell(lvl, col, idx))}
@@ -440,6 +459,47 @@ export default function LevelDataGrid({ currentUser }: { currentUser: any }) {
             )}
           </tbody>
         </table>
+      </div>
+      
+      {/* Pagination Controls */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 ui-card" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border-ui)" }}>
+        <div className="flex items-center gap-2">
+          <span className="text-xs ui-dim">Hien thi</span>
+          <select 
+            value={pageSize} 
+            onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+            className="text-xs p-1 rounded border outline-none bg-transparent"
+            style={{ borderColor: "var(--border-ui)", color: "var(--text-title)" }}
+          >
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+            <option value={-1}>Tat ca</option>
+          </select>
+          <span className="text-xs ui-dim">tren tong so {sortedLevels.length}</span>
+        </div>
+        
+        {pageSize !== -1 && totalPages > 1 && (
+          <div className="flex items-center gap-1">
+            <button 
+              disabled={page <= 1} 
+              onClick={() => setPage(p => p - 1)}
+              className="px-2 py-1 text-xs border rounded disabled:opacity-30 hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer"
+              style={{ borderColor: "var(--border-ui)", color: "var(--text-title)" }}
+            >
+              Truoc
+            </button>
+            <span className="text-xs px-2 ui-dim font-mono">Trang {page} / {totalPages}</span>
+            <button 
+              disabled={page >= totalPages} 
+              onClick={() => setPage(p => p + 1)}
+              className="px-2 py-1 text-xs border rounded disabled:opacity-30 hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer"
+              style={{ borderColor: "var(--border-ui)", color: "var(--text-title)" }}
+            >
+              Sau
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

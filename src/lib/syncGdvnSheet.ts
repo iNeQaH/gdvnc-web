@@ -13,6 +13,7 @@ const EPIC_PLUS = new Set(['EPIC', 'LEGENDARY', 'MYTHIC']);
 const GDB_FETCH_CAP = 24;
 
 export type GdvnSheetSyncResult = {
+  ranksUpdated: number;
   fetched: number;
   levelsCreated: number;
   levelsUpdated: number;
@@ -70,6 +71,7 @@ function levelChanged(cur: {
   difficultyFace: number;
   ratingType: string;
   isVN: boolean;
+  vnPlacement?: number | null;
 }, row: GdvnSheetRow) {
   return (
     !cur.isVN ||
@@ -77,7 +79,8 @@ function levelChanged(cur: {
     (cur.creatorName || '') !== creatorNameForRow(row) ||
     cur.difficulty !== row.difficulty ||
     cur.difficultyFace !== row.difficultyFace ||
-    cur.ratingType !== row.ratingType
+    cur.ratingType !== row.ratingType ||
+    (row.vnPlacement !== undefined && cur.vnPlacement !== row.vnPlacement)
   );
 }
 
@@ -100,6 +103,7 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
       youtubeId: true,
       mode: true,
       placement: true,
+      vnPlacement: true,
       isChallenge: true,
     },
   });
@@ -126,6 +130,7 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
         isVN: true,
         isChallenge: false,
         placement: null,
+        vnPlacement: row.vnPlacement ?? null,
         basePp: calculateLevelBasePp(null, row.difficultyFace, false),
         minPercent: 100,
         mode: LevelMode.CLASSIC,
@@ -148,6 +153,7 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
               ratingType: string;
               isVN: boolean;
               basePp?: number;
+              vnPlacement?: number | null;
             } = {
               name: clipText(row.name, 160),
               creatorName: clipText(creatorNameForRow(row), 80),
@@ -156,6 +162,9 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
               ratingType: row.ratingType,
               isVN: true,
             };
+            if (row.vnPlacement !== undefined) {
+              data.vnPlacement = row.vnPlacement;
+            }
             if (cur && cur.placement == null) {
               data.basePp = calculateLevelBasePp(null, row.difficultyFace, cur.isChallenge);
             }
@@ -181,5 +190,6 @@ export async function syncGdvnSheet(): Promise<GdvnSheetSyncResult> {
     timelinePurged,
     usersUnverified: 0,
     creatorsQueued: creatorNames.length,
+    ranksUpdated: 0,
   };
 }
