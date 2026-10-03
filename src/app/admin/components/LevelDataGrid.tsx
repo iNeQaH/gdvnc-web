@@ -16,21 +16,21 @@ const RATING_OPTIONS = ['NONE', 'RATE', 'FEATURE', 'EPIC', 'LEGENDARY', 'MYTHIC'
 const MODE_OPTIONS = ['CLASSIC', 'PLATFORMER'] as const;
 
 const COLUMNS = [
-  { key: 'placement', label: 'Top', type: 'number', w: 'w-14' },
-  { key: 'vnPlacement', label: 'VN #', type: 'number', w: 'w-14' },
-  { key: 'classicRank', label: 'Classic #', type: 'number', w: 'w-14' },
-  { key: 'gdLevelId', label: 'GD ID', type: 'number', w: 'w-20' },
-  { key: 'name', label: 'Name', type: 'text', w: 'min-w-[140px]' },
-  { key: 'creatorName', label: 'Creator', type: 'text', w: 'min-w-[100px]' },
-  { key: 'verifierName', label: 'Verifier', type: 'text', w: 'min-w-[100px]' },
-  { key: 'mode', label: 'Mode', type: 'select', options: MODE_OPTIONS, w: 'w-28' },
-  { key: 'difficultyFace', label: 'Diff', type: 'number', w: 'w-14' },
-  { key: 'ratingType', label: 'Rating', type: 'select', options: RATING_OPTIONS, w: 'w-28' },
-  { key: 'isVN', label: 'VN', type: 'checkbox', w: 'w-12' },
-  { key: 'isChallenge', label: 'Challenge', type: 'checkbox', w: 'w-12' },
-  { key: 'minPercent', label: 'Min %', type: 'number', w: 'w-14' },
-  { key: 'basePp', label: 'Base PP', type: 'readonly', w: 'w-16' },
-  { key: 'youtubeId', label: 'YouTube ID', type: 'text', w: 'w-28' },
+  { key: 'placement', label: 'Top', type: 'number', w: 60 },
+  { key: 'vnPlacement', label: 'VN #', type: 'number', w: 60 },
+  { key: 'classicRank', label: 'Classic #', type: 'number', w: 60 },
+  { key: 'gdLevelId', label: 'GD ID', type: 'number', w: 80 },
+  { key: 'name', label: 'Name', type: 'text', w: 200 },
+  { key: 'creatorName', label: 'Creator', type: 'text', w: 120 },
+  { key: 'verifierName', label: 'Verifier', type: 'text', w: 120 },
+  { key: 'mode', label: 'Mode', type: 'select', options: MODE_OPTIONS, w: 100 },
+  { key: 'difficultyFace', label: 'Diff', type: 'number', w: 60 },
+  { key: 'ratingType', label: 'Rating', type: 'select', options: RATING_OPTIONS, w: 100 },
+  { key: 'isVN', label: 'VN', type: 'checkbox', w: 50 },
+  { key: 'isChallenge', label: 'Challenge', type: 'checkbox', w: 70 },
+  { key: 'minPercent', label: 'Min %', type: 'number', w: 60 },
+  { key: 'basePp', label: 'Base PP', type: 'readonly', w: 70 },
+  { key: 'youtubeId', label: 'YouTube ID', type: 'text', w: 120 },
 ] as const;
 
 export default function LevelDataGrid({ currentUser }: { currentUser: any }) {
@@ -47,6 +47,43 @@ export default function LevelDataGrid({ currentUser }: { currentUser: any }) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const inputRef = useRef<HTMLInputElement | HTMLSelectElement | null>(null);
+
+  const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
+    const w: Record<string, number> = {};
+    COLUMNS.forEach(c => w[c.key] = c.w as number);
+    w['__index'] = 40;
+    return w;
+  });
+
+  const resizingCol = useRef<string | null>(null);
+  const startX = useRef<number>(0);
+  const startWidth = useRef<number>(0);
+
+  const startResize = (e: React.MouseEvent, key: string) => {
+    e.stopPropagation();
+    resizingCol.current = key;
+    startX.current = e.clientX;
+    startWidth.current = colWidths[key] || 100;
+  };
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!resizingCol.current) return;
+      const diff = e.clientX - startX.current;
+      let newW = startWidth.current + diff;
+      if (newW < 30) newW = 30;
+      setColWidths(prev => ({ ...prev, [resizingCol.current!]: newW }));
+    };
+    const onMouseUp = () => {
+      resizingCol.current = null;
+    };
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+  }, []);
 
   const fetchLevels = useCallback(() => {
     setLoading(true);
@@ -213,7 +250,7 @@ export default function LevelDataGrid({ currentUser }: { currentUser: any }) {
   };
 
   const cellClass = (isSaving: boolean) =>
-    `px-2 py-1.5 cursor-pointer transition-colors ${isSaving ? 'opacity-40' : 'hover:bg-[var(--accent)]/10'}`;
+    `px-2 py-1.5 cursor-pointer transition-colors overflow-hidden text-ellipsis whitespace-nowrap ${isSaving ? 'opacity-40' : 'hover:bg-[var(--accent)]/10'}`;
 
   const inputClass = 'w-full px-1.5 py-0.5 text-xs rounded border outline-none bg-transparent';
 
@@ -413,23 +450,35 @@ export default function LevelDataGrid({ currentUser }: { currentUser: any }) {
         className="w-full rounded-2xl border overflow-auto max-h-[80vh] shadow-sm"
         style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
       >
-        <table className="w-full text-left border-collapse text-xs">
+        <table className="text-left border-collapse text-xs" style={{ tableLayout: 'fixed', width: 'max-content' }}>
           <thead
             className="sticky top-0 z-20 shadow-sm select-none"
             style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
           >
             <tr className="border-b" style={{ borderColor: 'var(--border-ui)' }}>
-              <th className="px-2 py-2.5 font-bold text-[10px] uppercase opacity-40 w-10">#</th>
+              <th className="relative px-2 py-2.5 font-bold text-[10px] uppercase opacity-40" style={{ width: colWidths['__index'] }}>
+                #
+                <div 
+                  className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-[var(--accent)]/50 active:bg-[var(--accent)] z-10"
+                  onMouseDown={(e) => startResize(e, '__index')}
+                  onClick={e => e.stopPropagation()}
+                />
+              </th>
               {COLUMNS.map(col => (
                 <th
                   key={col.key}
-                  className={`px-2 py-2.5 font-bold text-[10px] uppercase cursor-pointer group hover:bg-[var(--bg-subtle)] transition-colors ${col.w}`} style={{ resize: "horizontal", overflow: "auto", minWidth: "80px", maxWidth: "400px" }}
-                  onClick={() => handleSort(col.key)}
+                  className="relative px-2 py-2.5 font-bold text-[10px] uppercase group hover:bg-[var(--bg-subtle)] transition-colors select-none"
+                  style={{ width: colWidths[col.key] }}
                 >
-                  <div className="flex items-center gap-1">
-                    <span>{col.label}</span>
+                  <div className="flex items-center gap-1 cursor-pointer overflow-hidden whitespace-nowrap" onClick={() => handleSort(col.key)}>
+                    <span className="truncate">{col.label}</span>
                     {renderSortIcon(col.key)}
                   </div>
+                  <div 
+                    className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-[var(--accent)]/50 active:bg-[var(--accent)] z-10"
+                    onMouseDown={(e) => startResize(e, col.key)}
+                    onClick={e => e.stopPropagation()}
+                  />
                 </th>
               ))}
             </tr>
