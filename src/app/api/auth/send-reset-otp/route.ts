@@ -14,7 +14,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid request.' }, { status: 403 });
     }
 
-    const limited = rateLimit(`reset-otp:${getClientIp(req)}`, 3, 60 * 60_000);
+    const limited = rateLimit(`reset-otp:${getClientIp(req)}`, 5, 60 * 60_000);
     if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
     const ip = getClientIp(req);
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const limitedEmail = rateLimit(`reset-otp-email:${cleanEmail}`, 3, 60 * 60_000);
+    const limitedEmail = rateLimit(`reset-otp-email:${cleanEmail}`, 5, 60 * 60_000);
     if (!limitedEmail.ok) return rateLimitResponse(limitedEmail.retryAfterSec);
 
     const existing = await prisma.user.findUnique({

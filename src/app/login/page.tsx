@@ -46,6 +46,11 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
   const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Progressive lockout & attempt hints
+  const [loginCooldown, setLoginCooldown] = useState(0);
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
+  const [suggestReset, setSuggestReset] = useState(false);
+
   // OTP Countdown timer
   useEffect(() => {
     if (otpCooldown > 0) {
@@ -60,6 +65,13 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
       return () => clearTimeout(timer);
     }
   }, [resetCooldown]);
+
+  useEffect(() => {
+    if (loginCooldown > 0) {
+      const timer = setTimeout(() => setLoginCooldown(loginCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [loginCooldown]);
 
   const handleSendResetOtp = async () => {
     setError('');
@@ -198,6 +210,15 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
       const data = await res.json();
       if (!res.ok || !data.success) {
         setError(data.error || t('auth.login_fail'));
+        if (typeof data.retryAfterSec === 'number' && data.retryAfterSec > 0) {
+          setLoginCooldown(data.retryAfterSec);
+        }
+        if (typeof data.remainingAttempts === 'number') {
+          setRemainingAttempts(data.remainingAttempts);
+        }
+        if (data.suggestReset) {
+          setSuggestReset(true);
+        }
         return;
       }
 
@@ -370,7 +391,7 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
               </div>
             </div>
 
-            {/* Remember Me Checkbox */}
+            {/* Remember Me Checkbox & Forgot Password */}
             <div className="flex items-center justify-between text-xs pt-1">
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
@@ -384,23 +405,52 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
               <button
                 type="button"
                 onClick={() => { setTab('reset'); setError(''); setSuccessMsg(''); }}
-                className="font-semibold hover:underline cursor-pointer"
-                style={{ color: 'var(--accent)' }}
+                className={`font-semibold hover:underline cursor-pointer transition-all ${
+                  suggestReset
+                    ? 'px-2 py-1 rounded-lg text-amber-500 dark:text-amber-400 bg-amber-500/15 border border-amber-500/30 font-bold'
+                    : ''
+                }`}
+                style={{ color: suggestReset ? undefined : 'var(--accent)' }}
               >
+                {suggestReset && '🔑 '}
                 {t('auth.forgot_password')}
               </button>
             </div>
 
+            {/* Countdown or Warning alert */}
+            {loginCooldown > 0 && (
+              <div className="p-2.5 rounded-xl text-xs bg-amber-500/10 border border-amber-500/30 text-amber-500 dark:text-amber-400 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-500" />
+                <span>
+                  {language === 'en'
+                    ? `Please wait ${loginCooldown}s before trying again.`
+                    : `Vui lòng đợi ${loginCooldown} giây trước khi thử lại.`}
+                </span>
+              </div>
+            )}
+
+            {loginCooldown === 0 && remainingAttempts !== null && remainingAttempts <= 5 && remainingAttempts > 0 && (
+              <div className="p-2 rounded-xl text-[11px] bg-sky-500/10 border border-sky-500/20 text-sky-400 text-center">
+                {language === 'en'
+                  ? `Notice: ${remainingAttempts} attempt(s) remaining before progressive lockout delay.`
+                  : `Lưu ý: Còn ${remainingAttempts} lần thử trước khi bị áp dụng thời gian chờ.`}
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || loginCooldown > 0}
               className="w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               style={{
                 backgroundColor: 'var(--accent)',
                 color: 'var(--accent-fg)',
               }}
             >
-              {loading ? t('auth.logging_in') : t('auth.login')}
+              {loading
+                ? t('auth.logging_in')
+                : loginCooldown > 0
+                ? (language === 'en' ? `Wait (${loginCooldown}s)` : `Đợi (${loginCooldown}s)`)
+                : t('auth.login')}
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </form>

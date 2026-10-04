@@ -49,6 +49,9 @@ model User {
   supporterUntil DateTime?
   isBanned       Boolean   @default(false)
   banReason      String?   @db.Text
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  lastFailedLoginAt   DateTime?
 
   // Points and rankings
   classicPp     Float     @default(0)

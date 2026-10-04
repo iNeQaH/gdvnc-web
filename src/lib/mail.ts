@@ -29,8 +29,54 @@ function smtpPass(): string {
   return cleanEnv(env('SMTP_PASS')).replace(/\s+/g, '');
 }
 
+function resendApiKey(): string {
+  return cleanEnv(env('RESEND_API_KEY'));
+}
+
+function resendFrom(): string {
+  return cleanEnv(env('RESEND_FROM')) || cleanEnv(env('SMTP_FROM')) || 'GDVN <onboarding@resend.dev>';
+}
+
 export function isMailConfigured(): boolean {
-  return Boolean(smtpUser() && smtpPass());
+  if (cleanEnv(env('MAIL_MOCK')).toLowerCase() === 'true' || cleanEnv(env('MAIL_PROVIDER')).toLowerCase() === 'mock') {
+    return true;
+  }
+  return Boolean(resendApiKey() || (smtpUser() && smtpPass()));
+}
+
+async function sendViaResend(fields: {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+}) {
+  const apiKey = resendApiKey();
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY is not configured in .env');
+  }
+
+  const from = resendFrom();
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from,
+      to: [fields.to],
+      subject: fields.subject,
+      text: fields.text,
+      html: fields.html,
+    }),
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => null);
+    const msg = errorJson?.message || `Resend API returned HTTP ${res.status}`;
+    console.error('Resend email error:', errorJson || msg);
+    throw new Error(`Resend error: ${msg}`);
+  }
 }
 
 function isGmailAddress(user: string): boolean {
@@ -119,9 +165,28 @@ async function sendViaConfiguredTransport(fields: {
   text: string;
   html: string;
 }) {
+  const provider = cleanEnv(env('MAIL_PROVIDER')).toLowerCase();
+
+  // 1. Mock mode
+  if (cleanEnv(env('MAIL_MOCK')).toLowerCase() === 'true' || provider === 'mock') {
+    console.log(`[GDVN MAIL MOCK] ----------------------------------------`);
+    console.log(`To: ${fields.to}`);
+    console.log(`Subject: ${fields.subject}`);
+    console.log(`Content:\n${fields.text}`);
+    console.log(`--------------------------------------------------------`);
+    return;
+  }
+
+  // 2. Resend API mode (priority if key exists and provider is not forced to smtp)
+  if (provider === 'resend' || (resendApiKey() && provider !== 'smtp')) {
+    await sendViaResend(fields);
+    return;
+  }
+
+  // 3. SMTP fallback
   const user = smtpUser();
   if (!user.includes('@')) {
-    throw new Error(`SMTP_USER must be a full email address, not "${user || env('SMTP_USER')}".`);
+    throw new Error(`SMTP_USER must be a full email address, not "${user || env('SMTP_USER')}". Or configure RESEND_API_KEY.`);
   }
 
   const trySend = async (port?: 465 | 587) => {
@@ -151,8 +216,8 @@ export async function sendOtpEmail(to: string, code: string, locale: 'vi' | 'en'
   if (!isMailConfigured()) {
     throw new Error(
       locale === 'en'
-        ? 'Email sending is not configured. Set SMTP_USER and SMTP_PASS in .env'
-        : 'Hệ thống gửi email chưa được cấu hình. Hãy điền SMTP_USER và SMTP_PASS trong file .env'
+        ? 'Email sending is not configured. Set RESEND_API_KEY or SMTP_USER/SMTP_PASS in .env'
+        : 'Hệ thống gửi email chưa được cấu hình. Hãy điền RESEND_API_KEY hoặc SMTP_USER/SMTP_PASS trong file .env'
     );
   }
 
@@ -185,8 +250,8 @@ export async function sendResetPasswordEmail(to: string, code: string, locale: '
   if (!isMailConfigured()) {
     throw new Error(
       locale === 'en'
-        ? 'Email sending is not configured. Set SMTP_USER and SMTP_PASS in .env'
-        : 'Hệ thống gửi email chưa được cấu hình. Hãy điền SMTP_USER và SMTP_PASS trong file .env'
+        ? 'Email sending is not configured. Set RESEND_API_KEY or SMTP_USER/SMTP_PASS in .env'
+        : 'Hệ thống gửi email chưa được cấu hình. Hãy điền RESEND_API_KEY hoặc SMTP_USER/SMTP_PASS trong file .env'
     );
   }
 

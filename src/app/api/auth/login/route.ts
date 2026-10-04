@@ -16,7 +16,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid request.' }, { status: 403 });
     }
 
-    const limited = rateLimit(`login:${getClientIp(req)}`, 8, 60_000);
+    // Relaxed rate limits for production usability: 25 requests per 5 minutes per IP
+    const limited = rateLimit(`login:${getClientIp(req)}`, 25, 300_000);
     if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
     const { username, identifier, password, locale } = await req.json();
@@ -31,7 +32,8 @@ export async function POST(req: Request) {
     }
 
     const lowered = loginInput.toLowerCase();
-    const limitedId = rateLimit(`login-id:${lowered}`, 5, 60_000);
+    // Relaxed identifier rate limit: 15 requests per 5 minutes
+    const limitedId = rateLimit(`login-id:${lowered}`, 15, 300_000);
     if (!limitedId.ok) return rateLimitResponse(limitedId.retryAfterSec);
     const matches = await prisma.$queryRaw<Array<{ id: string }>>`
       SELECT id FROM "User"
@@ -59,20 +61,96 @@ export async function POST(req: Request) {
             tokenVersion: true,
             isBanned: true,
             banReason: true,
+            failedLoginAttempts: true,
+            lockedUntil: true,
           },
         })
       : null;
 
-    const hashToCheck = user?.passwordHash || DUMMY_PASSWORD_HASH;
-    const isMatch = await bcrypt.compare(password, hashToCheck);
-    if (!user?.passwordHash || !isMatch) {
+    // Check database-level progressive account lock
+    if (user?.lockedUntil && user.lockedUntil > new Date()) {
+      const waitSec = Math.max(1, Math.ceil((user.lockedUntil.getTime() - Date.now()) / 1000));
       return NextResponse.json(
         {
           error: en
-            ? 'Incorrect username / email or password.'
-            : 'Tên người dùng / Email hoặc mật khẩu không chính xác.',
+            ? `Account temporarily locked due to multiple failed login attempts. Please wait ${waitSec}s or reset your password.`
+            : `Tài khoản đang tạm khóa do nhập sai mật khẩu nhiều lần. Vui lòng đợi ${waitSec} giây hoặc đặt lại mật khẩu.`,
+          retryAfterSec: waitSec,
+          suggestReset: true,
+          remainingAttempts: 0,
         },
-        { status: 401 }
+        { status: 429, headers: { 'Retry-After': String(waitSec) } }
+      );
+    }
+
+    const hashToCheck = user?.passwordHash || DUMMY_PASSWORD_HASH;
+    const isMatch = await bcrypt.compare(password, hashToCheck);
+    if (!user?.passwordHash || !isMatch) {
+      let nextAttempts = 0;
+      let retryAfterSec = 0;
+      let suggestReset = false;
+
+      if (user?.id) {
+        nextAttempts = (user.failedLoginAttempts || 0) + 1;
+        let newLockedUntil: Date | null = null;
+
+        if (nextAttempts >= 20) {
+          retryAfterSec = 15 * 60; // 15 minutes lockout
+          newLockedUntil = new Date(Date.now() + retryAfterSec * 1000);
+          suggestReset = true;
+        } else if (nextAttempts >= 15) {
+          retryAfterSec = 120; // 2 minutes cooldown
+          newLockedUntil = new Date(Date.now() + retryAfterSec * 1000);
+          suggestReset = true;
+        } else if (nextAttempts >= 10) {
+          retryAfterSec = 30; // 30 seconds cooldown
+          newLockedUntil = new Date(Date.now() + retryAfterSec * 1000);
+          suggestReset = true;
+        } else if (nextAttempts >= 4) {
+          suggestReset = true;
+        }
+
+        try {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              failedLoginAttempts: nextAttempts,
+              lockedUntil: newLockedUntil,
+              lastFailedLoginAt: new Date(),
+            },
+          });
+        } catch (dbErr) {
+          console.error('Failed to update login attempts:', dbErr);
+        }
+      }
+
+      let errorMsg = en
+        ? 'Incorrect username / email or password.'
+        : 'Tên người dùng / Email hoặc mật khẩu không chính xác.';
+
+      if (nextAttempts >= 20) {
+        errorMsg = en
+          ? `Account locked for 15 minutes due to 20 failed attempts. Please reset your password.`
+          : `Tài khoản đã bị tạm khóa 15 phút do nhập sai 20 lần. Vui lòng đặt lại mật khẩu.`;
+      } else if (nextAttempts >= 15) {
+        errorMsg = en
+          ? `Incorrect password (${nextAttempts} failed attempts). Please wait 2 minutes or reset your password.`
+          : `Mật khẩu không đúng (đã sai ${nextAttempts} lần). Vui lòng đợi 2 phút hoặc đặt lại mật khẩu.`;
+      } else if (nextAttempts >= 10) {
+        errorMsg = en
+          ? `Incorrect password (${nextAttempts} failed attempts). Please wait 30 seconds before retrying.`
+          : `Mật khẩu không đúng (đã sai ${nextAttempts} lần). Vui lòng đợi 30 giây trước khi thử lại.`;
+      }
+
+      return NextResponse.json(
+        {
+          error: errorMsg,
+          failedAttempts: nextAttempts,
+          remainingAttempts: Math.max(0, 10 - nextAttempts),
+          retryAfterSec,
+          suggestReset,
+        },
+        { status: retryAfterSec > 0 ? 429 : 401 }
       );
     }
 
@@ -85,6 +163,21 @@ export async function POST(req: Request) {
         },
         { status: 403 }
       );
+    }
+
+    // Reset failed login attempts on successful login
+    if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+      try {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            failedLoginAttempts: 0,
+            lockedUntil: null,
+          },
+        });
+      } catch (e) {
+        console.error('Failed to reset login attempts:', e);
+      }
     }
 
     const safeUser = {

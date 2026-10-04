@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     }
 
     const ip = getClientIp(req);
-    const limited = rateLimit(`otp:${ip}`, 3, 60 * 60_000);
+    const limited = rateLimit(`otp:${ip}`, 5, 60 * 60_000);
     if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
     const { email, locale, captchaToken, website } = await req.json();
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: untrustedEmailMessage(lang) }, { status: 400 });
     }
 
-    const limitedEmail = rateLimit(`otp-email:${cleanEmail}`, 3, 60 * 60_000);
+    const limitedEmail = rateLimit(`otp-email:${cleanEmail}`, 5, 60 * 60_000);
     if (!limitedEmail.ok) return rateLimitResponse(limitedEmail.retryAfterSec);
 
     const existing = await prisma.user.findUnique({
