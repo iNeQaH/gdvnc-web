@@ -222,26 +222,24 @@ export async function sendOtpEmail(to: string, code: string, locale: 'vi' | 'en'
   }
 
   const isEn = locale === 'en';
-  const subject = isEn ? 'GDVN registration code' : 'Mã xác nhận đăng ký tài khoản GDVN';
-  const heading = isEn ? 'Verify your GDVN email' : 'Xác thực email đăng ký GDVN';
-  const intro = isEn ? 'Your verification code is:' : 'Mã xác thực của bạn là:';
-  const expire = isEn
-    ? 'This code is valid for 10 minutes. If you did not request an account, please ignore this email.'
-    : 'Mã này có hiệu lực trong 10 phút. Nếu bạn không yêu cầu đăng ký, vui lòng bỏ qua email này.';
+  const subject = isEn ? `${code} - GDVN verification code` : `${code} - Mã xác nhận đăng ký GDVN`;
+  const text = isEn
+    ? `Your GDVN verification code is: ${code} (valid for 10 minutes).`
+    : `Mã xác thực đăng ký GDVN của bạn là: ${code} (có hiệu lực 10 phút).`;
 
   try {
     await sendViaConfiguredTransport({
       to,
       subject,
-      text: `${intro} ${code}\n\n${expire}`,
-      html: otpHtml(heading, intro, code, expire),
+      text,
+      html: otpHtml(
+        isEn ? 'Verify Email' : 'Xác thực tài khoản',
+        code,
+        isEn ? 'Valid for 10 minutes.' : 'Mã có hiệu lực trong 10 phút.'
+      ),
     });
   } catch (error: unknown) {
-    console.error('SMTP sending error:', {
-      user: smtpUser(),
-      code: (error as { code?: string })?.code,
-      message: (error as { message?: string })?.message,
-    });
+    console.error('Mail sending error:', error);
     throw mapSendError(error, locale);
   }
 }
@@ -256,41 +254,39 @@ export async function sendResetPasswordEmail(to: string, code: string, locale: '
   }
 
   const isEn = locale === 'en';
-  const subject = isEn ? 'GDVN password reset code' : 'Mã đặt lại mật khẩu GDVN';
-  const heading = isEn ? 'Reset your GDVN password' : 'Đặt lại mật khẩu GDVN';
-  const intro = isEn ? 'Your password reset code is:' : 'Mã đặt lại mật khẩu của bạn là:';
-  const expire = isEn
-    ? 'This code is valid for 10 minutes. If you did not request a reset, please ignore this email.'
-    : 'Mã này có hiệu lực trong 10 phút. Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.';
+  const subject = isEn ? `${code} - GDVN password reset code` : `${code} - Mã đặt lại mật khẩu GDVN`;
+  const text = isEn
+    ? `Your GDVN password reset code is: ${code} (valid for 10 minutes).`
+    : `Mã đặt lại mật khẩu GDVN của bạn là: ${code} (có hiệu lực 10 phút).`;
 
   try {
     await sendViaConfiguredTransport({
       to,
       subject,
-      text: `${intro} ${code}\n\n${expire}`,
-      html: otpHtml(heading, intro, code, expire),
+      text,
+      html: otpHtml(
+        isEn ? 'Reset Password' : 'Đặt lại mật khẩu',
+        code,
+        isEn ? 'Valid for 10 minutes.' : 'Mã có hiệu lực trong 10 phút.'
+      ),
     });
   } catch (error: unknown) {
-    console.error('SMTP sending error:', {
-      user: smtpUser(),
-      code: (error as { code?: string })?.code,
-      message: (error as { message?: string })?.message,
-    });
+    console.error('Mail sending error:', error);
     throw mapSendError(error, locale);
   }
 }
 
-function otpHtml(heading: string, intro: string, code: string, expire: string): string {
+function otpHtml(title: string, code: string, expire: string): string {
   return `
-        <div style="font-family: Arial, Helvetica, sans-serif; padding: 24px; color: #1e293b; background: #f8fafc;">
-          <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 28px; border: 1px solid #e2e8f0;">
-            <h2 style="margin: 0 0 12px; color: #0284c7;">${heading}</h2>
-            <p style="margin: 0 0 16px; font-size: 14px;">${intro}</p>
-            <div style="font-size: 28px; font-weight: 800; letter-spacing: 8px; background: #f0f9ff; color: #0369a1; padding: 14px 20px; border-radius: 12px; text-align: center;">
-              ${code}
-            </div>
-            <p style="margin: 18px 0 0; font-size: 12px; color: #64748b;">${expire}</p>
-          </div>
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:32px 16px;background:#0f172a;text-align:center;">
+      <div style="max-width:400px;margin:0 auto;background:#1e293b;border-radius:16px;padding:32px 24px;border:1px solid #334155;color:#f8fafc;">
+        <div style="font-size:18px;font-weight:700;color:#38bdf8;margin-bottom:6px;letter-spacing:1px;">GDVN</div>
+        <div style="font-size:13px;color:#94a3b8;margin-bottom:20px;">${title}</div>
+        <div style="font-size:32px;font-weight:800;letter-spacing:8px;background:#0f172a;color:#38bdf8;padding:16px 20px;border-radius:12px;border:1px solid #0284c7;display:inline-block;margin-bottom:18px;">
+          ${code}
         </div>
-      `;
+        <div style="font-size:12px;color:#64748b;">${expire}</div>
+      </div>
+    </div>
+  `;
 }
