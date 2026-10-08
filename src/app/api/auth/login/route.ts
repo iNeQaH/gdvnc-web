@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     const limited = rateLimit(`login:${ip}`, 25, 300_000);
     if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
-    const { username, identifier, password, locale } = await req.json();
+    const { username, identifier, password, locale, totpToken } = await req.json();
     const loginInput = (identifier || username || '').trim();
     const en = locale === 'en';
 
@@ -200,6 +200,24 @@ export async function POST(req: Request) {
       spPoints: user.spPoints,
       supporterUntil: user.supporterUntil,
     };
+
+    // Check 2FA TOTP
+    if (user.totpEnabled && user.totpSecret) {
+      if (!totpToken) {
+        return NextResponse.json({
+          error: en ? 'Two-factor authentication required.' : 'Yêu cầu xác thực hai yếu tố.',
+          requires2fa: true,
+        }, { status: 403 });
+      }
+      
+      const { authenticator } = await import('otplib');
+      const isValidTotp = authenticator.check(totpToken, user.totpSecret);
+      if (!isValidTotp) {
+        return NextResponse.json({
+          error: en ? 'Invalid 2FA code.' : 'Mã 2FA không hợp lệ.',
+        }, { status: 401 });
+      }
+    }
 
     const token = await signToken({
       userId: user.id,
