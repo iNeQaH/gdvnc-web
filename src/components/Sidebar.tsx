@@ -12,7 +12,7 @@ import {
   Send, 
   ShieldCheck, 
   User as UserIcon, 
-  LogOut, 
+  Settings, 
   Heart, 
   Menu, 
   X,
@@ -181,8 +181,8 @@ export const Sidebar = () => {
   const navLinks = [
     { href: '/announcements', label: t('nav.announcements'), icon: Bell },
     { href: '/', label: t('nav.leaderboard'), icon: Star },
-    { href: '/changelog', label: t('nav.changelog'), icon: ScrollText },
     { href: '/levels', label: t('nav.demonlist'), icon: Folder },
+    { href: '/changelog', label: t('nav.changelog'), icon: ScrollText },
     { href: '/guidelines', label: t('nav.guidelines'), icon: BookOpen },
     { href: '/timeline', label: t('nav.timeline'), icon: History },
     { href: '/submit', label: t('nav.submit'), icon: ClipboardList },
@@ -400,13 +400,13 @@ export const Sidebar = () => {
               </Link>
 
               <div className="flex items-center gap-0.5 shrink-0">
-                <button
-                  onClick={handleLogout}
-                  title={t('nav.logout')}
-                  className="p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+                <Link
+                  href="/settings"
+                  title="Cài đặt cá nhân"
+                  className="p-2 rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-950/30 transition-colors cursor-pointer"
                 >
-                  <LogOut className="w-4 h-4" />
-                </button>
+                  <Settings className="w-4 h-4" />
+                </Link>
               </div>
             </div>
           ) : (

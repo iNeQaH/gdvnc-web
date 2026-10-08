@@ -978,29 +978,6 @@ export default function ProfilePage() {
             )}
           </div>
 
-          {/* Security / 2FA */}
-          {canEditInfo && (
-            <div className="pt-2">
-              <div className="text-[10px] font-bold uppercase ui-dim mb-2 flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5" /> Bảo mật
-              </div>
-              <div className="flex items-center gap-2">
-                {data.totpEnabled ? (
-                  <div className="text-xs font-semibold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
-                    <CheckCircle className="w-4 h-4" /> Đã bật 2FA
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleSetup2FA}
-                    disabled={settingUp2fa}
-                    className="text-xs font-semibold bg-sky-500/10 border border-sky-500/20 text-sky-500 hover:bg-sky-500/20 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
-                  >
-                    <ShieldCheck className="w-4 h-4" /> Bật bảo mật 2 bước (2FA)
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
@@ -1401,15 +1378,7 @@ export default function ProfilePage() {
               : 'Các thao tác xoá tài khoản không thể hoàn tác.'}
           </p>
           <div className="flex flex-wrap gap-2">
-            {isOwner && (
-              <button
-                onClick={openDeleteModal}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm hover:opacity-90 transition-opacity bg-orange-500/10 text-orange-500 border border-orange-500/20"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Yêu cầu xoá tài khoản
-              </button>
-            )}
+
             {isAdmin && (
               <button
                 onClick={openDeleteModal}
