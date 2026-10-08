@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, Mail, LogOut, Trash2, HelpCircle, Lock, Gamepad2, MessageSquare, Globe, User as UserIcon, Settings, Image as ImageIcon, X } from 'lucide-react';
+import { ShieldCheck, Mail, LogOut, Trash2, HelpCircle, Lock, Gamepad2, MessageSquare, Globe, User as UserIcon, Settings, Image as ImageIcon, X, Heart } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import { logoutClient } from '@/lib/sessionClient';
@@ -213,7 +213,18 @@ export default function SettingsPage() {
             <h2 className="text-sm font-bold flex items-center gap-2 border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
               <UserIcon className="w-4 h-4" /> Hình ảnh & Nhận diện
             </h2>
-            <div className="flex gap-4">
+            <div className="relative mb-8">
+              <div className="w-full h-24 md:h-32 rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 border" style={{ borderColor: 'var(--border-ui)' }}>
+                {data.coverUrl && <img src={data.coverUrl} alt="Cover" className="w-full h-full object-cover" />}
+              </div>
+              <div className="absolute -bottom-5 left-4 p-1 rounded-2xl" style={{ backgroundColor: 'var(--bg-card)' }}>
+                <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl overflow-hidden bg-slate-200 dark:bg-zinc-700 shadow-sm border" style={{ borderColor: 'var(--border-subtle)' }}>
+                  {data.avatarUrl ? <img src={data.avatarUrl} alt="Avatar" className="w-full h-full object-cover" /> : <UserIcon className="w-8 h-8 m-auto mt-3 md:mt-4 text-slate-400" />}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
               <button onClick={() => setImageModal({ open: true, type: 'avatar' })} className="px-4 py-2 bg-sky-500/10 text-sky-500 rounded-xl text-xs font-bold hover:bg-sky-500/20 flex gap-2 items-center cursor-pointer transition-colors border border-sky-500/20">
                 <ImageIcon className="w-4 h-4"/> Đổi Avatar
               </button>
@@ -289,7 +300,7 @@ export default function SettingsPage() {
             </h2>
             
             <button onClick={() => router.push('/support')} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-pink-50 dark:hover:bg-pink-950/30 text-pink-500 border-pink-500/20 transition-colors">
-              <HelpCircle className="w-4 h-4"/> Hỗ Trợ / Liên Hệ
+              <Heart className="w-4 h-4"/> Ủng Hộ GDVN (Donate)
             </button>
             <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-red-50 hover:text-red-500 hover:border-red-500/30 dark:hover:bg-red-950/30 text-slate-500 transition-colors" style={{ borderColor: 'var(--border-ui)' }}>
               <LogOut className="w-4 h-4"/> Đăng Xuất
