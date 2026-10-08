@@ -7,6 +7,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import { logoutClient } from '@/lib/sessionClient';
 import ImageEditorModal from '@/components/ImageEditorModal';
+import SmartCaptcha from '@/components/SmartCaptcha';
 
 export default function SettingsPage() {
   const { t, language } = useLanguage();
@@ -39,6 +40,8 @@ export default function SettingsPage() {
   const [pwOtp, setPwOtp] = useState('');
   const [pwNew, setPwNew] = useState('');
   const [pwCooldown, setPwCooldown] = useState(0);
+  const [captchaToken, setCaptchaToken] = useState('');
+
 
   useEffect(() => {
     if (pwCooldown > 0) {
@@ -162,20 +165,22 @@ export default function SettingsPage() {
        showToast('Tài khoản chưa có email xác minh!', 'error');
        return;
     }
+    if (!captchaToken) {
+      showToast('Vui lòng xác thực Cloudflare Turnstile!', 'error');
+      return;
+    }
     try {
-      // NOTE: sending 'bypass' or standard to API. If captcha is required, this API may fail. 
-      // But we will send it anyway.
       const res = await fetch('/api/auth/send-reset-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: currentUser.email, locale: language, website: '' }) 
+        body: JSON.stringify({ email: currentUser.email, locale: language, captchaToken }) 
       });
       const resJson = await res.json();
       if (res.ok && resJson.success) {
         setPwCooldown(60);
         showToast('Đã gửi mã OTP tới email!', 'success');
       } else {
-        showToast(resJson.error || 'Lỗi gửi OTP, có thể thiếu Captcha', 'error');
+        showToast(resJson.error || 'Lỗi gửi OTP, vui lòng thử lại', 'error');
       }
     } catch (e) {}
   };
@@ -369,7 +374,10 @@ export default function SettingsPage() {
               <button onClick={() => setShowPasswordModal(false)} className="p-1 rounded-xl border ui-dim cursor-pointer"><X className="w-4 h-4" /></button>
             </div>
             <div className="space-y-3">
-              <p className="text-[11px] ui-dim">Nhấn nút bên dưới để nhận mã OTP gửi về email <span className="font-bold">{currentUser?.email}</span> của bạn.</p>
+              <p className="text-[11px] ui-dim mb-2">Nhấn nút bên dưới để nhận mã OTP gửi về email <span className="font-bold">{currentUser?.email}</span> của bạn.</p>
+              <div className="mb-2">
+                <SmartCaptcha onVerify={(token) => setCaptchaToken(token)} />
+              </div>
               <div className="flex gap-2 pb-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
                 <button onClick={handleSendOtp} disabled={pwCooldown > 0} className="w-full py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors disabled:opacity-50">
                   {pwCooldown > 0 ? `Đợi ${pwCooldown}s để gửi lại` : 'Gửi mã xác nhận OTP'}
