@@ -33,21 +33,23 @@ export default function SupportPage() {
   const { t } = useLanguage();
   const { showToast } = useToast();
   
-  // Default to 1 month
   const [months, setMonths] = useState<number>(1);
-  const [targetUsername, setTargetUsername] = useState('');
+  const [mode, setMode] = useState<'self' | 'gift'>('self');
+  const [loggedInUser, setLoggedInUser] = useState('');
+  const [giftUsername, setGiftUsername] = useState('');
 
-  // Hydrate user on mount
   useEffect(() => {
     try {
       const raw = localStorage.getItem('gdvnc_user');
       if (!raw) return;
       const user = JSON.parse(raw);
-      setTargetUsername(String(user?.username || '').trim());
+      setLoggedInUser(String(user?.username || '').trim());
     } catch {
-      // do nothing
+      // ignore
     }
   }, []);
+
+  const targetUsername = mode === 'self' ? loggedInUser : giftUsername;
 
   const transferContent = useMemo(
     () => (targetUsername ? supportTransferContent(targetUsername, months) : ''),
@@ -87,22 +89,63 @@ export default function SupportPage() {
       <div className="ui-card p-6 sm:p-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
           
-          {/* Cột trái: Form nhập liệu & tính toán */}
+          {/* Cột trái */}
           <div className="space-y-6">
-            <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase ui-dim">Tên người dùng nhận Supporter</label>
-              <input
-                type="text"
-                value={targetUsername}
-                onChange={(e) => setTargetUsername(e.target.value)}
-                placeholder="Nhập tên đăng nhập (Ví dụ: iNeQaH)"
-                className="w-full px-4 py-3 rounded-xl border text-sm font-semibold focus:outline-none focus:border-pink-500 transition-colors"
-                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-              />
-              <p className="text-[11px] ui-dim">Bạn có thể tặng Role cho bản thân hoặc bạn bè.</p>
+            <div className="space-y-3">
+              <label className="block text-xs font-bold uppercase ui-dim">Đối tượng nhận Supporter</label>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="supportMode" 
+                    checked={mode === 'self'} 
+                    onChange={() => setMode('self')}
+                    className="accent-pink-500 w-4 h-4"
+                  />
+                  <span className="text-sm font-semibold">Tự mua cho bản thân</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="supportMode" 
+                    checked={mode === 'gift'} 
+                    onChange={() => setMode('gift')}
+                    className="accent-pink-500 w-4 h-4"
+                  />
+                  <span className="text-sm font-semibold">Tặng cho người khác</span>
+                </label>
+              </div>
+
+              {mode === 'self' && (
+                <div className="p-4 rounded-xl border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                  {loggedInUser ? (
+                    <p className="text-sm">Tài khoản nhận: <strong className="text-pink-500">{loggedInUser}</strong></p>
+                  ) : (
+                    <div className="text-sm space-y-2">
+                      <p className="ui-dim">Bạn chưa đăng nhập.</p>
+                      <Link href="/login?next=/support" className="inline-block px-4 py-2 bg-pink-500 text-white rounded-lg font-bold text-xs">
+                        Đăng nhập ngay
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {mode === 'gift' && (
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={giftUsername}
+                    onChange={(e) => setGiftUsername(e.target.value)}
+                    placeholder="Nhập tên tài khoản (Ví dụ: iNeQaH)"
+                    className="w-full px-4 py-3 rounded-xl border text-sm font-semibold focus:outline-none focus:border-pink-500 transition-colors"
+                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  />
+                </div>
+              )}
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 pt-2">
               <label className="block text-xs font-bold uppercase ui-dim flex justify-between items-center">
                 <span>Số tháng đăng ký</span>
                 <span className="text-pink-500 text-sm">{months} Tháng</span>
@@ -113,8 +156,7 @@ export default function SupportPage() {
                 max="36" 
                 value={months}
                 onChange={(e) => setMonths(parseInt(e.target.value))}
-                className="w-full h-2 rounded-lg appearance-none cursor-pointer"
-                style={{ background: 'var(--border-ui)' }}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-black/10 dark:bg-white/10"
               />
               <div className="flex justify-between text-[10px] ui-dim font-medium">
                 <span>1 Tháng</span>
@@ -144,7 +186,7 @@ export default function SupportPage() {
             </p>
           </div>
 
-          {/* Cột phải: QR Code */}
+          {/* Cột phải */}
           <div className="flex flex-col items-center justify-center p-4 sm:p-6 border-2 border-dashed rounded-3xl" style={{ borderColor: 'var(--border-subtle)' }}>
             {targetUsername ? (
               <div className="text-center space-y-4">
@@ -162,9 +204,6 @@ export default function SupportPage() {
                     <span>{transferContent}</span>
                     <Copy className="w-3.5 h-3.5" />
                   </button>
-                  <p className="text-[10px] ui-dim mt-2 max-w-xs mx-auto">
-                    Mã QR đã chứa sẵn số tiền và lời nhắn. Tiền vừa tới là có nick màu ngay lập tức!
-                  </p>
                 </div>
               </div>
             ) : (
@@ -172,11 +211,8 @@ export default function SupportPage() {
                 <div className="p-4 bg-pink-500/10 rounded-full text-pink-500">
                   <Heart className="w-8 h-8" />
                 </div>
-                <p className="text-sm font-semibold ui-title">Vui lòng nhập tên người dùng</p>
-                <p className="text-xs ui-dim">Hệ thống cần biết bạn tặng role cho ai để tạo mã QR.</p>
-                <Link href="/login?next=/support" className="text-xs font-bold text-pink-500 hover:underline">
-                  Hoặc đăng nhập ngay
-                </Link>
+                <p className="text-sm font-semibold ui-title">Chưa xác định tài khoản</p>
+                <p className="text-xs ui-dim">Vui lòng đăng nhập hoặc nhập tên người dùng để tạo mã QR.</p>
               </div>
             )}
           </div>
