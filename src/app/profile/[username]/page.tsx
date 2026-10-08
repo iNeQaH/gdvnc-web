@@ -89,6 +89,12 @@ export default function ProfilePage() {
   const [banningUser, setBanningUser] = useState(false);
 
   // Image Editor Modal state
+  const [show2faModal, setShow2faModal] = useState(false);
+  const [qrCode, setQrCode] = useState('');
+  const [totpSecret, setTotpSecret] = useState('');
+  const [totpInput, setTotpInput] = useState('');
+  const [totpError, setTotpError] = useState('');
+  const [settingUp2fa, setSettingUp2fa] = useState(false);
   const [imageModal, setImageModal] = useState<{
     open: boolean;
     type: 'avatar' | 'cover';
@@ -196,6 +202,50 @@ export default function ProfilePage() {
   const handleOpenCoverModal = () => {
     if (!canEditInfo) return;
     setImageModal({ open: true, type: 'cover' });
+  };
+
+  const handleSetup2FA = async () => {
+    setSettingUp2fa(true);
+    setTotpError('');
+    try {
+      const res = await fetch('/api/auth/2fa');
+      const json = await res.json();
+      if (!res.ok) {
+        setTotpError(json.error || 'Failed to generate 2FA');
+        return;
+      }
+      setQrCode(json.qrDataUrl);
+      setTotpSecret(json.secret);
+      setShow2faModal(true);
+    } catch (e) {
+      setTotpError('Server error');
+    } finally {
+      setSettingUp2fa(false);
+    }
+  };
+
+  const handleVerify2FA = async () => {
+    setSettingUp2fa(true);
+    setTotpError('');
+    try {
+      const res = await fetch('/api/auth/2fa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: totpInput })
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setTotpError(json.error || 'Invalid Token');
+        return;
+      }
+      setShow2faModal(false);
+      showToast('2FA đã được bật thành công!', 'success');
+      setData({ ...data, totpEnabled: true });
+    } catch (e) {
+      setTotpError('Server error');
+    } finally {
+      setSettingUp2fa(false);
+    }
   };
 
   const handleSaveBio = () => {
@@ -927,6 +977,30 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
+
+          {/* Security / 2FA */}
+          {canEditInfo && (
+            <div className="pt-2">
+              <div className="text-[10px] font-bold uppercase ui-dim mb-2 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5" /> Bảo mật
+              </div>
+              <div className="flex items-center gap-2">
+                {data.totpEnabled ? (
+                  <div className="text-xs font-semibold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                    <CheckCircle className="w-4 h-4" /> Đã bật 2FA
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleSetup2FA}
+                    disabled={settingUp2fa}
+                    className="text-xs font-semibold bg-sky-500/10 border border-sky-500/20 text-sky-500 hover:bg-sky-500/20 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    <ShieldCheck className="w-4 h-4" /> Bật bảo mật 2 bước (2FA)
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
@@ -1693,6 +1767,71 @@ export default function ProfilePage() {
                 className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {resettingPassword ? 'Đang cập nhật...' : 'Xác nhận đổi mật khẩu'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {show2faModal && (
+        <div className="fixed inset-0 z-[999999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150" onClick={() => setShow2faModal(false)}>
+          <div className="bg-card w-full max-w-sm rounded-3xl p-5 md:p-6 shadow-2xl relative border" style={{ borderColor: 'var(--border-subtle)', backgroundColor: 'var(--bg-card)' }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold flex items-center gap-2 text-emerald-500">
+                <ShieldCheck className="w-5 h-5" />
+                Cài đặt Bảo Mật 2FA
+              </h3>
+              <button type="button" onClick={() => setShow2faModal(false)} className="p-1 rounded-xl border ui-dim cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <p className="text-xs ui-dim leading-relaxed">
+                Sử dụng ứng dụng Authenticator (Google Authenticator, Authy, v.v.) để quét mã QR bên dưới, hoặc nhập mã bí mật thủ công:
+              </p>
+              
+              {qrCode ? (
+                <div className="bg-white p-3 rounded-2xl mx-auto w-fit border-2 border-emerald-500/20 shadow-xl shadow-emerald-500/10">
+                  <img src={qrCode} alt="2FA QR Code" className="w-40 h-40" />
+                </div>
+              ) : (
+                <div className="w-40 h-40 mx-auto bg-gray-100 dark:bg-zinc-800 rounded-2xl animate-pulse"></div>
+              )}
+
+              <div className="text-center">
+                <p className="text-[10px] uppercase font-bold ui-dim mb-1">Mã bí mật (Secret Key)</p>
+                <code className="px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs font-mono font-bold tracking-widest text-emerald-600 dark:text-emerald-400 select-all border border-zinc-200 dark:border-zinc-700">
+                  {totpSecret || '...'}
+                </code>
+              </div>
+
+              <div className="pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                <label className="text-xs font-bold mb-1.5 block">Nhập mã gồm 6 chữ số từ app</label>
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={totpInput}
+                  onChange={e => setTotpInput(e.target.value)}
+                  placeholder="Ví dụ: 123456"
+                  className="w-full px-3 py-2.5 rounded-xl text-xs font-mono tracking-widest text-center border focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+                />
+              </div>
+
+              {totpError && <p className="text-[11px] text-rose-500 font-bold text-center bg-rose-500/10 py-1.5 rounded-lg">{totpError}</p>}
+            </div>
+
+            <div className="flex justify-end gap-2 mt-5">
+              <button type="button" onClick={() => setShow2faModal(false)} className="px-4 py-2 rounded-xl text-xs font-bold ui-subtle border border-transparent hover:border-zinc-500/20 cursor-pointer transition-colors">
+                Đóng
+              </button>
+              <button
+                type="button"
+                onClick={handleVerify2FA}
+                disabled={settingUp2fa || totpInput.length < 6}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-600 cursor-pointer disabled:opacity-50 transition-colors"
+              >
+                {settingUp2fa ? 'Đang xác thực...' : 'Kích hoạt 2FA'}
               </button>
             </div>
           </div>

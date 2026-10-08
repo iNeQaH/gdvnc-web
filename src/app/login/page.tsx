@@ -17,6 +17,8 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
+  const [requires2fa, setRequires2fa] = useState(false);
+  const [totpToken, setTotpToken] = useState('');
 
   // Register state
   const [regUsername, setRegUsername] = useState('');
@@ -204,11 +206,18 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
           identifier: loginIdentifier,
           password: loginPassword,
           locale: language,
+          totpToken: requires2fa ? totpToken : undefined,
         }),
       });
 
       const data = await res.json();
       if (!res.ok || !data.success) {
+        if (data.requires2fa) {
+          setRequires2fa(true);
+          setError(data.error || '2FA Required');
+          setLoading(false);
+          return;
+        }
         setError(data.error || t('auth.login_fail'));
         if (typeof data.retryAfterSec === 'number' && data.retryAfterSec > 0) {
           setLoginCooldown(data.retryAfterSec);
@@ -390,6 +399,29 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
                 />
               </div>
             </div>
+
+            {requires2fa && (
+              <div className="space-y-1">
+                <label className="text-xs font-bold ui-title">Mã xác thực 2 bước (2FA)</label>
+                <div className="relative">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    value={totpToken}
+                    onChange={(e) => setTotpToken(e.target.value)}
+                    placeholder="Nhập 6 số từ app..."
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl text-xs border font-mono tracking-widest focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    style={{
+                      backgroundColor: 'var(--bg-subtle)',
+                      borderColor: 'var(--border-ui)',
+                      color: 'var(--text-title)',
+                    }}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Remember Me Checkbox & Forgot Password */}
             <div className="flex items-center justify-between text-xs pt-1">

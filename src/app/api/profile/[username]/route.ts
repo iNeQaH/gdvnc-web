@@ -45,6 +45,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         classicPp: true,
         platformerPp: true,
         creatorPoints: true,
+        totpEnabled: true,
         records: {
           where: { status: RecordStatus.APPROVED },
           include: {
@@ -223,6 +224,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         classicPp: user.classicPp,
         platformerPp: user.platformerPp,
         creatorPoints: user.creatorPoints,
+        totpEnabled: user.totpEnabled,
         classicRank,
         platformerRank,
         creatorRank,
