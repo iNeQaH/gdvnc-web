@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -60,6 +61,8 @@ model User {
   creatorPoints Float     @default(0)
   spPoints      Int       @default(0)
   tokenVersion  Int       @default(0)
+  totpEnabled   Boolean   @default(false)
+  totpSecret    String?
   hardestClassicLevelId    String?
   hardestPlatformerLevelId String?
   hardestChallengeLevelId  String?
@@ -428,4 +431,17 @@ model ListChangeLog {
   @@index([list])
   @@index([gdLevelId])
   @@index([eventType])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?  
+  action    String
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
 }

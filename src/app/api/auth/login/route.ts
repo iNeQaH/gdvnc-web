@@ -6,6 +6,7 @@ import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { publicApiError } from '@/lib/apiError';
+import { logAudit } from '@/lib/audit';
 
 /** Constant-time padding when user is missing (mitigates login enumeration). */
 const DUMMY_PASSWORD_HASH = '$2b$10$20mcQhifvE3Tbmulxl25WuJKjcwe0FOqBxWVDK08snzvv.UgK.lbK';
@@ -17,7 +18,8 @@ export async function POST(req: Request) {
     }
 
     // Relaxed rate limits for production usability: 25 requests per 5 minutes per IP
-    const limited = rateLimit(`login:${getClientIp(req)}`, 25, 300_000);
+    const ip = getClientIp(req);
+    const limited = rateLimit(`login:${ip}`, 25, 300_000);
     if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
     const { username, identifier, password, locale } = await req.json();
@@ -70,6 +72,7 @@ export async function POST(req: Request) {
     // Check database-level progressive account lock
     if (user?.lockedUntil && user.lockedUntil > new Date()) {
       const waitSec = Math.max(1, Math.ceil((user.lockedUntil.getTime() - Date.now()) / 1000));
+      await logAudit(user.id, 'LOGIN_FAILED', { reason: 'account_locked', waitSec }, ip);
       return NextResponse.json(
         {
           error: en
@@ -142,6 +145,8 @@ export async function POST(req: Request) {
           : `Mật khẩu không đúng (đã sai ${nextAttempts} lần). Vui lòng đợi 30 giây trước khi thử lại.`;
       }
 
+      await logAudit(user?.id || null, 'LOGIN_FAILED', { reason: 'incorrect_password', input: loginInput, attempts: nextAttempts }, ip);
+
       return NextResponse.json(
         {
           error: errorMsg,
@@ -155,6 +160,7 @@ export async function POST(req: Request) {
     }
 
     if (user.isBanned) {
+      await logAudit(user.id, 'LOGIN_FAILED', { reason: 'account_banned' }, ip);
       return NextResponse.json(
         {
           error: en
@@ -203,7 +209,10 @@ export async function POST(req: Request) {
     });
     await setAuthCookie(token);
 
+    await logAudit(user.id, 'LOGIN_SUCCESS', { method: 'password' }, ip);
+
     return NextResponse.json({ success: true, user: safeUser });
+
   } catch (error) {
     return publicApiError(error, 'Server error.');
   }
