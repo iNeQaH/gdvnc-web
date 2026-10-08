@@ -73,6 +73,21 @@ export default function SupportPage() {
         </div>
       </section>
 
+      {username && (
+        <div className="bg-pink-500/10 border border-pink-500/30 rounded-2xl p-4 sm:p-5 mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div className="p-3 bg-pink-500/20 text-pink-500 rounded-full shrink-0">
+            <Heart className="w-6 h-6 animate-pulse" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="font-bold text-pink-500 text-sm sm:text-base">Hệ thống Auto-Supporter (Thử nghiệm)</h3>
+            <p className="text-xs sm:text-sm ui-dim leading-relaxed">
+              Mã QR bên dưới đã được tích hợp sẵn <strong>cú pháp tài khoản của bạn</strong>. Khi quét mã QR và chuyển khoản thành công (ví dụ: 20.000đ = 1 tháng), hệ thống sẽ <strong className="text-pink-500">tự động nhận diện</strong> và nâng cấp màu nick <strong className="text-pink-500">Supporter</strong> cho bạn ngay lập tức trong vài giây mà không cần admin duyệt tay!
+            </p>
+          </div>
+        </div>
+      )}
+
+
       <div className="ui-card p-6 sm:p-8">
         <div className="flex flex-col sm:flex-row gap-5 items-start">
           <img
