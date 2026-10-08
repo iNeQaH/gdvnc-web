@@ -65,6 +65,8 @@ export async function POST(req: Request) {
             banReason: true,
             failedLoginAttempts: true,
             lockedUntil: true,
+            totpEnabled: true,
+            totpSecret: true,
           },
         })
       : null;
