@@ -1,11 +1,11 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Copy, Heart } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
-import { SUPPORT_BANK, supportQrUrl, supportTransferContent } from '@/lib/supportPayment';
+import { supportQrUrl, supportTransferContent, calculateSupportPrice } from '@/lib/supportPayment';
 
 async function copyText(value: string) {
   try {
@@ -32,27 +32,38 @@ async function copyText(value: string) {
 export default function SupportPage() {
   const { t } = useLanguage();
   const { showToast } = useToast();
-  const [username, setUsername] = useState('');
+  
+  // Default to 1 month
+  const [months, setMonths] = useState<number>(1);
+  const [targetUsername, setTargetUsername] = useState('');
 
+  // Hydrate user on mount
   useEffect(() => {
     try {
       const raw = localStorage.getItem('gdvnc_user');
       if (!raw) return;
       const user = JSON.parse(raw);
-      setUsername(String(user?.username || '').trim());
+      setTargetUsername(String(user?.username || '').trim());
     } catch {
-      setUsername('');
+      // do nothing
     }
   }, []);
 
   const transferContent = useMemo(
-    () => (username ? supportTransferContent(username) : ''),
-    [username]
+    () => (targetUsername ? supportTransferContent(targetUsername, months) : ''),
+    [targetUsername, months]
   );
+  
+  const qrUrl = useMemo(
+    () => (targetUsername ? supportQrUrl(targetUsername, months) : supportQrUrl('')),
+    [targetUsername, months]
+  );
+  
+  const priceInfo = useMemo(() => calculateSupportPrice(months), [months]);
 
-  const handleCopy = async (value: string, okKey: 'support.copied_acc' | 'support.copied_content') => {
+  const handleCopy = async (value: string, fallbackMsg: string) => {
     const ok = await copyText(value);
-    showToast(ok ? t(okKey) : t('support.copy_fail'), ok ? 'success' : 'error');
+    showToast(ok ? fallbackMsg : t('support.copy_fail'), ok ? 'success' : 'error');
   };
 
   return (
@@ -73,91 +84,105 @@ export default function SupportPage() {
         </div>
       </section>
 
-      {username && (
-        <div className="bg-pink-500/10 border border-pink-500/30 rounded-2xl p-4 sm:p-5 mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-          <div className="p-3 bg-pink-500/20 text-pink-500 rounded-full shrink-0">
-            <Heart className="w-6 h-6 animate-pulse" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="font-bold text-pink-500 text-sm sm:text-base">Hệ thống Auto-Supporter (Thử nghiệm)</h3>
-            <p className="text-xs sm:text-sm ui-dim leading-relaxed">
-              Mã QR bên dưới đã được tích hợp sẵn <strong>cú pháp tài khoản của bạn</strong>. Khi quét mã QR và chuyển khoản thành công (ví dụ: 20.000đ = 1 tháng), hệ thống sẽ <strong className="text-pink-500">tự động nhận diện</strong> và nâng cấp màu nick <strong className="text-pink-500">Supporter</strong> cho bạn ngay lập tức trong vài giây mà không cần admin duyệt tay!
+      <div className="ui-card p-6 sm:p-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          
+          {/* Cột trái: Form nhập liệu & tính toán */}
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <label className="block text-xs font-bold uppercase ui-dim">Tên người dùng nhận Supporter</label>
+              <input
+                type="text"
+                value={targetUsername}
+                onChange={(e) => setTargetUsername(e.target.value)}
+                placeholder="Nhập tên đăng nhập (Ví dụ: iNeQaH)"
+                className="w-full px-4 py-3 rounded-xl border text-sm font-semibold focus:outline-none focus:border-pink-500 transition-colors"
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+              />
+              <p className="text-[11px] ui-dim">Bạn có thể tặng Role cho bản thân hoặc bạn bè.</p>
+            </div>
+
+            <div className="space-y-4">
+              <label className="block text-xs font-bold uppercase ui-dim flex justify-between items-center">
+                <span>Số tháng đăng ký</span>
+                <span className="text-pink-500 text-sm">{months} Tháng</span>
+              </label>
+              <input 
+                type="range" 
+                min="1" 
+                max="36" 
+                value={months}
+                onChange={(e) => setMonths(parseInt(e.target.value))}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                style={{ background: 'var(--border-ui)' }}
+              />
+              <div className="flex justify-between text-[10px] ui-dim font-medium">
+                <span>1 Tháng</span>
+                <span>36 Tháng</span>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-pink-500/10 border border-pink-500/20 space-y-2 text-sm">
+              <div className="flex justify-between items-center text-pink-500">
+                <span className="font-semibold">Mức giá gốc:</span>
+                <span className="line-through opacity-70">{priceInfo.originalPrice.toLocaleString('vi-VN')}đ</span>
+              </div>
+              {priceInfo.discountPercent > 0 && (
+                <div className="flex justify-between items-center text-pink-500">
+                  <span className="font-semibold">Chiết khấu (Giảm {priceInfo.discountPercent}%):</span>
+                  <span>-{(priceInfo.originalPrice - priceInfo.totalPrice).toLocaleString('vi-VN')}đ</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center text-pink-600 font-black text-lg pt-2 border-t border-pink-500/20">
+                <span>Thành tiền:</span>
+                <span>{priceInfo.totalPrice.toLocaleString('vi-VN')}đ</span>
+              </div>
+            </div>
+            
+            <p className="text-xs ui-dim leading-relaxed italic">
+              * Ưu đãi: Mỗi 3 tháng tặng kèm 5% chiết khấu. Support sẽ tự động gỡ bỏ khi hết hạn.
             </p>
           </div>
-        </div>
-      )}
 
-
-      <div className="ui-card p-6 sm:p-8">
-        <div className="flex flex-col sm:flex-row gap-5 items-start">
-          <img
-            src={supportQrUrl(username)}
-            alt="VietQR VietinBank"
-            className="w-44 h-44 rounded-2xl object-contain bg-white shrink-0 mx-auto sm:mx-0"
-          />
-          <div className="p-4 rounded-2xl ui-subtle space-y-2 text-xs w-full">
-            <Row label={t('support.payment_bank')} value={SUPPORT_BANK.name} />
-            <CopyRow
-              label={t('support.payment_acc')}
-              value={SUPPORT_BANK.account}
-              onCopy={() => handleCopy(SUPPORT_BANK.account, 'support.copied_acc')}
-            />
-            <Row label={t('support.payment_owner')} value={SUPPORT_BANK.owner} />
-            {transferContent ? (
-              <CopyRow
-                label={t('support.payment_content')}
-                value={transferContent}
-                onCopy={() => handleCopy(transferContent, 'support.copied_content')}
-              />
+          {/* Cột phải: QR Code */}
+          <div className="flex flex-col items-center justify-center p-4 sm:p-6 border-2 border-dashed rounded-3xl" style={{ borderColor: 'var(--border-subtle)' }}>
+            {targetUsername ? (
+              <div className="text-center space-y-4">
+                <img
+                  src={qrUrl}
+                  alt="VietQR Auto Payment"
+                  className="w-56 h-56 rounded-2xl object-contain bg-white shadow-xl mx-auto"
+                />
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold ui-dim">Mã QR Auto-Supporter</p>
+                  <button 
+                    onClick={() => handleCopy(transferContent, 'Đã copy nội dung chuyển khoản!')}
+                    className="flex items-center justify-center gap-1.5 mx-auto bg-pink-500 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-pink-600 transition-colors shadow-md"
+                  >
+                    <span>{transferContent}</span>
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                  <p className="text-[10px] ui-dim mt-2 max-w-xs mx-auto">
+                    Mã QR đã chứa sẵn số tiền và lời nhắn. Tiền vừa tới là có nick màu ngay lập tức!
+                  </p>
+                </div>
+              </div>
             ) : (
-              <div
-                className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-1.5 border-b"
-                style={{ borderColor: 'var(--border-subtle)' }}
-              >
-                <span className="ui-dim w-40 shrink-0">{t('support.payment_content')}</span>
-                <Link href="/login?next=/support" className="font-semibold hover:underline" style={{ color: 'var(--accent)' }}>
-                  {t('support.need_login')}
+              <div className="flex flex-col items-center justify-center h-56 space-y-3 text-center px-4">
+                <div className="p-4 bg-pink-500/10 rounded-full text-pink-500">
+                  <Heart className="w-8 h-8" />
+                </div>
+                <p className="text-sm font-semibold ui-title">Vui lòng nhập tên người dùng</p>
+                <p className="text-xs ui-dim">Hệ thống cần biết bạn tặng role cho ai để tạo mã QR.</p>
+                <Link href="/login?next=/support" className="text-xs font-bold text-pink-500 hover:underline">
+                  Hoặc đăng nhập ngay
                 </Link>
               </div>
             )}
           </div>
+
         </div>
       </div>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div
-      className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-1.5 border-b"
-      style={{ borderColor: 'var(--border-subtle)' }}
-    >
-      <span className="ui-dim w-40 shrink-0">{label}</span>
-      <strong className="ui-title font-mono">{value}</strong>
-    </div>
-  );
-}
-
-function CopyRow({
-  label,
-  value,
-  onCopy,
-}: {
-  label: string;
-  value: string;
-  onCopy: () => void;
-}) {
-  return (
-    <div
-      className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-1.5 border-b"
-      style={{ borderColor: 'var(--border-subtle)' }}
-    >
-      <span className="ui-dim w-40 shrink-0">{label}</span>
-      <button type="button" onClick={onCopy} className="flex items-center gap-1.5 text-left min-w-0">
-        <strong className="ui-title font-mono truncate">{value}</strong>
-        <Copy className="w-3.5 h-3.5 ui-dim shrink-0" />
-      </button>
     </div>
   );
 }

@@ -15,16 +15,30 @@ export function sanitizeSupportUsername(username: string) {
     .toUpperCase();
 }
 
-export function supportTransferContent(username: string) {
-  const sanitized = sanitizeSupportUsername(username);
-  return sanitized ? `GDVN ${sanitized}` : 'GDVN';
+export function calculateSupportPrice(months: number) {
+  const basePrice = 20000;
+  let discountPercent = Math.floor(months / 3) * 5;
+  if (discountPercent > 100) discountPercent = 100;
+  
+  const totalPrice = (basePrice * months) * (1 - discountPercent / 100);
+  return {
+    originalPrice: basePrice * months,
+    discountPercent,
+    totalPrice
+  };
 }
 
-/** Account QR with memo baked in */
-export function supportQrUrl(username?: string) {
+export function supportTransferContent(username: string, months: number = 1) {
+  const sanitized = sanitizeSupportUsername(username);
+  return sanitized ? `${sanitized} SUPPORT ${months}T` : 'SUPPORT';
+}
+
+export function supportQrUrl(username: string, months: number = 1) {
   const base = `https://img.vietqr.io/image/${SUPPORT_BANK.code}-${SUPPORT_BANK.account}-compact2.png`;
   if (!username) return base;
   
-  const content = supportTransferContent(username);
-  return `${base}?addInfo=${encodeURIComponent(content)}`;
+  const content = supportTransferContent(username, months);
+  const { totalPrice } = calculateSupportPrice(months);
+  
+  return `${base}?amount=${totalPrice}&addInfo=${encodeURIComponent(content)}`;
 }
