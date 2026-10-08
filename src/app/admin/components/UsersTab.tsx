@@ -80,11 +80,17 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
   const [userPage, setUserPage] = useState(1);
   const [userSort, setUserSort] = useState<'createdAt' | 'role' | 'pp'>('createdAt');
 
-  // User deletion state
   const [deleteUserTarget, setDeleteUserTarget] = useState<{ id: string; username: string } | null>(null);
   const [deleteUserReason, setDeleteUserReason] = useState('');
   const [isDeleteUserModalOpen, setIsDeleteUserModalOpen] = useState(false);
   const [deletingUser, setDeletingUser] = useState(false);
+  
+  // Supporter state
+  const [supporterTarget, setSupporterTarget] = useState<{ id: string; username: string } | null>(null);
+  const [supporterMonths, setSupporterMonths] = useState('1');
+  const [isSupporterModalOpen, setIsSupporterModalOpen] = useState(false);
+  const [givingSupporter, setGivingSupporter] = useState(false);
+
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const fetchUsers = async (q: string, role = roleFilter) => {
@@ -121,6 +127,37 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
       showToast(t('admin.verify_fail'), 'error');
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const confirmGiveSupporter = async () => {
+    if (!supporterTarget) return;
+    const months = parseInt(supporterMonths);
+    if (isNaN(months) || months < -1) {
+      showToast('Số tháng không hợp lệ.', 'error');
+      return;
+    }
+    setGivingSupporter(true);
+    try {
+      const res = await fetch(`/api/admin/users/${supporterTarget.id}/role`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ grantSupporterMonths: months }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.error || 'Cấp Supporter thất bại', 'error');
+        return;
+      }
+      showToast(`Đã cấp/sửa Supporter cho ${supporterTarget.username}`, 'success');
+      setIsSupporterModalOpen(false);
+      setSupporterTarget(null);
+      setSupporterMonths('1');
+      fetchUsers(userQuery);
+    } catch (err) {
+      showToast('Lỗi hệ thống', 'error');
+    } finally {
+      setGivingSupporter(false);
     }
   };
 
@@ -379,7 +416,23 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
                           {user.classicPp.toFixed(1)}
                           <span className="text-[10px] font-normal ui-dim ml-1">Pts</span>
                         </td>
-                        <td className="px-5 py-3.5 text-right">
+                        <td className="px-5 py-3.5 text-right flex justify-end gap-1">
+                          {currentUser?.role === 'ADMIN' && (
+                            <button
+                              type="button"
+                              title="Phân quyền Supporter"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSupporterTarget({ id: user.id, username: user.username });
+                                setSupporterMonths('1');
+                                setIsSupporterModalOpen(true);
+                              }}
+                              className="p-1.5 rounded-lg text-pink-500 hover:bg-pink-500/10 border border-transparent hover:border-pink-500/20 transition-all cursor-pointer inline-flex items-center gap-1"
+                            >
+                              <Heart className="w-4 h-4" />
+                            </button>
+                          )}
                           {!isTargetSuper && currentUser?.role === 'ADMIN' && user.id !== currentUser?.id && (
                             <button
                               type="button"
@@ -491,6 +544,97 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
                   <>
                     <Trash2 className="w-3.5 h-3.5" />
                     Xác nhận xoá
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isSupporterModalOpen && supporterTarget && (
+        <div
+          className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => {
+            if (!givingSupporter) {
+              setIsSupporterModalOpen(false);
+              setSupporterTarget(null);
+            }
+          }}
+        >
+          <div
+            className="ui-card p-6 w-full max-w-sm space-y-4 shadow-2xl rounded-2xl border"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div className="flex items-center gap-2 text-pink-500 font-black text-base">
+                <Heart className="w-5 h-5" />
+                <span>Cấp quyền Supporter</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!givingSupporter) {
+                    setIsSupporterModalOpen(false);
+                    setSupporterTarget(null);
+                  }
+                }}
+                className="ui-dim hover:opacity-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <p className="ui-title font-medium">
+                Cấp Supporter cho <strong className="text-pink-500">{supporterTarget.username}</strong>
+              </p>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase ui-dim mb-1">Số tháng</label>
+                <select
+                  value={supporterMonths}
+                  onChange={(e) => setSupporterMonths(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border text-xs focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                >
+                  <option value="1">1 tháng</option>
+                  <option value="3">3 tháng</option>
+                  <option value="6">6 tháng</option>
+                  <option value="12">1 năm</option>
+                  <option value="1200">Trọn đời (100 năm)</option>
+                  <option value="-1">Hủy Supporter ngay lập tức</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+              <button
+                type="button"
+                disabled={givingSupporter}
+                onClick={() => {
+                  setIsSupporterModalOpen(false);
+                  setSupporterTarget(null);
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border cursor-pointer hover:bg-black/5 dark:hover:bg-white/5"
+                style={{ borderColor: 'var(--border-ui)' }}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={givingSupporter}
+                onClick={confirmGiveSupporter}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-pink-500 hover:bg-pink-600 transition-all shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {givingSupporter ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Đang xử lý
+                  </>
+                ) : (
+                  <>
+                    <Heart className="w-3.5 h-3.5" /> Xác nhận
                   </>
                 )}
               </button>
