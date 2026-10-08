@@ -76,7 +76,7 @@ export default function SupportPage() {
       <div className="ui-card p-6 sm:p-8">
         <div className="flex flex-col sm:flex-row gap-5 items-start">
           <img
-            src={supportQrUrl()}
+            src={supportQrUrl(username)}
             alt="VietQR VietinBank"
             className="w-44 h-44 rounded-2xl object-contain bg-white shrink-0 mx-auto sm:mx-0"
           />
