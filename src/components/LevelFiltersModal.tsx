@@ -19,6 +19,8 @@ interface LevelFiltersModalProps {
   setFilterVN: (next: boolean) => void;
   filterChallenge?: boolean;
   setFilterChallenge?: (next: boolean) => void;
+  filterUnranked?: boolean;
+  setFilterUnranked?: (next: boolean) => void;
   showModeFilters?: boolean;
   showChallengeToggle?: boolean;
 }
@@ -36,6 +38,8 @@ export default function LevelFiltersModal({
   setFilterVN,
   filterChallenge = false,
   setFilterChallenge,
+  filterUnranked = false,
+  setFilterUnranked,
   showModeFilters = true,
   showChallengeToggle = false,
 }: LevelFiltersModalProps) {
@@ -122,6 +126,11 @@ export default function LevelFiltersModal({
                   {t('filters.challenge')}
                 </ColorToggle>
               )}
+              {setFilterUnranked && (
+                <ColorToggle pressed={filterUnranked} onToggle={() => setFilterUnranked(!filterUnranked)}>
+                  Unranked Levels (có record)
+                </ColorToggle>
+              )}
             </div>
           </div>
         </div>
@@ -134,6 +143,7 @@ export default function LevelFiltersModal({
               setFilterFaces([]);
               setFilterVN(false);
               setFilterChallenge?.(false);
+              setFilterUnranked?.(false);
             }}
             className="flex-1 py-2.5 rounded-xl border text-xs font-bold hover:bg-black/5"
           >

@@ -160,6 +160,7 @@ async function loadSspLevelsPage(searchParams: URLSearchParams) {
   const filterTiers = searchParams.get('tiers') ? searchParams.get('tiers')!.split(',') : [];
   const filterFaces = searchParams.get('faces') ? searchParams.get('faces')!.split(',').map(Number) : [];
   const filterVN = searchParams.get('vn') === '1';
+  const filterUnranked = searchParams.get('unranked') === '1';
   const challenge = searchParams.get('challenge') === '1' || tab === 'challenge';
 
   const searching = Boolean(q);
@@ -213,6 +214,12 @@ async function loadSspLevelsPage(searchParams: URLSearchParams) {
           if (!lvl.isVN || lvl.isChallenge) return false;
         }
       }
+    }
+
+    if (filterUnranked) {
+      if ((lvl.classicRank as number | null) !== null) return false;
+      if ((lvl.placement as number | null) !== null) return false;
+      if (!lvl.victorCount || lvl.victorCount === 0) return false;
     }
 
     return true;
@@ -289,6 +296,7 @@ export async function GET(req: Request) {
           searchParams.get('tiers') || '',
           searchParams.get('faces') || '',
           searchParams.get('vn') || '0',
+          searchParams.get('unranked') || '0',
         ],
         [CACHE_TAGS.levels],
         180

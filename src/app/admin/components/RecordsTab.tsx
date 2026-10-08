@@ -259,6 +259,11 @@ export default function RecordsTab({
                     )}
                     <div className="text-[11px] ui-dim">
                       {t('admin.level_label', { name: rec.level.name, placement: rec.level.placement || '-', mode: rec.level.mode })}
+                      <span className="ml-2 font-bold px-1.5 py-0.5 rounded text-[10px]" style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}>
+                        {rec.level.classicRank === null && rec.level.placement === null
+                          ? 'Level chưa được xếp hạng'
+                          : `Hiện có ${rec.level._count?.records || 0} record`}
+                      </span>
                     </div>
                   </div>
                 </div>

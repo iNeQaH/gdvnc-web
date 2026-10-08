@@ -44,7 +44,7 @@ export async function GET(req: Request) {
         where: whereClause,
         include: {
           user: { select: { id: true, username: true, gdUsername: true, avatarUrl: true, role: true } },
-          level: true,
+          level: { include: { _count: { select: { records: { where: { status: 'APPROVED' } } } } } },
           reviewer: { select: REVIEWER_SELECT },
         },
         orderBy: sort === 'oldest' 

@@ -57,6 +57,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
   const [filterTiers, setFilterTiers] = useState<string[]>([]);
   const [filterFaces, setFilterFaces] = useState<number[]>([]);
   const [filterVN, setFilterVN] = useState(false);
+  const [filterUnranked, setFilterUnranked] = useState(false);
   const isChallengeList = listKind === 'challenge' || listTab === 'challenge';
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [editingLevel, setEditingLevel] = useState<any>(null);
@@ -99,7 +100,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
 
   useEffect(() => {
     fetchLevels();
-  }, [search, listTab, currentPage, filterModes, filterTiers, filterFaces, filterVN]);
+  }, [search, listTab, currentPage, filterModes, filterTiers, filterFaces, filterVN, filterUnranked]);
 
   const fetchLevels = () => {
     setLoading(true);
@@ -115,6 +116,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
     if (filterTiers.length) params.set('tiers', filterTiers.join(','));
     if (filterFaces.length) params.set('faces', filterFaces.join(','));
     if (filterVN) params.set('vn', '1');
+    if (filterUnranked) params.set('unranked', '1');
 
     fetch(`/api/levels?${params.toString()}`, { cache: 'no-store' })
       .then((res) => res.json())
@@ -182,7 +184,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
   const vnRanking = !isChallengeList && (listTab === 'vn' || listTab === 'featured' || filterVN);
   const classicRanking = !isChallengeList && listTab === 'classic';
 
-  const isAnyFilterActive = filterModes.length > 0 || filterTiers.length > 0 || filterFaces.length > 0 || filterVN;
+  const isAnyFilterActive = filterModes.length > 0 || filterTiers.length > 0 || filterFaces.length > 0 || filterVN || filterUnranked;
 
   const jumpToRank = (rank: number) => {
     if (!Number.isFinite(rank) || rank < 1) return;
@@ -620,6 +622,8 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
         setFilterFaces={setFilterFaces}
         filterVN={filterVN}
         setFilterVN={setFilterVN}
+        filterUnranked={filterUnranked}
+        setFilterUnranked={setFilterUnranked}
         showModeFilters={!isChallengeList}
       />
     </div>
