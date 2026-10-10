@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Star, Moon, Medal, Play, Globe, MessageSquare, Gamepad2, ArrowLeft, Camera, Check, X, Pencil, ShieldCheck, Heart, Trash2, Hammer, User as UserIcon, Shield, Crown, Trophy, Award, Zap, Flame, Diamond, StarHalf, CheckCircle, ChevronDown, RotateCcw, UserCheck } from 'lucide-react';
+import { Star, Moon, Medal, Play, Globe, MessageSquare, Gamepad2, ArrowLeft, Camera, Check, X, Pencil, ShieldCheck, Heart, Trash2, Hammer, User as UserIcon, Shield, Crown, Trophy, Award, Zap, Flame, Diamond, StarHalf, CheckCircle, ChevronDown, RotateCcw, UserCheck, MapPin, Edit, ShieldAlert, RefreshCw, Ban, Unlock, Lock } from 'lucide-react';
 import ImageEditorModal from '@/components/ImageEditorModal';
 import BadgePickerModal from '@/components/BadgePickerModal';
 import BadgeIcon from '@/components/BadgeIcon';
@@ -773,10 +773,10 @@ export default function ProfilePage() {
             {/* Admin Controls */}
             {isStaff && (
               <div className="pt-4 px-2 border-t flex flex-wrap gap-2" style={{ borderColor: 'var(--border-subtle)' }}>
-                {canEditInfo && <button onClick={() => setShowRoleModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 transition-all border border-amber-500/20"><ShieldAlert className="w-3.5 h-3.5" /> Quản Lý Role & Badge</button>}
-                {isSuperAdmin && <button onClick={() => confirmResetPassword(data.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20 transition-all border border-yellow-500/20"><RefreshCw className="w-3.5 h-3.5" /> Reset Mật Khẩu</button>}
-                {isSuperAdmin && !data.isBanned && <button onClick={() => confirmBan(data.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all border border-red-500/20"><Ban className="w-3.5 h-3.5" /> Khoá Tài Khoản</button>}
-                {isSuperAdmin && data.isBanned && <button onClick={() => confirmUnban(data.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-green-500/10 text-green-500 hover:bg-green-500/20 transition-all border border-green-500/20"><Unlock className="w-3.5 h-3.5" /> Mở Khoá Tài Khoản</button>}
+                {canEditInfo && <button onClick={() => setShowManageModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 transition-all border border-amber-500/20"><ShieldAlert className="w-3.5 h-3.5" /> Quản Lý Role & Badge</button>}
+                {isSuperAdmin && <button onClick={() => setShowResetPasswordModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20 transition-all border border-yellow-500/20"><RefreshCw className="w-3.5 h-3.5" /> Reset Mật Khẩu</button>}
+                {isSuperAdmin && !data.isBanned && <button onClick={() => setShowBanModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all border border-red-500/20"><Ban className="w-3.5 h-3.5" /> Khoá Tài Khoản</button>}
+                {isSuperAdmin && data.isBanned && <button onClick={() => handleToggleBan('unban')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-green-500/10 text-green-500 hover:bg-green-500/20 transition-all border border-green-500/20"><Unlock className="w-3.5 h-3.5" /> Mở Khoá Tài Khoản</button>}
               </div>
             )}
           </div>
