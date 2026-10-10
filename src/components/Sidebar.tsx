@@ -243,7 +243,7 @@ export const Sidebar = () => {
       <header
         className="md:hidden sticky top-0 z-40 h-14 px-4 flex items-center justify-between border-b backdrop-blur-md"
         style={{
-          backgroundColor: ((typeof window !== 'undefined' ? (window as any).__profileOverride?.backgroundUrl : undefined) ?? currentUser?.profileConfig?.backgroundUrl) ? 'color-mix(in srgb, var(--bg-card) 70%, transparent)' : 'var(--bg-card)',
+          backgroundColor: ((typeof window !== 'undefined' ? (window as any).__profileOverride?.backgroundUrl : undefined) ?? currentUser?.profileConfig?.backgroundUrl) ? 'rgba(0, 0, 0, 0.7)' : 'var(--bg-card)',
           borderColor: isLavender ? undefined : "var(--border-ui)",
         }}
       >
