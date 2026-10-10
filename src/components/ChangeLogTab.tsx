@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
+import { AnimatedTabs } from '@/components/AnimatedTabs';
 import {
   Flame,
   Gamepad2,
@@ -129,49 +130,16 @@ export default function ChangeLogTab() {
       {/* Sub-tab Header & Filter */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         {/* Toggle Demon / Pemon / Challenge */}
-        <div
-          className="flex items-center gap-1 p-1 rounded-xl border w-fit max-w-full overflow-x-auto"
-          style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
-        >
-          <button
-            type="button"
-            onClick={() => handleSubTabChange('DEMON')}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0"
-            style={{
-              backgroundColor: activeSubTab === 'DEMON' ? 'var(--bg-card)' : 'transparent',
-              color: activeSubTab === 'DEMON' ? 'var(--accent)' : 'var(--text-dim)',
-              boxShadow: activeSubTab === 'DEMON' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
-            }}
-          >
-            <Flame className="w-3.5 h-3.5" />
-            Demon List
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSubTabChange('PEMON')}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0"
-            style={{
-              backgroundColor: activeSubTab === 'PEMON' ? 'var(--bg-card)' : 'transparent',
-              color: activeSubTab === 'PEMON' ? 'var(--accent)' : 'var(--text-dim)',
-              boxShadow: activeSubTab === 'PEMON' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
-            }}
-          >
-            <Gamepad2 className="w-3.5 h-3.5" />
-            Pemon List
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSubTabChange('CHALLENGE')}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0"
-            style={{
-              backgroundColor: activeSubTab === 'CHALLENGE' ? 'var(--bg-card)' : 'transparent',
-              color: activeSubTab === 'CHALLENGE' ? 'var(--accent)' : 'var(--text-dim)',
-              boxShadow: activeSubTab === 'CHALLENGE' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
-            }}
-          >
-            <Swords className="w-3.5 h-3.5" />
-            Challenge List
-          </button>
+        <div className="w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
+          <AnimatedTabs
+            active={activeSubTab}
+            onChange={(newTab) => handleSubTabChange(newTab as ChangeLogListType)}
+            options={[
+              { id: 'DEMON', label: 'Demon List', icon: <Flame className="w-3.5 h-3.5" /> },
+              { id: 'PEMON', label: 'Pemon List', icon: <Gamepad2 className="w-3.5 h-3.5" /> },
+              { id: 'CHALLENGE', label: 'Challenge List', icon: <Swords className="w-3.5 h-3.5" /> },
+            ]}
+          />
         </div>
 
         {/* Counter & Refresh */}

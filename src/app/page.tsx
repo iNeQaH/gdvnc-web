@@ -11,6 +11,7 @@ import { useToast } from '@/components/GlobalToast';
 import BadgeIcon from '@/components/BadgeIcon';
 
 import FloatingNav from '@/components/FloatingNav';
+import { AnimatedTabs } from '@/components/AnimatedTabs';
 
 export default function HomePage() {
   const { t } = useLanguage();
@@ -230,58 +231,17 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Mode Filter Tabs & Search */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-          <button
-            onClick={() => setMode('CLASSIC')}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
-            style={{
-              backgroundColor: mode === 'CLASSIC' ? 'var(--bg-card)' : 'transparent',
-              color: mode === 'CLASSIC' ? 'var(--accent)' : 'var(--text-dim)',
-              boxShadow: mode === 'CLASSIC' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-            }}
-          >
-            <Star className="w-3.5 h-3.5 fill-current" />
-            {t('leaderboard.classic')}
-          </button>
-          <button
-            onClick={() => setMode('PLATFORMER')}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
-            style={{
-              backgroundColor: mode === 'PLATFORMER' ? 'var(--bg-card)' : 'transparent',
-              color: mode === 'PLATFORMER' ? 'var(--accent)' : 'var(--text-dim)',
-              boxShadow: mode === 'PLATFORMER' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-            }}
-          >
-            <Moon className="w-3.5 h-3.5 fill-current -rotate-12" />
-            {t('leaderboard.platformer')}
-          </button>
-          <button
-            onClick={() => setMode('CHALLENGE')}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
-            style={{
-              backgroundColor: mode === 'CHALLENGE' ? 'var(--bg-card)' : 'transparent',
-              color: mode === 'CHALLENGE' ? 'var(--accent)' : 'var(--text-dim)',
-              boxShadow: mode === 'CHALLENGE' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-            }}
-          >
-            <Swords className="w-3.5 h-3.5" />
-            {t('tags.challenge')}
-          </button>
-          <button
-            onClick={() => setMode('CREATOR')}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
-            style={{
-              backgroundColor: mode === 'CREATOR' ? 'var(--bg-card)' : 'transparent',
-              color: mode === 'CREATOR' ? 'var(--accent)' : 'var(--text-dim)',
-              boxShadow: mode === 'CREATOR' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-            }}
-          >
-            <Wrench className="w-3.5 h-3.5" />
-            {t('leaderboard.creator')}
-          </button>
-        </div>
+        <AnimatedTabs
+          active={mode}
+          onChange={setMode}
+          options={[
+            { id: 'CLASSIC', label: t('leaderboard.classic'), icon: <Star className="w-3.5 h-3.5 fill-current" /> },
+            { id: 'PLATFORMER', label: t('leaderboard.platformer'), icon: <Moon className="w-3.5 h-3.5 fill-current -rotate-12" /> },
+            { id: 'CHALLENGE', label: t('tags.challenge'), icon: <Swords className="w-3.5 h-3.5" /> },
+            { id: 'CREATOR', label: t('leaderboard.creator'), icon: <Wrench className="w-3.5 h-3.5" /> }
+          ]}
+        />
 
         {/* Device Filter (Hidden in CREATOR mode) */}
         {mode !== 'CREATOR' && (
@@ -557,3 +517,6 @@ export default function HomePage() {
     </div>
   );
 }
+
+
+

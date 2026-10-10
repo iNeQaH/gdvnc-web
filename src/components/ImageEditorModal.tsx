@@ -22,7 +22,7 @@ interface ImageEditorModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (dataUrl: string) => Promise<void>;
-  type: 'avatar' | 'cover';
+  type: 'avatar' | 'cover' | 'background';
   currentImage?: string;
 }
 
@@ -46,7 +46,7 @@ export default function ImageEditorModal({
   const [isGifSource, setIsGifSource] = useState<boolean>(false);
   const [fileError, setFileError] = useState<string>('');
 
-  const maxBytes = type === 'avatar' ? 10 * 1024 * 1024 : 20 * 1024 * 1024;
+  const maxBytes = type === 'background' ? 20 * 1024 * 1024 : (type === 'avatar' ? 10 * 1024 * 1024 : 20 * 1024 * 1024);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -443,3 +443,5 @@ export default function ImageEditorModal({
     </div>
   );
 }
+
+

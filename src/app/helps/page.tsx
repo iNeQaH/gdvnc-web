@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
+import { AnimatedTabs } from '@/components/AnimatedTabs';
 import { Send } from 'lucide-react';
 import { sanitizeFaqHtml } from '@/lib/faqSanitize';
 
@@ -99,19 +100,6 @@ export default function HelpsPage() {
   };
 
   const descParts = t('helps.desc', { url: DISCORD_URL }).split(DISCORD_URL);
-  const tabBtn = (id: 'faq' | 'submit', label: string) => (
-    <button
-      type="button"
-      onClick={() => setTab(id)}
-      className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
-      style={{
-        backgroundColor: tab === id ? 'var(--bg-card)' : 'transparent',
-        color: tab === id ? 'var(--accent)' : 'var(--text-dim)',
-      }}
-    >
-      {label}
-    </button>
-  );
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6 pb-16">
@@ -126,12 +114,15 @@ export default function HelpsPage() {
         </p>
       </div>
 
-      <div
-        className="inline-flex items-center gap-1 p-0.5 rounded-xl border"
-        style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
-      >
-        {tabBtn('faq', t('helps.tab_faq'))}
-        {tabBtn('submit', t('helps.tab_submit'))}
+      <div className="w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
+        <AnimatedTabs
+          active={tab}
+          onChange={(newTab) => setTab(newTab as any)}
+          options={[
+            { id: 'faq', label: t('helps.tab_faq') },
+            { id: 'submit', label: t('helps.tab_submit') },
+          ]}
+        />
       </div>
 
       {tab === 'faq' && (

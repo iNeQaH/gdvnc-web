@@ -56,9 +56,12 @@ export default function SupportPage() {
     [targetUsername, months]
   );
   
+  const [debouncedMonths, setDebouncedMonths] = useState(months);
+  useEffect(() => { const timer = setTimeout(() => setDebouncedMonths(months), 500); return () => clearTimeout(timer); }, [months]);
+
   const qrUrl = useMemo(
-    () => (targetUsername ? supportQrUrl(targetUsername, months) : supportQrUrl('')),
-    [targetUsername, months]
+    () => (targetUsername ? supportQrUrl(targetUsername, debouncedMonths) : supportQrUrl('')),
+    [targetUsername, debouncedMonths]
   );
   
   const priceInfo = useMemo(() => calculateSupportPrice(months), [months]);

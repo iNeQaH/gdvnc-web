@@ -23,6 +23,8 @@ export async function GET() {
       creatorPoints: true,
       spPoints: true,
       supporterUntil: true,
+      profileTheme: true,
+      profileConfig: true,
       tokenVersion: true,
     },
   });
@@ -34,3 +36,4 @@ export async function GET() {
   const { tokenVersion: _tokenVersion, ...publicUser } = user;
   return NextResponse.json({ success: true, user: publicUser });
 }
+

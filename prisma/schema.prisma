@@ -48,6 +48,8 @@ model User {
   country       String?   @default("Vietnam")
   supporterUntil DateTime?
   isBanned       Boolean   @default(false)
+  profileTheme   String?   @default("sky")
+  profileConfig  Json?
   banReason      String?   @db.Text
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
@@ -444,3 +446,4 @@ model AuditLog {
   @@index([action])
   @@index([createdAt])
 }
+

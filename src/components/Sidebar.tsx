@@ -23,6 +23,7 @@ import {
   ScrollText,
 } from 'lucide-react';
 import { ThemeSwitcher } from './ThemeSwitcher';
+import { useTheme } from './ThemeProvider';
 import { useLanguage } from './LanguageContext';
 import BrandMark from '@/components/BrandMark';
 import { NotificationModal } from './NotificationModal';
@@ -31,12 +32,30 @@ import { refreshSessionUser, logoutClient } from '@/lib/sessionClient';
 
 export const Sidebar = () => {
   const pathname = usePathname();
+  const { theme } = useTheme();
+  const isLavender = theme === 'lavender';
   const { language, setLanguage, t } = useLanguage();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [announceUnread, setAnnounceUnread] = useState(0);
   const [isInboxOpen, setIsInboxOpen] = useState(false);
+
+  const [indicatorStyle, setIndicatorStyle] = useState({ top: 0, height: 0, opacity: 0 });
+  const navRef = React.useRef<HTMLElement>(null);
+  const activeLinkRef = React.useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    if (isLavender && activeLinkRef.current && navRef.current) {
+      setIndicatorStyle({
+        top: activeLinkRef.current.offsetTop,
+        height: activeLinkRef.current.offsetHeight,
+        opacity: 1
+      });
+    } else {
+      setIndicatorStyle(prev => ({ ...prev, opacity: 0 }));
+    }
+  }, [pathname, isLavender]);
 
   const handleUpdateUnreadCount = (count: number) => {
     const newCount = Math.max(0, count);
@@ -68,6 +87,12 @@ export const Sidebar = () => {
       try {
         const u = JSON.parse(userStr);
         setCurrentUser(u);
+        if (u?.profileConfig?.backgroundUrl) {
+          document.body.style.backgroundImage = "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(" + u.profileConfig.backgroundUrl + ")";
+          document.body.style.backgroundSize = "cover";
+          document.body.style.backgroundPosition = "center";
+          document.body.style.backgroundAttachment = "fixed";
+        } else { document.body.style.backgroundImage = "none"; }
         let usedCache = false;
         try {
           const raw = sessionStorage.getItem('gdvnc_badges');
@@ -184,7 +209,7 @@ export const Sidebar = () => {
     { href: '/levels', label: t('nav.demonlist'), icon: Folder },
     { href: '/changelog', label: t('nav.changelog'), icon: ScrollText },
     { href: '/guidelines', label: t('nav.guidelines'), icon: BookOpen },
-    { href: '/timeline', label: t('nav.timeline'), icon: History },
+    // { href: '/timeline', label: t('nav.timeline'), icon: History },
     { href: '/submit', label: t('nav.submit'), icon: ClipboardList },
     { href: '/support', label: t('nav.supporter'), icon: Heart, highlight: false, isPink: true },
     { href: '/helps', label: t('nav.helps'), icon: Send},
@@ -198,7 +223,7 @@ export const Sidebar = () => {
         className="md:hidden sticky top-0 z-40 h-14 px-4 flex items-center justify-between border-b backdrop-blur-md"
         style={{
           backgroundColor: 'var(--bg-card)',
-          borderColor: 'var(--border-ui)',
+          borderColor: isLavender ? undefined : "var(--border-ui)",
         }}
       >
         <Link href="/" className="flex items-center gap-2">
@@ -212,7 +237,7 @@ export const Sidebar = () => {
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="p-2 rounded-xl border ui-dim hover:opacity-100 transition-colors"
-            style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+            style={{ backgroundColor: 'var(--bg-subtle)', borderColor: isLavender ? undefined : "var(--border-ui)" }}
             aria-label="Menu"
           >
             {isOpen ? <X className="w-4 h-4 ui-title" /> : <Menu className="w-4 h-4 ui-title" />}
@@ -235,7 +260,7 @@ export const Sidebar = () => {
         }`}
         style={{
           backgroundColor: 'var(--bg-card)',
-          borderColor: 'var(--border-ui)',
+          borderColor: isLavender ? undefined : "var(--border-ui)",
         }}
       >
         <div className="space-y-6">
@@ -261,24 +286,41 @@ export const Sidebar = () => {
           </div>
 
           {/* Navigation Links */}
-          <nav className="space-y-1">
-            <div className="px-2 pb-1.5 text-[10px] font-bold uppercase tracking-wider ui-dim">
+          <nav className="relative space-y-1" ref={navRef}>
+            <div className="px-2 pb-1.5 text-[10px] font-bold uppercase tracking-wider ui-dim relative z-[2]">
               {t('nav.menu')}
             </div>
+
+            {isLavender && (
+              <div 
+                className={`absolute rounded-xl z-[1] transition-all duration-250 ease-[cubic-bezier(0.19,1,0.22,1)] tsumiki-indicator ${pathname === "/support" ? "tsumiki-indicator-pink" : ""} ${indicatorStyle.opacity ? "opacity-100" : "opacity-0"}`}
+                style={{ 
+                  left: '0', 
+                  right: '0',
+                  top: `${indicatorStyle.top}px`,
+                  height: `${indicatorStyle.height}px`,
+                  pointerEvents: 'none'
+                }}
+              >
+                <span className="tsumiki-front !rounded-xl" style={{ transform: 'translateY(-3px)' }} />
+              </div>
+            )}
+
             {navLinks.map((item) => {
               const Icon = item.icon;
               const isActive =
                 item.href === '/'
                   ? pathname === '/'
                   : pathname === item.href || pathname.startsWith(item.href + '/');
-              const actualBgCol = isActive ? 'var(--accent-bg)' : 'transparent';
-              const actualTextCol = item.isPink ? '#f472b6' : (isActive ? 'var(--accent-text)' : 'var(--text-body)');
+              const actualBgCol = isLavender ? 'transparent' : (isActive ? 'var(--accent-bg)' : 'transparent');
+              const actualTextCol = isLavender && isActive ? '#ffffff' : (item.isPink ? '#f472b6' : (isActive ? 'var(--accent-text)' : 'var(--text-body)'));
 
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group"
+                  ref={isActive ? activeLinkRef : null}
+                  className={`relative flex items-center justify-between px-3 py-3 rounded-xl text-xs font-semibold transition-all group z-[2] ${isLavender && isActive ? '-translate-y-[7px]' : ''}`}
                   style={{
                     backgroundColor: actualBgCol,
                     color: actualTextCol,
@@ -306,11 +348,11 @@ export const Sidebar = () => {
               type="button"
               onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
               aria-label={t('sidebar.language')}
-              className="h-9 flex-1 min-w-0 rounded-xl border text-[11px] font-bold font-sans leading-none cursor-pointer focus:outline-none flex items-center justify-center appearance-none p-0"
+              className={`h-9 flex-1 min-w-0 rounded-xl border text-[11px] font-bold font-sans leading-none cursor-pointer focus:outline-none flex items-center justify-center appearance-none p-0 ${isLavender ? 'tsumiki-btn' : ''}`}
               style={{
                 backgroundColor: 'var(--bg-subtle)',
-                borderColor: 'var(--border-ui)',
-                color: 'var(--text-title)',
+                borderColor: isLavender ? undefined : "var(--border-ui)",
+                color: isLavender ? undefined : "var(--text-title)",
                 WebkitAppearance: 'none',
               }}
             >
@@ -319,8 +361,8 @@ export const Sidebar = () => {
             {currentUser && (
               <button
                 onClick={() => setIsInboxOpen(true)}
-                className="h-9 flex-1 min-w-0 rounded-xl border relative cursor-pointer hover:opacity-90 flex items-center justify-center"
-                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                className={`h-9 flex-1 min-w-0 rounded-xl border relative cursor-pointer hover:opacity-90 flex items-center justify-center ${isLavender ? 'tsumiki-btn' : ''}`}
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: isLavender ? undefined : "var(--border-ui)", color: isLavender ? undefined : "var(--text-title)" }}
                 title="Inbox"
               >
                 <Mail className="w-4 h-4" />
@@ -341,11 +383,9 @@ export const Sidebar = () => {
             <select
               value={uiScale}
               onChange={(e) => handleScaleChange(parseInt(e.target.value))}
-              className="px-2 h-7 rounded-lg border text-[11px] font-bold font-sans cursor-pointer focus:outline-none"
-              style={{
-                backgroundColor: 'var(--bg-subtle)',
-                borderColor: 'var(--border-ui)',
-                color: 'var(--text-title)',
+              className={`px-2 h-7 rounded-lg border text-[11px] font-bold font-sans cursor-pointer focus:outline-none appearance-none ${isLavender ? "tsumiki-btn-blue" : ""}`} style={{ WebkitAppearance: "none", backgroundImage: "url(\"data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ffffff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 0.5rem center", backgroundSize: "0.65em auto", paddingRight: "1.5rem", backgroundColor: isLavender ? undefined : "var(--bg-subtle)",
+                borderColor: isLavender ? undefined : "var(--border-ui)",
+                color: isLavender ? undefined : "var(--text-title)",
               }}
             >
               <option value="50">50%</option>
@@ -369,7 +409,7 @@ export const Sidebar = () => {
 
           {/* User Status Card */}
           {currentUser ? (
-            <div className="p-2.5 mt-2 rounded-2xl border flex items-center justify-between gap-2" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+            <div className="p-2.5 mt-2 rounded-2xl border flex items-center justify-between gap-2" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: isLavender ? undefined : "var(--border-ui)" }}>
               <Link
                 href={`/profile/${currentUser.username}`}
                 className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-90"
@@ -403,7 +443,7 @@ export const Sidebar = () => {
                 <Link
                   href="/settings"
                   title="Cài đặt cá nhân"
-                  className="p-2 rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-950/30 transition-colors cursor-pointer"
+                  className={`p-2 rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-950/30 transition-colors cursor-pointer ${isLavender ? 'tsumiki-btn' : ''}`}
                 >
                   <Settings className="w-4 h-4" />
                 </Link>
@@ -412,7 +452,7 @@ export const Sidebar = () => {
           ) : (
             <Link
               href="/login"
-              className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50" style={{ backgroundColor: "var(--accent)" }}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 tsumiki-btn" style={{ backgroundColor: "var(--accent)" }}
             >
               <UserIcon className="w-3.5 h-3.5" />
               {t('nav.login')}
@@ -432,5 +472,11 @@ export const Sidebar = () => {
     </>
   );
 };
+
+
+
+
+
+
 
 

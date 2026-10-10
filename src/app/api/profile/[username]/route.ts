@@ -37,6 +37,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         coverUrl: true,
         supporterUntil: true,
         isBanned: true,
+        profileTheme: true,
+        profileConfig: true,
         banReason: true,
         discordTag: true,
         gdUsername: true,
@@ -330,6 +332,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         gdUsername: nextGdUsername,
         gdVerified: nextGdVerified,
         discordTag: body.discordTag !== undefined ? clipText(body.discordTag, 80) : undefined,
+        profileConfig: body.profileConfig !== undefined ? body.profileConfig : undefined,
+        profileTheme: body.profileTheme !== undefined ? body.profileTheme : undefined,
       },
       select: {
         bio: true,
@@ -339,6 +343,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         gdUsername: true,
         gdVerified: true,
         discordTag: true,
+        profileConfig: true,
+        profileTheme: true,
       }
     });
 
@@ -409,3 +415,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ usern
     return publicApiError(error, 'Lỗi xoá tài khoản.', 500);
   }
 }
+
+
+
+

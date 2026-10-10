@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -8,6 +8,7 @@ import ImageEditorModal from '@/components/ImageEditorModal';
 import BadgePickerModal from '@/components/BadgePickerModal';
 import BadgeIcon from '@/components/BadgeIcon';
 import { useLanguage } from '@/components/LanguageContext';
+import { useTheme } from '@/components/ThemeProvider';
 import { useToast } from '@/components/GlobalToast';
 import { formatCp } from '@/lib/creatorPoints';
 import { levelPath } from '@/lib/levelUrl';
@@ -67,6 +68,7 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<'classic' | 'platformer' | 'creator'>('classic');
   const [recordPage, setRecordPage] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const { setOverrideTheme } = useTheme();
   const isOwner = !!(currentUser && currentUser.username === username);
   const isStaff = isStaffRole(currentUser?.role);
   const isFullAdmin = isFullAdminRole(currentUser?.role);
@@ -563,7 +565,11 @@ export default function ProfilePage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {data?.profileConfig?.backgroundUrl && (
+        <div className="fixed inset-0 z-[-1] pointer-events-none" style={{ backgroundImage: "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(" + data.profileConfig.backgroundUrl + ")", backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "fixed" }} />
+      )}
+
       {data.isBanned && (
         <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-500 space-y-1">
           <div className="text-xs font-extrabold uppercase flex items-center gap-2">
@@ -1865,4 +1871,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
 

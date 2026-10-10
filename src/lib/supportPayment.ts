@@ -1,4 +1,4 @@
-﻿export const SUPPORT_BANK = {
+export const SUPPORT_BANK = {
   name: 'VietinBank',
   code: 'ICB',
   bin: '970415',
@@ -18,7 +18,7 @@ export function sanitizeSupportUsername(username: string) {
 export function calculateSupportPrice(months: number) {
   const basePrice = 20000;
   let discountPercent = Math.floor(months / 3) * 5;
-  if (discountPercent > 100) discountPercent = 100;
+  if (discountPercent > 60) discountPercent = 60;
   
   const totalPrice = (basePrice * months) * (1 - discountPercent / 100);
   return {
@@ -42,3 +42,4 @@ export function supportQrUrl(username: string, months: number = 1) {
   
   return `${base}?amount=${totalPrice}&addInfo=${encodeURIComponent(content)}`;
 }
+

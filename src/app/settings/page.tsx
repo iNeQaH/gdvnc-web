@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -25,7 +25,7 @@ export default function SettingsPage() {
   const [savingInfo, setSavingInfo] = useState(false);
 
   // Image Modal
-  const [imageModal, setImageModal] = useState<{ open: boolean; type: 'avatar' | 'cover' }>({ open: false, type: 'avatar' });
+  const [imageModal, setImageModal] = useState<{ open: boolean; type: 'avatar' | 'cover' | 'background' }>({ open: false, type: 'avatar' });
 
   // 2FA Setup
   const [show2faModal, setShow2faModal] = useState(false);
@@ -236,6 +236,9 @@ export default function SettingsPage() {
               <button onClick={() => setImageModal({ open: true, type: 'cover' })} className="px-4 py-2 bg-sky-500/10 text-sky-500 rounded-xl text-xs font-bold hover:bg-sky-500/20 flex gap-2 items-center cursor-pointer transition-colors border border-sky-500/20">
                 <ImageIcon className="w-4 h-4"/> Đổi Banner
               </button>
+              <button onClick={() => { const isSupporter = currentUser?.supporterUntil && new Date(currentUser.supporterUntil) > new Date(); const isSuperAdmin = currentUser?.role === 'ADMIN' || (currentUser?.username && currentUser.username.toLowerCase() === 'ineqah'); if (!isSupporter && !isSuperAdmin) { showToast('Tính năng chỉ dành cho Supporter!', 'error'); return; } setImageModal({ open: true, type: 'background' as any }); }} className="px-4 py-2 bg-pink-500/10 text-pink-500 rounded-xl text-xs font-bold hover:bg-pink-500/20 flex gap-2 items-center cursor-pointer transition-colors border border-pink-500/20">
+                <ImageIcon className="w-4 h-4"/> Đổi Nền (Supporter)
+              </button>
             </div>
             
             <div className="space-y-3 pt-2">
@@ -269,7 +272,7 @@ export default function SettingsPage() {
               <Trash2 className="w-4 h-4" /> Xóa Tài Khoản
             </h2>
             <p className="text-xs ui-dim">Hành động này không thể hoàn tác. Toàn bộ dữ liệu của bạn sẽ bị xóa khỏi hệ thống.</p>
-            <button onClick={handleDeleteAccount} className="px-4 py-2 bg-red-500/20 text-red-500 rounded-xl text-xs font-bold hover:bg-red-500/30 w-full cursor-pointer transition-colors border border-red-500/20">Yêu Cầu Xóa Tài Khoản</button>
+            <button onClick={handleDeleteAccount} className="px-4 py-2 bg-red-500/20 text-red-500 rounded-xl text-xs font-bold hover:bg-red-500/30 w-full cursor-pointer transition-colors border border-red-500/20 tsumiki-btn-red">Yêu Cầu Xóa Tài Khoản</button>
           </div>
         </div>
 
@@ -286,14 +289,14 @@ export default function SettingsPage() {
                 <div className="text-xs ui-dim mt-0.5">Bảo vệ tài khoản bằng ứng dụng Authenticator</div>
               </div>
               {data.totpEnabled ? (
-                <button onClick={handleDisable2FA} className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold text-xs rounded-lg cursor-pointer transition-colors border border-red-500/20">Tắt 2FA</button>
+                <button onClick={handleDisable2FA} className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold text-xs rounded-lg cursor-pointer transition-colors border border-red-500/20 tsumiki-btn-red">Tắt 2FA</button>
               ) : (
-                <button onClick={handleSetup2FA} className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 font-bold text-xs rounded-lg cursor-pointer transition-colors border border-emerald-500/20">Bật 2FA</button>
+                <button onClick={handleSetup2FA} className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 font-bold text-xs rounded-lg cursor-pointer transition-colors border border-emerald-500/20 tsumiki-btn-green">Bật 2FA</button>
               )}
             </div>
 
             <div className="pt-2">
-              <button onClick={() => setShowPasswordModal(true)} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors" style={{ borderColor: 'var(--border-ui)' }}>
+              <button onClick={() => setShowPasswordModal(true)} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors tsumiki-btn" style={{ borderColor: 'var(--border-ui)' }}>
                 <Lock className="w-4 h-4"/> Đổi Mật Khẩu
               </button>
             </div>
@@ -304,10 +307,10 @@ export default function SettingsPage() {
               <HelpCircle className="w-4 h-4" /> Khác
             </h2>
             
-            <button onClick={() => router.push('/support')} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-pink-50 dark:hover:bg-pink-950/30 text-pink-500 border-pink-500/20 transition-colors">
+            <button onClick={() => router.push('/support')} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-pink-50 dark:hover:bg-pink-950/30 text-pink-500 border-pink-500/20 transition-colors tsumiki-btn-pink">
               <Heart className="w-4 h-4"/> Ủng Hộ GDVN (Donate)
             </button>
-            <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-red-50 hover:text-red-500 hover:border-red-500/30 dark:hover:bg-red-950/30 text-slate-500 transition-colors" style={{ borderColor: 'var(--border-ui)' }}>
+            <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-red-50 hover:text-red-500 hover:border-red-500/30 dark:hover:bg-red-950/30 text-slate-500 transition-colors tsumiki-btn" style={{ borderColor: 'var(--border-ui)' }}>
               <LogOut className="w-4 h-4"/> Đăng Xuất
             </button>
           </div>
@@ -317,19 +320,19 @@ export default function SettingsPage() {
       <ImageEditorModal
         isOpen={imageModal.open}
         type={imageModal.type}
-        currentImage={imageModal.type === 'avatar' ? data.avatarUrl : data.coverUrl}
+        currentImage={imageModal.type === 'avatar' ? data.avatarUrl : (imageModal.type === 'background' ? data.profileConfig?.backgroundUrl : data.coverUrl)}
         onClose={() => setImageModal({ open: false, type: 'avatar' })}
         onSave={async (url: string) => {
           const nextData = { ...data };
-          if (imageModal.type === 'avatar') nextData.avatarUrl = url;
-          else nextData.coverUrl = url;
+          if (imageModal.type === 'avatar') nextData.avatarUrl = url; else if (imageModal.type === 'background') { nextData.profileConfig = { ...nextData.profileConfig, backgroundUrl: url }; } else nextData.coverUrl = url;
+
           setData(nextData);
           setImageModal({ open: false, type: 'avatar' });
           try {
             await fetch(`/api/profile/${currentUser.username}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(imageModal.type === 'avatar' ? { avatarUrl: url } : { coverUrl: url })
+              body: JSON.stringify(imageModal.type === 'avatar' ? { avatarUrl: url } : (imageModal.type === 'background' ? { profileConfig: nextData.profileConfig } : { coverUrl: url }))
             });
             showToast('Cập nhật hình ảnh thành công', 'success');
           } catch (e) {}
@@ -402,3 +405,7 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+
+
+

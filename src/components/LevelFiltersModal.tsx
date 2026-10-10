@@ -145,13 +145,13 @@ export default function LevelFiltersModal({
               setFilterChallenge?.(false);
               setFilterUnranked?.(false);
             }}
-            className="flex-1 py-2.5 rounded-xl border text-xs font-bold hover:bg-black/5"
+            className="flex-1 py-2.5 rounded-xl border text-xs font-bold hover:bg-black/5 tsumiki-btn"
           >
             {t('filters.reset')}
           </button>
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl text-xs font-bold text-[color:var(--accent-fg)]"
+            className="flex-1 py-2.5 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] tsumiki-btn"
             style={{ backgroundColor: 'var(--accent)' }}
           >
             {t('filters.done')}
@@ -161,3 +161,4 @@ export default function LevelFiltersModal({
     </div>
   );
 }
+

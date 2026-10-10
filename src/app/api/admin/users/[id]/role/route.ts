@@ -36,7 +36,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     // Rule 1: Nobody can touch iNeQaH
-    if (isSuperAdminUser(target)) {
+    if (isSuperAdminUser(target) && !isSuperAdminUser(actor)) {
       return NextResponse.json({ error: 'Không thể thay đổi quyền của Super Admin.' }, { status: 403 });
     }
 
@@ -129,3 +129,4 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return publicApiError(error, 'Lỗi cập nhật quyền.');
   }
 }
+

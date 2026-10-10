@@ -11,6 +11,7 @@ interface ThemeContextProps {
   mode: ModeType;
   setMode: (mode: ModeType) => void;
   resolvedMode: 'light' | 'dark';
+  setOverrideTheme: (theme: ThemeType | null) => void;
 }
 
 const THEMES: ThemeType[] = ['sky', 'mint', 'peach', 'lavender', 'mono', 'sakura'];
@@ -22,6 +23,7 @@ const ThemeContext = createContext<ThemeContextProps>({
   setTheme: () => {},
   mode: 'system',
   setMode: () => {},
+  setOverrideTheme: () => {},
   resolvedMode: 'light',
 });
 
@@ -61,6 +63,8 @@ function paintRgb(root: HTMLElement, theme: 'mint' | 'peach', dark: boolean, hue
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [theme, setThemeState] = useState<ThemeType>('sky');
+  const [overrideTheme, setOverrideTheme] = useState<ThemeType | null>(null);
+  const effectiveTheme = overrideTheme || theme;
   const [mode, setModeState] = useState<ModeType>('system');
   const [resolvedMode, setResolvedMode] = useState<'light' | 'dark'>('light');
 
@@ -77,14 +81,18 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (mode !== 'system') return;
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => setResolvedMode(applyTheme(theme, 'system'));
+    const handleChange = () => setResolvedMode(applyTheme(effectiveTheme, 'system'));
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [mode, theme]);
+  }, [mode, effectiveTheme]);
+
+  useEffect(() => {
+    setResolvedMode(applyTheme(effectiveTheme, mode));
+  }, [effectiveTheme, mode]);
 
   useEffect(() => {
     const root = document.documentElement;
-    const rgb = theme === 'mint' || theme === 'peach';
+    const rgb = effectiveTheme === 'mint' || effectiveTheme === 'peach';
     if (!rgb) {
       clearRgbVars(root);
       return;
@@ -92,7 +100,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     const dark = resolvedMode === 'dark';
     // RGB / RGB Pastel are an explicit color-cycle choice — keep moving even if
     // the OS has "reduce motion" on (Windows often maps that to a frozen accent).
-    const speed = theme === 'peach' ? 22.5 : 30;
+    const speed = effectiveTheme === 'peach' ? 22.5 : 30;
     let hue = 0;
     let last = performance.now();
     let raf = 0;
@@ -100,16 +108,16 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       hue = (hue + speed * dt) % 360;
-      paintRgb(root, theme, dark, hue);
+      paintRgb(root, effectiveTheme as 'mint' | 'peach', dark, hue);
       raf = requestAnimationFrame(tick);
     };
-    paintRgb(root, theme, dark, hue);
+    paintRgb(root, effectiveTheme as 'mint' | 'peach', dark, hue);
     raf = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(raf);
       clearRgbVars(root);
     };
-  }, [theme, resolvedMode]);
+  }, [effectiveTheme, resolvedMode]);
 
   const setTheme = (newTheme: ThemeType) => {
     setThemeState(newTheme);
@@ -120,14 +128,19 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const setMode = (newMode: ModeType) => {
     setModeState(newMode);
     localStorage.setItem('gdvnc_mode', newMode);
-    setResolvedMode(applyTheme(theme, newMode));
+    setResolvedMode(applyTheme(effectiveTheme, newMode));
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, mode, setMode, resolvedMode }}>
+    <ThemeContext.Provider value={{ theme: effectiveTheme, setTheme, mode, setMode, resolvedMode, setOverrideTheme }}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
 export const useTheme = () => useContext(ThemeContext);
+
+
+
+
+

@@ -8,6 +8,7 @@ import LevelFormModal from '@/components/LevelFormModal';
 import ReviewStatusBadge from '@/components/ReviewStatusBadge';
 import GdUnverifiedNotice from '@/components/GdUnverifiedNotice';
 import { sanitizeFaqHtml } from '@/lib/faqSanitize';
+import { AnimatedTabs } from '@/components/AnimatedTabs';
 
 function SubmitForm() {
   const router = useRouter();
@@ -251,22 +252,14 @@ function SubmitForm() {
 
       {currentUser.gdUsername && !currentUser.gdVerified && <GdUnverifiedNotice />}
 
-      <div className="flex gap-2 p-1 rounded-xl" style={{ backgroundColor: 'var(--bg-subtle)' }}>
-        <button
-          onClick={() => setTab('PLAYER')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${tab === 'PLAYER' ? 'shadow-sm' : 'ui-dim hover:opacity-80'}`}
-          style={tab === 'PLAYER' ? { backgroundColor: 'var(--bg-card)', color: 'var(--text-title)' } : {}}
-        >
-          <Gamepad2 className="w-4 h-4" /> {t('submit.tab_player')}
-        </button>
-        <button
-          onClick={() => setTab('CREATOR')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${tab === 'CREATOR' ? 'shadow-sm' : 'ui-dim hover:opacity-80'}`}
-          style={tab === 'CREATOR' ? { backgroundColor: 'var(--bg-card)', color: 'var(--text-title)' } : {}}
-        >
-          <Hammer className="w-4 h-4" /> {t('submit.tab_creator')}
-        </button>
-      </div>
+      <AnimatedTabs
+        active={tab}
+        onChange={setTab}
+        options={[
+          { id: 'PLAYER', label: t('submit.tab_player'), icon: <Gamepad2 className="w-4 h-4" /> },
+          { id: 'CREATOR', label: t('submit.tab_creator'), icon: <Hammer className="w-4 h-4" /> }
+        ]}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
       <div className="lg:col-span-3 space-y-6 min-w-0">

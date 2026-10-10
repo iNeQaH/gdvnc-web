@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { AnimatedTabs } from '@/components/AnimatedTabs';
 import { KeyRound, User, Mail, ArrowRight, AlertCircle, CheckCircle2, ShieldCheck, RefreshCw, Send, Lock } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import SmartCaptcha from '@/components/SmartCaptcha';
@@ -305,30 +306,16 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
   return (
     <div className="max-w-md mx-auto py-8 sm:py-12 space-y-5 px-4">
       {/* Tabs */}
-      <div className="flex items-center justify-center p-1 rounded-2xl border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-        <button
-          onClick={() => { setTab('login'); setError(''); }}
-          className="flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center"
-          style={{
-            backgroundColor: tab === 'login' ? 'var(--bg-card)' : 'transparent',
-            color: tab === 'login' ? 'var(--accent)' : 'var(--text-dim)',
-            boxShadow: tab === 'login' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-          }}
-        >
-          {t('auth.login')}
-        </button>
-        <button
-          onClick={() => { setTab('register'); setError(''); }}
-          className="flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center"
-          style={{
-            backgroundColor: tab === 'register' ? 'var(--bg-card)' : 'transparent',
-            color: tab === 'register' ? 'var(--accent)' : 'var(--text-dim)',
-            boxShadow: tab === 'register' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-          }}
-        >
-          {t('auth.register')}
-        </button>
-      </div>
+      {tab !== 'reset' && (
+        <AnimatedTabs
+          active={tab}
+          onChange={(newTab) => { setTab(newTab as any); setError(''); }}
+          options={[
+            { id: 'login', label: t('auth.login') },
+            { id: 'register', label: t('auth.register') },
+          ]}
+        />
+      )}
 
       {/* Form Container */}
       <div className="ui-card p-6 sm:p-7 space-y-4">

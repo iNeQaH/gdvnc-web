@@ -646,3 +646,5 @@ input[type="number"] {
   display: block;
   overflow: visible;
 }
+
+@import "./tsumiki.css";

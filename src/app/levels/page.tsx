@@ -11,6 +11,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import LevelFormModal from '@/components/LevelFormModal';
 import LevelFiltersModal from '@/components/LevelFiltersModal';
 import FloatingNav from '@/components/FloatingNav';
+import { AnimatedTabs } from '@/components/AnimatedTabs';
 import { useToast } from '@/components/GlobalToast';
 import { isDemonDifficultyFace, matchesDifficultyFilter } from '@/lib/gdDifficulty';
 import { compareListLevels, compareVnListLevels, placementMatchesTiers } from '@/lib/levelSort';
@@ -208,7 +209,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
               setEditingLevel(isChallengeList ? { isChallenge: true } : null);
               setIsFormOpen(true);
             }}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer tsumiki-btn"
             style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-fg)' }}
           >
             <Plus className="w-4 h-4" />
@@ -220,30 +221,23 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
       {/* Controls */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-1 p-0.5 rounded-xl border w-fit max-w-full overflow-x-auto" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-            {(['featured', 'classic', 'demonlist', 'pemonlist', 'vn', 'challenge'] as const).map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => {
-                  setListTab(tab);
-                  setCurrentPage(1);
-                  if (typeof window !== 'undefined') {
-                    const url = new URL(window.location.href);
-                    url.searchParams.set('tab', tab);
-                    window.history.replaceState({}, '', url.toString());
-                  }
-                }}
-                className="px-3 py-2 rounded-lg text-xs font-bold cursor-pointer transition-all shrink-0"
-                style={{
-                  backgroundColor: listTab === tab ? 'var(--bg-card)' : 'transparent',
-                  color: listTab === tab ? 'var(--accent)' : 'var(--text-dim)',
-                  boxShadow: listTab === tab ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                }}
-              >
-                {tabNames[tab]}
-              </button>
-            ))}
+          <div className="w-full overflow-x-auto pb-2">
+            <AnimatedTabs
+              active={listTab}
+              onChange={(newTab) => {
+                setListTab(newTab as any);
+                setCurrentPage(1);
+                if (typeof window !== 'undefined') {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('tab', newTab);
+                  window.history.replaceState({}, '', url.toString());
+                }
+              }}
+              options={(['featured', 'classic', 'demonlist', 'pemonlist', 'vn', 'challenge'] as const).map(tab => ({
+                id: tab,
+                label: tabNames[tab],
+              }))}
+            />
           </div>
           <p className="text-[13px] font-medium ui-dim px-1">{tabDescriptions[listTab]}</p>
         </div>
@@ -276,7 +270,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
 
             <button
               onClick={() => setIsFilterModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ui-subtle hover:bg-black/5 dark:hover:bg-white/5 shrink-0 cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ui-subtle hover:bg-black/5 dark:hover:bg-white/5 shrink-0 cursor-pointer tsumiki-btn"
               style={{ borderColor: 'var(--border-ui)' }}
             >
               <Settings className="w-3.5 h-3.5" />
@@ -290,7 +284,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
           <div className="flex items-center justify-end gap-2 shrink-0">
             <button
               onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
-              className="p-2 rounded-xl border transition-all flex items-center justify-center cursor-pointer hover:bg-black/5 dark:hover:bg-white/5"
+              className="p-2 rounded-xl border transition-all flex items-center justify-center cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 tsumiki-btn"
               style={{
                 backgroundColor: 'var(--bg-subtle)',
                 borderColor: 'var(--border-ui)',
@@ -629,3 +623,6 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
     </div>
   );
 }
+
+
+
