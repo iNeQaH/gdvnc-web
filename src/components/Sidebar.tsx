@@ -83,66 +83,11 @@ export const Sidebar = () => {
 
   const loadUserFromStorage = () => {
     const userStr = localStorage.getItem('gdvnc_user');
+    let u = null;
     if (userStr) {
       try {
-        const u = JSON.parse(userStr);
+        u = JSON.parse(userStr);
         setCurrentUser(u);
-        const override = typeof window !== 'undefined' ? (window as any).__profileOverride : null;
-          const customThemeColor = override && override.customThemeColor !== undefined ? override.customThemeColor : u?.profileConfig?.customThemeColor;
-          const backgroundUrl = override && override.backgroundUrl !== undefined ? override.backgroundUrl : u?.profileConfig?.backgroundUrl;
-
-          if (customThemeColor) {
-            document.documentElement.style.setProperty("--accent", customThemeColor);
-            document.documentElement.style.setProperty("--accent-text", customThemeColor);
-            document.documentElement.style.setProperty("--accent-hover", customThemeColor);
-          } else {
-            document.documentElement.style.removeProperty("--accent");
-            document.documentElement.style.removeProperty("--accent-text");
-            document.documentElement.style.removeProperty("--accent-hover");
-          }
-
-          if (backgroundUrl) {
-            document.body.style.backgroundImage = "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(" + backgroundUrl + ")";
-            document.body.style.backgroundSize = "cover";
-            document.body.style.backgroundPosition = "center";
-            document.body.style.backgroundAttachment = "fixed";
-          } else {
-            document.body.style.backgroundImage = "none";
-          }
-        let usedCache = false;
-        try {
-          const raw = sessionStorage.getItem('gdvnc_badges');
-          if (raw) {
-            const cached = JSON.parse(raw);
-            if (cached?.userId === u.id && Date.now() - cached.at < 90_000) {
-              setUnreadCount(cached.unreadCount || 0);
-              setAnnounceUnread(cached.announceUnread || 0);
-              usedCache = true;
-            }
-          }
-        } catch {
-          /* ignore */
-        }
-        if (usedCache) return;
-        Promise.all([
-          fetch('/api/notifications').then((res) => res.json()),
-          fetch('/api/announcements').then((res) => res.json()),
-        ])
-          .then(([inbox, announces]) => {
-            const unread = inbox?.success ? inbox.unreadCount || 0 : 0;
-            const announce = announces?.success ? announces.unreadCount || 0 : 0;
-            setUnreadCount(unread);
-            setAnnounceUnread(announce);
-            try {
-              sessionStorage.setItem(
-                'gdvnc_badges',
-                JSON.stringify({ userId: u.id, at: Date.now(), unreadCount: unread, announceUnread: announce })
-              );
-            } catch {
-              /* ignore */
-            }
-          })
-          .catch(() => {});
       } catch (e) {
         localStorage.removeItem('gdvnc_user');
       }
@@ -150,6 +95,66 @@ export const Sidebar = () => {
       setCurrentUser(null);
       setUnreadCount(0);
       setAnnounceUnread(0);
+    }
+
+    const override = typeof window !== 'undefined' ? (window as any).__profileOverride : null;
+    const customThemeColor = override && override.customThemeColor !== undefined ? override.customThemeColor : u?.profileConfig?.customThemeColor;
+    const backgroundUrl = override && override.backgroundUrl !== undefined ? override.backgroundUrl : u?.profileConfig?.backgroundUrl;
+
+    if (customThemeColor) {
+      document.documentElement.style.setProperty("--accent", customThemeColor);
+      document.documentElement.style.setProperty("--accent-text", customThemeColor);
+      document.documentElement.style.setProperty("--accent-hover", customThemeColor);
+    } else {
+      document.documentElement.style.removeProperty("--accent");
+      document.documentElement.style.removeProperty("--accent-text");
+      document.documentElement.style.removeProperty("--accent-hover");
+    }
+
+    if (backgroundUrl) {
+      document.body.style.backgroundImage = "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(" + backgroundUrl + ")";
+      document.body.style.backgroundSize = "cover";
+      document.body.style.backgroundPosition = "center";
+      document.body.style.backgroundAttachment = "fixed";
+    } else {
+      document.body.style.backgroundImage = "none";
+    }
+
+    if (u) {
+      let usedCache = false;
+      try {
+        const raw = sessionStorage.getItem('gdvnc_badges');
+        if (raw) {
+          const cached = JSON.parse(raw);
+          if (cached?.userId === u.id && Date.now() - cached.at < 90_000) {
+            setUnreadCount(cached.unreadCount || 0);
+            setAnnounceUnread(cached.announceUnread || 0);
+            usedCache = true;
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+      if (usedCache) return;
+      Promise.all([
+        fetch('/api/notifications').then((res) => res.json()),
+        fetch('/api/announcements').then((res) => res.json()),
+      ])
+        .then(([inbox, announces]) => {
+          const unread = inbox?.success ? inbox.unreadCount || 0 : 0;
+          const announce = announces?.success ? announces.unreadCount || 0 : 0;
+          setUnreadCount(unread);
+          setAnnounceUnread(announce);
+          try {
+            sessionStorage.setItem(
+              'gdvnc_badges',
+              JSON.stringify({ userId: u.id, at: Date.now(), unreadCount: unread, announceUnread: announce })
+            );
+          } catch {
+            /* ignore */
+          }
+        })
+        .catch(() => {});
     }
   };
 

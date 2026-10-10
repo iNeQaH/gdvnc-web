@@ -72,13 +72,15 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (data) {
-      if (setOverrideTheme) setOverrideTheme(data.profileTheme || 'sky');
+      if (setOverrideTheme) setOverrideTheme(data.profileTheme || null);
       
       if (typeof window !== 'undefined') {
-        (window as any).__profileOverride = {
-          backgroundUrl: data.profileConfig?.backgroundUrl || null,
-          customThemeColor: data.profileConfig?.customThemeColor || null
-        };
+        const overrideObj: any = {};
+        if (data.profileTheme) overrideObj.theme = data.profileTheme;
+        if (data.profileConfig?.backgroundUrl) overrideObj.backgroundUrl = data.profileConfig.backgroundUrl;
+        if (data.profileConfig?.customThemeColor) overrideObj.customThemeColor = data.profileConfig.customThemeColor;
+        
+        (window as any).__profileOverride = overrideObj;
         window.dispatchEvent(new Event('gdvnc_user_update'));
       }
 
