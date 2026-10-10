@@ -139,6 +139,7 @@ export default function ProfilePage() {
   const [cpInput, setCpInput] = useState('');
   const [isEditingCp, setIsEditingCp] = useState(false);
   const [isEditingHardest, setIsEditingHardest] = useState(false);
+  const [showPoints, setShowPoints] = useState(false);
   const [hardestInput, setHardestInput] = useState('');
   const [showBadgePicker, setShowBadgePicker] = useState(false);
   const [editingField, setEditingField] = useState<null | 'country' | 'gdUsername' | 'discordTag'>(null);
@@ -632,9 +633,7 @@ export default function ProfilePage() {
         {/* Box 1 (Left Column) */}
         <div className="lg:col-span-7 space-y-6">
           <div className="ui-card p-5 space-y-6">
-            <h2 className="text-sm font-bold flex items-center gap-2 border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
-              <UserIcon className="w-4 h-4" /> Hình ảnh & Nhận diện
-            </h2>
+            
             
             <div className="relative mb-6">
               <div 
@@ -655,44 +654,47 @@ export default function ProfilePage() {
                 )}
               </div>
               <div className="absolute -bottom-8 left-4 p-1 rounded-2xl" style={{ backgroundColor: 'var(--bg-card)' }}>
-                <div 
-                  className={"relative w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden bg-slate-200 dark:bg-zinc-700 shadow-sm border " + (canEditInfo ? 'cursor-pointer group' : '')} 
-                  style={{ borderColor: 'var(--border-subtle)' }}
+                <button 
+                  type="button"
+                  className={"relative w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden shadow-sm " + (data?.profileTheme === 'lavender' ? 'tsumiki-btn p-1 bg-purple-500' : 'bg-slate-200 dark:bg-zinc-700 border')} 
+                  style={{ borderColor: data?.profileTheme === 'lavender' ? undefined : 'var(--border-subtle)', cursor: canEditInfo ? 'pointer' : 'default' }}
                   onClick={canEditInfo ? handleOpenAvatarModal : undefined}
                   title={canEditInfo ? "Đổi Avatar" : undefined}
                 >
-                  {data.avatarUrl ? <img src={data.avatarUrl} alt="Avatar" className="w-full h-full object-cover" /> : <UserIcon className="w-10 h-10 m-auto mt-5 md:mt-7 text-slate-400" />}
-                  {canEditInfo && (
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold">
-                      <Camera className="w-3.5 h-3.5 mb-0.5" /> Sửa
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Name & Badges */}
-              <div className="absolute -bottom-7 left-28 md:left-36 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
-                <div className="flex items-center gap-1.5">
-                  <h1 className="text-xl md:text-2xl font-black ui-title drop-shadow-md">{data.username}</h1>
-                  {data.role === 'ADMIN' && <span title="Admin"><Crown className="w-5 h-5 text-rose-500 fill-rose-500" /></span>}
-                  {data.role === 'STAFF' && <span title="Staff"><ShieldCheck className="w-5 h-5 text-sky-500 fill-sky-500" /></span>}
-                </div>
-                {data.badges && data.badges.length > 0 && (
-                  <div className="flex items-center gap-1">
-                    {data.badges.slice(0, 3).map((ub: any) => (
-                      <div key={ub.id} title={ub.badge?.name}>
-                        {ub.badge?.iconUrl ? <img src={ub.badge.iconUrl} className="w-5 h-5 object-contain drop-shadow" /> : null}
+                  <div className="w-full h-full rounded-lg overflow-hidden bg-slate-200 dark:bg-zinc-700 relative group">
+                    {data.avatarUrl ? <img src={data.avatarUrl} alt="Avatar" className="w-full h-full object-cover" /> : <UserIcon className="w-10 h-10 m-auto mt-5 md:mt-7 text-slate-400" />}
+                    {canEditInfo && (
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold">
+                        <Camera className="w-3.5 h-3.5 mb-0.5" /> Sửa
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
+                </button>
               </div>
+            </div>
+
+            {/* Name & Badges BELOW avatar */}
+            <div className="pt-8 px-2 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-xl md:text-2xl font-black ui-title drop-shadow-md">{data.username}</h1>
+                {data.role === 'ADMIN' && <span title="Admin"><Crown className="w-5 h-5 text-rose-500 fill-rose-500" /></span>}
+                {data.role === 'STAFF' && <span title="Staff"><ShieldCheck className="w-5 h-5 text-sky-500 fill-sky-500" /></span>}
+              </div>
+              {data.badges && data.badges.length > 0 && (
+                <div className="flex items-center gap-1">
+                  {data.badges.slice(0, 3).map((ub: any) => (
+                    <div key={ub.id} title={ub.badge?.name}>
+                      {ub.badge?.iconUrl ? <img src={ub.badge.iconUrl} className="w-5 h-5 object-contain drop-shadow" /> : null}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* BIO */}
             <div className="pt-2 px-2">
               <div className="text-xs font-bold ui-dim mb-1 flex items-center justify-between">
-                <span>TIỂU SỬ (BIO)</span>
+                <span>{t('profile.bio') || 'TIỂU SỬ'}</span>
                 {isOwner && !isEditingBio && (
                   <button onClick={() => { setBioInput(data.bio || ''); setIsEditingBio(true); }} className="text-sky-500 hover:opacity-80"><Edit className="w-3.5 h-3.5" /></button>
                 )}
@@ -785,23 +787,33 @@ export default function ProfilePage() {
         {/* Box 2 (Right Column) */}
         <div className="lg:col-span-5 space-y-6">
           <div className="ui-card p-5 space-y-5 h-full flex flex-col">
-            <h2 className="text-sm font-bold flex items-center gap-2 border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
-              <Trophy className="w-4 h-4 text-amber-500" /> Thống Kê & Xếp Hạng
-            </h2>
+            
             
             {/* Points & Rank */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border flex flex-col items-center text-center shadow-sm" style={{ borderColor: 'var(--border-ui)' }}>
+            <div className="grid grid-cols-2 gap-3 relative">
+              {/* Toggle Button */}
+              <button 
+                type="button"
+                onClick={() => setShowPoints(!showPoints)}
+                className={"absolute -top-3 right-0 px-2 py-1 text-[10px] font-bold rounded-lg z-10 transition-all " + (data?.profileTheme === 'lavender' ? 'tsumiki-btn text-white' : 'bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-300')}
+                style={data?.profileTheme === 'lavender' ? undefined : { backgroundColor: 'var(--bg-subtle)' }}
+              >
+                {showPoints ? 'Xem Rank' : 'Xem Điểm'}
+              </button>
+
+              <div className="p-3 pt-5 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border flex flex-col items-center text-center shadow-sm relative overflow-hidden" style={{ borderColor: 'var(--border-ui)' }}>
                 <Star className="w-5 h-5 text-amber-500 mb-1" />
-                <div className="text-xs font-bold ui-dim uppercase">Classic Points</div>
-                <div className="text-xl font-black text-amber-500">{data.classicPp?.toFixed(2) || '0.00'}</div>
-                <div className="text-[10px] font-bold ui-dim mt-1">Rank {(data.classicPp || 0) > 0.005 && data.classicRank ? "#" + data.classicRank : '#-'}</div>
+                <div className="text-xs font-bold ui-dim uppercase">{t('leaderboard.classic') || 'Classic'}</div>
+                <div className="text-xl font-black text-amber-500 transition-all">
+                  {showPoints ? (data.classicPp?.toFixed(2) || '0.00') : ((data.classicPp || 0) > 0.005 && data.classicRank ? "#" + data.classicRank : '#-')}
+                </div>
               </div>
-              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border flex flex-col items-center text-center shadow-sm" style={{ borderColor: 'var(--border-ui)' }}>
+              <div className="p-3 pt-5 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border flex flex-col items-center text-center shadow-sm relative overflow-hidden" style={{ borderColor: 'var(--border-ui)' }}>
                 <Gamepad2 className="w-5 h-5 text-sky-500 mb-1" />
-                <div className="text-xs font-bold ui-dim uppercase">Platformer Points</div>
-                <div className="text-xl font-black text-sky-500">{data.platformerPp?.toFixed(2) || '0.00'}</div>
-                <div className="text-[10px] font-bold ui-dim mt-1">Rank {(data.platformerPp || 0) > 0.005 && data.platformerRank ? "#" + data.platformerRank : '#-'}</div>
+                <div className="text-xs font-bold ui-dim uppercase">{t('leaderboard.platformer') || 'Platformer'}</div>
+                <div className="text-xl font-black text-sky-500 transition-all">
+                  {showPoints ? (data.platformerPp?.toFixed(2) || '0.00') : ((data.platformerPp || 0) > 0.005 && data.platformerRank ? "#" + data.platformerRank : '#-')}
+                </div>
               </div>
               <div className="col-span-2 p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border flex flex-col items-center text-center shadow-sm relative" style={{ borderColor: 'var(--border-ui)' }}>
                 <Hammer className="w-5 h-5 text-emerald-500 mb-1" />
@@ -881,7 +893,7 @@ export default function ProfilePage() {
             {/* Hardest */}
             <div className="pt-2 flex-1 flex flex-col">
               <div className="text-xs font-bold ui-dim mb-3 flex items-center justify-between">
-                <span className="flex items-center gap-1.5"><Crown className="w-3.5 h-3.5 text-rose-500" /> HARDEST LEVEL (Cá Nhân)</span>
+                <span className="flex items-center gap-1.5"><Crown className="w-3.5 h-3.5 text-rose-500" /> YÊU THÍCH</span>
                 {isOwner && !isEditingHardest && (
                   <button onClick={() => { setHardestInput(data.profileConfig?.hardestEmbed || ''); setIsEditingHardest(true); }} className="text-sky-500 hover:opacity-80"><Edit className="w-3.5 h-3.5" /></button>
                 )}
