@@ -139,7 +139,8 @@ export default function ProfilePage() {
   const [cpInput, setCpInput] = useState('');
   const [isEditingCp, setIsEditingCp] = useState(false);
   const [isEditingHardest, setIsEditingHardest] = useState(false);
-  const [showPoints, setShowPoints] = useState(false);
+  const [showClassicPoints, setShowClassicPoints] = useState(false);
+  const [showPlatformerPoints, setShowPlatformerPoints] = useState(false);
   const [hardestInput, setHardestInput] = useState('');
   const [showBadgePicker, setShowBadgePicker] = useState(false);
   const [editingField, setEditingField] = useState<null | 'country' | 'gdUsername' | 'discordTag'>(null);
@@ -656,7 +657,7 @@ export default function ProfilePage() {
               <div className="absolute -bottom-8 left-4 p-1 rounded-2xl" style={{ backgroundColor: 'var(--bg-card)' }}>
                 <button 
                   type="button"
-                  className={"relative w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden shadow-sm " + (data?.profileTheme === 'lavender' ? 'tsumiki-btn p-1 bg-purple-500' : 'bg-slate-200 dark:bg-zinc-700 border')} 
+                  className={"relative w-20 h-20 md:w-24 md:h-24 rounded-xl shadow-sm " + (data?.profileTheme === 'lavender' ? 'tsumiki-btn p-1.5 bg-purple-500' : 'bg-slate-200 dark:bg-zinc-700 border')} 
                   style={{ borderColor: data?.profileTheme === 'lavender' ? undefined : 'var(--border-subtle)', cursor: canEditInfo ? 'pointer' : 'default' }}
                   onClick={canEditInfo ? handleOpenAvatarModal : undefined}
                   title={canEditInfo ? "Đổi Avatar" : undefined}
@@ -790,31 +791,31 @@ export default function ProfilePage() {
             
             
             {/* Points & Rank */}
-            <div className="grid grid-cols-2 gap-3 relative">
-              {/* Toggle Button */}
+            <div className="grid grid-cols-2 gap-3">
               <button 
                 type="button"
-                onClick={() => setShowPoints(!showPoints)}
-                className={"absolute -top-3 right-0 px-2 py-1 text-[10px] font-bold rounded-lg z-10 transition-all " + (data?.profileTheme === 'lavender' ? 'tsumiki-btn text-white' : 'bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-300')}
-                style={data?.profileTheme === 'lavender' ? undefined : { backgroundColor: 'var(--bg-subtle)' }}
+                onClick={() => setShowClassicPoints(!showClassicPoints)}
+                className={"p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border flex flex-col items-center text-center shadow-sm relative transition-all hover:opacity-80 " + (data?.profileTheme === 'lavender' ? 'tsumiki-btn-blue text-white' : '')} 
+                style={{ borderColor: 'var(--border-ui)' }}
               >
-                {showPoints ? 'Xem Rank' : 'Xem Điểm'}
+                <Star className={"w-5 h-5 mb-1 " + (data?.profileTheme === 'lavender' ? 'text-white' : 'text-amber-500')} />
+                <div className={"text-xs font-bold uppercase " + (data?.profileTheme === 'lavender' ? 'text-white opacity-80' : 'ui-dim')}>{'Classic'}</div>
+                <div className={"text-xl font-black transition-all " + (data?.profileTheme === 'lavender' ? 'text-white' : 'text-amber-500')}>
+                  {showClassicPoints ? (data.classicPp?.toFixed(2) || '0.00') : ((data.classicPp || 0) > 0.005 && data.classicRank ? "#" + data.classicRank : '#-')}
+                </div>
               </button>
-
-              <div className="p-3 pt-5 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border flex flex-col items-center text-center shadow-sm relative overflow-hidden" style={{ borderColor: 'var(--border-ui)' }}>
-                <Star className="w-5 h-5 text-amber-500 mb-1" />
-                <div className="text-xs font-bold ui-dim uppercase">{'Classic'}</div>
-                <div className="text-xl font-black text-amber-500 transition-all">
-                  {showPoints ? (data.classicPp?.toFixed(2) || '0.00') : ((data.classicPp || 0) > 0.005 && data.classicRank ? "#" + data.classicRank : '#-')}
+              <button 
+                type="button"
+                onClick={() => setShowPlatformerPoints(!showPlatformerPoints)}
+                className={"p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border flex flex-col items-center text-center shadow-sm relative transition-all hover:opacity-80 " + (data?.profileTheme === 'lavender' ? 'tsumiki-btn-blue text-white' : '')} 
+                style={{ borderColor: 'var(--border-ui)' }}
+              >
+                <Gamepad2 className={"w-5 h-5 mb-1 " + (data?.profileTheme === 'lavender' ? 'text-white' : 'text-sky-500')} />
+                <div className={"text-xs font-bold uppercase " + (data?.profileTheme === 'lavender' ? 'text-white opacity-80' : 'ui-dim')}>{'Platformer'}</div>
+                <div className={"text-xl font-black transition-all " + (data?.profileTheme === 'lavender' ? 'text-white' : 'text-sky-500')}>
+                  {showPlatformerPoints ? (data.platformerPp?.toFixed(2) || '0.00') : ((data.platformerPp || 0) > 0.005 && data.platformerRank ? "#" + data.platformerRank : '#-')}
                 </div>
-              </div>
-              <div className="p-3 pt-5 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border flex flex-col items-center text-center shadow-sm relative overflow-hidden" style={{ borderColor: 'var(--border-ui)' }}>
-                <Gamepad2 className="w-5 h-5 text-sky-500 mb-1" />
-                <div className="text-xs font-bold ui-dim uppercase">{'Platformer'}</div>
-                <div className="text-xl font-black text-sky-500 transition-all">
-                  {showPoints ? (data.platformerPp?.toFixed(2) || '0.00') : ((data.platformerPp || 0) > 0.005 && data.platformerRank ? "#" + data.platformerRank : '#-')}
-                </div>
-              </div>
+              </button>
               <div className="col-span-2 p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border flex flex-col items-center text-center shadow-sm relative" style={{ borderColor: 'var(--border-ui)' }}>
                 <Hammer className="w-5 h-5 text-emerald-500 mb-1" />
                 <div className="text-xs font-bold ui-dim uppercase">Creator Points</div>
