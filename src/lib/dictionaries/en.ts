@@ -298,6 +298,7 @@ const en = {
   'profile.cover_overlay': 'Click to change and crop cover',
   'profile.avatar_hint': 'Click to upload and crop avatar',
   'profile.change_avatar_short': 'Change Avatar',
+  'profile.bio': 'Bio',
   'profile.edit_bio': 'Edit player bio:',
   'profile.bio_input': 'Enter a short bio about yourself...',
   'profile.edit_bio_hint': 'Click to edit bio',

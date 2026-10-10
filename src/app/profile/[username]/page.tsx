@@ -803,14 +803,14 @@ export default function ProfilePage() {
 
               <div className="p-3 pt-5 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border flex flex-col items-center text-center shadow-sm relative overflow-hidden" style={{ borderColor: 'var(--border-ui)' }}>
                 <Star className="w-5 h-5 text-amber-500 mb-1" />
-                <div className="text-xs font-bold ui-dim uppercase">{t('leaderboard.classic') || 'Classic'}</div>
+                <div className="text-xs font-bold ui-dim uppercase">{'Classic'}</div>
                 <div className="text-xl font-black text-amber-500 transition-all">
                   {showPoints ? (data.classicPp?.toFixed(2) || '0.00') : ((data.classicPp || 0) > 0.005 && data.classicRank ? "#" + data.classicRank : '#-')}
                 </div>
               </div>
               <div className="p-3 pt-5 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border flex flex-col items-center text-center shadow-sm relative overflow-hidden" style={{ borderColor: 'var(--border-ui)' }}>
                 <Gamepad2 className="w-5 h-5 text-sky-500 mb-1" />
-                <div className="text-xs font-bold ui-dim uppercase">{t('leaderboard.platformer') || 'Platformer'}</div>
+                <div className="text-xs font-bold ui-dim uppercase">{'Platformer'}</div>
                 <div className="text-xl font-black text-sky-500 transition-all">
                   {showPoints ? (data.platformerPp?.toFixed(2) || '0.00') : ((data.platformerPp || 0) > 0.005 && data.platformerRank ? "#" + data.platformerRank : '#-')}
                 </div>

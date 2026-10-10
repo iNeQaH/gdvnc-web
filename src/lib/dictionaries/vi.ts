@@ -292,6 +292,7 @@ const vi: Record<DictKey, string> = {
   'profile.cover_overlay': 'Bấm để đổi và cắt ảnh bìa',
   'profile.avatar_hint': 'Bấm để tải lên và chỉnh sửa avatar',
   'profile.change_avatar_short': 'Đổi Avatar',
+  'profile.bio': 'Tiểu sử',
   'profile.edit_bio': 'Chỉnh sửa mô tả:',
   'profile.bio_input': 'Nhập mô tả / tiểu sử về bạn...',
   'profile.edit_bio_hint': 'Bấm để sửa mô tả',
