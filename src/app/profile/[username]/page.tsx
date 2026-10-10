@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -241,7 +241,7 @@ export default function ProfilePage() {
         return;
       }
       setShow2faModal(false);
-      showToast('2FA d� du?c b?t th�nh c�ng!', 'success');
+      showToast('2FA đã được bật thành công!', 'success');
       setData({ ...data, totpEnabled: true });
     } catch (e) {
       setTotpError('Server error');
@@ -255,7 +255,7 @@ export default function ProfilePage() {
   };
 
   const handleDeleteRecord = async (recordId: string, levelName: string) => {
-    showConfirm(`B?n c� ch?c ch?n mu?n x�a k? l?c c?a m�n "${levelName}"?`, async () => {
+    showConfirm(`Bạn có chắc chắn muốn xóa kỷ lục của màn "${levelName}"?`, async () => {
       try {
         const res = await fetch(`/api/admin/records/${recordId}`, {
           method: 'DELETE',
@@ -264,13 +264,13 @@ export default function ProfilePage() {
         });
         const resData = await res.json();
         if (resData.success) {
-          showToast('X�a th�nh c�ng!', 'success');
+          showToast('Xóa thành công!', 'success');
           void fetchProfile({ silent: true });
         } else {
-          showToast('L?i: ' + resData.error, 'error');
+          showToast('Lỗi: ' + resData.error, 'error');
         }
       } catch (e) {
-        showToast('L?i k?t n?i khi x�a k? l?c.', 'error');
+        showToast('Lỗi kết nối khi xóa kỷ lục.', 'error');
       }
     });
   };
@@ -298,7 +298,7 @@ export default function ProfilePage() {
             return;
           }
         }
-        showToast('X�a th�nh c�ng!', 'success');
+        showToast('Xóa thành công!', 'success');
         setData((prev: any) => {
           if (!prev) return prev;
           const nextLevels = (prev.createdLevels || []).filter((row: any) => {
@@ -310,7 +310,7 @@ export default function ProfilePage() {
         });
         void fetchProfile({ silent: true });
       } catch {
-        showToast('L?i k?t n?i khi x�a t�c ph?m.', 'error');
+        showToast('Lỗi kết nối khi xóa tác phẩm.', 'error');
       }
     });
   };
@@ -379,7 +379,7 @@ export default function ProfilePage() {
       if (isFullAdmin && isEditingCp) {
         const value = Number(cpInput);
         if (!Number.isFinite(value) || value < 0) {
-          showToast('Creator Points kh�ng h?p l?.', 'error');
+          showToast('Creator Points không hợp lệ.', 'error');
           setSavingAdminChanges(false);
           return;
         }
@@ -400,7 +400,7 @@ export default function ProfilePage() {
         }
       }
       
-      showToast('�� luu th�ng tin quy?n h?n, badge v� CP!', 'success');
+      showToast('Đã lưu thông tin quyền hạn, badge và CP!', 'success');
       setShowManageModal(false);
       fetchProfile();
     } catch (e) {
@@ -421,7 +421,7 @@ export default function ProfilePage() {
     if (!currentUser || (!isOwner && !isFullAdmin) || !data) return;
     const reason = deleteAccountReason.trim();
     if (!reason) {
-      showToast('Vui l�ng nh?p l� do xo� t�i kho?n.', 'error');
+      showToast('Vui lòng nhập lý do xoá tài khoản.', 'error');
       return;
     }
     setDeletingAccount(true);
@@ -436,7 +436,7 @@ export default function ProfilePage() {
       });
       const resData = await res.json();
       if (res.ok && resData.success) {
-        showToast('�� xo� t�i kho?n th�nh c�ng.', 'success');
+        showToast('Đã xoá tài khoản thành công.', 'success');
         setShowDeleteModal(false);
         if (currentUser.id === data.id) {
           await logoutClient();
@@ -483,7 +483,7 @@ export default function ProfilePage() {
     if (!currentUser || !isSuperAdmin || !data) return;
     const pwd = newPasswordInput.trim();
     if (!pwd || pwd.length < 6) {
-      showToast('M?t kh?u m?i ph?i t? 6 k� t? tr? l�n.', 'error');
+      showToast('Mật khẩu mới phải từ 6 ký tự trở lên.', 'error');
       return;
     }
     setResettingPassword(true);
@@ -495,14 +495,14 @@ export default function ProfilePage() {
       });
       const json = await res.json();
       if (res.ok && json.success) {
-        showToast(json.message || '�� d?i m?t kh?u th�nh c�ng!', 'success');
+        showToast(json.message || 'Đã đổi mật khẩu thành công!', 'success');
         setShowResetPasswordModal(false);
         setNewPasswordInput('');
       } else {
-        showToast(json.error || 'L?i d?t l?i m?t kh?u.', 'error');
+        showToast(json.error || 'Lỗi đặt lại mật khẩu.', 'error');
       }
     } catch {
-      showToast('L?i k?t n?i khi d?t l?i m?t kh?u.', 'error');
+      showToast('Lỗi kết nối khi đặt lại mật khẩu.', 'error');
     } finally {
       setResettingPassword(false);
     }
@@ -519,15 +519,15 @@ export default function ProfilePage() {
       });
       const json = await res.json();
       if (res.ok && json.success) {
-        showToast(json.message || 'C?p nh?t tr?ng th�i th�nh c�ng!', 'success');
+        showToast(json.message || 'Cập nhật trạng thái thành công!', 'success');
         setShowBanModal(false);
         setBanReasonInput('');
         fetchProfile();
       } else {
-        showToast(json.error || 'L?i c?p nh?t tr?ng th�i.', 'error');
+        showToast(json.error || 'Lỗi cập nhật trạng thái.', 'error');
       }
     } catch {
-      showToast('L?i k?t n?i.', 'error');
+      showToast('Lỗi kết nối.', 'error');
     } finally {
       setBanningUser(false);
     }
@@ -574,11 +574,11 @@ export default function ProfilePage() {
         <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-500 space-y-1">
           <div className="text-xs font-extrabold uppercase flex items-center gap-2">
             <Flame className="w-4 h-4" />
-            T�i kho?n n�y d� b? d�nh ch? ho?t d?ng
+            Tài khoản này đã bị đình chỉ hoạt động
           </div>
           {data.banReason && (
             <div className="text-xs font-medium opacity-90">
-              L� do: {data.banReason}
+              Lý do: {data.banReason}
             </div>
           )}
         </div>
@@ -612,7 +612,7 @@ export default function ProfilePage() {
           className={`h-36 sm:h-52 w-full bg-cover bg-center relative group ${canEditInfo ? 'cursor-pointer' : ''}`}
           style={{ 
             backgroundColor: 'var(--bg-subtle)',
-            backgroundImage: data.coverUrl ? `url(${data.coverUrl})` : 'url(/default-banner.svg)'
+            backgroundImage: data.coverUrl ? `url(${data.coverUrl})` : 'none'
           }}
           title={canEditInfo ? t("profile.cover_hint") : undefined}
         >
@@ -632,7 +632,21 @@ export default function ProfilePage() {
                 className={`relative group rounded-2xl ${canEditInfo ? 'cursor-pointer' : ''}`}
                 title={canEditInfo ? t("profile.avatar_hint") : undefined}
               >
-                <img src={data.avatarUrl || '/gdvn-logo.png'} alt="Avatar" className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover shadow-lg border-4" style={{ borderColor: 'var(--bg-card)' }} />
+                {data.avatarUrl ? (
+                  <img 
+                    src={data.avatarUrl} 
+                    alt="Avatar" 
+                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover shadow-lg border-4" 
+                    style={{ borderColor: 'var(--bg-card)' }}
+                  />
+                ) : (
+                  <div
+                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl shadow-lg border-4 flex items-center justify-center text-2xl sm:text-3xl font-black text-[color:var(--accent-fg)]"
+                    style={{ backgroundColor: 'var(--accent)', borderColor: 'var(--bg-card)' }}
+                  >
+                    {data.username[0]}
+                  </div>
+                )}
                 
                 {canEditInfo && (
                   <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold p-1 text-center backdrop-blur-xs">
@@ -808,7 +822,7 @@ export default function ProfilePage() {
                         style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}
                       >
                         <ShieldCheck className="w-3.5 h-3.5" />
-                        Qu?n L� Role & Badge
+                        Quản Lý Role & Badge
                       </button>
                     )}
                     {isSuperAdmin && (
@@ -818,7 +832,7 @@ export default function ProfilePage() {
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-500 border border-amber-500/20 bg-amber-500/10 shadow-sm hover:bg-amber-500/20 transition-colors"
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
-                        Reset M?t Kh?u
+                        Reset Mật Khẩu
                       </button>
                     )}
                     {isFullAdmin && !isOwner && (
@@ -830,7 +844,7 @@ export default function ProfilePage() {
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-500 border border-emerald-500/20 bg-emerald-500/10 shadow-sm hover:bg-emerald-500/20 transition-colors"
                         >
                           <CheckCircle className="w-3.5 h-3.5" />
-                          B? d�nh ch?
+                          Bỏ đình chỉ
                         </button>
                       ) : (
                         <button
@@ -839,7 +853,7 @@ export default function ProfilePage() {
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-red-500 border border-red-500/20 bg-red-500/10 shadow-sm hover:bg-red-500/20 transition-colors"
                         >
                           <Flame className="w-3.5 h-3.5" />
-                          ��nh ch? t�i kho?n
+                          Đình chỉ tài khoản
                         </button>
                       )
                     )}
@@ -850,7 +864,7 @@ export default function ProfilePage() {
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-red-500 border border-red-500/20 bg-red-500/10 shadow-sm hover:bg-red-500/20 transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        Xo� t�i kho?n
+                        Xoá tài khoản
                       </button>
                     )}
                   </div>
@@ -947,7 +961,7 @@ export default function ProfilePage() {
             {data.badges && data.badges.length > 0 && (
               <div className="pt-2">
                 <div className="text-[10px] font-bold uppercase ui-dim mb-2 flex items-center gap-1.5">
-                  <Medal className="w-3.5 h-3.5" /> Huy hi?u
+                  <Medal className="w-3.5 h-3.5" /> Huy hiệu
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {data.badges.map((b: any) => (
@@ -1031,7 +1045,7 @@ export default function ProfilePage() {
                         try {
                           const value = Number(cpInput);
                           if (!Number.isFinite(value) || value < 0) {
-                            showToast('Creator Points kh�ng h?p l?.', 'error');
+                            showToast('Creator Points không hợp lệ.', 'error');
                             return;
                           }
                           const res = await fetch(`/api/admin/users/${data.id}/cp`, {
@@ -1139,7 +1153,7 @@ export default function ProfilePage() {
           }}
         >
           <Hammer className="w-3.5 h-3.5 fill-current" />
-          T�c ph?m ({data.createdLevels?.length || 0})
+          Tác phẩm ({data.createdLevels?.length || 0})
         </button>
       </div>
 
@@ -1188,7 +1202,7 @@ export default function ProfilePage() {
                       </div>
                     </td>
                     <td className="px-5 py-3.5 text-center font-semibold ui-title">
-                      {item.progress != null ? `${item.progress}%` : '�'}
+                      {item.progress != null ? `${item.progress}%` : '—'}
                     </td>
                     <td className="px-5 py-3.5 text-right ui-dim">
                       {item.awardedPp != null && item.progress != null && item.progress < 100
@@ -1201,11 +1215,11 @@ export default function ProfilePage() {
                           {pp.weightPercent}%
                         </span>
                       ) : (
-                        <span className="text-[10px] ui-dim">�</span>
+                        <span className="text-[10px] ui-dim">—</span>
                       )}
                     </td>
                     <td className="px-5 py-3.5 text-right font-black" style={{ color: pp ? 'var(--accent)' : 'var(--text-dim)' }}>
-                      {pp ? pp.weightedPp.toFixed(2) : '�'}
+                      {pp ? pp.weightedPp.toFixed(2) : '—'}
                     </td>
                     <td className="px-5 py-3.5 text-center">
                       <div className="flex items-center justify-center gap-2">
@@ -1216,7 +1230,7 @@ export default function ProfilePage() {
                           <button
                             onClick={() => handleDeleteRecord(item.recordId, item.name || item.levelName)}
                             className="p-1 rounded hover:bg-red-500/20 text-red-500 transition-colors"
-                            title="X�a k? l?c"
+                            title="Xóa kỷ lục"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1269,7 +1283,7 @@ export default function ProfilePage() {
                           <button
                             onClick={() => handleDeleteRecord(rec.recordId, rec.name)}
                             className="p-1 rounded hover:bg-red-500/20 text-red-500 transition-colors"
-                            title="X�a k? l?c"
+                            title="Xóa kỷ lục"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1350,7 +1364,7 @@ export default function ProfilePage() {
                 {(!data.createdLevels || data.createdLevels.length === 0) && (
                   <tr>
                     <td colSpan={isStaff ? 5 : 4} className="px-4 py-8 text-center text-xs ui-dim">
-                      Chua c� t�c ph?m n�o
+                      Chưa có tác phẩm nào
                     </td>
                   </tr>
                 )}
@@ -1363,11 +1377,11 @@ export default function ProfilePage() {
 
       {(isOwner || isAdmin) && (
         <div className="ui-card p-4 space-y-3">
-          <div className="text-[10px] font-bold uppercase ui-dim tracking-wider">V�ng nguy hi?m</div>
+          <div className="text-[10px] font-bold uppercase ui-dim tracking-wider">Vùng nguy hiểm</div>
           <p className="text-xs ui-dim">
             {isOwner && !isAdmin
-              ? 'G?i y�u c?u d? admin xem x�t v� xo� t�i kho?n c?a b?n.'
-              : 'C�c thao t�c xo� t�i kho?n kh�ng th? ho�n t�c.'}
+              ? 'Gửi yêu cầu để admin xem xét và xoá tài khoản của bạn.'
+              : 'Các thao tác xoá tài khoản không thể hoàn tác.'}
           </p>
           <div className="flex flex-wrap gap-2">
 
@@ -1377,7 +1391,7 @@ export default function ProfilePage() {
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm hover:opacity-90 transition-opacity bg-red-600 border border-red-500"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                Xo� t�i kho?n
+                Xoá tài khoản
               </button>
             )}
           </div>
@@ -1397,7 +1411,13 @@ export default function ProfilePage() {
             {/* Modal Header with User info */}
             <div className="flex items-start justify-between gap-3 pb-3 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
               <div className="flex items-center gap-3">
-                <img src={data.avatarUrl || '/gdvn-logo.png'} alt="Avatar" className="w-11 h-11 rounded-2xl object-cover" />
+                {data.avatarUrl ? (
+                  <img src={data.avatarUrl} alt="Avatar" className="w-11 h-11 rounded-2xl object-cover" />
+                ) : (
+                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-sm text-[color:var(--accent-fg)]" style={{ backgroundColor: 'var(--accent)' }}>
+                    {data.username[0]}
+                  </div>
+                )}
                 <div>
                   <div className="flex items-center gap-1.5">
                     <h2 className="font-extrabold text-base ui-title">
@@ -1411,7 +1431,7 @@ export default function ProfilePage() {
                   </div>
                   <div className="text-[11px] ui-dim flex items-center gap-2">
                     <span>{t('admin.classic_rank', { n: data.classicPp?.toFixed(1) || '0' })}</span>
-                    <span>�</span>
+                    <span>·</span>
                     <span>{t('admin.current_role', { role: data.role })}</span>
                   </div>
                 </div>
@@ -1608,7 +1628,7 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between">
               <h3 className="font-extrabold text-sm sm:text-base ui-title text-red-500 flex items-center gap-2">
                 <Trash2 className="w-5 h-5" />
-                Xo� t�i kho?n: {data.username}
+                Xoá tài khoản: {data.username}
               </h3>
               <button type="button" onClick={() => setShowDeleteModal(false)} className="p-1 rounded-xl border ui-dim cursor-pointer">
                 <X className="w-4 h-4" />
@@ -1616,16 +1636,16 @@ export default function ProfilePage() {
             </div>
 
             <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-500 leading-relaxed font-semibold">
-              H�nh d?ng n�y s? g? ngu?i d�ng kh?i h? th?ng v� chuy?n c�c b?n ghi d� duy?t th�nh k? l?c v� ch?. Kh�ng th? ho�n t�c.
+              Hành động này sẽ gỡ người dùng khỏi hệ thống và chuyển các bản ghi đã duyệt thành kỷ lục vô chủ. Không thể hoàn tác.
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold ui-title">L� do xo� t�i kho?n (b?t bu?c):</label>
+              <label className="block text-xs font-bold ui-title">Lý do xoá tài khoản (bắt buộc):</label>
               <textarea
                 rows={3}
                 value={deleteAccountReason}
                 onChange={(e) => setDeleteAccountReason(e.target.value)}
-                placeholder="Nh?p l� do mu?n xo� t�i kho?n..."
+                placeholder="Nhập lý do muốn xoá tài khoản..."
                 className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-red-500/50 resize-y"
                 style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                 autoFocus
@@ -1634,12 +1654,12 @@ export default function ProfilePage() {
 
             {isOwner && (
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold ui-title">M?t kh?u x�c nh?n (b?t bu?c):</label>
+                <label className="block text-xs font-bold ui-title">Mật khẩu xác nhận (bắt buộc):</label>
                 <input
                   type="password"
                   value={deleteAccountPassword}
                   onChange={(e) => setDeleteAccountPassword(e.target.value)}
-                  placeholder="Nh?p m?t kh?u dang nh?p"
+                  placeholder="Nhập mật khẩu đăng nhập"
                   className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-red-500/50"
                   style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                 />
@@ -1665,7 +1685,7 @@ export default function ProfilePage() {
                 onClick={confirmDeleteAccount}
                 className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50 cursor-pointer"
               >
-                {deletingAccount ? '�ang xo�...' : 'X�c nh?n xo�'}
+                {deletingAccount ? 'Đang xoá...' : 'Xác nhận xoá'}
               </button>
             </div>
           </div>
@@ -1682,7 +1702,7 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between">
               <h3 className="font-extrabold text-sm sm:text-base ui-title text-amber-500 flex items-center gap-2">
                 <RotateCcw className="w-5 h-5" />
-                Reset m?t kh?u: {data.username}
+                Reset mật khẩu: {data.username}
               </h3>
               <button type="button" onClick={() => setShowResetPasswordModal(false)} className="p-1 rounded-xl border ui-dim cursor-pointer">
                 <X className="w-4 h-4" />
@@ -1690,16 +1710,16 @@ export default function ProfilePage() {
             </div>
 
             <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-500 leading-relaxed font-semibold">
-              V?i quy?n Super Admin, b?n c� th? thi?t l?p tr?c ti?p m?t kh?u m?i cho t�i kho?n n�y. Sau khi d?i, phi�n dang nh?p hi?n t?i c?a ngu?i d�ng s? b? thu h?i.
+              Với quyền Super Admin, bạn có thể thiết lập trực tiếp mật khẩu mới cho tài khoản này. Sau khi đổi, phiên đăng nhập hiện tại của người dùng sẽ bị thu hồi.
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold ui-title">M?t kh?u m?i (t?i thi?u 6 k� t?):</label>
+              <label className="block text-xs font-bold ui-title">Mật khẩu mới (tối thiểu 6 ký tự):</label>
               <input
                 type="text"
                 value={newPasswordInput}
                 onChange={(e) => setNewPasswordInput(e.target.value)}
-                placeholder="Nh?p m?t kh?u m?i..."
+                placeholder="Nhập mật khẩu mới..."
                 className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-amber-500/50"
                 style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                 autoFocus
@@ -1713,7 +1733,7 @@ export default function ProfilePage() {
                 className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border cursor-pointer"
                 style={{ borderColor: 'var(--border-ui)' }}
               >
-                H?y
+                Hủy
               </button>
               <button
                 type="button"
@@ -1721,7 +1741,7 @@ export default function ProfilePage() {
                 onClick={handleResetPassword}
                 className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 transition-colors disabled:opacity-50 cursor-pointer"
               >
-                {resettingPassword ? '�ang c?p nh?t...' : 'X�c nh?n d?i m?t kh?u'}
+                {resettingPassword ? 'Đang cập nhật...' : 'Xác nhận đổi mật khẩu'}
               </button>
             </div>
           </div>
@@ -1734,7 +1754,7 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold flex items-center gap-2 text-emerald-500">
                 <ShieldCheck className="w-5 h-5" />
-                C�i d?t B?o M?t 2FA
+                Cài đặt Bảo Mật 2FA
               </h3>
               <button type="button" onClick={() => setShow2faModal(false)} className="p-1 rounded-xl border ui-dim cursor-pointer">
                 <X className="w-4 h-4" />
@@ -1742,7 +1762,7 @@ export default function ProfilePage() {
             </div>
             <div className="space-y-4">
               <p className="text-xs ui-dim leading-relaxed">
-                S? d?ng ?ng d?ng Authenticator (Google Authenticator, Authy, v.v.) d? qu�t m� QR b�n du?i, ho?c nh?p m� b� m?t th? c�ng:
+                Sử dụng ứng dụng Authenticator (Google Authenticator, Authy, v.v.) để quét mã QR bên dưới, hoặc nhập mã bí mật thủ công:
               </p>
               
               {qrCode ? (
@@ -1754,20 +1774,20 @@ export default function ProfilePage() {
               )}
 
               <div className="text-center">
-                <p className="text-[10px] uppercase font-bold ui-dim mb-1">M� b� m?t (Secret Key)</p>
+                <p className="text-[10px] uppercase font-bold ui-dim mb-1">Mã bí mật (Secret Key)</p>
                 <code className="px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs font-mono font-bold tracking-widest text-emerald-600 dark:text-emerald-400 select-all border border-zinc-200 dark:border-zinc-700">
                   {totpSecret || '...'}
                 </code>
               </div>
 
               <div className="pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-                <label className="text-xs font-bold mb-1.5 block">Nh?p m� g?m 6 ch? s? t? app</label>
+                <label className="text-xs font-bold mb-1.5 block">Nhập mã gồm 6 chữ số từ app</label>
                 <input
                   type="text"
                   maxLength={6}
                   value={totpInput}
                   onChange={e => setTotpInput(e.target.value)}
-                  placeholder="V� d?: 123456"
+                  placeholder="Ví dụ: 123456"
                   className="w-full px-3 py-2.5 rounded-xl text-xs font-mono tracking-widest text-center border focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
                 />
@@ -1778,7 +1798,7 @@ export default function ProfilePage() {
 
             <div className="flex justify-end gap-2 mt-5">
               <button type="button" onClick={() => setShow2faModal(false)} className="px-4 py-2 rounded-xl text-xs font-bold ui-subtle border border-transparent hover:border-zinc-500/20 cursor-pointer transition-colors">
-                ��ng
+                Đóng
               </button>
               <button
                 type="button"
@@ -1786,7 +1806,7 @@ export default function ProfilePage() {
                 disabled={settingUp2fa || totpInput.length < 6}
                 className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-600 cursor-pointer disabled:opacity-50 transition-colors"
               >
-                {settingUp2fa ? '�ang x�c th?c...' : 'K�ch ho?t 2FA'}
+                {settingUp2fa ? 'Đang xác thực...' : 'Kích hoạt 2FA'}
               </button>
             </div>
           </div>
@@ -1803,7 +1823,7 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between">
               <h3 className="font-extrabold text-sm sm:text-base ui-title text-red-500 flex items-center gap-2">
                 <Flame className="w-5 h-5" />
-                ��nh ch? t�i kho?n: {data.username}
+                Đình chỉ tài khoản: {data.username}
               </h3>
               <button type="button" onClick={() => setShowBanModal(false)} className="p-1 rounded-xl border ui-dim cursor-pointer">
                 <X className="w-4 h-4" />
@@ -1811,16 +1831,16 @@ export default function ProfilePage() {
             </div>
 
             <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-500 leading-relaxed font-semibold">
-              T�i kho?n b? d�nh ch? s? kh�ng th? dang nh?p ho?c thao t�c tr�n h? th?ng. Phi�n l�m vi?c hi?n t?i c?a ngu?i d�ng s? b? h?y ngay l?p t?c.
+              Tài khoản bị đình chỉ sẽ không thể đăng nhập hoặc thao tác trên hệ thống. Phiên làm việc hiện tại của người dùng sẽ bị hủy ngay lập tức.
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold ui-title">L� do d�nh ch? (t�y ch?n):</label>
+              <label className="block text-xs font-bold ui-title">Lý do đình chỉ (tùy chọn):</label>
               <textarea
                 rows={3}
                 value={banReasonInput}
                 onChange={(e) => setBanReasonInput(e.target.value)}
-                placeholder="Nh?p l� do d�nh ch?..."
+                placeholder="Nhập lý do đình chỉ..."
                 className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-red-500/50 resize-y"
                 style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                 autoFocus
@@ -1834,7 +1854,7 @@ export default function ProfilePage() {
                 className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border cursor-pointer"
                 style={{ borderColor: 'var(--border-ui)' }}
               >
-                H?y
+                Hủy
               </button>
               <button
                 type="button"
@@ -1842,7 +1862,7 @@ export default function ProfilePage() {
                 onClick={() => handleToggleBan('ban', banReasonInput)}
                 className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50 cursor-pointer"
               >
-                {banningUser ? '�ang x? l�...' : 'X�c nh?n d�nh ch?'}
+                {banningUser ? 'Đang xử lý...' : 'Xác nhận đình chỉ'}
               </button>
             </div>
           </div>
@@ -1851,8 +1871,5 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-
-
 
 
