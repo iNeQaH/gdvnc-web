@@ -674,8 +674,8 @@ export default function ProfilePage() {
               <div className="absolute -bottom-7 left-28 md:left-36 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
                 <div className="flex items-center gap-1.5">
                   <h1 className="text-xl md:text-2xl font-black ui-title drop-shadow-md">{data.username}</h1>
-                  {data.role === 'ADMIN' && <Crown className="w-5 h-5 text-rose-500 fill-rose-500" title="Admin" />}
-                  {data.role === 'STAFF' && <ShieldCheck className="w-5 h-5 text-sky-500 fill-sky-500" title="Staff" />}
+                  {data.role === 'ADMIN' && <span title="Admin"><Crown className="w-5 h-5 text-rose-500 fill-rose-500" /></span>}
+                  {data.role === 'STAFF' && <span title="Staff"><ShieldCheck className="w-5 h-5 text-sky-500 fill-sky-500" /></span>}
                 </div>
                 {data.badges && data.badges.length > 0 && (
                   <div className="flex items-center gap-1">
@@ -727,7 +727,7 @@ export default function ProfilePage() {
                    <div className="text-[10px] font-bold uppercase ui-dim">Geometry Dash</div>
                    <div className="text-xs font-semibold ui-title flex items-center gap-1">
                      {data.gdUsername || 'Chưa liên kết'}
-                     {data.gdVerified && <CheckCircle className="w-3 h-3 text-green-500" title="Đã xác minh" />}
+                     {data.gdVerified && <span title="Đã xác minh"><CheckCircle className="w-3 h-3 text-green-500" /></span>}
                    </div>
                  </div>
                </div>
