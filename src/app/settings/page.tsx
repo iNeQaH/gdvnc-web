@@ -278,7 +278,40 @@ export default function SettingsPage() {
 
         {/* Right Column */}
         <div className="space-y-6">
-          <div className="ui-card p-5 space-y-4">
+                    {/* Supporter Features */}
+          {currentUser?.supporterUntil && new Date(currentUser.supporterUntil) > new Date() && (
+            <div className="ui-card p-5 space-y-4 border-pink-500/20" style={{ backgroundColor: "var(--bg-card)" }}>
+              <h2 className="text-sm font-bold flex items-center gap-2 border-b pb-2 text-pink-500" style={{ borderColor: "var(--border-subtle)" }}>
+                <Heart className="w-4 h-4" /> Đặc quyền Supporter
+              </h2>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold mb-1.5">Màu chủ đạo tuỳ chỉnh (Custom Theme Color)</label>
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="color" 
+                      value={data.profileConfig?.customThemeColor || "#0ea5e9"}
+                      onChange={async (e) => {
+                        const newColor = e.target.value;
+                        setData({ ...data, profileConfig: { ...data.profileConfig, customThemeColor: newColor } });
+                        await fetch("/api/profile/" + currentUser.username, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ profileConfig: { ...data.profileConfig, customThemeColor: newColor } })
+                        });
+                        localStorage.setItem("gdvnc_user", JSON.stringify({ ...currentUser, profileConfig: { ...currentUser.profileConfig, customThemeColor: newColor } }));
+                        window.dispatchEvent(new Event("gdvnc_user_update"));
+                      }}
+                      className="w-10 h-10 rounded-xl cursor-pointer border-0 p-0 bg-transparent"
+                    />
+                    <span className="text-xs ui-dim">Chọn màu bạn thích để áp dụng cho toàn bộ giao diện!</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+<div className="ui-card p-5 space-y-4">
             <h2 className="text-sm font-bold flex items-center gap-2 border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
               <ShieldCheck className="w-4 h-4" /> Bảo Mật & 2FA
             </h2>

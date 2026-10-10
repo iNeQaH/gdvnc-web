@@ -87,7 +87,7 @@ export const Sidebar = () => {
       try {
         const u = JSON.parse(userStr);
         setCurrentUser(u);
-        if (u?.profileConfig?.backgroundUrl) {
+        if (u?.profileConfig?.customThemeColor) { document.documentElement.style.setProperty("--accent", u.profileConfig.customThemeColor); document.documentElement.style.setProperty("--accent-text", u.profileConfig.customThemeColor); document.documentElement.style.setProperty("--accent-hover", u.profileConfig.customThemeColor); } else { document.documentElement.style.removeProperty("--accent"); document.documentElement.style.removeProperty("--accent-text"); document.documentElement.style.removeProperty("--accent-hover"); } if (u?.profileConfig?.backgroundUrl) {
           document.body.style.backgroundImage = "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(" + u.profileConfig.backgroundUrl + ")";
           document.body.style.backgroundSize = "cover";
           document.body.style.backgroundPosition = "center";
@@ -222,7 +222,7 @@ export const Sidebar = () => {
       <header
         className="md:hidden sticky top-0 z-40 h-14 px-4 flex items-center justify-between border-b backdrop-blur-md"
         style={{
-          backgroundColor: 'var(--bg-card)',
+          backgroundColor: currentUser?.profileConfig?.backgroundUrl ? 'rgba(0, 0, 0, 0.7)' : 'var(--bg-card)',
           borderColor: isLavender ? undefined : "var(--border-ui)",
         }}
       >
@@ -255,11 +255,11 @@ export const Sidebar = () => {
 
       {/* Sidebar (Desktop Fixed & Mobile Slide-in Drawer) */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-64 flex flex-col justify-between p-4 overflow-y-auto overflow-x-hidden border-r transition-transform duration-200 ease-in-out md:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-50 w-64 flex flex-col justify-between p-4 overflow-y-auto overflow-x-hidden border-r transition-transform duration-200 ease-in-out md:translate-x-0 ${currentUser?.profileConfig?.backgroundUrl ? "backdrop-blur-xl " : ""}${
           isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'
         }`}
         style={{
-          backgroundColor: 'var(--bg-card)',
+          backgroundColor: currentUser?.profileConfig?.backgroundUrl ? 'rgba(0, 0, 0, 0.7)' : 'var(--bg-card)',
           borderColor: isLavender ? undefined : "var(--border-ui)",
         }}
       >
