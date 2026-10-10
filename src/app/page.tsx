@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Star, Moon, Wrench, Swords, Search, CheckCircle2, User, Trash2 } from 'lucide-react';
+import { Star, Moon, Wrench, Swords, Search, CheckCircle2, User, Trash2, Gamepad2, Crosshair } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { formatCp } from '@/lib/creatorPoints';
 import { levelPath } from '@/lib/levelUrl';
@@ -237,8 +237,8 @@ export default function HomePage() {
           onChange={setMode}
           options={[
             { id: 'CLASSIC', label: t('leaderboard.classic'), icon: <Star className="w-3.5 h-3.5 fill-current" /> },
-            { id: 'PLATFORMER', label: t('leaderboard.platformer'), icon: <Moon className="w-3.5 h-3.5 fill-current -rotate-12" /> },
-            { id: 'CHALLENGE', label: t('tags.challenge'), icon: <Swords className="w-3.5 h-3.5" /> },
+            { id: 'PLATFORMER', label: t('leaderboard.platformer'), icon: <Gamepad2 className="w-3.5 h-3.5" /> },
+            { id: 'CHALLENGE', label: t('tags.challenge'), icon: <Crosshair className="w-3.5 h-3.5" /> },
             { id: 'CREATOR', label: t('leaderboard.creator'), icon: <Wrench className="w-3.5 h-3.5" /> }
           ]}
         />

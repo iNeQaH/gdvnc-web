@@ -1121,41 +1121,33 @@ export default function ProfilePage() {
       )}
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b pb-px" style={{ borderColor: 'var(--border-ui)' }}>
+      
+      <div className="flex flex-wrap items-center gap-2 mb-4 p-1.5 rounded-3xl border shadow-sm" style={{ borderColor: 'var(--border-subtle)', backgroundColor: 'var(--bg-card)' }}>
         <button
           onClick={() => { setActiveTab('classic'); setRecordPage(1); }}
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer"
-          style={{
-            borderColor: activeTab === 'classic' ? 'var(--accent)' : 'transparent',
-            color: activeTab === 'classic' ? 'var(--accent)' : 'var(--text-dim)',
-          }}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold transition-all cursor-pointer rounded-2xl ${activeTab === 'classic' ? (data?.profileTheme === 'lavender' ? 'tsumiki-btn text-white shadow-md' : 'bg-[color:var(--accent)] text-[color:var(--accent-fg)] shadow-md') : 'hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
+          style={{ color: activeTab === 'classic' ? undefined : 'var(--text-dim)' }}
         >
-          <Star className="w-3.5 h-3.5 fill-current" />
+          <Star className={`w-4 h-4 ${activeTab === 'classic' ? 'fill-current' : ''}`} />
           Classic ({classicRecords.length})
         </button>
         <button
           onClick={() => { setActiveTab('platformer'); setRecordPage(1); }}
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer"
-          style={{
-            borderColor: activeTab === 'platformer' ? 'var(--accent)' : 'transparent',
-            color: activeTab === 'platformer' ? 'var(--accent)' : 'var(--text-dim)',
-          }}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold transition-all cursor-pointer rounded-2xl ${activeTab === 'platformer' ? (data?.profileTheme === 'lavender' ? 'tsumiki-btn text-white shadow-md' : 'bg-[color:var(--accent)] text-[color:var(--accent-fg)] shadow-md') : 'hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
+          style={{ color: activeTab === 'platformer' ? undefined : 'var(--text-dim)' }}
         >
-          <Moon className="w-3.5 h-3.5 fill-current -rotate-12" />
+          <Gamepad2 className="w-4 h-4" />
           Platformer ({data.platformerCompletions?.length || 0})
         </button>
         <button
           onClick={() => { setActiveTab('creator'); setRecordPage(1); }}
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer"
-          style={{
-            borderColor: activeTab === 'creator' ? 'var(--accent)' : 'transparent',
-            color: activeTab === 'creator' ? 'var(--accent)' : 'var(--text-dim)',
-          }}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold transition-all cursor-pointer rounded-2xl ${activeTab === 'creator' ? (data?.profileTheme === 'lavender' ? 'tsumiki-btn text-white shadow-md' : 'bg-[color:var(--accent)] text-[color:var(--accent-fg)] shadow-md') : 'hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
+          style={{ color: activeTab === 'creator' ? undefined : 'var(--text-dim)' }}
         >
-          <Hammer className="w-3.5 h-3.5 fill-current" />
+          <Hammer className={`w-4 h-4 ${activeTab === 'creator' ? 'fill-current' : ''}`} />
           Tác phẩm ({data.createdLevels?.length || 0})
         </button>
-      </div>
+</div>
 
       {/* Tab Content */}
       {activeTab === 'classic' && (

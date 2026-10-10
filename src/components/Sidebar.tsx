@@ -222,11 +222,11 @@ export const Sidebar = () => {
       <header
         className="md:hidden sticky top-0 z-40 h-14 px-4 flex items-center justify-between border-b backdrop-blur-md"
         style={{
-          backgroundColor: currentUser?.profileConfig?.backgroundUrl ? 'rgba(0, 0, 0, 0.7)' : 'var(--bg-card)',
+          backgroundColor: currentUser?.profileConfig?.backgroundUrl ? 'color-mix(in srgb, var(--bg-card) 70%, transparent)' : 'var(--bg-card)',
           borderColor: isLavender ? undefined : "var(--border-ui)",
         }}
       >
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className={`flex items-center gap-2 px-2 py-1 rounded-xl transition-all ${isLavender ? 'tsumiki-btn' : 'active:scale-95'}`}>
           <BrandMark size={28} className="rounded-lg" />
           <span className="font-black text-sm tracking-tight ui-title">
             GD<span style={{ color: 'var(--accent)' }}>VN</span>
@@ -259,14 +259,14 @@ export const Sidebar = () => {
           isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'
         }`}
         style={{
-          backgroundColor: currentUser?.profileConfig?.backgroundUrl ? 'rgba(0, 0, 0, 0.7)' : 'var(--bg-card)',
+          backgroundColor: currentUser?.profileConfig?.backgroundUrl ? 'color-mix(in srgb, var(--bg-card) 70%, transparent)' : 'var(--bg-card)',
           borderColor: isLavender ? undefined : "var(--border-ui)",
         }}
       >
         <div className="space-y-6">
           {/* Brand Header */}
           <div className="flex items-center justify-between px-2 pt-2">
-            <Link href="/" className="flex items-center gap-2.5">
+            <Link href="/" className={`flex items-center gap-2.5 px-3 py-1.5 rounded-2xl transition-all hover:bg-slate-100 dark:hover:bg-zinc-800 ${isLavender ? 'tsumiki-btn' : 'active:scale-95'}`}>
               <BrandMark size={36} />
               <div>
                 <div className="font-extrabold text-base tracking-tight ui-title leading-tight">
