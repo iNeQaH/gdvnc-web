@@ -87,12 +87,28 @@ export const Sidebar = () => {
       try {
         const u = JSON.parse(userStr);
         setCurrentUser(u);
-        if (u?.profileConfig?.customThemeColor) { document.documentElement.style.setProperty("--accent", u.profileConfig.customThemeColor); document.documentElement.style.setProperty("--accent-text", u.profileConfig.customThemeColor); document.documentElement.style.setProperty("--accent-hover", u.profileConfig.customThemeColor); } else { document.documentElement.style.removeProperty("--accent"); document.documentElement.style.removeProperty("--accent-text"); document.documentElement.style.removeProperty("--accent-hover"); } if (u?.profileConfig?.backgroundUrl) {
-          document.body.style.backgroundImage = "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(" + u.profileConfig.backgroundUrl + ")";
-          document.body.style.backgroundSize = "cover";
-          document.body.style.backgroundPosition = "center";
-          document.body.style.backgroundAttachment = "fixed";
-        } else { document.body.style.backgroundImage = "none"; }
+        const override = typeof window !== 'undefined' ? (window as any).__profileOverride : null;
+          const customThemeColor = override && override.customThemeColor !== undefined ? override.customThemeColor : u?.profileConfig?.customThemeColor;
+          const backgroundUrl = override && override.backgroundUrl !== undefined ? override.backgroundUrl : u?.profileConfig?.backgroundUrl;
+
+          if (customThemeColor) {
+            document.documentElement.style.setProperty("--accent", customThemeColor);
+            document.documentElement.style.setProperty("--accent-text", customThemeColor);
+            document.documentElement.style.setProperty("--accent-hover", customThemeColor);
+          } else {
+            document.documentElement.style.removeProperty("--accent");
+            document.documentElement.style.removeProperty("--accent-text");
+            document.documentElement.style.removeProperty("--accent-hover");
+          }
+
+          if (backgroundUrl) {
+            document.body.style.backgroundImage = "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(" + backgroundUrl + ")";
+            document.body.style.backgroundSize = "cover";
+            document.body.style.backgroundPosition = "center";
+            document.body.style.backgroundAttachment = "fixed";
+          } else {
+            document.body.style.backgroundImage = "none";
+          }
         let usedCache = false;
         try {
           const raw = sessionStorage.getItem('gdvnc_badges');
@@ -222,7 +238,7 @@ export const Sidebar = () => {
       <header
         className="md:hidden sticky top-0 z-40 h-14 px-4 flex items-center justify-between border-b backdrop-blur-md"
         style={{
-          backgroundColor: currentUser?.profileConfig?.backgroundUrl ? 'color-mix(in srgb, var(--bg-card) 70%, transparent)' : 'var(--bg-card)',
+          backgroundColor: ((typeof window !== 'undefined' ? (window as any).__profileOverride?.backgroundUrl : undefined) ?? currentUser?.profileConfig?.backgroundUrl) ? 'color-mix(in srgb, var(--bg-card) 70%, transparent)' : 'var(--bg-card)',
           borderColor: isLavender ? undefined : "var(--border-ui)",
         }}
       >
@@ -259,7 +275,7 @@ export const Sidebar = () => {
           isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'
         }`}
         style={{
-          backgroundColor: currentUser?.profileConfig?.backgroundUrl ? 'color-mix(in srgb, var(--bg-card) 70%, transparent)' : 'var(--bg-card)',
+          backgroundColor: ((typeof window !== 'undefined' ? (window as any).__profileOverride?.backgroundUrl : undefined) ?? currentUser?.profileConfig?.backgroundUrl) ? 'color-mix(in srgb, var(--bg-card) 70%, transparent)' : 'var(--bg-card)',
           borderColor: isLavender ? undefined : "var(--border-ui)",
         }}
       >

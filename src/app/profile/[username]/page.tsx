@@ -69,6 +69,28 @@ export default function ProfilePage() {
   const [recordPage, setRecordPage] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const { setOverrideTheme } = useTheme();
+
+  useEffect(() => {
+    if (data) {
+      if (setOverrideTheme) setOverrideTheme(data.profileTheme || 'sky');
+      
+      if (typeof window !== 'undefined') {
+        (window as any).__profileOverride = {
+          backgroundUrl: data.profileConfig?.backgroundUrl || null,
+          customThemeColor: data.profileConfig?.customThemeColor || null
+        };
+        window.dispatchEvent(new Event('gdvnc_user_update'));
+      }
+
+      return () => {
+        if (setOverrideTheme) setOverrideTheme(null);
+        if (typeof window !== 'undefined') {
+          delete (window as any).__profileOverride;
+          window.dispatchEvent(new Event('gdvnc_user_update'));
+        }
+      };
+    }
+  }, [data, setOverrideTheme]);
   const isOwner = !!(currentUser && currentUser.username === username);
   const isStaff = isStaffRole(currentUser?.role);
   const isFullAdmin = isFullAdminRole(currentUser?.role);
@@ -885,7 +907,7 @@ export default function ProfilePage() {
               </div>
               <div className="ui-subtle p-2.5 rounded-xl text-center min-w-24">
                 <div className="text-[9px] font-bold uppercase ui-dim flex items-center justify-center gap-1">
-                  <Moon className="w-2.5 h-2.5 text-sky-500 fill-sky-500 -rotate-12" /> {t("profile.rank_plat")}
+                  <Gamepad2 className="w-2.5 h-2.5 text-sky-500" /> {t("profile.rank_plat")}
                 </div>
                 <div className="text-base font-black ui-title mt-0.5">
                   {data.platformerPp > 0.005 && data.platformerRank ? `#${data.platformerRank}` : '#-'}
@@ -999,7 +1021,7 @@ export default function ProfilePage() {
 
             <div className="ui-subtle p-3 rounded-xl">
               <div className="text-[10px] font-bold uppercase ui-dim flex items-center gap-1">
-                <Moon className="w-3 h-3 text-sky-500 fill-sky-500 -rotate-12" /> {t("profile.plat_pp")}
+                <Gamepad2 className="w-3 h-3 text-sky-500" /> {t("profile.plat_pp")}
               </div>
               <div className="text-xl font-black mt-0.5" style={{ color: 'var(--accent)' }}>
                 {data.platformerPp.toFixed(2)}
