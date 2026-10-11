@@ -879,7 +879,7 @@ export default function ProfilePage() {
                 onClick={() => setShowPlatformerPoints(!showPlatformerPoints)}
                 className="p-3.5 rounded-2xl flex flex-col items-center text-center shadow-md relative transition-all cursor-pointer active:scale-95 tsumiki-btn-blue text-white" 
               >
-                <Gamepad2 className="w-5 h-5 mb-1 text-white drop-shadow" />
+                <Moon className="w-5 h-5 mb-1 text-white drop-shadow" />
                 <div className="text-xs font-bold uppercase text-white/90">Platformer</div>
                 <div className="text-xl font-black transition-all text-white drop-shadow-sm">
                   {showPlatformerPoints ? (data.platformerPp?.toFixed(2) || '0.00') : ((data.platformerPp || 0) > 0.005 && data.platformerRank ? "#" + data.platformerRank : '#-')}
@@ -1028,7 +1028,7 @@ export default function ProfilePage() {
             {
               id: 'platformer',
               label: `Platformer (${data.platformerCompletions?.length || 0})`,
-              icon: <Gamepad2 className="w-4 h-4" />,
+              icon: <Moon className="w-4 h-4" />,
             },
             {
               id: 'creator',
