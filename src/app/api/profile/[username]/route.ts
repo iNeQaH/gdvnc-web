@@ -217,6 +217,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         avatarUrl: user.avatarUrl,
         coverUrl: user.coverUrl,
         supporterUntil: user.supporterUntil,
+        profileTheme: user.profileTheme,
+        profileConfig: user.profileConfig,
         isBanned: user.isBanned,
         banReason: user.banReason,
         discordTag: user.discordTag,

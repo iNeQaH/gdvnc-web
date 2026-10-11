@@ -7,6 +7,7 @@ import { Star, Moon, Medal, Play, Globe, MessageSquare, Gamepad2, ArrowLeft, Cam
 import ImageEditorModal from '@/components/ImageEditorModal';
 import BadgePickerModal from '@/components/BadgePickerModal';
 import BadgeIcon from '@/components/BadgeIcon';
+import { AnimatedTabs } from '@/components/AnimatedTabs';
 import { useLanguage } from '@/components/LanguageContext';
 import { useTheme } from '@/components/ThemeProvider';
 import { useToast } from '@/components/GlobalToast';
@@ -57,6 +58,42 @@ function RecordPager({
   );
 }
 
+function renderFavoriteContent(raw: string | undefined | null) {
+  if (!raw || !raw.trim()) {
+    return <span className="text-xs font-bold ui-dim p-4 text-center">Chưa có gì ở đây cả</span>;
+  }
+  const content = raw.trim();
+
+  if (content.includes('<iframe') && content.includes('</iframe>')) {
+    return (
+      <div
+        className="w-full h-full flex items-center justify-center [&>iframe]:w-full [&>iframe]:h-full [&>iframe]:aspect-video [&>iframe]:rounded-xl"
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
+    );
+  }
+
+  const ytMatch = content.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+  if (ytMatch && ytMatch[1]) {
+    const videoId = ytMatch[1];
+    return (
+      <iframe
+        src={`https://www.youtube.com/embed/${videoId}`}
+        title="YouTube video player"
+        className="w-full h-full aspect-video rounded-xl border-0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowFullScreen
+      />
+    );
+  }
+
+  return (
+    <div className="w-full h-full p-4 flex items-center justify-center text-sm font-medium text-center ui-title whitespace-pre-wrap">
+      {content}
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const params = useParams();
   const username = params?.username as string;
@@ -68,7 +105,8 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<'classic' | 'platformer' | 'creator'>('classic');
   const [recordPage, setRecordPage] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const { setOverrideTheme } = useTheme();
+  const { theme, setOverrideTheme } = useTheme();
+  const isLavender = theme === 'lavender' || data?.profileTheme === 'lavender';
 
   useEffect(() => {
     if (data) {
@@ -141,6 +179,7 @@ export default function ProfilePage() {
   const [isEditingHardest, setIsEditingHardest] = useState(false);
   const [showClassicPoints, setShowClassicPoints] = useState(false);
   const [showPlatformerPoints, setShowPlatformerPoints] = useState(false);
+  const [showCreatorRank, setShowCreatorRank] = useState(false);
   const [hardestInput, setHardestInput] = useState('');
   const [showBadgePicker, setShowBadgePicker] = useState(false);
   const [editingField, setEditingField] = useState<null | 'country' | 'gdUsername' | 'discordTag'>(null);
@@ -654,15 +693,16 @@ export default function ProfilePage() {
                   </div>
                 )}
               </div>
-              <div className="absolute -bottom-8 left-4 p-1 rounded-2xl" style={{ backgroundColor: 'var(--bg-card)' }}>
-                <button 
-                  type="button"
-                  className={"relative w-20 h-20 md:w-24 md:h-24 rounded-xl shadow-sm " + (data?.profileTheme === 'lavender' ? 'tsumiki-btn p-1.5 bg-purple-500' : 'bg-slate-200 dark:bg-zinc-700 border')} 
-                  style={{ borderColor: data?.profileTheme === 'lavender' ? undefined : 'var(--border-subtle)', cursor: canEditInfo ? 'pointer' : 'default' }}
-                  onClick={canEditInfo ? handleOpenAvatarModal : undefined}
-                  title={canEditInfo ? "Đổi Avatar" : undefined}
+              <div className="absolute -bottom-10 left-6 z-10">
+                <div 
+                  className={`p-1.5 rounded-2xl shadow-xl transition-transform ${isLavender ? 'tsumiki-btn !m-0 !p-1.5' : 'bg-slate-100 dark:bg-zinc-800 border'}`}
+                  style={!isLavender ? { backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' } : {}}
                 >
-                  <div className="w-full h-full rounded-lg overflow-hidden bg-slate-200 dark:bg-zinc-700 relative group">
+                  <div 
+                    className={"relative w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden shadow-inner " + (canEditInfo ? 'cursor-pointer group' : '')} 
+                    onClick={canEditInfo ? handleOpenAvatarModal : undefined}
+                    title={canEditInfo ? "Đổi Avatar" : undefined}
+                  >
                     {data.avatarUrl ? <img src={data.avatarUrl} alt="Avatar" className="w-full h-full object-cover" /> : <UserIcon className="w-10 h-10 m-auto mt-5 md:mt-7 text-slate-400" />}
                     {canEditInfo && (
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold">
@@ -670,23 +710,28 @@ export default function ProfilePage() {
                       </div>
                     )}
                   </div>
-                </button>
+                </div>
               </div>
             </div>
 
             {/* Name & Badges BELOW avatar */}
-            <div className="pt-8 px-2 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
-              <div className="flex items-center gap-1.5">
+            <div className="pt-12 px-2 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
+              <div className="flex items-center gap-2">
                 <h1 className="text-xl md:text-2xl font-black ui-title drop-shadow-md">{data.username}</h1>
                 {data.role === 'ADMIN' && <span title="Admin"><Crown className="w-5 h-5 text-rose-500 fill-rose-500" /></span>}
                 {data.role === 'STAFF' && <span title="Staff"><ShieldCheck className="w-5 h-5 text-sky-500 fill-sky-500" /></span>}
               </div>
               {data.badges && data.badges.length > 0 && (
-                <div className="flex items-center gap-1">
-                  {data.badges.slice(0, 3).map((ub: any) => (
-                    <div key={ub.id} title={ub.badge?.name}>
-                      {ub.badge?.iconUrl ? <img src={ub.badge.iconUrl} className="w-5 h-5 object-contain drop-shadow" /> : null}
-                    </div>
+                <div className="flex items-center gap-1.5">
+                  {data.badges.slice(0, 3).map((b: any) => (
+                    <BadgeIcon
+                      key={b.id}
+                      icon={b.icon || 'Star'}
+                      color={b.color}
+                      glow={b.glowColor}
+                      className="w-5 h-5"
+                      title={b.name + (b.description ? `: ${b.description}` : '')}
+                    />
                   ))}
                 </div>
               )}
@@ -763,10 +808,15 @@ export default function ProfilePage() {
               <div className="pt-4 px-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
                 <div className="text-xs font-bold ui-dim mb-3 flex items-center gap-2"><Shield className="w-3.5 h-3.5" /> TẤT CẢ HUY HIỆU</div>
                 <div className="flex flex-wrap gap-2">
-                  {data.badges.map((ub: any) => (
-                    <div key={ub.id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border shadow-sm bg-slate-50 dark:bg-zinc-800/50" style={{ borderColor: 'var(--border-ui)' }}>
-                      {ub.badge?.iconUrl && <img src={ub.badge.iconUrl} alt="" className="w-4 h-4 object-contain" />}
-                      <span className="text-[11px] font-bold ui-title">{ub.badge?.name || 'Badge'}</span>
+                  {data.badges.map((b: any) => (
+                    <div key={b.id} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border shadow-sm bg-slate-50 dark:bg-zinc-800/50" style={{ borderColor: 'var(--border-ui)' }} title={b.description || b.name}>
+                      <BadgeIcon
+                        icon={b.icon || 'Star'}
+                        color={b.color}
+                        glow={b.glowColor}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-[11px] font-bold ui-title">{b.name}</span>
                     </div>
                   ))}
                 </div>
@@ -795,32 +845,43 @@ export default function ProfilePage() {
               <button 
                 type="button"
                 onClick={() => setShowClassicPoints(!showClassicPoints)}
-                className={"p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border flex flex-col items-center text-center shadow-sm relative transition-all hover:opacity-80 " + (data?.profileTheme === 'lavender' ? 'tsumiki-btn-blue text-white' : '')} 
-                style={{ borderColor: 'var(--border-ui)' }}
+                className={`p-3.5 rounded-2xl flex flex-col items-center text-center shadow-md relative transition-all cursor-pointer active:scale-95 ${
+                  isLavender ? 'tsumiki-btn text-white' : 'bg-slate-50 dark:bg-zinc-800/50 border'
+                }`} 
+                style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
               >
-                <Star className={"w-5 h-5 mb-1 " + (data?.profileTheme === 'lavender' ? 'text-white' : 'text-amber-500')} />
-                <div className={"text-xs font-bold uppercase " + (data?.profileTheme === 'lavender' ? 'text-white opacity-80' : 'ui-dim')}>{'Classic'}</div>
-                <div className={"text-xl font-black transition-all " + (data?.profileTheme === 'lavender' ? 'text-white' : 'text-amber-500')}>
+                <Star className={`w-5 h-5 mb-1 ${isLavender ? 'text-white drop-shadow' : 'text-amber-500'}`} />
+                <div className={`text-xs font-bold uppercase ${isLavender ? 'text-white/90' : 'ui-dim'}`}>Classic</div>
+                <div className={`text-xl font-black transition-all ${isLavender ? 'text-white' : 'text-amber-500'}`}>
                   {showClassicPoints ? (data.classicPp?.toFixed(2) || '0.00') : ((data.classicPp || 0) > 0.005 && data.classicRank ? "#" + data.classicRank : '#-')}
                 </div>
               </button>
               <button 
                 type="button"
                 onClick={() => setShowPlatformerPoints(!showPlatformerPoints)}
-                className={"p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border flex flex-col items-center text-center shadow-sm relative transition-all hover:opacity-80 " + (data?.profileTheme === 'lavender' ? 'tsumiki-btn-blue text-white' : '')} 
-                style={{ borderColor: 'var(--border-ui)' }}
+                className={`p-3.5 rounded-2xl flex flex-col items-center text-center shadow-md relative transition-all cursor-pointer active:scale-95 ${
+                  isLavender ? 'tsumiki-btn text-white' : 'bg-slate-50 dark:bg-zinc-800/50 border'
+                }`} 
+                style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
               >
-                <Gamepad2 className={"w-5 h-5 mb-1 " + (data?.profileTheme === 'lavender' ? 'text-white' : 'text-sky-500')} />
-                <div className={"text-xs font-bold uppercase " + (data?.profileTheme === 'lavender' ? 'text-white opacity-80' : 'ui-dim')}>{'Platformer'}</div>
-                <div className={"text-xl font-black transition-all " + (data?.profileTheme === 'lavender' ? 'text-white' : 'text-sky-500')}>
+                <Gamepad2 className={`w-5 h-5 mb-1 ${isLavender ? 'text-white drop-shadow' : 'text-sky-500'}`} />
+                <div className={`text-xs font-bold uppercase ${isLavender ? 'text-white/90' : 'ui-dim'}`}>Platformer</div>
+                <div className={`text-xl font-black transition-all ${isLavender ? 'text-white' : 'text-sky-500'}`}>
                   {showPlatformerPoints ? (data.platformerPp?.toFixed(2) || '0.00') : ((data.platformerPp || 0) > 0.005 && data.platformerRank ? "#" + data.platformerRank : '#-')}
                 </div>
               </button>
-              <div className="col-span-2 p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border flex flex-col items-center text-center shadow-sm relative" style={{ borderColor: 'var(--border-ui)' }}>
-                <Hammer className="w-5 h-5 text-emerald-500 mb-1" />
-                <div className="text-xs font-bold ui-dim uppercase">Creator Points</div>
+              <button
+                type="button"
+                onClick={() => !isEditingCp && setShowCreatorRank(!showCreatorRank)}
+                className={`col-span-2 p-3.5 rounded-2xl flex flex-col items-center text-center shadow-md relative transition-all cursor-pointer active:scale-95 ${
+                  isLavender ? 'tsumiki-btn text-white' : 'bg-slate-50 dark:bg-zinc-800/50 border'
+                }`}
+                style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
+              >
+                <Hammer className={`w-5 h-5 mb-1 ${isLavender ? 'text-white drop-shadow' : 'text-emerald-500'}`} />
+                <div className={`text-xs font-bold uppercase ${isLavender ? 'text-white/90' : 'ui-dim'}`}>Creator Points</div>
                 
-                <div className="text-xl font-black mt-0.5 flex items-center justify-center gap-2 text-emerald-500">
+                <div className={`text-xl font-black mt-0.5 flex items-center justify-center gap-2 ${isLavender ? 'text-white' : 'text-emerald-500'}`}>
                   {isFullAdmin && isEditingCp ? (
                     <input
                       type="number"
@@ -828,22 +889,29 @@ export default function ProfilePage() {
                       min="0"
                       value={cpInput}
                       onChange={(e) => setCpInput(e.target.value)}
-                      className="w-24 ui-input px-2 py-1 rounded-lg text-sm font-black"
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-24 ui-input px-2 py-1 rounded-lg text-sm font-black text-center"
                       autoFocus
                     />
                   ) : (
-                    <span>{formatCp(data.creatorPoints)}</span>
+                    <span>
+                      {showCreatorRank
+                        ? (data.creatorRank ? `#${data.creatorRank}` : '#-')
+                        : formatCp(data.creatorPoints)}
+                    </span>
                   )}
                 </div>
                 
-                <div className="text-[10px] font-bold ui-dim mt-1">{data.createdLevels?.length || 0} Level đã tạo</div>
+                <div className={`text-[10px] font-bold mt-1 ${isLavender ? 'text-white/80' : 'ui-dim'}`}>
+                  {data.createdLevels?.length || 0} Level đã tạo
+                </div>
 
                 {isFullAdmin && (
-                  <div className="flex items-center justify-center gap-1.5 mt-2">
+                  <div className="flex items-center justify-center gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={handleResetCp}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border hover:opacity-80"
-                      style={{ borderColor: 'var(--border-ui)' }}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border hover:opacity-80 ${isLavender ? 'bg-black/20 text-white border-white/20' : ''}`}
+                      style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
                     >
                       <RotateCcw className="w-3 h-3" /> Reset
                     </button>
@@ -873,22 +941,22 @@ export default function ProfilePage() {
                             showToast(t('admin.action_fail'), 'error');
                           }
                         }}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500/20"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-green-500/20 text-green-300 border border-green-500/30 hover:bg-green-500/30"
                       >
                         <Check className="w-3 h-3" /> Lưu
                       </button>
                     ) : (
                       <button
                         onClick={() => { setCpInput(String(data.creatorPoints ?? 0)); setIsEditingCp(true); }}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border hover:opacity-80"
-                        style={{ borderColor: 'var(--border-ui)' }}
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border hover:opacity-80 ${isLavender ? 'bg-black/20 text-white border-white/20' : ''}`}
+                        style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
                       >
                         <Pencil className="w-3 h-3" /> Sửa
                       </button>
                     )}
                   </div>
                 )}
-              </div>
+              </button>
             </div>
 
             {/* Hardest */}
@@ -911,8 +979,9 @@ export default function ProfilePage() {
                   />
                   <div className="flex gap-2">
                     <button onClick={async () => {
-                      const newConfig = { ...(data.profileConfig || {}), hardestEmbed: hardestInput };
+                      const newConfig = { ...(data.profileConfig || {}), hardestEmbed: hardestInput.trim() };
                       await updateProfileField({ profileConfig: newConfig });
+                      setData((prev: any) => ({ ...prev, profileConfig: newConfig }));
                       setIsEditingHardest(false);
                       fetchProfile();
                     }} className="tsumiki-btn-green px-4 py-1.5 text-xs font-bold text-white rounded-xl">Lưu</button>
@@ -921,11 +990,7 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="w-full flex-1 rounded-2xl overflow-hidden bg-slate-100 dark:bg-zinc-900 border flex items-center justify-center min-h-[180px]" style={{ borderColor: 'var(--border-ui)' }}>
-                  {data.profileConfig?.hardestEmbed ? (
-                    <div className="w-full h-full flex flex-col text-sm font-medium text-center [&>iframe]:w-full [&>iframe]:h-full [&>iframe]:aspect-video" dangerouslySetInnerHTML={{ __html: data.profileConfig.hardestEmbed }} />
-                  ) : (
-                    <span className="text-xs font-bold ui-dim p-4 text-center">Chưa có gì ở đây cả</span>
-                  )}
+                  {renderFavoriteContent(data.profileConfig?.hardestEmbed)}
                 </div>
               )}
             </div>
