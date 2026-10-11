@@ -15,6 +15,7 @@ interface AnimatedTabsProps<T extends string> {
   onChange: (id: T) => void;
   className?: string;
   tabClassName?: string;
+  themeOverride?: string;
 }
 
 export function AnimatedTabs<T extends string>({
@@ -23,25 +24,45 @@ export function AnimatedTabs<T extends string>({
   onChange,
   className = '',
   tabClassName = '',
+  themeOverride,
 }: AnimatedTabsProps<T>) {
   const { theme } = useTheme();
-  const isLavender = theme === 'lavender';
+  const isLavender = (themeOverride || theme) === 'lavender' || (typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'lavender');
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, top: 0, width: 0, height: 0 });
   const [isAnimating, setIsAnimating] = useState(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const activeTabRef = useRef<HTMLButtonElement | null>(null);
 
-  // Update indicator position
+  const measureTab = () => {
+    if (!containerRef.current || !activeTabRef.current) return;
+    const targetLeft = activeTabRef.current.offsetLeft;
+    const targetTop = activeTabRef.current.offsetTop;
+    const tabWidth = activeTabRef.current.offsetWidth;
+    const tabHeight = activeTabRef.current.offsetHeight;
+    if (tabWidth > 0) {
+      setIndicatorStyle({ left: targetLeft, top: targetTop, width: tabWidth, height: tabHeight });
+    }
+  };
+
+  // Update indicator position with stretch-and-slide animation
   useEffect(() => {
-    if (!isLavender || !containerRef.current || !activeTabRef.current) return;
+    if (!containerRef.current || !activeTabRef.current) return;
 
     const targetLeft = activeTabRef.current.offsetLeft;
     const targetTop = activeTabRef.current.offsetTop;
     const tabWidth = activeTabRef.current.offsetWidth;
     const tabHeight = activeTabRef.current.offsetHeight;
-    
-    const currentLeft = indicatorStyle.width === 0 ? targetLeft : indicatorStyle.left;
+
+    if (tabWidth === 0) return;
+
+    // If first measurement
+    if (indicatorStyle.width === 0) {
+      setIndicatorStyle({ left: targetLeft, top: targetTop, width: tabWidth, height: tabHeight });
+      return;
+    }
+
+    const currentLeft = indicatorStyle.left;
     const distance = Math.abs(targetLeft - currentLeft);
 
     setIsAnimating(true);
@@ -54,42 +75,56 @@ export function AnimatedTabs<T extends string>({
 
     const timer1 = setTimeout(() => {
       setIndicatorStyle({ left: targetLeft, top: targetTop, height: tabHeight, width: tabWidth });
-      const timer2 = setTimeout(() => setIsAnimating(false), 180);
+      const timer2 = setTimeout(() => setIsAnimating(false), 200);
       return () => clearTimeout(timer2);
-    }, 80);
+    }, 70);
 
     return () => clearTimeout(timer1);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, isLavender]);
+  }, [active, isLavender, options]);
 
-  // Initial load position
+  // Initial and resize listener
   useEffect(() => {
-    if (isLavender && activeTabRef.current && indicatorStyle.width === 0) {
-      setIndicatorStyle({
-        left: activeTabRef.current.offsetLeft,
-        top: activeTabRef.current.offsetTop,
-        width: activeTabRef.current.offsetWidth,
-        height: activeTabRef.current.offsetHeight,
-      });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLavender]);
+    const handleResize = () => measureTab();
+    const t = setTimeout(measureTab, 50);
+    window.addEventListener('resize', handleResize);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isLavender, options]);
 
   if (!isLavender) {
     // Standard look for other themes
     return (
-      <div className={`flex items-center gap-1.5 p-1 rounded-2xl border ${className}`} style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+      <div 
+        ref={containerRef}
+        className={`relative flex items-center gap-1.5 p-1 rounded-2xl border ${className}`} 
+        style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+      >
+        {indicatorStyle.width > 0 && (
+          <div 
+            className="absolute rounded-xl transition-all duration-200 ease-out pointer-events-none"
+            style={{ 
+              left: `${indicatorStyle.left}px`, 
+              top: `${indicatorStyle.top}px`,
+              width: `${indicatorStyle.width}px`,
+              height: `${indicatorStyle.height}px`,
+              backgroundColor: 'var(--bg-card)',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+            }}
+          />
+        )}
         {options.map((opt) => {
           const isActive = active === opt.id;
           return (
             <button
               key={opt.id}
+              ref={isActive ? activeTabRef : null}
               onClick={() => onChange(opt.id)}
-              className={`flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex-1 ${tabClassName}`}
+              className={`relative z-[1] flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer flex-1 ${tabClassName}`}
               style={{
-                backgroundColor: isActive ? 'var(--bg-card)' : 'transparent',
                 color: isActive ? 'var(--accent)' : 'var(--text-dim)',
-                boxShadow: isActive ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
               }}
             >
               {opt.icon}

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -726,14 +726,18 @@ export default function ProfilePage() {
               {data.badges && data.badges.length > 0 && (
                 <div className="flex items-center gap-1.5">
                   {data.badges.slice(0, 3).map((b: any) => (
-                    <BadgeIcon
+                    <div
                       key={b.id}
-                      icon={b.icon || 'Star'}
-                      color={b.color}
-                      glow={b.glowColor}
-                      className="w-5 h-5"
+                      className="inline-flex items-center justify-center p-1.5 rounded-xl tsumiki-btn !m-0 !mb-0 shadow-sm cursor-default"
                       title={b.name + (b.description ? `: ${b.description}` : '')}
-                    />
+                    >
+                      <BadgeIcon
+                        icon={b.icon || 'Star'}
+                        color={b.color}
+                        glow={b.glowColor}
+                        className="w-5 h-5"
+                      />
+                    </div>
                   ))}
                 </div>
               )}
@@ -824,16 +828,16 @@ export default function ProfilePage() {
             {data.badges && data.badges.length > 0 && (
               <div className="pt-4 px-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
                 <div className="text-xs font-bold ui-dim mb-3 flex items-center gap-2"><Shield className="w-3.5 h-3.5" /> TẤT CẢ HUY HIỆU</div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2.5">
                   {data.badges.map((b: any) => (
-                    <div key={b.id} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border shadow-sm bg-slate-50 dark:bg-zinc-800/50" style={{ borderColor: 'var(--border-ui)' }} title={b.description || b.name}>
+                    <div key={b.id} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl tsumiki-btn !m-0 !mb-0 shadow-sm cursor-default" title={b.description || b.name}>
                       <BadgeIcon
                         icon={b.icon || 'Star'}
                         color={b.color}
                         glow={b.glowColor}
-                        className="w-4 h-4"
+                        className="w-4 h-4 shrink-0"
                       />
-                      <span className="text-[11px] font-bold ui-title">{b.name}</span>
+                      <span className="text-[11px] font-bold">{b.name}</span>
                     </div>
                   ))}
                 </div>
@@ -862,43 +866,34 @@ export default function ProfilePage() {
               <button 
                 type="button"
                 onClick={() => setShowClassicPoints(!showClassicPoints)}
-                className={`p-3.5 rounded-2xl flex flex-col items-center text-center shadow-md relative transition-all cursor-pointer active:scale-95 ${
-                  isLavender ? 'tsumiki-btn text-white' : 'bg-slate-50 dark:bg-zinc-800/50 border'
-                }`} 
-                style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
+                className="p-3.5 rounded-2xl flex flex-col items-center text-center shadow-md relative transition-all cursor-pointer active:scale-95 tsumiki-btn-yellow text-white" 
               >
-                <Star className={`w-5 h-5 mb-1 ${isLavender ? 'text-white drop-shadow' : 'text-amber-500'}`} />
-                <div className={`text-xs font-bold uppercase ${isLavender ? 'text-white/90' : 'ui-dim'}`}>Classic</div>
-                <div className={`text-xl font-black transition-all ${isLavender ? 'text-white' : 'text-amber-500'}`}>
+                <Star className="w-5 h-5 mb-1 text-white drop-shadow" />
+                <div className="text-xs font-bold uppercase text-white/90">Classic</div>
+                <div className="text-xl font-black transition-all text-white drop-shadow-sm">
                   {showClassicPoints ? (data.classicPp?.toFixed(2) || '0.00') : ((data.classicPp || 0) > 0.005 && data.classicRank ? "#" + data.classicRank : '#-')}
                 </div>
               </button>
               <button 
                 type="button"
                 onClick={() => setShowPlatformerPoints(!showPlatformerPoints)}
-                className={`p-3.5 rounded-2xl flex flex-col items-center text-center shadow-md relative transition-all cursor-pointer active:scale-95 ${
-                  isLavender ? 'tsumiki-btn text-white' : 'bg-slate-50 dark:bg-zinc-800/50 border'
-                }`} 
-                style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
+                className="p-3.5 rounded-2xl flex flex-col items-center text-center shadow-md relative transition-all cursor-pointer active:scale-95 tsumiki-btn-blue text-white" 
               >
-                <Gamepad2 className={`w-5 h-5 mb-1 ${isLavender ? 'text-white drop-shadow' : 'text-sky-500'}`} />
-                <div className={`text-xs font-bold uppercase ${isLavender ? 'text-white/90' : 'ui-dim'}`}>Platformer</div>
-                <div className={`text-xl font-black transition-all ${isLavender ? 'text-white' : 'text-sky-500'}`}>
+                <Gamepad2 className="w-5 h-5 mb-1 text-white drop-shadow" />
+                <div className="text-xs font-bold uppercase text-white/90">Platformer</div>
+                <div className="text-xl font-black transition-all text-white drop-shadow-sm">
                   {showPlatformerPoints ? (data.platformerPp?.toFixed(2) || '0.00') : ((data.platformerPp || 0) > 0.005 && data.platformerRank ? "#" + data.platformerRank : '#-')}
                 </div>
               </button>
               <button
                 type="button"
                 onClick={() => !isEditingCp && setShowCreatorRank(!showCreatorRank)}
-                className={`col-span-2 p-3.5 rounded-2xl flex flex-col items-center text-center shadow-md relative transition-all cursor-pointer active:scale-95 ${
-                  isLavender ? 'tsumiki-btn text-white' : 'bg-slate-50 dark:bg-zinc-800/50 border'
-                }`}
-                style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
+                className="col-span-2 p-3.5 rounded-2xl flex flex-col items-center text-center shadow-md relative transition-all cursor-pointer active:scale-95 tsumiki-btn-pink-cyan text-white"
               >
-                <Hammer className={`w-5 h-5 mb-1 ${isLavender ? 'text-white drop-shadow' : 'text-emerald-500'}`} />
-                <div className={`text-xs font-bold uppercase ${isLavender ? 'text-white/90' : 'ui-dim'}`}>Creator Points</div>
+                <Hammer className="w-5 h-5 mb-1 text-white drop-shadow" />
+                <div className="text-xs font-bold uppercase text-white/90">Creator Points</div>
                 
-                <div className={`text-xl font-black mt-0.5 flex items-center justify-center gap-2 ${isLavender ? 'text-white' : 'text-emerald-500'}`}>
+                <div className="text-xl font-black mt-0.5 flex items-center justify-center gap-2 text-white drop-shadow-sm">
                   {isFullAdmin && isEditingCp ? (
                     <input
                       type="number"
@@ -907,7 +902,7 @@ export default function ProfilePage() {
                       value={cpInput}
                       onChange={(e) => setCpInput(e.target.value)}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-24 ui-input px-2 py-1 rounded-lg text-sm font-black text-center"
+                      className="w-24 ui-input px-2 py-1 rounded-lg text-sm font-black text-center text-zinc-900 dark:text-white"
                       autoFocus
                     />
                   ) : (
@@ -919,7 +914,7 @@ export default function ProfilePage() {
                   )}
                 </div>
                 
-                <div className={`text-[10px] font-bold mt-1 ${isLavender ? 'text-white/80' : 'ui-dim'}`}>
+                <div className="text-[10px] font-bold mt-1 text-white/80">
                   {data.createdLevels?.length || 0} Level đã tạo
                 </div>
 
@@ -927,8 +922,7 @@ export default function ProfilePage() {
                   <div className="flex items-center justify-center gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={handleResetCp}
-                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border hover:opacity-80 ${isLavender ? 'bg-black/20 text-white border-white/20' : ''}`}
-                      style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border hover:opacity-80 bg-black/20 text-white border-white/20"
                     >
                       <RotateCcw className="w-3 h-3" /> Reset
                     </button>
@@ -1018,34 +1012,34 @@ export default function ProfilePage() {
       {/* Box 3 - Tabs */}
       <div className="ui-card p-4 md:p-6 space-y-4 mt-6">
         
-{/* Tabs */}
-      
-      <div className="flex flex-wrap items-center gap-2 mb-4 p-1.5 rounded-3xl border shadow-sm" style={{ borderColor: 'var(--border-subtle)', backgroundColor: 'var(--bg-card)' }}>
-        <button
-          onClick={() => { setActiveTab('classic'); setRecordPage(1); }}
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold transition-all cursor-pointer rounded-2xl ${activeTab === 'classic' ? (data?.profileTheme === 'lavender' ? 'tsumiki-btn text-white shadow-md' : 'bg-[color:var(--accent)] text-[color:var(--accent-fg)] shadow-md') : 'hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
-          style={{ color: activeTab === 'classic' ? undefined : 'var(--text-dim)' }}
-        >
-          <Star className={`w-4 h-4 ${activeTab === 'classic' ? 'fill-current' : ''}`} />
-          Classic ({classicRecords.length})
-        </button>
-        <button
-          onClick={() => { setActiveTab('platformer'); setRecordPage(1); }}
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold transition-all cursor-pointer rounded-2xl ${activeTab === 'platformer' ? (data?.profileTheme === 'lavender' ? 'tsumiki-btn text-white shadow-md' : 'bg-[color:var(--accent)] text-[color:var(--accent-fg)] shadow-md') : 'hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
-          style={{ color: activeTab === 'platformer' ? undefined : 'var(--text-dim)' }}
-        >
-          <Gamepad2 className="w-4 h-4" />
-          Platformer ({data.platformerCompletions?.length || 0})
-        </button>
-        <button
-          onClick={() => { setActiveTab('creator'); setRecordPage(1); }}
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold transition-all cursor-pointer rounded-2xl ${activeTab === 'creator' ? (data?.profileTheme === 'lavender' ? 'tsumiki-btn text-white shadow-md' : 'bg-[color:var(--accent)] text-[color:var(--accent-fg)] shadow-md') : 'hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
-          style={{ color: activeTab === 'creator' ? undefined : 'var(--text-dim)' }}
-        >
-          <Hammer className={`w-4 h-4 ${activeTab === 'creator' ? 'fill-current' : ''}`} />
-          Tác phẩm ({data.createdLevels?.length || 0})
-        </button>
-</div>
+        <AnimatedTabs<'classic' | 'platformer' | 'creator'>
+          active={activeTab}
+          onChange={(tab) => {
+            setActiveTab(tab);
+            setRecordPage(1);
+          }}
+          themeOverride={data?.profileTheme || undefined}
+          options={[
+            {
+              id: 'classic',
+              label: `Classic (${classicRecords.length})`,
+              icon: <Star className="w-4 h-4" />,
+            },
+            {
+              id: 'platformer',
+              label: `Platformer (${data.platformerCompletions?.length || 0})`,
+              icon: <Gamepad2 className="w-4 h-4" />,
+            },
+            {
+              id: 'creator',
+              label: `Tác phẩm (${data.createdLevels?.length || 0})`,
+              icon: <Hammer className="w-4 h-4" />,
+            },
+          ]}
+        />
+
+        {/* Tab Content with animation */}
+        <div key={activeTab} className="transition-all duration-300 animate-in fade-in-50 slide-in-from-bottom-2">
 
       {/* Tab Content */}
       {activeTab === 'classic' && (
@@ -1265,7 +1259,8 @@ export default function ProfilePage() {
         </div>
       )}
 
-            </div>
+        </div>
+      </div>
 
       {/* Modern Role & Supporter Management Modal */}
       {showManageModal && data && (
