@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, Mail, LogOut, Trash2, HelpCircle, Lock, Gamepad2, MessageSquare, Globe, User as UserIcon, Settings, Image as ImageIcon, X, Heart } from 'lucide-react';
+import { ShieldCheck, Check, Sparkles, Mail, LogOut, Trash2, HelpCircle, Lock, Gamepad2, MessageSquare, Globe, User as UserIcon, Settings, Image as ImageIcon, X, Heart } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import { logoutClient } from '@/lib/sessionClient';
@@ -279,12 +279,59 @@ export default function SettingsPage() {
         {/* Right Column */}
         <div className="space-y-6">
                     {/* Supporter Features */}
-          {currentUser?.supporterUntil && new Date(currentUser.supporterUntil) > new Date() && (
+          {/* Giao diện Trang Cá Nhân */}
+          <div className="ui-card p-5 space-y-4" style={{ backgroundColor: "var(--bg-card)" }}>
+            <h2 className="text-sm font-bold flex items-center gap-2 border-b pb-2 text-purple-500" style={{ borderColor: "var(--border-subtle)" }}>
+              <Sparkles className="w-4 h-4" /> Giao Diện Trang Cá Nhân
+            </h2>
+            <p className="text-xs ui-dim">Chọn giao diện hiển thị riêng cho trang profile của bạn khi bất kỳ ai ghé thăm link.</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
+              {[
+                { id: 'sky', label: 'Sky (Mặc định)', color: 'bg-sky-500' },
+                { id: 'lavender', label: 'iNeQaH', color: 'bg-purple-500' },
+                { id: 'sakura', label: 'Sakura', color: 'bg-pink-400' },
+                { id: 'mint', label: 'Mint (RGB)', color: 'bg-emerald-400' },
+                { id: 'mono', label: 'Mono', color: 'bg-zinc-500' },
+              ].map((th) => {
+                const isSelected = (data.profileTheme || 'sky') === th.id;
+                return (
+                  <button
+                    key={th.id}
+                    type="button"
+                    onClick={async () => {
+                      setData({ ...data, profileTheme: th.id });
+                      await fetch('/api/profile/' + currentUser.username, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ profileTheme: th.id }),
+                      });
+                      const updatedUser = { ...currentUser, profileTheme: th.id };
+                      setCurrentUser(updatedUser);
+                      localStorage.setItem('gdvnc_user', JSON.stringify(updatedUser));
+                      showToast('Đã lưu giao diện trang cá nhân!', 'success');
+                      window.dispatchEvent(new Event('gdvnc_user_update'));
+                    }}
+                    className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      isSelected ? 'ring-2 ring-purple-500 bg-purple-500/10 text-purple-600 dark:text-purple-300 border-purple-500/30' : 'hover:bg-slate-50 dark:hover:bg-zinc-800'
+                    }`}
+                    style={!isSelected ? { borderColor: 'var(--border-ui)' } : {}}
+                  >
+                    <span className={`w-3 h-3 rounded-full shrink-0 ${th.color}`} />
+                    <span className="truncate">{th.label}</span>
+                    {isSelected && <Check className="w-3.5 h-3.5 ml-auto text-purple-500 shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Supporter Features */}
+          {Boolean((currentUser?.supporterUntil && new Date(currentUser.supporterUntil) > new Date()) || currentUser?.role === 'ADMIN' || (currentUser?.username && currentUser.username.toLowerCase() === 'ineqah')) && (
             <div className="ui-card p-5 space-y-4 border-pink-500/20" style={{ backgroundColor: "var(--bg-card)" }}>
               <h2 className="text-sm font-bold flex items-center gap-2 border-b pb-2 text-pink-500" style={{ borderColor: "var(--border-subtle)" }}>
                 <Heart className="w-4 h-4" /> Đặc quyền Supporter
               </h2>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold mb-1.5">Màu chủ đạo tuỳ chỉnh (Custom Theme Color)</label>
                   <div className="flex items-center gap-3">
@@ -293,13 +340,14 @@ export default function SettingsPage() {
                       value={data.profileConfig?.customThemeColor || "#0ea5e9"}
                       onChange={async (e) => {
                         const newColor = e.target.value;
-                        setData({ ...data, profileConfig: { ...data.profileConfig, customThemeColor: newColor } });
+                        const newConfig = { ...(data.profileConfig || {}), customThemeColor: newColor };
+                        setData({ ...data, profileConfig: newConfig });
                         await fetch("/api/profile/" + currentUser.username, {
                           method: "PATCH",
                           headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ profileConfig: { ...data.profileConfig, customThemeColor: newColor } })
+                          body: JSON.stringify({ profileConfig: newConfig })
                         });
-                        localStorage.setItem("gdvnc_user", JSON.stringify({ ...currentUser, profileConfig: { ...currentUser.profileConfig, customThemeColor: newColor } }));
+                        localStorage.setItem("gdvnc_user", JSON.stringify({ ...currentUser, profileConfig: newConfig }));
                         window.dispatchEvent(new Event("gdvnc_user_update"));
                       }}
                       className="w-10 h-10 rounded-xl cursor-pointer border-0 p-0 bg-transparent"
@@ -307,6 +355,29 @@ export default function SettingsPage() {
                     <span className="text-xs ui-dim">Chọn màu bạn thích để áp dụng cho toàn bộ giao diện!</span>
                   </div>
                 </div>
+
+                {data.profileConfig?.backgroundUrl && (
+                  <div className="pt-2 border-t flex items-center justify-between" style={{ borderColor: "var(--border-subtle)" }}>
+                    <span className="text-xs font-bold">Ảnh nền profile hiện tại</span>
+                    <button
+                      onClick={async () => {
+                        const newConfig = { ...(data.profileConfig || {}), backgroundUrl: null };
+                        setData({ ...data, profileConfig: newConfig });
+                        await fetch("/api/profile/" + currentUser.username, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ profileConfig: newConfig })
+                        });
+                        localStorage.setItem("gdvnc_user", JSON.stringify({ ...currentUser, profileConfig: newConfig }));
+                        window.dispatchEvent(new Event("gdvnc_user_update"));
+                        showToast('Đã gỡ ảnh nền profile!', 'success');
+                      }}
+                      className="px-3 py-1.5 bg-red-500/10 text-red-500 rounded-lg text-xs font-bold hover:bg-red-500/20 flex gap-1 items-center cursor-pointer border border-red-500/20"
+                    >
+                      <X className="w-3.5 h-3.5" /> Gỡ Ảnh Nền
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Star, Moon, Medal, Play, Globe, MessageSquare, Gamepad2, ArrowLeft, Camera, Check, X, Pencil, ShieldCheck, Heart, Trash2, Hammer, User as UserIcon, Shield, Crown, Trophy, Award, Zap, Flame, Diamond, StarHalf, CheckCircle, ChevronDown, RotateCcw, UserCheck, MapPin, Edit, ShieldAlert, RefreshCw, Ban, Unlock, Lock } from 'lucide-react';
+import { Star, Sparkles, Moon, Medal, Play, Globe, MessageSquare, Gamepad2, ArrowLeft, Camera, Check, X, Pencil, ShieldCheck, Heart, Trash2, Hammer, User as UserIcon, Shield, Crown, Trophy, Award, Zap, Flame, Diamond, StarHalf, CheckCircle, ChevronDown, RotateCcw, UserCheck, MapPin, Edit, ShieldAlert, RefreshCw, Ban, Unlock, Lock } from 'lucide-react';
 import ImageEditorModal from '@/components/ImageEditorModal';
 import BadgePickerModal from '@/components/BadgePickerModal';
 import BadgeIcon from '@/components/BadgeIcon';
@@ -106,31 +106,32 @@ export default function ProfilePage() {
   const [recordPage, setRecordPage] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const { theme, setOverrideTheme } = useTheme();
-  const isLavender = theme === 'lavender' || data?.profileTheme === 'lavender';
+  const isLavender = (data?.profileTheme ? data.profileTheme === 'lavender' : theme === 'lavender');
 
   useEffect(() => {
-    if (data) {
-      if (setOverrideTheme) setOverrideTheme(data.profileTheme || null);
-      
+    if (data?.profileTheme) {
+      if (setOverrideTheme) setOverrideTheme(data.profileTheme);
+      document.documentElement.setAttribute('data-theme', data.profileTheme);
+    }
+    if (typeof window !== 'undefined' && data) {
+      const overrideObj: any = {};
+      if (data.profileTheme) overrideObj.theme = data.profileTheme;
+      if (data.profileConfig?.backgroundUrl) overrideObj.backgroundUrl = data.profileConfig.backgroundUrl;
+      if (data.profileConfig?.customThemeColor) overrideObj.customThemeColor = data.profileConfig.customThemeColor;
+      (window as any).__profileOverride = overrideObj;
+      window.dispatchEvent(new Event('gdvnc_user_update'));
+    }
+  }, [data?.profileTheme, data?.profileConfig?.backgroundUrl, data?.profileConfig?.customThemeColor, setOverrideTheme]);
+
+  useEffect(() => {
+    return () => {
+      if (setOverrideTheme) setOverrideTheme(null);
       if (typeof window !== 'undefined') {
-        const overrideObj: any = {};
-        if (data.profileTheme) overrideObj.theme = data.profileTheme;
-        if (data.profileConfig?.backgroundUrl) overrideObj.backgroundUrl = data.profileConfig.backgroundUrl;
-        if (data.profileConfig?.customThemeColor) overrideObj.customThemeColor = data.profileConfig.customThemeColor;
-        
-        (window as any).__profileOverride = overrideObj;
+        delete (window as any).__profileOverride;
         window.dispatchEvent(new Event('gdvnc_user_update'));
       }
-
-      return () => {
-        if (setOverrideTheme) setOverrideTheme(null);
-        if (typeof window !== 'undefined') {
-          delete (window as any).__profileOverride;
-          window.dispatchEvent(new Event('gdvnc_user_update'));
-        }
-      };
-    }
-  }, [data, setOverrideTheme]);
+    };
+  }, [setOverrideTheme]);
   const isOwner = !!(currentUser && currentUser.username === username);
   const isStaff = isStaffRole(currentUser?.role);
   const isFullAdmin = isFullAdminRole(currentUser?.role);
@@ -139,6 +140,7 @@ export default function ProfilePage() {
   const canEditInfo = isOwner || isStaff;
 
   // Direct editing states
+  const [showThemeModal, setShowThemeModal] = useState(false);
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [bioInput, setBioInput] = useState('');
   const [saving, setSaving] = useState(false);
@@ -219,7 +221,7 @@ export default function ProfilePage() {
     }
   };
 
-  const updateProfileField = async (fields: { bio?: string; avatarUrl?: string; coverUrl?: string; country?: string; gdUsername?: string; discordTag?: string; profileConfig?: any }) => {
+  const updateProfileField = async (fields: { bio?: string; avatarUrl?: string; coverUrl?: string; country?: string; gdUsername?: string; discordTag?: string; profileConfig?: any; profileTheme?: string }) => {
     if (!currentUser) return;
     setSaving(true);
     try {
@@ -741,9 +743,24 @@ export default function ProfilePage() {
             <div className="pt-2 px-2">
               <div className="text-xs font-bold ui-dim mb-1 flex items-center justify-between">
                 <span>{t('profile.bio') || 'TIỂU SỬ'}</span>
-                {isOwner && !isEditingBio && (
-                  <button onClick={() => { setBioInput(data.bio || ''); setIsEditingBio(true); }} className="text-sky-500 hover:opacity-80"><Edit className="w-3.5 h-3.5" /></button>
-                )}
+                <div className="flex items-center gap-2">
+                  {canEditInfo && (
+                    <button 
+                      onClick={() => setShowThemeModal(true)} 
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${
+                        isLavender ? 'tsumiki-btn text-white' : 'hover:bg-slate-100 dark:hover:bg-zinc-800'
+                      }`}
+                      style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
+                      title="Đổi theme hiển thị của profile"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                      Giao diện: {data.profileTheme === 'lavender' ? 'iNeQaH' : (data.profileTheme === 'sakura' ? 'Sakura' : (data.profileTheme === 'mint' ? 'Mint' : (data.profileTheme === 'mono' ? 'Mono' : 'Sky')))}
+                    </button>
+                  )}
+                  {isOwner && !isEditingBio && (
+                    <button onClick={() => { setBioInput(data.bio || ''); setIsEditingBio(true); }} className="text-sky-500 hover:opacity-80"><Edit className="w-3.5 h-3.5" /></button>
+                  )}
+                </div>
               </div>
               {isEditingBio ? (
                 <div className="space-y-2">
@@ -1720,8 +1737,61 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+          {showThemeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="ui-card p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl relative" style={{ backgroundColor: 'var(--bg-card)' }}>
+            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div className="font-bold text-sm flex items-center gap-2 ui-title">
+                <Sparkles className="w-4 h-4 text-purple-500" /> Giao diện trang cá nhân
+              </div>
+              <button onClick={() => setShowThemeModal(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800"><X className="w-4 h-4" /></button>
+            </div>
+            <p className="text-xs ui-dim">Chọn giao diện cho trang profile của bạn để bất kỳ ai mở link này đều nhìn thấy:</p>
+            <div className="grid grid-cols-1 gap-2">
+              {[
+                { id: 'sky', label: 'Sky (Mặc định)', color: 'bg-sky-500', desc: 'Xanh da trời cổ điển' },
+                { id: 'lavender', label: 'iNeQaH', color: 'bg-purple-500', desc: 'Tím pastel Tsumiki 3D' },
+                { id: 'sakura', label: 'Sakura', color: 'bg-pink-400', desc: 'Hồng hoa anh đào' },
+                { id: 'mint', label: 'Mint (RGB)', color: 'bg-emerald-400', desc: 'Xanh ngọc chuyển màu' },
+                { id: 'mono', label: 'Mono', color: 'bg-zinc-500', desc: 'Đen trắng tối giản' },
+              ].map((th) => {
+                const isSelected = (data.profileTheme || 'sky') === th.id;
+                return (
+                  <button
+                    key={th.id}
+                    onClick={async () => {
+                      setData((prev: any) => ({ ...prev, profileTheme: th.id }));
+                      if (setOverrideTheme) setOverrideTheme(th.id as any);
+                      document.documentElement.setAttribute('data-theme', th.id);
+                      await updateProfileField({ profileTheme: th.id });
+                      if (currentUser && currentUser.username === username) {
+                        const updatedUser = { ...currentUser, profileTheme: th.id };
+                        localStorage.setItem('gdvnc_user', JSON.stringify(updatedUser));
+                        window.dispatchEvent(new Event('gdvnc_user_update'));
+                      }
+                      setShowThemeModal(false);
+                      showToast('Đã lưu giao diện trang cá nhân!', 'success');
+                    }}
+                    className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      isSelected ? 'ring-2 ring-purple-500 bg-purple-500/10 border-purple-500/30' : 'hover:bg-slate-50 dark:hover:bg-zinc-800/50'
+                    }`}
+                    style={!isSelected ? { borderColor: 'var(--border-ui)' } : {}}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={`w-3.5 h-3.5 rounded-full shrink-0 ${th.color}`} />
+                      <div>
+                        <div className="text-xs font-bold ui-title">{th.label}</div>
+                        <div className="text-[10px] ui-dim">{th.desc}</div>
+                      </div>
+                    </div>
+                    {isSelected && <Check className="w-4 h-4 text-purple-500 shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-
