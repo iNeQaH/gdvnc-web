@@ -205,6 +205,19 @@ export default function ProfilePage() {
     }
   }, [username]);
 
+  useEffect(() => {
+    if ((showManageModal || showBadgePicker) && badgesList.length === 0) {
+      fetch('/api/admin/badges')
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.success && Array.isArray(json.badges)) {
+            setBadgesList(json.badges);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [showManageModal, showBadgePicker, badgesList.length]);
+
   const fetchProfile = async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true);
     try {
@@ -385,7 +398,7 @@ export default function ProfilePage() {
   };
 
   const handleOpenManageModal = async () => {
-    if (!currentUser || !isFullAdmin) return;
+    if (!currentUser || !isStaff || !data) return;
     setSelectedRole(data.role);
     setSupporterMonthsToAdd('0');
     setSelectedBadgeIds((data.badges || []).map((b: any) => b.id));
@@ -690,7 +703,7 @@ export default function ProfilePage() {
     });
   }
 
-  const headerBadges = [...roleBadges, ...(data.badges || []).slice(0, 3)];
+  const headerBadges = [...roleBadges, ...(data.badges || [])].slice(0, 5);
   const allBadges = [...roleBadges, ...(data.badges || [])];
 
   return (
@@ -786,7 +799,7 @@ export default function ProfilePage() {
                   {headerBadges.map((b: any) => (
                     <div
                       key={b.id}
-                      className="inline-flex items-center justify-center p-1.5 rounded-xl tsumiki-btn !m-0 !mb-0 shadow-sm cursor-default"
+                      className="inline-flex items-center justify-center p-1.5 rounded-xl tsumiki-btn tsumiki-badge-btn !m-0 !mb-0 shadow-sm cursor-default"
                       title={b.name + (b.description ? `: ${b.description}` : '')}
                     >
                       <BadgeIcon
@@ -888,14 +901,14 @@ export default function ProfilePage() {
                 <div className="text-xs font-bold ui-dim mb-3 flex items-center gap-2"><Shield className="w-3.5 h-3.5" /> {t('profile.all_badges')}</div>
                 <div className="flex flex-wrap gap-2.5">
                   {allBadges.map((b: any) => (
-                    <div key={b.id} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl tsumiki-btn !m-0 !mb-0 shadow-sm cursor-default" title={b.description || b.name}>
+                    <div key={b.id} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl tsumiki-btn tsumiki-badge-btn !m-0 !mb-0 shadow-sm cursor-default" title={b.description || b.name}>
                       <BadgeIcon
                         icon={b.icon || 'Star'}
                         color={b.color}
                         glow={b.glowColor}
                         className="w-4 h-4 shrink-0"
                       />
-                      <span className="text-[11px] font-bold">{b.name}</span>
+                      <span className="text-[11px] font-bold text-white drop-shadow-sm">{b.name}</span>
                     </div>
                   ))}
                 </div>
@@ -905,7 +918,7 @@ export default function ProfilePage() {
             {/* Admin Controls */}
             {isStaff && (
               <div className="pt-4 px-2 border-t flex flex-wrap gap-2" style={{ borderColor: 'var(--border-subtle)' }}>
-                {canEditInfo && <button onClick={() => setShowManageModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 transition-all border border-amber-500/20"><ShieldAlert className="w-3.5 h-3.5" /> {t('profile.manage_role_badge')}</button>}
+                {canEditInfo && <button onClick={handleOpenManageModal} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 transition-all border border-amber-500/20"><ShieldAlert className="w-3.5 h-3.5" /> {t('profile.manage_role_badge')}</button>}
                 {isSuperAdmin && <button onClick={() => setShowResetPasswordModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20 transition-all border border-yellow-500/20"><RefreshCw className="w-3.5 h-3.5" /> {t('profile.reset_password')}</button>}
                 {isSuperAdmin && !data.isBanned && <button onClick={() => setShowBanModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all border border-red-500/20"><Ban className="w-3.5 h-3.5" /> {t('profile.lock_account')}</button>}
                 {isSuperAdmin && data.isBanned && <button onClick={() => handleToggleBan('unban')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-green-500/10 text-green-500 hover:bg-green-500/20 transition-all border border-green-500/20"><Unlock className="w-3.5 h-3.5" /> {t('profile.unlock_account')}</button>}
