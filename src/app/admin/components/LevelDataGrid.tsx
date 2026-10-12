@@ -3,7 +3,17 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
-import { Loader2, Search, ArrowUp, ArrowDown, ArrowUpDown, RefreshCw } from 'lucide-react';
+import {
+  Loader2,
+  Search,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  RefreshCw,
+  FileSpreadsheet,
+  ChevronDown,
+  Download,
+} from 'lucide-react';
 
 type SortDir = 'asc' | 'desc';
 
@@ -47,6 +57,116 @@ export default function LevelDataGrid({ currentUser }: { currentUser: any }) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const inputRef = useRef<HTMLInputElement | HTMLSelectElement | null>(null);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setExportMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleExport = (exportFilteredOnly: boolean = false) => {
+    const targetList = exportFilteredOnly ? sortedLevels : levels;
+    if (!targetList || targetList.length === 0) {
+      showToast('Không có dữ liệu để xuất', 'error');
+      return;
+    }
+
+    setExportMenuOpen(false);
+
+    try {
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+      const suffix = exportFilteredOnly && search ? '_search_filtered' : '_all';
+      const filename = `gdvn_levels_${timestamp}${suffix}.csv`;
+
+      const headers = [
+        'Top (Placement)',
+        'VN # (VN Placement)',
+        'Classic # (Classic Rank)',
+        'GD Level ID',
+        'Tên Level',
+        'Creator (Tác giả)',
+        'Verifier (Người xác thực)',
+        'Chế độ (Mode)',
+        'Độ khó (Difficulty)',
+        'Difficulty Face (0-14)',
+        'Rating Type',
+        'Level VN (isVN)',
+        'Challenge (isChallenge)',
+        'Min %',
+        'Base PP',
+        'YouTube ID',
+        'Link YouTube',
+        'Mô tả (Description)',
+        'Ngày tạo',
+        'Ngày cập nhật',
+      ];
+
+      const escapeCsvCell = (val: any) => {
+        if (val === null || val === undefined) return '';
+        let str = String(val);
+        if (/^[=+\-@\t\r]/.test(str)) {
+          str = `'${str}`;
+        }
+        if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
+      const rows = targetList.map((lvl) => [
+        lvl.placement ?? '',
+        lvl.vnPlacement ?? '',
+        lvl.classicRank ?? '',
+        lvl.gdLevelId ?? '',
+        lvl.name ?? '',
+        lvl.creatorName ?? '',
+        lvl.verifierName ?? '',
+        lvl.mode ?? 'CLASSIC',
+        lvl.difficulty ?? '',
+        lvl.difficultyFace ?? 0,
+        lvl.ratingType ?? 'NONE',
+        lvl.isVN ? 'Có' : 'Không',
+        lvl.isChallenge ? 'Có' : 'Không',
+        lvl.minPercent ?? 100,
+        lvl.basePp != null ? Number(lvl.basePp).toFixed(1) : '',
+        lvl.youtubeId ?? '',
+        lvl.youtubeId ? `https://youtu.be/${lvl.youtubeId}` : '',
+        lvl.description ?? '',
+        lvl.createdAt ? new Date(lvl.createdAt).toISOString() : '',
+        lvl.updatedAt ? new Date(lvl.updatedAt).toISOString() : '',
+      ]);
+
+      const csvContent =
+        '\uFEFF' +
+        [
+          headers.map(escapeCsvCell).join(','),
+          ...rows.map((row) => row.map(escapeCsvCell).join(',')),
+        ].join('\r\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showToast(`Đã xuất thành công ${targetList.length.toLocaleString()} màn chơi sang file Excel (.csv)!`, 'success');
+    } catch (e) {
+      console.error(e);
+      showToast('Có lỗi xảy ra khi tạo file bảng tính', 'error');
+    }
+  };
 
   const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
     const w: Record<string, number> = {};
@@ -429,14 +549,95 @@ export default function LevelDataGrid({ currentUser }: { currentUser: any }) {
             style={{ borderColor: 'var(--border-ui)' }}
           />
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <span className="text-xs ui-dim">
             {sortedLevels.length} / {levels.length} levels
           </span>
+
+          {/* Export button with dropdown */}
+          <div className="relative" ref={exportMenuRef}>
+            <div className="inline-flex rounded-xl shadow-xs overflow-hidden border border-emerald-600/30">
+              <button
+                type="button"
+                onClick={() => handleExport(false)}
+                disabled={loading || levels.length === 0}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors cursor-pointer disabled:opacity-50"
+                title="Tải về toàn bộ màn chơi dưới dạng bảng tính Excel (.csv)"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Xuất Excel</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setExportMenuOpen(!exportMenuOpen)}
+                disabled={loading || levels.length === 0}
+                className="px-1.5 py-1.5 text-white bg-emerald-700 hover:bg-emerald-800 transition-colors border-l border-emerald-800/40 cursor-pointer disabled:opacity-50"
+                title="Tuỳ chọn xuất bảng tính"
+              >
+                <ChevronDown className="w-3 h-3" />
+              </button>
+            </div>
+
+            {exportMenuOpen && (
+              <div
+                className="absolute right-0 mt-1 w-64 rounded-2xl border shadow-xl z-50 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 text-xs"
+                style={{
+                  backgroundColor: 'var(--bg-card)',
+                  borderColor: 'var(--border-ui)',
+                }}
+              >
+                <div className="px-2.5 py-1 text-[11px] font-bold ui-dim uppercase tracking-wider">
+                  Tuỳ chọn xuất bảng tính
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleExport(false)}
+                  className="w-full px-2.5 py-2 text-left rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <span className="flex items-center gap-2 font-medium ui-title">
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+                    Xuất toàn bộ hệ thống
+                  </span>
+                  <span className="font-mono text-[11px] font-bold opacity-60">
+                    {levels.length}
+                  </span>
+                </button>
+
+                {search.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => handleExport(true)}
+                    className="w-full px-2.5 py-2 text-left rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2 font-medium ui-title">
+                      <Download className="w-4 h-4 text-sky-500" />
+                      Chỉ xuất kết quả tìm kiếm
+                    </span>
+                    <span className="font-mono text-[11px] font-bold opacity-60">
+                      {sortedLevels.length}
+                    </span>
+                  </button>
+                )}
+
+                <div className="pt-1 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <a
+                    href="/api/admin/levels/export"
+                    download
+                    onClick={() => setExportMenuOpen(false)}
+                    className="w-full px-2.5 py-1.5 text-left rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center gap-2 text-[11px] text-[var(--accent)] cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Tải trực tiếp từ máy chủ (API)</span>
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={fetchLevels}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border hover:bg-[var(--bg-subtle)] transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border hover:bg-[var(--bg-subtle)] transition-colors disabled:opacity-50 cursor-pointer"
             style={{ borderColor: 'var(--border-ui)' }}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
