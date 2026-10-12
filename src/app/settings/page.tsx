@@ -1,8 +1,8 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, Check, Sparkles, Mail, LogOut, Trash2, HelpCircle, Lock, Gamepad2, MessageSquare, Globe, User as UserIcon, Settings, Image as ImageIcon, X, Heart } from 'lucide-react';
+import { ShieldCheck, Check, Sparkles, Mail, LogOut, Trash2, HelpCircle, Lock, Gamepad2, MessageSquare, Globe, User as UserIcon, Settings, Image as ImageIcon, X, Heart, Gift, Ticket } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import { logoutClient } from '@/lib/sessionClient';
@@ -41,6 +41,8 @@ export default function SettingsPage() {
   const [pwNew, setPwNew] = useState('');
   const [pwCooldown, setPwCooldown] = useState(0);
   const [captchaToken, setCaptchaToken] = useState('');
+  const [redeemCode, setRedeemCode] = useState('');
+  const [redeeming, setRedeeming] = useState(false);
 
 
   useEffect(() => {
@@ -201,6 +203,39 @@ export default function SettingsPage() {
     } catch (e) {}
   };
 
+  const handleRedeem = async () => {
+    const code = redeemCode.trim();
+    if (!code) {
+      showToast('Vui lòng nhập mã đổi thưởng!', 'error');
+      return;
+    }
+    setRedeeming(true);
+    try {
+      const res = await fetch('/api/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const resJson = await res.json();
+      if (res.ok && resJson.success) {
+        showToast(resJson.message || `Đã kích hoạt thành công ${resJson.months} tháng Supporter!`, 'success');
+        setRedeemCode('');
+        if (resJson.user) {
+          setData((prev: any) => ({ ...prev, supporterUntil: resJson.user.supporterUntil }));
+          setCurrentUser(resJson.user);
+          localStorage.setItem('gdvnc_user', JSON.stringify(resJson.user));
+          window.dispatchEvent(new Event('gdvnc_user_update'));
+        }
+      } else {
+        showToast(resJson.error || 'Mã không hợp lệ hoặc đã được sử dụng', 'error');
+      }
+    } catch {
+      showToast('Đã xảy ra lỗi khi kết nối máy chủ', 'error');
+    } finally {
+      setRedeeming(false);
+    }
+  };
+
   if (loading) return <div className="p-8 text-center text-sm ui-dim">Đang tải...</div>;
   if (!data) return null;
 
@@ -292,6 +327,7 @@ export default function SettingsPage() {
                 { id: 'sakura', label: 'Sakura', color: 'bg-pink-400' },
                 { id: 'mint', label: 'Mint (RGB)', color: 'bg-emerald-400' },
                 { id: 'mono', label: 'Mono', color: 'bg-zinc-500' },
+                { id: 'custom', label: 'Custom', color: 'bg-gradient-to-r from-pink-500 to-sky-500' },
               ].map((th) => {
                 const isSelected = (data.profileTheme || 'sky') === th.id;
                 return (
@@ -325,6 +361,37 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          {/* Redeem Code */}
+          <div className="ui-card p-5 space-y-4 border-amber-500/20" style={{ backgroundColor: "var(--bg-card)" }}>
+            <h2 className="text-sm font-bold flex items-center gap-2 border-b pb-2 text-amber-500" style={{ borderColor: "var(--border-subtle)" }}>
+              <Gift className="w-4 h-4" /> Đổi Mã Quà Tặng (Redeem Code)
+            </h2>
+            <p className="text-xs ui-dim">Nhập mã đổi thưởng để quy đổi sang số tháng thời hạn Supporter.</p>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Ticket className="w-4 h-4 ui-dim absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={redeemCode}
+                  onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleRedeem(); }}
+                  placeholder="VD: GDVN-SUPPORTER"
+                  className="w-full pl-9 pr-3 py-2 rounded-xl text-xs font-mono font-bold tracking-wider border focus:ring-1 focus:ring-amber-500 outline-none uppercase"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleRedeem}
+                disabled={redeeming || !redeemCode.trim()}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors disabled:opacity-50 shrink-0 flex items-center gap-1.5 shadow-xs"
+              >
+                <Gift className="w-3.5 h-3.5" />
+                {redeeming ? 'Đang kiểm tra...' : 'Kích Hoạt'}
+              </button>
+            </div>
+          </div>
+
           {/* Supporter Features */}
           {Boolean((currentUser?.supporterUntil && new Date(currentUser.supporterUntil) > new Date()) || currentUser?.role === 'ADMIN' || (currentUser?.username && currentUser.username.toLowerCase() === 'ineqah')) && (
             <div className="ui-card p-5 space-y-4 border-pink-500/20" style={{ backgroundColor: "var(--bg-card)" }}>
@@ -333,7 +400,7 @@ export default function SettingsPage() {
               </h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold mb-1.5">Màu chủ đạo tuỳ chỉnh (Custom Theme Color)</label>
+                  <label className="block text-xs font-bold mb-1.5">Màu chủ đạo tuỳ chỉnh (Theme Custom Color)</label>
                   <div className="flex items-center gap-3">
                     <input 
                       type="color" 
@@ -352,7 +419,7 @@ export default function SettingsPage() {
                       }}
                       className="w-10 h-10 rounded-xl cursor-pointer border-0 p-0 bg-transparent"
                     />
-                    <span className="text-xs ui-dim">Chọn màu bạn thích để áp dụng cho toàn bộ giao diện!</span>
+                    <span className="text-xs ui-dim">Khi chọn theme <b>Custom</b>, màu này sẽ đổi màu toàn trang web theo sắc độ (Hue, Saturation, Brightness). Các theme khác không bị đổi!</span>
                   </div>
                 </div>
 

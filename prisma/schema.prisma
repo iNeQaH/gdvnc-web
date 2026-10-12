@@ -83,6 +83,8 @@ model User {
   reviewedWorks   CreatorWork[]   @relation("WorkReviewer")
   levelSubmissions LevelSubmission[] @relation("LevelSubmissions")
   reviewedLevelSubs LevelSubmission[] @relation("LevelSubReviewer")
+  createdRedeemCodes RedeemCode[]     @relation("RedeemCodeCreator")
+  redeemedCodes      RedeemCodeUse[]  @relation("UserRedeemUses")
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -445,5 +447,35 @@ model AuditLog {
   @@index([userId])
   @@index([action])
   @@index([createdAt])
+}
+
+model RedeemCode {
+  id          String          @id @default(uuid())
+  code        String          @unique
+  months      Int
+  maxUses     Int             @default(1)
+  usedCount   Int             @default(0)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  createdById String?
+  createdBy   User?           @relation("RedeemCodeCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  usages      RedeemCodeUse[]
+
+  @@index([code])
+  @@index([isActive])
+}
+
+model RedeemCodeUse {
+  id         String     @id @default(uuid())
+  codeId     String
+  userId     String
+  months     Int
+  redeemedAt DateTime   @default(now())
+  code       RedeemCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  user       User       @relation("UserRedeemUses", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([codeId, userId])
+  @@index([userId])
+  @@index([codeId])
 }
 

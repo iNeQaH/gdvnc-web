@@ -1,8 +1,13 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import {
+  applyCustomThemeVars,
+  removeCustomThemeVars,
+  getStoredCustomThemeColor,
+} from '@/lib/customTheme';
 
-export type ThemeType = 'sky' | 'mint' | 'peach' | 'lavender' | 'mono' | 'sakura';
+export type ThemeType = 'sky' | 'mint' | 'peach' | 'lavender' | 'mono' | 'sakura' | 'custom';
 export type ModeType = 'light' | 'dark' | 'system';
 
 interface ThemeContextProps {
@@ -14,7 +19,7 @@ interface ThemeContextProps {
   setOverrideTheme: (theme: ThemeType | null) => void;
 }
 
-const THEMES: ThemeType[] = ['sky', 'mint', 'peach', 'lavender', 'mono', 'sakura'];
+const THEMES: ThemeType[] = ['sky', 'mint', 'peach', 'lavender', 'mono', 'sakura', 'custom'];
 const MODES: ModeType[] = ['light', 'dark', 'system'];
 const RGB_VARS = ['--accent', '--accent-hover', '--accent-bg', '--accent-text', '--accent-fg'] as const;
 
@@ -116,6 +121,27 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       cancelAnimationFrame(raf);
       clearRgbVars(root);
+    };
+  }, [effectiveTheme, resolvedMode]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (effectiveTheme !== 'custom') {
+      removeCustomThemeVars(root);
+      return;
+    }
+
+    const updateCustomTheme = () => {
+      const color = getStoredCustomThemeColor();
+      applyCustomThemeVars(root, color, resolvedMode === 'dark');
+    };
+
+    updateCustomTheme();
+
+    window.addEventListener('gdvnc_user_update', updateCustomTheme);
+    return () => {
+      window.removeEventListener('gdvnc_user_update', updateCustomTheme);
+      removeCustomThemeVars(root);
     };
   }, [effectiveTheme, resolvedMode]);
 

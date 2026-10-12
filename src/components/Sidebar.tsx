@@ -101,15 +101,8 @@ export const Sidebar = () => {
     const customThemeColor = override && override.customThemeColor !== undefined ? override.customThemeColor : u?.profileConfig?.customThemeColor;
     const backgroundUrl = override && override.backgroundUrl !== undefined ? override.backgroundUrl : u?.profileConfig?.backgroundUrl;
 
-    if (customThemeColor) {
-      document.documentElement.style.setProperty("--accent", customThemeColor);
-      document.documentElement.style.setProperty("--accent-text", customThemeColor);
-      document.documentElement.style.setProperty("--accent-hover", customThemeColor);
-    } else {
-      document.documentElement.style.removeProperty("--accent");
-      document.documentElement.style.removeProperty("--accent-text");
-      document.documentElement.style.removeProperty("--accent-hover");
-    }
+    // Custom theme variables are managed by ThemeProvider (only applied when theme is 'custom')
+
 
     if (backgroundUrl) {
       document.body.style.backgroundImage = "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(" + backgroundUrl + ")";

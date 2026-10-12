@@ -1749,6 +1749,7 @@ export default function ProfilePage() {
                 { id: 'sakura', label: 'Sakura', color: 'bg-pink-400', desc: 'Hồng hoa anh đào' },
                 { id: 'mint', label: 'Mint (RGB)', color: 'bg-emerald-400', desc: 'Xanh ngọc chuyển màu' },
                 { id: 'mono', label: 'Mono', color: 'bg-zinc-500', desc: 'Đen trắng tối giản' },
+                { id: 'custom', label: 'Custom', color: 'bg-gradient-to-r from-pink-500 to-sky-500', desc: 'Màu sắc chủ đạo tuỳ chỉnh (Supporter)' },
               ].map((th) => {
                 const isSelected = (data.profileTheme || 'sky') === th.id;
                 return (

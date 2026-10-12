@@ -13,6 +13,8 @@ async function columnSet(db: PrismaClient) {
         OR (table_name = 'PageVisit' AND column_name = 'id')
         OR (table_name = 'ListChangeLog' AND column_name = 'id')
         OR (table_name = 'Level' AND column_name = 'classicRank')
+        OR (table_name = 'RedeemCode' AND column_name = 'id')
+        OR (table_name = 'RedeemCodeUse' AND column_name = 'id')
       )
   `;
   return new Set(rows.map((row) => `${row.table_name}.${row.column_name}`));
@@ -84,6 +86,35 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
   if (!have.has('Level.classicRank')) {
     await db.$executeRawUnsafe(`ALTER TABLE "Level" ADD COLUMN IF NOT EXISTS "classicRank" INTEGER`);
   }
+  if (!have.has('RedeemCode.id')) {
+    await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "RedeemCode" (
+        "id" TEXT NOT NULL,
+        "code" TEXT NOT NULL,
+        "months" INTEGER NOT NULL,
+        "maxUses" INTEGER NOT NULL DEFAULT 1,
+        "usedCount" INTEGER NOT NULL DEFAULT 0,
+        "isActive" BOOLEAN NOT NULL DEFAULT true,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "createdById" TEXT,
+        CONSTRAINT "RedeemCode_pkey" PRIMARY KEY ("id"),
+        CONSTRAINT "RedeemCode_code_key" UNIQUE ("code")
+      )
+    `);
+  }
+  if (!have.has('RedeemCodeUse.id')) {
+    await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "RedeemCodeUse" (
+        "id" TEXT NOT NULL,
+        "codeId" TEXT NOT NULL,
+        "userId" TEXT NOT NULL,
+        "months" INTEGER NOT NULL,
+        "redeemedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "RedeemCodeUse_pkey" PRIMARY KEY ("id"),
+        CONSTRAINT "RedeemCodeUse_codeId_userId_key" UNIQUE ("codeId", "userId")
+      )
+    `);
+  }
 }
 
 /** Indexes/FKs — do not block the request that needed the new columns. */
@@ -118,6 +149,10 @@ async function addIndexesInBackground(db: PrismaClient) {
     `CREATE INDEX IF NOT EXISTS "ListChangeLog_list_idx" ON "ListChangeLog"("list")`,
     `CREATE INDEX IF NOT EXISTS "ListChangeLog_gdLevelId_idx" ON "ListChangeLog"("gdLevelId")`,
     `CREATE INDEX IF NOT EXISTS "ListChangeLog_eventType_idx" ON "ListChangeLog"("eventType")`,
+    `CREATE INDEX IF NOT EXISTS "RedeemCode_code_idx" ON "RedeemCode"("code")`,
+    `CREATE INDEX IF NOT EXISTS "RedeemCode_isActive_idx" ON "RedeemCode"("isActive")`,
+    `CREATE INDEX IF NOT EXISTS "RedeemCodeUse_userId_idx" ON "RedeemCodeUse"("userId")`,
+    `CREATE INDEX IF NOT EXISTS "RedeemCodeUse_codeId_idx" ON "RedeemCodeUse"("codeId")`,
     `DO $$ BEGIN
       IF EXISTS (
         SELECT 1 FROM pg_constraint WHERE conname = 'SiteAnnouncement_authorId_fkey'
@@ -167,7 +202,9 @@ export async function applyPendingSchema(db: PrismaClient): Promise<void> {
     have.has('User.hardestPlatformerLevelId') &&
     have.has('PageVisit.id') &&
     have.has('ListChangeLog.id') &&
-    have.has('Level.classicRank');
+    have.has('Level.classicRank') &&
+    have.has('RedeemCode.id') &&
+    have.has('RedeemCodeUse.id');
   if (complete) return;
   await addMissingColumns(db, have);
   void addIndexesInBackground(db);

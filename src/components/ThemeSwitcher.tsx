@@ -87,13 +87,14 @@ export const ThemeSwitcher = ({ dropUp = false }: { dropUp?: boolean }) => {
     { id: 'system', label: t('theme.system'), icon: Monitor },
   ];
 
-  const THEMES: { id: ThemeType; label: string; icon: typeof Sun; color: string }[] = [
+  const THEMES: { id: ThemeType; label: string; icon: typeof Sun; color: string; customColor?: string }[] = [
     { id: 'sky', label: 'Sky (Default)', icon: Cloud, color: 'bg-sky-500' },
     { id: 'mint', label: t('theme.mint'), icon: Rainbow, color: 'gdvn-swatch-rgb' },
     
     { id: 'lavender', label: 'iNeQaH', icon: Sparkles, color: 'bg-purple-500' },
     { id: 'sakura', label: t('theme.sakura'), icon: Flower2, color: 'bg-pink-400' },
     { id: 'mono', label: 'Mono', icon: Palette, color: 'bg-zinc-500' },
+    { id: 'custom', label: 'Custom', icon: Blend, color: '', customColor: currentUser?.profileConfig?.customThemeColor || '#0ea5e9' },
   ];
 
   const currentTheme = THEMES.find((item) => item.id === theme) || THEMES[0];
@@ -196,7 +197,7 @@ export const ThemeSwitcher = ({ dropUp = false }: { dropUp?: boolean }) => {
                   key={item.id}
                   ref={isSelected ? activeThemeRef : null}
                   type="button"
-                  onClick={() => { if (['lavender', 'mint'].includes(item.id) && !canUseLavender) { window.location.href = '/support'; return; } setTheme(item.id); setOpen(false); if (currentUser?.username) { fetch(`/api/profile/${currentUser.username}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profileTheme: item.id }) }).catch(()=>{}); } }}
+                  onClick={() => { if (['lavender', 'mint', 'custom'].includes(item.id) && !canUseLavender) { window.location.href = '/support'; return; } setTheme(item.id); setOpen(false); if (currentUser?.username) { fetch(`/api/profile/${currentUser.username}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profileTheme: item.id }) }).catch(()=>{}); } }}
                   className={`relative z-[2] w-full px-3 py-2 my-0.5 text-left flex items-center justify-between rounded-xl transition-all duration-250 ease-[cubic-bezier(0.19,1,0.22,1)] hover:opacity-80 cursor-pointer ${isSelected && isLavender ? '-translate-y-[7px]' : ''}`}
                   style={{
                     color: isLavender && isSelected ? '#ffffff' : 'var(--text-title)',
@@ -204,10 +205,10 @@ export const ThemeSwitcher = ({ dropUp = false }: { dropUp?: boolean }) => {
                   }}
                 >
                   <div className="flex items-center gap-2">
-                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${item.color}`}></span>
+                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${item.color}`} style={item.customColor ? { backgroundColor: item.customColor } : undefined}></span>
                     <TIcon className="w-3.5 h-3.5" />
                     <span className={isSelected ? 'font-bold' : 'font-medium'}>{item.label}</span>
-                      {['lavender', 'mint'].includes(item.id) && !canUseLavender && <Lock className="w-3 h-3 ml-1 opacity-50" />}
+                      {['lavender', 'mint', 'custom'].includes(item.id) && !canUseLavender && <Lock className="w-3 h-3 ml-1 opacity-50" />}
                   </div>
                   {isSelected && <Check className="w-3.5 h-3.5" style={{ color: isLavender ? '#ffffff' : 'var(--accent)' }} />}
                 </button>

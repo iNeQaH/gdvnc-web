@@ -13,6 +13,11 @@ import {
   LayoutGrid,
   List,
   X,
+  Gift,
+  Ticket,
+  Trash2,
+  Copy,
+  Check,
 } from 'lucide-react';
 import BadgeIcon, { IconGlyph } from '@/components/BadgeIcon';
 import { useLanguage } from '@/components/LanguageContext';
@@ -106,10 +111,117 @@ export default function LevelsTab({
   const [draggedBadgeId, setDraggedBadgeId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  // Redeem Codes state
+  const [redeemCodes, setRedeemCodes] = useState<any[]>([]);
+  const [loadingCodes, setLoadingCodes] = useState(false);
+  const [newCodeText, setNewCodeText] = useState('');
+  const [newCodeMonths, setNewCodeMonths] = useState(1);
+  const [newCodeMaxUses, setNewCodeMaxUses] = useState(1);
+  const [creatingCode, setCreatingCode] = useState(false);
+  const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
+
+  const fetchRedeemCodes = async () => {
+    try {
+      setLoadingCodes(true);
+      const res = await fetch('/api/admin/redeem-codes');
+      const data = await res.json();
+      if (data.success && data.codes) {
+        setRedeemCodes(data.codes);
+      }
+    } catch (e) {
+      console.error('Failed to load redeem codes', e);
+    } finally {
+      setLoadingCodes(false);
+    }
+  };
+
+  const handleCreateCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = newCodeText.trim();
+    if (!code) {
+      showToast('Vui lòng nhập mã code!', 'error');
+      return;
+    }
+    if (newCodeMonths < 1) {
+      showToast('Số tháng phải từ 1 trở lên!', 'error');
+      return;
+    }
+    setCreatingCode(true);
+    try {
+      const res = await fetch('/api/admin/redeem-codes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          months: newCodeMonths,
+          maxUses: newCodeMaxUses,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(`Đã kích hoạt mã "${data.code.code}" (${data.code.months} tháng)!`, 'success');
+        setNewCodeText('');
+        setNewCodeMonths(1);
+        setNewCodeMaxUses(1);
+        fetchRedeemCodes();
+      } else {
+        showToast(data.error || 'Lỗi khi tạo mã code', 'error');
+      }
+    } catch {
+      showToast('Lỗi kết nối máy chủ', 'error');
+    } finally {
+      setCreatingCode(false);
+    }
+  };
+
+  const handleDeleteCode = async (id: string, codeStr: string) => {
+    showConfirm(`Xác nhận xoá mã "${codeStr}"?`, async () => {
+      try {
+        const res = await fetch(`/api/admin/redeem-codes/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`Đã xoá mã "${codeStr}"!`, 'success');
+          setRedeemCodes((prev) => prev.filter((c) => c.id !== id));
+        } else {
+          showToast(data.error || 'Không thể xoá mã', 'error');
+        }
+      } catch {
+        showToast('Lỗi kết nối máy chủ', 'error');
+      }
+    });
+  };
+
+  const handleToggleCodeActive = async (id: string, currentActive: boolean) => {
+    try {
+      const res = await fetch(`/api/admin/redeem-codes/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !currentActive }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setRedeemCodes((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, isActive: !currentActive } : c))
+        );
+        showToast(`Đã ${!currentActive ? 'kích hoạt' : 'tắt'} mã!`, 'success');
+      }
+    } catch {
+      showToast('Lỗi cập nhật trạng thái', 'error');
+    }
+  };
+
+  const handleCopyCode = (codeStr: string, id: string) => {
+    navigator.clipboard.writeText(codeStr);
+    setCopiedCodeId(id);
+    showToast(`Đã sao chép mã "${codeStr}"!`, 'success');
+    setTimeout(() => setCopiedCodeId(null), 2000);
+  };
+
   useEffect(() => {
     fetchBadges();
     fetchBadgeCategories();
     fetchSiteLock();
+    fetchRedeemCodes();
   }, []);
 
   const fetchSiteLock = async () => {
@@ -770,6 +882,166 @@ export default function LevelsTab({
               )}
             </div>
             <AdminListPager page={badgePage} total={filteredBadges?.length || 0} onPage={setBadgePage} t={t} pageSize={5} />
+          </div>
+        </div>
+      </FnSection>
+
+      {/* Redeem Code Management */}
+      <FnSection
+        title="Quản Lý Redeem Code (Supporter)"
+        icon={<Gift className="w-4 h-4 text-pink-500" />}
+        desc="Tạo mã đổi thưởng tuỳ chỉnh quy đổi ra tháng sử dụng Supporter"
+      >
+        <div className="space-y-4 pt-1">
+          {/* Create Code Form */}
+          <form onSubmit={handleCreateCode} className="p-4 rounded-2xl border space-y-3" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}>
+            <div className="font-bold text-xs ui-title flex items-center gap-2">
+              <Plus className="w-3.5 h-3.5 text-pink-500" />
+              Tạo Mã Mới
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold ui-dim mb-1">Mã Code (Tự đặt tuỳ chọn)</label>
+                <div className="relative">
+                  <Ticket className="w-3.5 h-3.5 ui-dim absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={newCodeText}
+                    onChange={(e) => setNewCodeText(e.target.value.toUpperCase())}
+                    placeholder="VD: GDVN2026"
+                    className="w-full pl-8 pr-3 py-2 rounded-xl text-xs font-mono font-bold tracking-wider border focus:ring-1 focus:ring-pink-500 outline-none uppercase"
+                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold ui-dim mb-1">Số tháng Supporter</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="120"
+                  value={newCodeMonths}
+                  onChange={(e) => setNewCodeMonths(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                  className="w-full px-3 py-2 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold ui-dim mb-1">Số lượt dùng tối đa</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="10000"
+                  value={newCodeMaxUses}
+                  onChange={(e) => setNewCodeMaxUses(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                  className="w-full px-3 py-2 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  required
+                />
+              </div>
+            </div>
+            <div className="flex justify-end pt-1">
+              <button
+                type="submit"
+                disabled={creatingCode || !newCodeText.trim()}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-pink-500 hover:bg-pink-600 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                {creatingCode ? 'Đang kích hoạt...' : 'Kích Hoạt / Thêm Code'}
+              </button>
+            </div>
+          </form>
+
+          {/* Codes List */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs font-bold ui-dim px-1">
+              <span>Danh sách mã kích hoạt ({redeemCodes.length})</span>
+              <button
+                type="button"
+                onClick={fetchRedeemCodes}
+                disabled={loadingCodes}
+                className="hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <RefreshCw className={`w-3 h-3 ${loadingCodes ? 'animate-spin' : ''}`} />
+                Làm mới
+              </button>
+            </div>
+
+            {loadingCodes ? (
+              <div className="p-6 text-center text-xs ui-dim">Đang tải danh sách mã...</div>
+            ) : redeemCodes.length === 0 ? (
+              <div className="p-6 text-center text-xs ui-dim border rounded-2xl" style={{ borderColor: 'var(--border-ui)' }}>
+                Chưa có mã Redeem nào. Hãy nhập mã và số tháng ở trên để kích hoạt!
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {redeemCodes.map((c) => {
+                  const isDepleted = c.usedCount >= c.maxUses;
+                  const isCopied = copiedCodeId === c.id;
+                  return (
+                    <div
+                      key={c.id}
+                      className="p-3 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors"
+                      style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => handleCopyCode(c.code, c.id)}
+                          title="Click để sao chép mã"
+                          className="px-2.5 py-1.5 rounded-xl font-mono font-bold text-xs flex items-center gap-1.5 border hover:opacity-80 transition-all cursor-pointer bg-black/5 dark:bg-white/5"
+                          style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                        >
+                          <Ticket className="w-3.5 h-3.5 text-pink-500" />
+                          <span>{c.code}</span>
+                          {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500 ml-1" /> : <Copy className="w-3 h-3 ui-dim ml-1" />}
+                        </button>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-pink-500">+{c.months} tháng Supporter</span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              !c.isActive
+                                ? 'bg-zinc-500/10 text-zinc-500'
+                                : isDepleted
+                                ? 'bg-amber-500/10 text-amber-500'
+                                : 'bg-emerald-500/10 text-emerald-500'
+                            }`}>
+                              {!c.isActive ? 'Đã tắt' : isDepleted ? 'Đã dùng hết' : 'Hoạt động'}
+                            </span>
+                          </div>
+                          <div className="text-[10px] ui-dim mt-0.5">
+                            Lượt dùng: <b>{c.usedCount} / {c.maxUses}</b>
+                            {c.createdAt ? ` · Tạo ngày ${new Date(c.createdAt).toLocaleDateString('vi-VN')}` : ''}
+                            {c.createdBy?.username ? ` bởi ${c.createdBy.username}` : ''}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-end sm:self-center">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleCodeActive(c.id, c.isActive)}
+                          className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-colors cursor-pointer"
+                          style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+                        >
+                          {c.isActive ? 'Tắt mã' : 'Bật lại'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCode(c.id, c.code)}
+                          className="p-1.5 rounded-xl text-red-500 hover:bg-red-500/10 border border-red-500/20 transition-colors cursor-pointer"
+                          title="Xoá mã code"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </FnSection>
