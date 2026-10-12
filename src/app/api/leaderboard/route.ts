@@ -22,7 +22,7 @@ export async function GET(req: Request) {
             : await getPlayerLeaderboard(mode === 'PLATFORMER' ? 'PLATFORMER' : 'CLASSIC', device);
         return { success: true, leaderboard };
       },
-      ['leaderboard', mode, device],
+      ['leaderboard-v3', mode, device],
       [CACHE_TAGS.leaderboard],
       300
     );

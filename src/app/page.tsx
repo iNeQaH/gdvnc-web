@@ -384,13 +384,13 @@ export default function HomePage() {
                                       key={ub.id}
                                       className="flex items-center justify-center rounded-full"
                                       style={{
-                                        width: '16px', height: '16px',
+                                        width: '18px', height: '18px',
                                         backgroundColor: ub.bgColor || 'transparent',
                                         color: ub.color || '#fff',
                                         border: ub.borderColor ? `1px solid ${ub.borderColor}` : 'none',
-                                        boxShadow: ub.glowColor ? `0 0 4px ${ub.glowColor}` : 'none'
+                                        boxShadow: ub.glowColor ? (typeof ub.glowColor === 'string' ? `0 0 5px ${ub.glowColor}` : `0 0 5px ${ub.color || '#fff'}`) : 'none'
                                       }}
-                                      title={ub.name}
+                                      title={ub.name + (ub.description ? `: ${ub.description}` : '')}
                                     >
                                       <BadgeIcon icon={ub.icon} className="w-2.5 h-2.5" color={ub.color || '#fff'} />
                                     </div>

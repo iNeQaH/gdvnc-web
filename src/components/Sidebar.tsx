@@ -21,13 +21,15 @@ import {
   Mail,
   Bell,
   ScrollText,
+  Crown,
+  Shield,
 } from 'lucide-react';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { useTheme } from './ThemeProvider';
 import { useLanguage } from './LanguageContext';
 import BrandMark from '@/components/BrandMark';
 import { NotificationModal } from './NotificationModal';
-import { isStaffRole } from '@/lib/roles';
+import { isStaffRole, isSuperAdminUser } from '@/lib/roles';
 import { refreshSessionUser, logoutClient } from '@/lib/sessionClient';
 
 export const Sidebar = () => {
@@ -443,12 +445,14 @@ export const Sidebar = () => {
                     {currentUser.username}
                   </div>
                   <div className="text-[10px] ui-dim flex items-center gap-1">
-                    {currentUser.role === 'ADMIN' ? (
-                      <span className="text-red-500 font-bold">Admin</span>
+                    {currentUser.isSuperAdmin || isSuperAdminUser(currentUser) ? (
+                      <span className="text-rose-500 font-bold flex items-center gap-1"><Crown className="w-3 h-3 text-rose-500 fill-rose-500" /> Super Admin</span>
+                    ) : currentUser.role === 'ADMIN' ? (
+                      <span className="text-rose-500 font-bold flex items-center gap-1"><Shield className="w-3 h-3 text-rose-500" /> Admin</span>
                     ) : currentUser.role === 'MODERATOR' ? (
-                      <span className="text-emerald-500 font-bold">Mod</span>
+                      <span className="text-emerald-500 font-bold flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-emerald-500" /> Mod</span>
                     ) : currentUser.supporterUntil && new Date(currentUser.supporterUntil) > new Date() ? (
-                      <span className="text-emerald-500 font-bold">Supporter</span>
+                      <span className="text-pink-500 font-bold flex items-center gap-1"><Heart className="w-3 h-3 fill-pink-500" /> Supporter</span>
                     ) : (
                       <span>{t('nav.profile')}</span>
                     )}

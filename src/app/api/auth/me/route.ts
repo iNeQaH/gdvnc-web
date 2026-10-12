@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/auth';
+import { isSuperAdminUser } from '@/lib/roles';
 
 export async function GET() {
   const session = await getSessionUser();
@@ -34,6 +35,11 @@ export async function GET() {
   }
 
   const { tokenVersion: _tokenVersion, ...publicUser } = user;
-  return NextResponse.json({ success: true, user: publicUser });
+  return NextResponse.json({
+    success: true,
+    user: {
+      ...publicUser,
+      isSuperAdmin: isSuperAdminUser(user),
+    },
+  });
 }
-

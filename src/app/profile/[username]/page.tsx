@@ -633,7 +633,67 @@ export default function ProfilePage() {
     (breakdown?.items || []).map((item: any) => [item.recordId, item])
   );
 
-    return (
+  const isTargetSuperAdmin = Boolean(data?.isSuperAdmin || isSuperAdminUser(data));
+  const isSupporter = Boolean(data?.supporterUntil && new Date(data.supporterUntil) > new Date());
+
+  const roleBadges: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    icon: string;
+    color: string;
+    glowColor?: string;
+    sortOrder: number;
+  }> = [];
+
+  if (isTargetSuperAdmin) {
+    roleBadges.push({
+      id: 'role-super-admin',
+      name: 'Super Admin',
+      description: 'Super Administrator',
+      icon: 'Crown',
+      color: '#ef4444',
+      glowColor: '#ef4444',
+      sortOrder: 10000,
+    });
+  } else if (data.role === 'ADMIN') {
+    roleBadges.push({
+      id: 'role-admin',
+      name: 'Admin',
+      description: 'Administrator',
+      icon: 'Shield',
+      color: '#ef4444',
+      glowColor: '#ef4444',
+      sortOrder: 9999,
+    });
+  } else if (data.role === 'MODERATOR') {
+    roleBadges.push({
+      id: 'role-mod',
+      name: 'Moderator',
+      description: 'Moderator',
+      icon: 'ShieldCheck',
+      color: '#22c55e',
+      glowColor: '#22c55e',
+      sortOrder: 9998,
+    });
+  }
+
+  if (isSupporter) {
+    roleBadges.push({
+      id: 'role-supporter',
+      name: 'Supporter',
+      description: 'GDVN Supporter',
+      icon: 'Heart',
+      color: '#ec4899',
+      glowColor: '#ec4899',
+      sortOrder: 9997,
+    });
+  }
+
+  const headerBadges = [...roleBadges, ...(data.badges || []).slice(0, 3)];
+  const allBadges = [...roleBadges, ...(data.badges || [])];
+
+  return (
     <div className="max-w-[1200px] mx-auto py-8 px-4 space-y-6 relative">
       {data?.profileConfig?.backgroundUrl && (
         <div className="fixed inset-0 z-[-1] pointer-events-none" style={{ backgroundImage: "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(" + data.profileConfig.backgroundUrl + ")", backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "fixed" }} />
@@ -717,15 +777,13 @@ export default function ProfilePage() {
             </div>
 
             {/* Name & Badges BELOW avatar */}
-            <div className="pt-12 px-2 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
+            <div className="pt-12 px-2 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <h1 className="text-xl md:text-2xl font-black ui-title drop-shadow-md">{data.username}</h1>
-                {data.role === 'ADMIN' && <span title="Admin"><Crown className="w-5 h-5 text-rose-500 fill-rose-500" /></span>}
-                {data.role === 'STAFF' && <span title="Staff"><ShieldCheck className="w-5 h-5 text-sky-500 fill-sky-500" /></span>}
               </div>
-              {data.badges && data.badges.length > 0 && (
-                <div className="flex items-center gap-1.5">
-                  {data.badges.slice(0, 3).map((b: any) => (
+              {headerBadges.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {headerBadges.map((b: any) => (
                     <div
                       key={b.id}
                       className="inline-flex items-center justify-center p-1.5 rounded-xl tsumiki-btn !m-0 !mb-0 shadow-sm cursor-default"
@@ -825,11 +883,11 @@ export default function ProfilePage() {
             </div>
 
             {/* Badges List */}
-            {data.badges && data.badges.length > 0 && (
+            {allBadges.length > 0 && (
               <div className="pt-4 px-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
                 <div className="text-xs font-bold ui-dim mb-3 flex items-center gap-2"><Shield className="w-3.5 h-3.5" /> {t('profile.all_badges')}</div>
                 <div className="flex flex-wrap gap-2.5">
-                  {data.badges.map((b: any) => (
+                  {allBadges.map((b: any) => (
                     <div key={b.id} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl tsumiki-btn !m-0 !mb-0 shadow-sm cursor-default" title={b.description || b.name}>
                       <BadgeIcon
                         icon={b.icon || 'Star'}

@@ -5,6 +5,7 @@ import {
   isQualifyingClassicRecord,
   isQualifyingPlatformerRecord,
 } from '@/lib/recordUtils';
+import { isSuperAdminUser } from '@/lib/roles';
 
 export function getSiteBaseUrl() {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
@@ -106,8 +107,22 @@ export async function getProfileEmbedData(username: string): Promise<ProfileEmbe
       icon: ub.badge.icon || 'star',
     }));
 
+  const isSuperAdmin = isSuperAdminUser(user);
   const isSupporter = Boolean(user.supporterUntil && new Date(user.supporterUntil) > new Date());
-  const showBadgeRow = user.role !== Role.USER || badges.length > 0 || isSupporter;
+  const roleBadges = [];
+  if (isSuperAdmin) {
+    roleBadges.push({ color: '#ef4444', icon: 'Crown' });
+  } else if (user.role === Role.ADMIN) {
+    roleBadges.push({ color: '#ef4444', icon: 'Shield' });
+  } else if (user.role === Role.MODERATOR) {
+    roleBadges.push({ color: '#22c55e', icon: 'ShieldCheck' });
+  }
+  if (isSupporter) {
+    roleBadges.push({ color: '#ec4899', icon: 'Heart' });
+  }
+
+  const allBadges = [...roleBadges, ...badges];
+  const showBadgeRow = user.role !== Role.USER || allBadges.length > 0 || isSupporter;
 
   const pointLines: string[] = [];
   if (user.classicPp > 0) pointLines.push(`Classic: ${Math.floor(user.classicPp)}pt`);
@@ -120,14 +135,14 @@ export async function getProfileEmbedData(username: string): Promise<ProfileEmbe
 
   return {
     username: user.username,
-    role: user.role,
+    role: isSuperAdmin ? ('SUPER_ADMIN' as any) : user.role,
     avatarUrl: user.avatarUrl,
     coverUrl: user.coverUrl,
     classicPp: user.classicPp,
     platformerPp: user.platformerPp,
     creatorPoints: user.creatorPoints,
     supporterUntil: user.supporterUntil,
-    badges,
+    badges: allBadges,
     hardestClassic,
     hardestPlatformer,
     pointLines,

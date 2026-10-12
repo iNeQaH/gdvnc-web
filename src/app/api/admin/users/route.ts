@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { Prisma, Role } from '@prisma/client';
 import { deleteUserAccount } from '@/lib/deleteUser';
 import { publicApiError } from '@/lib/apiError';
+import { isSuperAdminUser } from '@/lib/roles';
 
 const userSelect = {
   id: true,
@@ -65,9 +66,10 @@ export async function GET(req: Request) {
         }),
       ]);
       const staffIds = new Set(staff.map((u) => u.id));
+      const allUsers = [...staff, ...recent.filter((u) => !staffIds.has(u.id))];
       return NextResponse.json({
         success: true,
-        users: [...staff, ...recent.filter((u) => !staffIds.has(u.id))],
+        users: allUsers.map((u) => ({ ...u, isSuperAdmin: isSuperAdminUser(u) })),
       });
     }
 
@@ -78,7 +80,10 @@ export async function GET(req: Request) {
       take: staffTake,
     });
 
-    return NextResponse.json({ success: true, users });
+    return NextResponse.json({
+      success: true,
+      users: users.map((u) => ({ ...u, isSuperAdmin: isSuperAdminUser(u) })),
+    });
   } catch (error: any) {
     return publicApiError(error, 'Lỗi tìm kiếm người dùng.', 500);
   }

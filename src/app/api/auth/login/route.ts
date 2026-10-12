@@ -7,6 +7,7 @@ import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { publicApiError } from '@/lib/apiError';
 import { logAudit } from '@/lib/audit';
+import { isSuperAdminUser } from '@/lib/roles';
 
 /** Constant-time padding when user is missing (mitigates login enumeration). */
 const DUMMY_PASSWORD_HASH = '$2b$10$20mcQhifvE3Tbmulxl25WuJKjcwe0FOqBxWVDK08snzvv.UgK.lbK';
@@ -192,6 +193,7 @@ export async function POST(req: Request) {
       id: user.id,
       username: user.username,
       role: user.role,
+      isSuperAdmin: isSuperAdminUser(user),
       avatarUrl: user.avatarUrl,
       discordTag: user.discordTag,
       gdUsername: user.gdUsername,

@@ -213,6 +213,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         id: user.id,
         username: user.username,
         role: user.role,
+        isSuperAdmin: isSuperAdminUser(user),
         bio: user.bio,
         avatarUrl: user.avatarUrl,
         coverUrl: user.coverUrl,

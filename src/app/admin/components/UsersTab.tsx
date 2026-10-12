@@ -23,6 +23,7 @@ import { useToast } from '@/components/GlobalToast';
 import ColorPicker from '@/components/ColorPicker';
 import { BADGE_ICON_NAMES } from '@/lib/badgeIconCatalog';
 import { type DictKey } from '@/lib/dictionaries';
+import { isSuperAdminUser } from '@/lib/roles';
 
 const allIconNames = BADGE_ICON_NAMES;
 
@@ -322,7 +323,7 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
                 </thead>
                 <tbody className="ui-zebra">
                   {sortedUsers.slice((userPage - 1) * 10, userPage * 10).map((user) => {
-                    const isTargetSuper = user.username === 'iNeQaH';
+                    const isTargetSuper = Boolean((user as any).isSuperAdmin || isSuperAdminUser(user));
                     const isSupporter = user.supporterUntil && new Date(user.supporterUntil) > new Date();
                     return (
                       <tr
@@ -352,24 +353,21 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
                         </td>
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            {user.role === 'ADMIN' && (
+                            {isTargetSuper ? (
                               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
-                                <Crown className="w-3 h-3" /> ADMIN
+                                <Crown className="w-3 h-3 text-rose-500 fill-rose-500" /> Super Admin
                               </span>
-                            )}
-                            {user.role === 'MODERATOR' && (
+                            ) : user.role === 'ADMIN' ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
+                                <Shield className="w-3 h-3" /> ADMIN
+                              </span>
+                            ) : user.role === 'MODERATOR' ? (
                               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' }}>
-                                <Shield className="w-3 h-3" /> MODERATOR
+                                <ShieldCheck className="w-3 h-3" /> MODERATOR
                               </span>
-                            )}
-                            {user.role === 'USER' && !isTargetSuper && (
+                            ) : (
                               <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-dim)' }}>
                                 USER
-                              </span>
-                            )}
-                            {isTargetSuper && (
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
-                                Super Admin
                               </span>
                             )}
                             {isSupporter && (
