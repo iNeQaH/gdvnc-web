@@ -899,6 +899,8 @@ const en = {
   'settings.custom_border_toggle': 'Customize border colors separately',
   'settings.custom_border_desc': 'Add custom colors for borders. With 2 or more colors, borders create an animated rotating gradient.',
   'settings.custom_border_anim': 'Animated rotating border',
+  'settings.custom_border_glow': 'Border glow effect',
+  'settings.custom_border_glow_color': 'Border glow color',
   'settings.border_color': 'Border Color',
   'settings.add_border_color': 'Add Border Color',
 } as const;

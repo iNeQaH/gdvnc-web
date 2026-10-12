@@ -128,6 +128,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     const root = document.documentElement;
     if (effectiveTheme !== 'custom') {
       removeCustomThemeVars(root);
+      root.style.removeProperty('--border-angle');
       return;
     }
 
@@ -138,10 +139,42 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
     updateCustomTheme();
 
-    window.addEventListener('gdvnc_user_update', updateCustomTheme);
+    let rafId = 0;
+    let angle = 0;
+    let last = performance.now();
+    const speed = 60; // 60 deg/sec = 6s full 360 deg rotation
+
+    const startBorderLoop = () => {
+      cancelAnimationFrame(rafId);
+      const config = getStoredCustomThemeConfig();
+      if (config.borderAnimation === false) {
+        root.style.setProperty('--border-angle', '0deg');
+        return;
+      }
+      last = performance.now();
+      const tick = (now: number) => {
+        const dt = Math.min(0.05, (now - last) / 1000);
+        last = now;
+        angle = (angle + speed * dt) % 360;
+        root.style.setProperty('--border-angle', `${angle.toFixed(1)}deg`);
+        rafId = requestAnimationFrame(tick);
+      };
+      rafId = requestAnimationFrame(tick);
+    };
+
+    startBorderLoop();
+
+    const handleUserUpdate = () => {
+      updateCustomTheme();
+      startBorderLoop();
+    };
+
+    window.addEventListener('gdvnc_user_update', handleUserUpdate);
     return () => {
-      window.removeEventListener('gdvnc_user_update', updateCustomTheme);
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('gdvnc_user_update', handleUserUpdate);
       removeCustomThemeVars(root);
+      root.style.removeProperty('--border-angle');
     };
   }, [effectiveTheme, resolvedMode]);
 

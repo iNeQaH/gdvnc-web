@@ -890,6 +890,8 @@ const vi: Record<DictKey, string> = {
   'settings.custom_border_toggle': 'Chỉnh màu viền riêng biệt',
   'settings.custom_border_desc': 'Thêm màu tuỳ chọn cho viền. Khi có từ 2 màu trở lên, viền sẽ tạo dải màu gradient xoay động.',
   'settings.custom_border_anim': 'Hiệu ứng viền xoay',
+  'settings.custom_border_glow': 'Hiệu ứng phát sáng viền (Glow)',
+  'settings.custom_border_glow_color': 'Màu phát sáng cho viền',
   'settings.border_color': 'Màu Viền',
   'settings.add_border_color': 'Thêm Màu Viền',
 };

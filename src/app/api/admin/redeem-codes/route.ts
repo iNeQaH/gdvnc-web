@@ -66,6 +66,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Số lượt sử dụng phải là số nguyên từ 1 đến 10,000.' }, { status: 400 });
     }
 
+    const expiresInDays = body?.expiresInDays !== undefined && body?.expiresInDays !== null && body?.expiresInDays !== ''
+      ? parseInt(body.expiresInDays, 10)
+      : null;
+    let expiresAt: Date | null = null;
+    if (expiresInDays !== null && !isNaN(expiresInDays) && expiresInDays > 0) {
+      expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
+    } else if (body?.expiresAt) {
+      const parsed = new Date(body.expiresAt);
+      if (!isNaN(parsed.getTime())) {
+        expiresAt = parsed;
+      }
+    }
+
     const existing = await prisma.redeemCode.findUnique({
       where: { code },
     });
@@ -79,6 +92,7 @@ export async function POST(req: Request) {
         code,
         months,
         maxUses,
+        expiresAt,
         createdById: adminUser.userId,
       },
       include: {

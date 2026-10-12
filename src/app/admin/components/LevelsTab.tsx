@@ -117,6 +117,8 @@ export default function LevelsTab({
   const [newCodeText, setNewCodeText] = useState('');
   const [newCodeMonths, setNewCodeMonths] = useState(1);
   const [newCodeMaxUses, setNewCodeMaxUses] = useState(1);
+  const [newCodeExpiryPreset, setNewCodeExpiryPreset] = useState<'7' | '30' | '90' | '180' | '365' | 'never' | 'custom'>('30');
+  const [newCodeCustomDays, setNewCodeCustomDays] = useState(30);
   const [creatingCode, setCreatingCode] = useState(false);
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
 
@@ -146,6 +148,16 @@ export default function LevelsTab({
       showToast('Số tháng phải từ 1 trở lên!', 'error');
       return;
     }
+
+    let expiresInDays: number | null = null;
+    if (newCodeExpiryPreset === 'never') {
+      expiresInDays = null;
+    } else if (newCodeExpiryPreset === 'custom') {
+      expiresInDays = newCodeCustomDays > 0 ? newCodeCustomDays : null;
+    } else {
+      expiresInDays = parseInt(newCodeExpiryPreset, 10) || 30;
+    }
+
     setCreatingCode(true);
     try {
       const res = await fetch('/api/admin/redeem-codes', {
@@ -155,6 +167,7 @@ export default function LevelsTab({
           code,
           months: newCodeMonths,
           maxUses: newCodeMaxUses,
+          expiresInDays,
         }),
       });
       const data = await res.json();
@@ -163,6 +176,8 @@ export default function LevelsTab({
         setNewCodeText('');
         setNewCodeMonths(1);
         setNewCodeMaxUses(1);
+        setNewCodeExpiryPreset('30');
+        setNewCodeCustomDays(30);
         fetchRedeemCodes();
       } else {
         showToast(data.error || 'Lỗi khi tạo mã code', 'error');
@@ -899,7 +914,7 @@ export default function LevelsTab({
               <Plus className="w-3.5 h-3.5 text-pink-500" />
               Tạo Mã Mới
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
                 <label className="block text-[11px] font-bold ui-dim mb-1">Mã Code (Tự đặt tuỳ chọn)</label>
                 <div className="relative">
@@ -929,7 +944,10 @@ export default function LevelsTab({
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold ui-dim mb-1">Số lượt dùng tối đa</label>
+                <label className="block text-[11px] font-bold ui-dim mb-1">
+                  Số lượt dùng tối đa
+                  <span className="block text-[9px] font-normal opacity-70">Tổng user có thể nhập mã này</span>
+                </label>
                 <input
                   type="number"
                   min="1"
@@ -941,12 +959,49 @@ export default function LevelsTab({
                   required
                 />
               </div>
+              <div>
+                <label className="block text-[11px] font-bold ui-dim mb-1">
+                  Thời hạn tồn tại của mã
+                  <span className="block text-[9px] font-normal opacity-70">Hết hạn sau khoảng thời gian</span>
+                </label>
+                <div className="flex gap-1.5">
+                  <select
+                    value={newCodeExpiryPreset}
+                    onChange={(e) => setNewCodeExpiryPreset(e.target.value as any)}
+                    className="flex-1 px-2.5 py-2 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none cursor-pointer"
+                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  >
+                    <option value="7">7 ngày</option>
+                    <option value="30">30 ngày (1 tháng)</option>
+                    <option value="90">90 ngày (3 tháng)</option>
+                    <option value="180">180 ngày (6 tháng)</option>
+                    <option value="365">365 ngày (1 năm)</option>
+                    <option value="never">Vĩnh viễn (Không hết hạn)</option>
+                    <option value="custom">Tự nhập số ngày...</option>
+                  </select>
+                  {newCodeExpiryPreset === 'custom' && (
+                    <input
+                      type="number"
+                      min="1"
+                      max="3650"
+                      value={newCodeCustomDays}
+                      onChange={(e) => setNewCodeCustomDays(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                      placeholder="Ngày"
+                      className="w-16 px-2 py-2 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none text-center"
+                      style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                    />
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="flex justify-end pt-1">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div className="text-[11px] ui-dim">
+                💡 <b>Số lượt dùng tối đa</b>: Là tổng số tài khoản khác nhau được nhận quà từ mã này (VD: 1 cho cá nhân, 50 cho sự kiện). Mỗi tài khoản chỉ dùng được 1 lần.
+              </div>
               <button
                 type="submit"
                 disabled={creatingCode || !newCodeText.trim()}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-pink-500 hover:bg-pink-600 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-pink-500 hover:bg-pink-600 transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
                 {creatingCode ? 'Đang kích hoạt...' : 'Kích Hoạt / Thêm Code'}
@@ -979,7 +1034,10 @@ export default function LevelsTab({
               <div className="space-y-2">
                 {redeemCodes.map((c) => {
                   const isDepleted = c.usedCount >= c.maxUses;
+                  const isExpired = c.expiresAt ? new Date(c.expiresAt).getTime() < Date.now() : false;
                   const isCopied = copiedCodeId === c.id;
+                  const daysLeft = c.expiresAt ? Math.ceil((new Date(c.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+
                   return (
                     <div
                       key={c.id}
@@ -999,27 +1057,56 @@ export default function LevelsTab({
                           {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500 ml-1" /> : <Copy className="w-3 h-3 ui-dim ml-1" />}
                         </button>
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-xs font-bold text-pink-500">+{c.months} tháng Supporter</span>
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                               !c.isActive
                                 ? 'bg-zinc-500/10 text-zinc-500'
+                                : isExpired
+                                ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
                                 : isDepleted
                                 ? 'bg-amber-500/10 text-amber-500'
                                 : 'bg-emerald-500/10 text-emerald-500'
                             }`}>
-                              {!c.isActive ? 'Đã tắt' : isDepleted ? 'Đã dùng hết' : 'Hoạt động'}
+                              {!c.isActive ? 'Đã tắt' : isExpired ? 'Đã hết hạn' : isDepleted ? 'Đã dùng hết' : 'Hoạt động'}
                             </span>
                           </div>
-                          <div className="text-[10px] ui-dim mt-0.5">
-                            Lượt dùng: <b>{c.usedCount} / {c.maxUses}</b>
-                            {c.createdAt ? ` · Tạo ngày ${new Date(c.createdAt).toLocaleDateString('vi-VN')}` : ''}
-                            {c.createdBy?.username ? ` bởi ${c.createdBy.username}` : ''}
+                          <div className="text-[10px] ui-dim mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <span>
+                              Lượt dùng: <b>{c.usedCount} / {c.maxUses}</b>
+                            </span>
+                            <span>·</span>
+                            <span>
+                              Hạn dùng:{' '}
+                              <b className={isExpired ? 'text-rose-500' : ''}>
+                                {c.expiresAt ? (
+                                  <>
+                                    {new Date(c.expiresAt).toLocaleDateString('vi-VN')}
+                                    {!isExpired && daysLeft !== null && (
+                                      <span className="opacity-75 font-normal ml-1">
+                                        (còn {Math.max(1, daysLeft)} ngày)
+                                      </span>
+                                    )}
+                                  </>
+                                ) : (
+                                  'Vĩnh viễn'
+                                )}
+                              </b>
+                            </span>
+                            {c.createdAt ? (
+                              <>
+                                <span>·</span>
+                                <span>Tạo ngày {new Date(c.createdAt).toLocaleDateString('vi-VN')}</span>
+                              </>
+                            ) : null}
+                            {c.createdBy?.username ? (
+                              <span>bởi {c.createdBy.username}</span>
+                            ) : null}
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 self-end sm:self-center">
+                      <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
                         <button
                           type="button"
                           onClick={() => handleToggleCodeActive(c.id, c.isActive)}

@@ -39,6 +39,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Mã đổi thưởng này đã bị vô hiệu hóa.' }, { status: 400 });
     }
 
+    if (redeemCode.expiresAt && new Date(redeemCode.expiresAt) < new Date()) {
+      return NextResponse.json({ error: 'Mã đổi thưởng này đã hết hạn sử dụng.' }, { status: 400 });
+    }
+
     if (redeemCode.usedCount >= redeemCode.maxUses) {
       return NextResponse.json({ error: 'Mã đổi thưởng này đã hết lượt sử dụng.' }, { status: 400 });
     }

@@ -13,7 +13,7 @@ async function columnSet(db: PrismaClient) {
         OR (table_name = 'PageVisit' AND column_name = 'id')
         OR (table_name = 'ListChangeLog' AND column_name = 'id')
         OR (table_name = 'Level' AND column_name = 'classicRank')
-        OR (table_name = 'RedeemCode' AND column_name = 'id')
+        OR (table_name = 'RedeemCode' AND column_name IN ('id', 'expiresAt'))
         OR (table_name = 'RedeemCodeUse' AND column_name = 'id')
       )
   `;
@@ -95,12 +95,15 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
         "maxUses" INTEGER NOT NULL DEFAULT 1,
         "usedCount" INTEGER NOT NULL DEFAULT 0,
         "isActive" BOOLEAN NOT NULL DEFAULT true,
+        "expiresAt" TIMESTAMP(3),
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "createdById" TEXT,
         CONSTRAINT "RedeemCode_pkey" PRIMARY KEY ("id"),
         CONSTRAINT "RedeemCode_code_key" UNIQUE ("code")
       )
     `);
+  } else if (!have.has('RedeemCode.expiresAt')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "RedeemCode" ADD COLUMN IF NOT EXISTS "expiresAt" TIMESTAMP(3)`);
   }
   if (!have.has('RedeemCodeUse.id')) {
     await db.$executeRawUnsafe(`
@@ -151,6 +154,7 @@ async function addIndexesInBackground(db: PrismaClient) {
     `CREATE INDEX IF NOT EXISTS "ListChangeLog_eventType_idx" ON "ListChangeLog"("eventType")`,
     `CREATE INDEX IF NOT EXISTS "RedeemCode_code_idx" ON "RedeemCode"("code")`,
     `CREATE INDEX IF NOT EXISTS "RedeemCode_isActive_idx" ON "RedeemCode"("isActive")`,
+    `CREATE INDEX IF NOT EXISTS "RedeemCode_expiresAt_idx" ON "RedeemCode"("expiresAt")`,
     `CREATE INDEX IF NOT EXISTS "RedeemCodeUse_userId_idx" ON "RedeemCodeUse"("userId")`,
     `CREATE INDEX IF NOT EXISTS "RedeemCodeUse_codeId_idx" ON "RedeemCodeUse"("codeId")`,
     `DO $$ BEGIN
@@ -204,6 +208,7 @@ export async function applyPendingSchema(db: PrismaClient): Promise<void> {
     have.has('ListChangeLog.id') &&
     have.has('Level.classicRank') &&
     have.has('RedeemCode.id') &&
+    have.has('RedeemCode.expiresAt') &&
     have.has('RedeemCodeUse.id');
   if (complete) return;
   await addMissingColumns(db, have);

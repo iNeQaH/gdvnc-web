@@ -50,6 +50,8 @@ export default function SettingsPage() {
   const [customBorderMode, setCustomBorderMode] = useState<boolean>(false);
   const [borderColors, setBorderColors] = useState<string[]>(['#38bdf8']);
   const [borderAnimation, setBorderAnimation] = useState<boolean>(true);
+  const [borderGlowEnabled, setBorderGlowEnabled] = useState<boolean>(true);
+  const [borderGlowColor, setBorderGlowColor] = useState<string>('#38bdf8');
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Image Modal
@@ -109,12 +111,16 @@ export default function SettingsPage() {
         const hasCustomBorders = Array.isArray(cfg.customBorderColors) && cfg.customBorderColors.length > 0;
         const initBorderColors = hasCustomBorders ? cfg.customBorderColors : ['#38bdf8'];
         const initBorderAnim = cfg.customBorderAnimation !== undefined ? Boolean(cfg.customBorderAnimation) : true;
+        const initBorderGlowEnabled = cfg.customBorderGlowEnabled !== undefined ? Boolean(cfg.customBorderGlowEnabled) : true;
+        const initBorderGlowColor = cfg.customBorderGlowColor || (hasCustomBorders ? initBorderColors[0] : initColors[0]);
 
         setThemeColors(initColors);
         setThemeAngle(initAngle);
         setCustomBorderMode(hasCustomBorders);
         setBorderColors(initBorderColors);
         setBorderAnimation(initBorderAnim);
+        setBorderGlowEnabled(initBorderGlowEnabled);
+        setBorderGlowColor(initBorderGlowColor);
       }
     } catch (e) {}
     setLoading(false);
@@ -129,18 +135,24 @@ export default function SettingsPage() {
     newAngle: number,
     newBorderMode?: boolean,
     newBorderColors?: string[],
-    newBorderAnim?: boolean
+    newBorderAnim?: boolean,
+    newGlowEnabled?: boolean,
+    newGlowColor?: string
   ) => {
     const safeColors = newColors.length > 0 ? newColors : ['#0ea5e9'];
     const safeBorderMode = newBorderMode !== undefined ? newBorderMode : customBorderMode;
     const safeBorderColors = newBorderColors && newBorderColors.length > 0 ? newBorderColors : borderColors;
     const safeBorderAnim = newBorderAnim !== undefined ? newBorderAnim : borderAnimation;
+    const safeGlowEnabled = newGlowEnabled !== undefined ? newGlowEnabled : borderGlowEnabled;
+    const safeGlowColor = newGlowColor !== undefined ? newGlowColor : borderGlowColor;
 
     setThemeColors(safeColors);
     setThemeAngle(newAngle);
     setCustomBorderMode(safeBorderMode);
     setBorderColors(safeBorderColors);
     setBorderAnimation(safeBorderAnim);
+    setBorderGlowEnabled(safeGlowEnabled);
+    setBorderGlowColor(safeGlowColor);
 
     const newConfig = {
       ...(data?.profileConfig || {}),
@@ -149,6 +161,8 @@ export default function SettingsPage() {
       customThemeAngle: newAngle,
       customBorderColors: safeBorderMode ? safeBorderColors : null,
       customBorderAnimation: safeBorderAnim,
+      customBorderGlowEnabled: safeGlowEnabled,
+      customBorderGlowColor: safeGlowColor,
     };
 
     setData((prev: any) => ({ ...prev, profileConfig: newConfig }));
@@ -803,12 +817,59 @@ export default function SettingsPage() {
                         checked={borderAnimation}
                         onChange={(e) => {
                           const nextAnim = e.target.checked;
-                          updateThemeConfig(themeColors, themeAngle, customBorderMode, borderColors, nextAnim);
+                          updateThemeConfig(themeColors, themeAngle, customBorderMode, borderColors, nextAnim, borderGlowEnabled, borderGlowColor);
                         }}
-                        className="rounded accent-pink-500 cursor-pointer w-4 h-4"
+                        className="cursor-pointer"
                       />
                     </label>
                   </div>
+
+                  {/* Border Glow Toggle */}
+                  <div className="flex items-center justify-between p-2.5 rounded-xl border bg-slate-500/5" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <span className="text-xs font-bold ui-dim">{t('settings.custom_border_glow')}</span>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={borderGlowEnabled}
+                        onChange={(e) => {
+                          const nextGlow = e.target.checked;
+                          updateThemeConfig(themeColors, themeAngle, customBorderMode, borderColors, borderAnimation, nextGlow, borderGlowColor);
+                        }}
+                        className="cursor-pointer"
+                      />
+                    </label>
+                  </div>
+
+                  {/* Glow Color Picker (when glow enabled) */}
+                  {borderGlowEnabled && (
+                    <div className="p-3 rounded-xl border bg-slate-500/5 space-y-2 animate-in fade-in duration-200" style={{ borderColor: 'var(--border-subtle)' }}>
+                      <div className="text-xs font-bold ui-dim flex items-center justify-between">
+                        <span>{t('settings.custom_border_glow_color')}</span>
+                        <span className="font-mono text-[11px] font-bold uppercase">{borderGlowColor}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <ColorPicker
+                          value={borderGlowColor}
+                          onChange={(nextHex) => {
+                            updateThemeConfig(themeColors, themeAngle, customBorderMode, borderColors, borderAnimation, borderGlowEnabled, nextHex);
+                          }}
+                          size={32}
+                          round
+                          ariaLabel={t('settings.custom_border_glow_color')}
+                        />
+                        <div
+                          className="flex-1 h-8 rounded-xl border flex items-center px-3 text-xs font-mono font-bold transition-all"
+                          style={{
+                            borderColor: 'var(--border-ui)',
+                            backgroundColor: 'var(--bg-card)',
+                            boxShadow: `0 0 16px 2px ${borderGlowColor}55`,
+                          }}
+                        >
+                          <span className="ui-dim text-[11px]">Preview Glow</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

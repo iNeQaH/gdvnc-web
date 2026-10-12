@@ -299,15 +299,71 @@
     conic-gradient(from var(--border-angle, 0deg), var(--border-gradient-stops, var(--accent), var(--accent))) !important;
   background-origin: border-box !important;
   background-clip: padding-box, border-box !important;
-  animation: rotate-border 6s linear infinite;
-  animation-play-state: var(--border-animation-play-state, running);
-  box-shadow: 0 0 16px -2px var(--border-glow, transparent);
+  box-shadow: var(--border-glow-shadow, none) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
 
-.dark[data-theme="custom"] .ui-card {
-  box-shadow: 0 0 20px -2px var(--border-glow, rgba(56, 189, 248, 0.25));
+/* =========================================================================
+   GLOBAL CUSTOM CHECKBOX STYLING
+   ========================================================================= */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1.25rem !important; /* 20px */
+  height: 1.25rem !important;
+  min-width: 1.25rem !important;
+  min-height: 1.25rem !important;
+  border-radius: 0.375rem !important; /* 6px */
+  border: 2px solid var(--border-ui, #94a3b8) !important;
+  background-color: var(--bg-subtle, rgba(0, 0, 0, 0.05)) !important;
+  cursor: pointer;
+  display: inline-grid;
+  place-content: center;
+  vertical-align: middle;
+  position: relative;
+  transition: all 0.15s ease-in-out;
+  outline: none;
+  box-sizing: border-box;
+}
+
+input[type="checkbox"]:hover {
+  border-color: var(--accent, #0ea5e9) !important;
+  filter: brightness(1.08);
+}
+
+input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--accent, #0ea5e9);
+  outline-offset: 2px;
+}
+
+input[type="checkbox"]:checked {
+  background-color: var(--accent, #0ea5e9) !important;
+  border-color: var(--accent, #0ea5e9) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: 75% 75% !important;
+  box-shadow: 0 0 10px -2px var(--accent, rgba(14, 165, 233, 0.4));
+}
+
+.dark[data-theme="mono"] input[type="checkbox"]:checked {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+
+input[type="checkbox"]:indeterminate {
+  background-color: var(--accent, #0ea5e9) !important;
+  border-color: var(--accent, #0ea5e9) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='5' y1='12' x2='19' y2='12'%3E%3C/line%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: 75% 75% !important;
+}
+
+input[type="checkbox"]:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(1);
 }
 
 [data-theme="custom"] input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
