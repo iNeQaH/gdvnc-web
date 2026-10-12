@@ -799,14 +799,18 @@ export default function ProfilePage() {
                   {headerBadges.map((b: any) => (
                     <div
                       key={b.id}
-                      className="inline-flex items-center justify-center p-1.5 rounded-xl tsumiki-btn tsumiki-badge-btn !m-0 !mb-0 shadow-sm cursor-default"
+                      className={
+                        isLavender
+                          ? "inline-flex items-center justify-center p-1.5 rounded-xl tsumiki-btn tsumiki-badge-btn !m-0 !mb-0 shadow-sm cursor-default"
+                          : "inline-flex items-center justify-center p-1.5 rounded-lg bg-black text-white border border-zinc-800/80 shadow-xs cursor-default"
+                      }
                       title={b.name + (b.description ? `: ${b.description}` : '')}
                     >
                       <BadgeIcon
                         icon={b.icon || 'Star'}
                         color={b.color}
                         glow={b.glowColor}
-                        className="w-5 h-5"
+                        className={isLavender ? "w-5 h-5" : "w-4 h-4"}
                       />
                     </div>
                   ))}
@@ -901,12 +905,20 @@ export default function ProfilePage() {
                 <div className="text-xs font-bold ui-dim mb-3 flex items-center gap-2"><Shield className="w-3.5 h-3.5" /> {t('profile.all_badges')}</div>
                 <div className="flex flex-wrap gap-2.5">
                   {allBadges.map((b: any) => (
-                    <div key={b.id} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl tsumiki-btn tsumiki-badge-btn !m-0 !mb-0 shadow-sm cursor-default" title={b.description || b.name}>
+                    <div
+                      key={b.id}
+                      className={
+                        isLavender
+                          ? "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl tsumiki-btn tsumiki-badge-btn !m-0 !mb-0 shadow-sm cursor-default"
+                          : "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black text-white border border-zinc-800/80 shadow-xs cursor-default"
+                      }
+                      title={b.description || b.name}
+                    >
                       <BadgeIcon
                         icon={b.icon || 'Star'}
                         color={b.color}
                         glow={b.glowColor}
-                        className="w-4 h-4 shrink-0"
+                        className={isLavender ? "w-4 h-4 shrink-0" : "w-3.5 h-3.5 shrink-0"}
                       />
                       <span className="text-[11px] font-bold text-white drop-shadow-sm">{b.name}</span>
                     </div>

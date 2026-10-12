@@ -466,11 +466,9 @@
     inset -2px 0 0 0 rgba(255, 255, 255, 0.3) !important;
 }
 
-/* Dark pedestal specifically for badge buttons */
+/* Dark pedestal specifically for badge buttons in iNeQaH (lavender) theme */
 [data-theme="lavender"] .tsumiki-badge-btn,
-.dark[data-theme="lavender"] .tsumiki-badge-btn,
-.dark .tsumiki-badge-btn,
-.tsumiki-badge-btn {
+.dark[data-theme="lavender"] .tsumiki-badge-btn {
   border: 2px solid #000000 !important;
   background-color: #12101e !important;
   background-image: 
@@ -487,9 +485,7 @@
 }
 
 [data-theme="lavender"] .tsumiki-badge-btn:hover,
-.dark[data-theme="lavender"] .tsumiki-badge-btn:hover,
-.dark .tsumiki-badge-btn:hover,
-.tsumiki-badge-btn:hover {
+.dark[data-theme="lavender"] .tsumiki-badge-btn:hover {
   background-color: #181528 !important;
   background-image: 
     radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px), 
