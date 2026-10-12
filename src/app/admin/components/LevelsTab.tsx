@@ -116,7 +116,8 @@ export default function LevelsTab({
   const [loadingCodes, setLoadingCodes] = useState(false);
   const [newCodeText, setNewCodeText] = useState('');
   const [newCodeMonths, setNewCodeMonths] = useState(1);
-  const [newCodeMaxUses, setNewCodeMaxUses] = useState(1);
+  const [newCodeUsersPreset, setNewCodeUsersPreset] = useState<'all' | '1' | '5' | '10' | '50' | '100' | 'custom'>('all');
+  const [newCodeCustomMaxUses, setNewCodeCustomMaxUses] = useState(1);
   const [newCodeExpiryPreset, setNewCodeExpiryPreset] = useState<'7' | '30' | '90' | '180' | '365' | 'never' | 'custom'>('30');
   const [newCodeCustomDays, setNewCodeCustomDays] = useState(30);
   const [creatingCode, setCreatingCode] = useState(false);
@@ -149,6 +150,15 @@ export default function LevelsTab({
       return;
     }
 
+    let maxUses: number | null = null;
+    if (newCodeUsersPreset === 'all') {
+      maxUses = null;
+    } else if (newCodeUsersPreset === 'custom') {
+      maxUses = newCodeCustomMaxUses > 0 ? newCodeCustomMaxUses : null;
+    } else {
+      maxUses = parseInt(newCodeUsersPreset, 10) || null;
+    }
+
     let expiresInDays: number | null = null;
     if (newCodeExpiryPreset === 'never') {
       expiresInDays = null;
@@ -166,7 +176,7 @@ export default function LevelsTab({
         body: JSON.stringify({
           code,
           months: newCodeMonths,
-          maxUses: newCodeMaxUses,
+          maxUses,
           expiresInDays,
         }),
       });
@@ -175,7 +185,8 @@ export default function LevelsTab({
         showToast(`Đã kích hoạt mã "${data.code.code}" (${data.code.months} tháng)!`, 'success');
         setNewCodeText('');
         setNewCodeMonths(1);
-        setNewCodeMaxUses(1);
+        setNewCodeUsersPreset('all');
+        setNewCodeCustomMaxUses(1);
         setNewCodeExpiryPreset('30');
         setNewCodeCustomDays(30);
         fetchRedeemCodes();
@@ -914,9 +925,9 @@ export default function LevelsTab({
               <Plus className="w-3.5 h-3.5 text-pink-500" />
               Tạo Mã Mới
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-start">
               <div>
-                <label className="block text-[11px] font-bold ui-dim mb-1">Mã Code (Tự đặt tuỳ chọn)</label>
+                <label className="block text-[11px] font-bold ui-dim mb-1.5 h-4 leading-4">Mã Code (Tự đặt tuỳ chọn)</label>
                 <div className="relative">
                   <Ticket className="w-3.5 h-3.5 ui-dim absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
@@ -924,55 +935,67 @@ export default function LevelsTab({
                     value={newCodeText}
                     onChange={(e) => setNewCodeText(e.target.value.toUpperCase())}
                     placeholder="VD: GDVN2026"
-                    className="w-full pl-8 pr-3 py-2 rounded-xl text-xs font-mono font-bold tracking-wider border focus:ring-1 focus:ring-pink-500 outline-none uppercase"
+                    className="w-full h-[38px] pl-8 pr-3 rounded-xl text-xs font-mono font-bold tracking-wider border focus:ring-1 focus:ring-pink-500 outline-none uppercase"
                     style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                     required
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-[11px] font-bold ui-dim mb-1">Số tháng Supporter</label>
+                <label className="block text-[11px] font-bold ui-dim mb-1.5 h-4 leading-4">Số tháng Supporter</label>
                 <input
                   type="number"
                   min="1"
                   max="120"
                   value={newCodeMonths}
                   onChange={(e) => setNewCodeMonths(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                  className="w-full px-3 py-2 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none"
+                  className="w-full h-[38px] px-3 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none"
                   style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                   required
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold ui-dim mb-1">
-                  Số lượt dùng tối đa
-                  <span className="block text-[9px] font-normal opacity-70">Tổng user có thể nhập mã này</span>
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="10000"
-                  value={newCodeMaxUses}
-                  onChange={(e) => setNewCodeMaxUses(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                  className="w-full px-3 py-2 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none"
-                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                  required
-                />
+                <label className="block text-[11px] font-bold ui-dim mb-1.5 h-4 leading-4">Số người dùng</label>
+                <div className="flex gap-1.5">
+                  <select
+                    value={newCodeUsersPreset}
+                    onChange={(e) => setNewCodeUsersPreset(e.target.value as any)}
+                    className="flex-1 h-[38px] px-2.5 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none cursor-pointer"
+                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  >
+                    <option value="all">Toàn bộ người dùng</option>
+                    <option value="1">1 người (Dùng 1 lần)</option>
+                    <option value="5">5 người</option>
+                    <option value="10">10 người</option>
+                    <option value="50">50 người</option>
+                    <option value="100">100 người</option>
+                    <option value="custom">Tuỳ chỉnh số người...</option>
+                  </select>
+                  {newCodeUsersPreset === 'custom' && (
+                    <input
+                      type="number"
+                      min="1"
+                      max="1000000"
+                      value={newCodeCustomMaxUses}
+                      onChange={(e) => setNewCodeCustomMaxUses(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                      placeholder="Số user"
+                      className="w-20 h-[38px] px-2 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none text-center"
+                      style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                    />
+                  )}
+                </div>
               </div>
               <div>
-                <label className="block text-[11px] font-bold ui-dim mb-1">
-                  Thời hạn tồn tại của mã
-                  <span className="block text-[9px] font-normal opacity-70">Hết hạn sau khoảng thời gian</span>
-                </label>
+                <label className="block text-[11px] font-bold ui-dim mb-1.5 h-4 leading-4">Thời hạn tồn tại của mã</label>
                 <div className="flex gap-1.5">
                   <select
                     value={newCodeExpiryPreset}
                     onChange={(e) => setNewCodeExpiryPreset(e.target.value as any)}
-                    className="flex-1 px-2.5 py-2 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none cursor-pointer"
+                    className="flex-1 h-[38px] px-2.5 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none cursor-pointer"
                     style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                   >
-                    <option value="7">7 ngày</option>
                     <option value="30">30 ngày (1 tháng)</option>
+                    <option value="7">7 ngày</option>
                     <option value="90">90 ngày (3 tháng)</option>
                     <option value="180">180 ngày (6 tháng)</option>
                     <option value="365">365 ngày (1 năm)</option>
@@ -987,21 +1010,21 @@ export default function LevelsTab({
                       value={newCodeCustomDays}
                       onChange={(e) => setNewCodeCustomDays(Math.max(1, parseInt(e.target.value, 10) || 1))}
                       placeholder="Ngày"
-                      className="w-16 px-2 py-2 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none text-center"
+                      className="w-16 h-[38px] px-2 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none text-center"
                       style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                     />
                   )}
                 </div>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-              <div className="text-[11px] ui-dim">
-                💡 <b>Số lượt dùng tối đa</b>: Là tổng số tài khoản khác nhau được nhận quà từ mã này (VD: 1 cho cá nhân, 50 cho sự kiện). Mỗi tài khoản chỉ dùng được 1 lần.
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div className="text-[11px] ui-dim leading-relaxed">
+                💡 <b>Số người dùng</b>: Chọn <i>"Toàn bộ người dùng"</i> để bất kỳ ai cũng có thể kích hoạt, hoặc giới hạn số lượng người nhận (mỗi tài khoản chỉ dùng được mã 1 lần).
               </div>
               <button
                 type="submit"
                 disabled={creatingCode || !newCodeText.trim()}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-pink-500 hover:bg-pink-600 transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-pink-500 hover:bg-pink-600 transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
                 {creatingCode ? 'Đang kích hoạt...' : 'Kích Hoạt / Thêm Code'}
@@ -1033,7 +1056,8 @@ export default function LevelsTab({
             ) : (
               <div className="space-y-2">
                 {redeemCodes.map((c) => {
-                  const isDepleted = c.usedCount >= c.maxUses;
+                  const isUnlimited = c.maxUses === null || c.maxUses === 0;
+                  const isDepleted = !isUnlimited && c.maxUses !== null && c.usedCount >= c.maxUses;
                   const isExpired = c.expiresAt ? new Date(c.expiresAt).getTime() < Date.now() : false;
                   const isCopied = copiedCodeId === c.id;
                   const daysLeft = c.expiresAt ? Math.ceil((new Date(c.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
@@ -1073,7 +1097,14 @@ export default function LevelsTab({
                           </div>
                           <div className="text-[10px] ui-dim mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
                             <span>
-                              Lượt dùng: <b>{c.usedCount} / {c.maxUses}</b>
+                              Số người dùng:{' '}
+                              <b>
+                                {isUnlimited ? (
+                                  <>{c.usedCount} (Toàn bộ)</>
+                                ) : (
+                                  <>{c.usedCount} / {c.maxUses}</>
+                                )}
+                              </b>
                             </span>
                             <span>·</span>
                             <span>

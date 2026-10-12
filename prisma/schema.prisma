@@ -453,7 +453,7 @@ model RedeemCode {
   id          String          @id @default(uuid())
   code        String          @unique
   months      Int
-  maxUses     Int             @default(1)
+  maxUses     Int?            @default(1)
   usedCount   Int             @default(0)
   isActive    Boolean         @default(true)
   expiresAt   DateTime?

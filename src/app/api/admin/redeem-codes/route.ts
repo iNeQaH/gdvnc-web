@@ -46,8 +46,6 @@ export async function POST(req: Request) {
     const body = await req.json();
     let rawCode = typeof body?.code === 'string' ? body.code.trim() : '';
     const months = parseInt(body?.months, 10);
-    const maxUses = body?.maxUses !== undefined ? parseInt(body.maxUses, 10) : 1;
-
     if (!rawCode) {
       return NextResponse.json({ error: 'Vui lòng nhập mã code.' }, { status: 400 });
     }
@@ -62,8 +60,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Số tháng phải là số nguyên từ 1 đến 120 (tối đa 10 năm).' }, { status: 400 });
     }
 
-    if (isNaN(maxUses) || maxUses < 1 || maxUses > 10000) {
-      return NextResponse.json({ error: 'Số lượt sử dụng phải là số nguyên từ 1 đến 10,000.' }, { status: 400 });
+    let maxUses: number | null = null;
+    if (
+      body?.maxUses === null ||
+      body?.maxUses === undefined ||
+      body?.maxUses === '' ||
+      body?.maxUses === 0 ||
+      body?.maxUses === 'all' ||
+      body?.maxUses === 'unlimited'
+    ) {
+      maxUses = null;
+    } else {
+      const parsedUses = parseInt(body.maxUses, 10);
+      if (isNaN(parsedUses) || parsedUses < 1 || parsedUses > 1000000) {
+        return NextResponse.json({ error: 'Số người dùng phải là số nguyên từ 1 trở lên hoặc để trống cho toàn bộ người dùng.' }, { status: 400 });
+      }
+      maxUses = parsedUses;
     }
 
     const expiresInDays = body?.expiresInDays !== undefined && body?.expiresInDays !== null && body?.expiresInDays !== ''

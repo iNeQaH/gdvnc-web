@@ -105,6 +105,7 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
   } else if (!have.has('RedeemCode.expiresAt')) {
     await db.$executeRawUnsafe(`ALTER TABLE "RedeemCode" ADD COLUMN IF NOT EXISTS "expiresAt" TIMESTAMP(3)`);
   }
+  await db.$executeRawUnsafe(`ALTER TABLE "RedeemCode" ALTER COLUMN "maxUses" DROP NOT NULL`).catch(() => {});
   if (!have.has('RedeemCodeUse.id')) {
     await db.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "RedeemCodeUse" (

@@ -43,7 +43,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Mã đổi thưởng này đã hết hạn sử dụng.' }, { status: 400 });
     }
 
-    if (redeemCode.usedCount >= redeemCode.maxUses) {
+    const isUnlimited = redeemCode.maxUses === null || redeemCode.maxUses === 0;
+    if (!isUnlimited && redeemCode.maxUses !== null && redeemCode.usedCount >= redeemCode.maxUses) {
       return NextResponse.json({ error: 'Mã đổi thưởng này đã hết lượt sử dụng.' }, { status: 400 });
     }
 
@@ -97,7 +98,7 @@ export async function POST(req: Request) {
         where: { id: redeemCode.id },
         data: {
           usedCount: { increment: 1 },
-          isActive: newUsedCount < redeemCode.maxUses,
+          isActive: isUnlimited ? true : newUsedCount < (redeemCode.maxUses ?? 1),
         },
       });
 
