@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -95,7 +95,7 @@ export default function SupportPage() {
           {/* Cột trái */}
           <div className="space-y-6">
             <div className="space-y-3">
-              <label className="block text-xs font-bold uppercase ui-dim">Đối tượng nhận Supporter</label>
+              <label className="block text-xs font-bold uppercase ui-dim">{t('support.recipient_type')}</label>
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input 
@@ -105,7 +105,7 @@ export default function SupportPage() {
                     onChange={() => setMode('self')}
                     className="accent-pink-500 w-4 h-4"
                   />
-                  <span className="text-sm font-semibold">Tự mua cho bản thân</span>
+                  <span className="text-sm font-semibold">{t('support.for_self')}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input 
@@ -115,19 +115,19 @@ export default function SupportPage() {
                     onChange={() => setMode('gift')}
                     className="accent-pink-500 w-4 h-4"
                   />
-                  <span className="text-sm font-semibold">Tặng cho người khác</span>
+                  <span className="text-sm font-semibold">{t('support.for_gift')}</span>
                 </label>
               </div>
 
               {mode === 'self' && (
                 <div className="p-4 rounded-xl border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
                   {loggedInUser ? (
-                    <p className="text-sm">Tài khoản nhận: <strong className="text-pink-500">{loggedInUser}</strong></p>
+                    <p className="text-sm">{t('support.account_target')} <strong className="text-pink-500">{loggedInUser}</strong></p>
                   ) : (
                     <div className="text-sm space-y-2">
-                      <p className="ui-dim">Bạn chưa đăng nhập.</p>
+                      <p className="ui-dim">{t('support.not_logged_in')}</p>
                       <Link href="/login?next=/support" className="inline-block px-4 py-2 bg-pink-500 text-white rounded-lg font-bold text-xs">
-                        Đăng nhập ngay
+                        {t('support.login_now')}
                       </Link>
                     </div>
                   )}
@@ -140,7 +140,7 @@ export default function SupportPage() {
                     type="text"
                     value={giftUsername}
                     onChange={(e) => setGiftUsername(e.target.value)}
-                    placeholder="Nhập tên tài khoản (Ví dụ: iNeQaH)"
+                    placeholder={t('support.gift_recipient_ph')}
                     className="w-full px-4 py-3 rounded-xl border text-sm font-semibold focus:outline-none focus:border-pink-500 transition-colors"
                     style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                   />
@@ -150,42 +150,42 @@ export default function SupportPage() {
 
             <div className="space-y-4 pt-2">
               <label className="block text-xs font-bold uppercase ui-dim flex justify-between items-center">
-                <span>Số tháng đăng ký</span>
-                <span className="text-pink-500 text-sm">{months} Tháng</span>
+                <span>{t('support.duration_months')}</span>
+                <span className="text-pink-500 text-sm">{t('support.n_months', { n: months })}</span>
               </label>
               <input 
                 type="range" 
                 min="1" 
                 max="36" 
-                value={months}
+                value={months} 
                 onChange={(e) => setMonths(parseInt(e.target.value))}
                 className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-black/10 dark:bg-white/10"
               />
               <div className="flex justify-between text-[10px] ui-dim font-medium">
-                <span>1 Tháng</span>
-                <span>36 Tháng</span>
+                <span>{t('support.1_month')}</span>
+                <span>{t('support.36_months')}</span>
               </div>
             </div>
 
             <div className="p-4 rounded-2xl bg-pink-500/10 border border-pink-500/20 space-y-2 text-sm">
               <div className="flex justify-between items-center text-pink-500">
-                <span className="font-semibold">Mức giá gốc:</span>
+                <span className="font-semibold">{t('support.original_price')}</span>
                 <span className="line-through opacity-70">{priceInfo.originalPrice.toLocaleString('vi-VN')}đ</span>
               </div>
               {priceInfo.discountPercent > 0 && (
                 <div className="flex justify-between items-center text-pink-500">
-                  <span className="font-semibold">Chiết khấu (Giảm {priceInfo.discountPercent}%):</span>
+                  <span className="font-semibold">{t('support.discount_label', { percent: priceInfo.discountPercent })}</span>
                   <span>-{(priceInfo.originalPrice - priceInfo.totalPrice).toLocaleString('vi-VN')}đ</span>
                 </div>
               )}
               <div className="flex justify-between items-center text-pink-600 font-black text-lg pt-2 border-t border-pink-500/20">
-                <span>Thành tiền:</span>
+                <span>{t('support.total_price')}</span>
                 <span>{priceInfo.totalPrice.toLocaleString('vi-VN')}đ</span>
               </div>
             </div>
             
             <p className="text-xs ui-dim leading-relaxed italic">
-              * Ưu đãi: Mỗi 3 tháng tặng kèm 5% chiết khấu. Support sẽ tự động gỡ bỏ khi hết hạn.
+              {t('support.discount_hint')}
             </p>
           </div>
 
@@ -199,9 +199,9 @@ export default function SupportPage() {
                   className="w-56 h-56 rounded-2xl object-contain bg-white shadow-xl mx-auto"
                 />
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold ui-dim">Mã QR Auto-Supporter</p>
+                  <p className="text-xs font-semibold ui-dim">{t('support.qr_label')}</p>
                   <button 
-                    onClick={() => handleCopy(transferContent, 'Đã copy nội dung chuyển khoản!')}
+                    onClick={() => handleCopy(transferContent, t('support.copied_content'))}
                     className="flex items-center justify-center gap-1.5 mx-auto bg-pink-500 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-pink-600 transition-colors shadow-md"
                   >
                     <span>{transferContent}</span>
@@ -214,8 +214,8 @@ export default function SupportPage() {
                 <div className="p-4 bg-pink-500/10 rounded-full text-pink-500">
                   <Heart className="w-8 h-8" />
                 </div>
-                <p className="text-sm font-semibold ui-title">Chưa xác định tài khoản</p>
-                <p className="text-xs ui-dim">Vui lòng đăng nhập hoặc nhập tên người dùng để tạo mã QR.</p>
+                <p className="text-sm font-semibold ui-title">{t('support.no_account_title')}</p>
+                <p className="text-xs ui-dim">{t('support.no_account_desc')}</p>
               </div>
             )}
           </div>

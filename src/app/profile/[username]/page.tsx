@@ -818,8 +818,8 @@ export default function ProfilePage() {
                    <MapPin className="w-4 h-4" />
                  </div>
                  <div>
-                   <div className="text-[10px] font-bold uppercase ui-dim">Quốc gia / Vị trí</div>
-                   <div className="text-xs font-semibold ui-title">{data.country || 'Chưa cập nhật'}</div>
+                   <div className="text-[10px] font-bold uppercase ui-dim">{t('profile.location')}</div>
+                   <div className="text-xs font-semibold ui-title">{data.country || t('profile.not_updated')}</div>
                  </div>
                </div>
             </div>
@@ -827,7 +827,7 @@ export default function ProfilePage() {
             {/* Badges List */}
             {data.badges && data.badges.length > 0 && (
               <div className="pt-4 px-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-                <div className="text-xs font-bold ui-dim mb-3 flex items-center gap-2"><Shield className="w-3.5 h-3.5" /> TẤT CẢ HUY HIỆU</div>
+                <div className="text-xs font-bold ui-dim mb-3 flex items-center gap-2"><Shield className="w-3.5 h-3.5" /> {t('profile.all_badges')}</div>
                 <div className="flex flex-wrap gap-2.5">
                   {data.badges.map((b: any) => (
                     <div key={b.id} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl tsumiki-btn !m-0 !mb-0 shadow-sm cursor-default" title={b.description || b.name}>
@@ -847,10 +847,10 @@ export default function ProfilePage() {
             {/* Admin Controls */}
             {isStaff && (
               <div className="pt-4 px-2 border-t flex flex-wrap gap-2" style={{ borderColor: 'var(--border-subtle)' }}>
-                {canEditInfo && <button onClick={() => setShowManageModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 transition-all border border-amber-500/20"><ShieldAlert className="w-3.5 h-3.5" /> Quản Lý Role & Badge</button>}
-                {isSuperAdmin && <button onClick={() => setShowResetPasswordModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20 transition-all border border-yellow-500/20"><RefreshCw className="w-3.5 h-3.5" /> Reset Mật Khẩu</button>}
-                {isSuperAdmin && !data.isBanned && <button onClick={() => setShowBanModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all border border-red-500/20"><Ban className="w-3.5 h-3.5" /> Khoá Tài Khoản</button>}
-                {isSuperAdmin && data.isBanned && <button onClick={() => handleToggleBan('unban')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-green-500/10 text-green-500 hover:bg-green-500/20 transition-all border border-green-500/20"><Unlock className="w-3.5 h-3.5" /> Mở Khoá Tài Khoản</button>}
+                {canEditInfo && <button onClick={() => setShowManageModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 transition-all border border-amber-500/20"><ShieldAlert className="w-3.5 h-3.5" /> {t('profile.manage_role_badge')}</button>}
+                {isSuperAdmin && <button onClick={() => setShowResetPasswordModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20 transition-all border border-yellow-500/20"><RefreshCw className="w-3.5 h-3.5" /> {t('profile.reset_password')}</button>}
+                {isSuperAdmin && !data.isBanned && <button onClick={() => setShowBanModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all border border-red-500/20"><Ban className="w-3.5 h-3.5" /> {t('profile.lock_account')}</button>}
+                {isSuperAdmin && data.isBanned && <button onClick={() => handleToggleBan('unban')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-green-500/10 text-green-500 hover:bg-green-500/20 transition-all border border-green-500/20"><Unlock className="w-3.5 h-3.5" /> {t('profile.unlock_account')}</button>}
               </div>
             )}
           </div>
@@ -915,7 +915,7 @@ export default function ProfilePage() {
                 </div>
                 
                 <div className="text-[10px] font-bold mt-1 text-white/80">
-                  {data.createdLevels?.length || 0} Level đã tạo
+                  {t('profile.created_count', { n: data.createdLevels?.length || 0 })}
                 </div>
 
                 {isFullAdmin && (
@@ -954,7 +954,7 @@ export default function ProfilePage() {
                         }}
                         className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-green-500/20 text-green-300 border border-green-500/30 hover:bg-green-500/30"
                       >
-                        <Check className="w-3 h-3" /> Lưu
+                        <Check className="w-3 h-3" /> {t('common.save')}
                       </button>
                     ) : (
                       <button
@@ -962,7 +962,7 @@ export default function ProfilePage() {
                         className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border hover:opacity-80 ${isLavender ? 'bg-black/20 text-white border-white/20' : ''}`}
                         style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
                       >
-                        <Pencil className="w-3 h-3" /> Sửa
+                        <Pencil className="w-3 h-3" /> {t('common.edit')}
                       </button>
                     )}
                   </div>
@@ -973,7 +973,7 @@ export default function ProfilePage() {
             {/* Hardest */}
             <div className="pt-2 flex-1 flex flex-col">
               <div className="text-xs font-bold ui-dim mb-3 flex items-center justify-between">
-                <span className="flex items-center gap-1.5"><Crown className="w-3.5 h-3.5 text-rose-500" /> YÊU THÍCH</span>
+                <span className="flex items-center gap-1.5"><Heart className="w-3.5 h-3.5 text-rose-500" /> {t('profile.favorite')}</span>
                 {isOwner && !isEditingHardest && (
                   <button onClick={() => { setHardestInput(data.profileConfig?.hardestEmbed || ''); setIsEditingHardest(true); }} className="text-sky-500 hover:opacity-80"><Edit className="w-3.5 h-3.5" /></button>
                 )}
@@ -986,7 +986,7 @@ export default function ProfilePage() {
                     onChange={(e) => setHardestInput(e.target.value)}
                     className="w-full h-32 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900 border text-xs"
                     style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                    placeholder="Chèn link YouTube/Video iframe hoặc viết gì đó..."
+                    placeholder={t('profile.favorite_ph')}
                   />
                   <div className="flex gap-2">
                     <button onClick={async () => {
@@ -995,8 +995,8 @@ export default function ProfilePage() {
                       setData((prev: any) => ({ ...prev, profileConfig: newConfig }));
                       setIsEditingHardest(false);
                       fetchProfile();
-                    }} className="tsumiki-btn-green px-4 py-1.5 text-xs font-bold text-white rounded-xl">Lưu</button>
-                    <button onClick={() => setIsEditingHardest(false)} className="px-4 py-1.5 text-xs font-bold border rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all">Huỷ</button>
+                    }} className="tsumiki-btn-green px-4 py-1.5 text-xs font-bold text-white rounded-xl">{t('common.save')}</button>
+                    <button onClick={() => setIsEditingHardest(false)} className="px-4 py-1.5 text-xs font-bold border rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all">{t('common.cancel')}</button>
                   </div>
                 </div>
               ) : (
@@ -1032,7 +1032,7 @@ export default function ProfilePage() {
             },
             {
               id: 'creator',
-              label: `Tác phẩm (${data.createdLevels?.length || 0})`,
+              label: `${t('profile.tab_created')} (${data.createdLevels?.length || 0})`,
               icon: <Hammer className="w-4 h-4" />,
             },
           ]}
@@ -1248,7 +1248,7 @@ export default function ProfilePage() {
                 {(!data.createdLevels || data.createdLevels.length === 0) && (
                   <tr>
                     <td colSpan={isStaff ? 5 : 4} className="px-4 py-8 text-center text-xs ui-dim">
-                      Chưa có tác phẩm nào
+                      {t('profile.no_works')}
                     </td>
                   </tr>
                 )}
@@ -1737,19 +1737,19 @@ export default function ProfilePage() {
           <div className="ui-card p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl relative" style={{ backgroundColor: 'var(--bg-card)' }}>
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
               <div className="font-bold text-sm flex items-center gap-2 ui-title">
-                <Sparkles className="w-4 h-4 text-purple-500" /> Giao diện trang cá nhân
+                <Sparkles className="w-4 h-4 text-purple-500" /> {t('profile.theme_modal_title')}
               </div>
               <button onClick={() => setShowThemeModal(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800"><X className="w-4 h-4" /></button>
             </div>
-            <p className="text-xs ui-dim">Chọn giao diện cho trang profile của bạn để bất kỳ ai mở link này đều nhìn thấy:</p>
+            <p className="text-xs ui-dim">{t('profile.theme_modal_desc')}</p>
             <div className="grid grid-cols-1 gap-2">
               {[
-                { id: 'sky', label: 'Sky (Mặc định)', color: 'bg-sky-500', desc: 'Xanh da trời cổ điển' },
-                { id: 'lavender', label: 'iNeQaH', color: 'bg-purple-500', desc: 'Tím pastel Tsumiki 3D' },
-                { id: 'sakura', label: 'Sakura', color: 'bg-pink-400', desc: 'Hồng hoa anh đào' },
-                { id: 'mint', label: 'Mint (RGB)', color: 'bg-emerald-400', desc: 'Xanh ngọc chuyển màu' },
-                { id: 'mono', label: 'Mono', color: 'bg-zinc-500', desc: 'Đen trắng tối giản' },
-                { id: 'custom', label: 'Custom', color: 'bg-gradient-to-r from-pink-500 to-sky-500', desc: 'Màu sắc chủ đạo tuỳ chỉnh (Supporter)' },
+                { id: 'sky', label: t('theme.sky') || 'Sky', color: 'bg-sky-500', desc: 'Classic sky blue' },
+                { id: 'sakura', label: t('theme.sakura') || 'Sakura', color: 'bg-pink-400', desc: 'Cherry blossom pink' },
+                { id: 'mono', label: 'Mono', color: 'bg-zinc-500', desc: 'Minimal monochrome' },
+                { id: 'mint', label: t('theme.mint') || 'Rgb', color: 'bg-emerald-400', desc: 'RGB shifting theme' },
+                { id: 'custom', label: t('theme.custom') || 'Custom', color: 'bg-gradient-to-r from-pink-500 to-sky-500', desc: 'Custom supporter theme' },
+                { id: 'lavender', label: 'iNeQaH', color: 'bg-purple-500', desc: 'Tsumiki 3D pastel' },
               ].map((th) => {
                 const isSelected = (data.profileTheme || 'sky') === th.id;
                 return (
@@ -1766,7 +1766,7 @@ export default function ProfilePage() {
                         window.dispatchEvent(new Event('gdvnc_user_update'));
                       }
                       setShowThemeModal(false);
-                      showToast('Đã lưu giao diện trang cá nhân!', 'success');
+                      showToast(t('profile.theme_saved'), 'success');
                     }}
                     className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
                       isSelected ? 'ring-2 ring-purple-500 bg-purple-500/10 border-purple-500/30' : 'hover:bg-slate-50 dark:hover:bg-zinc-800/50'

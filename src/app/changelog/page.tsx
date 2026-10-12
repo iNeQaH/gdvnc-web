@@ -21,7 +21,7 @@ export default function ChangelogPage() {
             {t('nav.changelog')}
           </h1>
           <p className="text-xs ui-dim max-w-xl">
-            Lịch sử theo dõi các thay đổi về thứ hạng top 150, bổ sung màn chơi mới và cập nhật rating trên Demon List & Pemon List.
+            {t('changelog.desc')}
           </p>
         </div>
       </div>

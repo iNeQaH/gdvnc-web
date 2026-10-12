@@ -95,10 +95,9 @@ export const ThemeSwitcher = ({ dropUp = false }: { dropUp?: boolean }) => {
 
   const THEMES: { id: ThemeType; label: string; icon: typeof Sun; color: string; customColor?: string; customStyle?: React.CSSProperties }[] = [
     { id: 'sky', label: t('theme.sky') || 'Sky', icon: Cloud, color: 'bg-sky-500' },
-    { id: 'mint', label: t('theme.mint'), icon: Rainbow, color: 'gdvn-swatch-rgb' },
-    { id: 'lavender', label: 'iNeQaH', icon: Sparkles, color: 'bg-purple-500' },
-    { id: 'sakura', label: t('theme.sakura'), icon: Flower2, color: 'bg-pink-400' },
+    { id: 'sakura', label: t('theme.sakura') || 'Sakura', icon: Flower2, color: 'bg-pink-400' },
     { id: 'mono', label: 'Mono', icon: Palette, color: 'bg-zinc-500' },
+    { id: 'mint', label: t('theme.mint') || 'RGB', icon: Rainbow, color: 'gdvn-swatch-rgb' },
     {
       id: 'custom',
       label: t('theme.custom') || 'Custom',
@@ -107,6 +106,7 @@ export const ThemeSwitcher = ({ dropUp = false }: { dropUp?: boolean }) => {
       customColor: currentUser?.profileConfig?.customThemeColor || '#0ea5e9',
       customStyle: customGradient ? { background: customGradient } : undefined,
     },
+    { id: 'lavender', label: 'iNeQaH', icon: Sparkles, color: 'bg-purple-500' },
   ];
 
   const currentTheme = THEMES.find((item) => item.id === theme) || THEMES[0];

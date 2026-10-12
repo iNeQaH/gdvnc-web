@@ -454,7 +454,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
                     value={form.placement}
                     onChange={e => setForm({...form, placement: e.target.value})}
                     className={`w-full ui-input px-3 py-2 rounded-xl text-xs font-bold ${['demonlist', 'pemonlist', 'challenge'].includes(editSource as string) ? 'border-[var(--accent)] ring-1 ring-[var(--accent)]' : ''}`}
-                    placeholder="Không xếp hạng"
+                    placeholder={t('admin.unranked')}
                     autoFocus={['demonlist', 'pemonlist', 'challenge'].includes(editSource as string)}
                   />
                 </div>
@@ -485,7 +485,7 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
                 value={form.minPercent}
                 onChange={e => setForm({...form, minPercent: e.target.value})}
                 className="w-full ui-input px-3 py-2 rounded-xl text-xs font-bold"
-                placeholder="VD: 100"
+                placeholder={t('admin.min_percent_ph')}
               />
             </div>
           </div>
@@ -503,19 +503,19 @@ export default function LevelFormModal({ isOpen, onClose, onSaved, initialData, 
 
           {creatorSubmit && (
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase ui-dim">Lưu ý / Ghi chú cho BQT</label>
+              <label className="text-[11px] font-bold uppercase ui-dim">{t('submit.staff_note')}</label>
               <textarea
                 rows={3}
                 value={workDesc}
                 onChange={(e) => setWorkDesc(e.target.value)}
-                placeholder="Lưu ý hoặc ghi chú cho BQT khi duyệt tác phẩm..."
+                placeholder={t('submit.staff_note_ph')}
                 className="w-full ui-input px-3 py-2 rounded-xl text-xs resize-none"
               />
             </div>
           )}
 
           <div className="space-y-1.5">
-            <label className="text-[11px] font-bold uppercase ui-dim">Loại danh sách</label>
+            <label className="text-[11px] font-bold uppercase ui-dim">{t('admin.list_type')}</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => setForm({...form, mode: 'CLASSIC'})}

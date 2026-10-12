@@ -44,9 +44,12 @@ export default function SettingsPage() {
   const [country, setCountry] = useState('');
   const [savingInfo, setSavingInfo] = useState(false);
 
-  // Supporter custom theme colors & angle
+  // Supporter custom theme colors, angle & border customization
   const [themeColors, setThemeColors] = useState<string[]>(['#0ea5e9']);
   const [themeAngle, setThemeAngle] = useState<number>(135);
+  const [customBorderMode, setCustomBorderMode] = useState<boolean>(false);
+  const [borderColors, setBorderColors] = useState<string[]>(['#38bdf8']);
+  const [borderAnimation, setBorderAnimation] = useState<boolean>(true);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Image Modal
@@ -103,8 +106,15 @@ export default function SettingsPage() {
             ? cfg.customThemeColors
             : [cfg.customThemeColor || '#0ea5e9'];
         const initAngle = typeof cfg.customThemeAngle === 'number' ? cfg.customThemeAngle : 135;
+        const hasCustomBorders = Array.isArray(cfg.customBorderColors) && cfg.customBorderColors.length > 0;
+        const initBorderColors = hasCustomBorders ? cfg.customBorderColors : ['#38bdf8'];
+        const initBorderAnim = cfg.customBorderAnimation !== undefined ? Boolean(cfg.customBorderAnimation) : true;
+
         setThemeColors(initColors);
         setThemeAngle(initAngle);
+        setCustomBorderMode(hasCustomBorders);
+        setBorderColors(initBorderColors);
+        setBorderAnimation(initBorderAnim);
       }
     } catch (e) {}
     setLoading(false);
@@ -114,16 +124,31 @@ export default function SettingsPage() {
     loadData();
   }, []);
 
-  const updateThemeConfig = (newColors: string[], newAngle: number) => {
+  const updateThemeConfig = (
+    newColors: string[],
+    newAngle: number,
+    newBorderMode?: boolean,
+    newBorderColors?: string[],
+    newBorderAnim?: boolean
+  ) => {
     const safeColors = newColors.length > 0 ? newColors : ['#0ea5e9'];
+    const safeBorderMode = newBorderMode !== undefined ? newBorderMode : customBorderMode;
+    const safeBorderColors = newBorderColors && newBorderColors.length > 0 ? newBorderColors : borderColors;
+    const safeBorderAnim = newBorderAnim !== undefined ? newBorderAnim : borderAnimation;
+
     setThemeColors(safeColors);
     setThemeAngle(newAngle);
+    setCustomBorderMode(safeBorderMode);
+    setBorderColors(safeBorderColors);
+    setBorderAnimation(safeBorderAnim);
 
     const newConfig = {
       ...(data?.profileConfig || {}),
       customThemeColor: safeColors[0],
       customThemeColors: safeColors,
       customThemeAngle: newAngle,
+      customBorderColors: safeBorderMode ? safeBorderColors : null,
+      customBorderAnimation: safeBorderAnim,
     };
 
     setData((prev: any) => ({ ...prev, profileConfig: newConfig }));
@@ -466,10 +491,9 @@ export default function SettingsPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
               {[
                 { id: 'sky', label: t('theme.sky') || 'Sky', color: 'bg-sky-500' },
-                { id: 'lavender', label: 'iNeQaH', color: 'bg-purple-500' },
                 { id: 'sakura', label: t('theme.sakura') || 'Sakura', color: 'bg-pink-400' },
-                { id: 'mint', label: t('theme.mint') || 'Mint (RGB)', color: 'bg-emerald-400' },
                 { id: 'mono', label: 'Mono', color: 'bg-zinc-500' },
+                { id: 'mint', label: t('theme.mint') || 'Mint (RGB)', color: 'bg-emerald-400' },
                 {
                   id: 'custom',
                   label: t('theme.custom') || 'Custom',
@@ -479,6 +503,7 @@ export default function SettingsPage() {
                       ? { background: `linear-gradient(${themeAngle}deg, ${themeColors.join(', ')})` }
                       : undefined,
                 },
+                { id: 'lavender', label: 'iNeQaH', color: 'bg-purple-500' },
               ].map((th) => {
                 const isSelected = (data.profileTheme || 'sky') === th.id;
                 return (
@@ -685,6 +710,106 @@ export default function SettingsPage() {
                     />
                   </div>
                 )}
+
+                {/* Border Customization Section */}
+                <div className="pt-3 border-t space-y-3" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold ui-title flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-pink-500" />
+                      {t('settings.custom_border_title')}
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-xs font-bold ui-dim hover:text-pink-500 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={customBorderMode}
+                        onChange={(e) => {
+                          const nextMode = e.target.checked;
+                          updateThemeConfig(themeColors, themeAngle, nextMode, borderColors, borderAnimation);
+                        }}
+                        className="rounded accent-pink-500 cursor-pointer"
+                      />
+                      <span>{t('settings.custom_border_toggle')}</span>
+                    </label>
+                  </div>
+
+                  <p className="text-xs ui-dim leading-relaxed">
+                    {t('settings.custom_border_desc')}
+                  </p>
+
+                  {customBorderMode && (
+                    <div className="space-y-3 animate-in fade-in duration-200">
+                      {/* Border Color Swatches */}
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        {borderColors.map((col, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-2 p-1.5 pr-2.5 rounded-2xl border bg-slate-500/5 transition-all shadow-xs"
+                            style={{ borderColor: 'var(--border-ui)' }}
+                          >
+                            <ColorPicker
+                              value={col}
+                              onChange={(nextHex) => {
+                                const next = [...borderColors];
+                                next[idx] = nextHex;
+                                updateThemeConfig(themeColors, themeAngle, customBorderMode, next, borderAnimation);
+                              }}
+                              size={32}
+                              round
+                              ariaLabel={`${t('settings.border_color')} ${idx + 1}`}
+                            />
+                            <span className="font-mono text-xs font-bold uppercase">{col}</span>
+                            {borderColors.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const next = borderColors.filter((_, i) => i !== idx);
+                                  updateThemeConfig(themeColors, themeAngle, customBorderMode, next, borderAnimation);
+                                }}
+                                className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+                                title={t('settings.remove_color')}
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+
+                        {borderColors.length < 4 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const PRESET_BORDER = ['#38bdf8', '#ec4899', '#a855f7', '#10b981'];
+                              const nextColor = PRESET_BORDER[borderColors.length] || '#ec4899';
+                              const next = [...borderColors, nextColor];
+                              updateThemeConfig(themeColors, themeAngle, customBorderMode, next, borderAnimation);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-dashed text-xs font-bold ui-dim hover:text-pink-500 hover:border-pink-500/40 transition-colors cursor-pointer"
+                            style={{ borderColor: 'var(--border-ui)' }}
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            {t('settings.add_border_color')}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Border Animation Toggle */}
+                  <div className="flex items-center justify-between p-2.5 rounded-xl border bg-slate-500/5" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <span className="text-xs font-bold ui-dim">{t('settings.custom_border_anim')}</span>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={borderAnimation}
+                        onChange={(e) => {
+                          const nextAnim = e.target.checked;
+                          updateThemeConfig(themeColors, themeAngle, customBorderMode, borderColors, nextAnim);
+                        }}
+                        className="rounded accent-pink-500 cursor-pointer w-4 h-4"
+                      />
+                    </label>
+                  </div>
+                </div>
               </div>
 
               {/* Background image section relocated inside this box */}

@@ -276,9 +276,56 @@
   --accent-gradient: var(--accent);
 }
 
+@property --border-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes rotate-border {
+  0% {
+    --border-angle: 0deg;
+  }
+  100% {
+    --border-angle: 360deg;
+  }
+}
+
 [data-theme="custom"] .ui-card {
+  position: relative;
+  border: 2px solid transparent !important;
+  background-image: 
+    linear-gradient(var(--bg-card), var(--bg-card)), 
+    conic-gradient(from var(--border-angle, 0deg), var(--border-gradient-stops, var(--accent), var(--accent))) !important;
+  background-origin: border-box !important;
+  background-clip: padding-box, border-box !important;
+  animation: rotate-border 6s linear infinite;
+  animation-play-state: var(--border-animation-play-state, running);
+  box-shadow: 0 0 16px -2px var(--border-glow, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+}
+
+.dark[data-theme="custom"] .ui-card {
+  box-shadow: 0 0 20px -2px var(--border-glow, rgba(56, 189, 248, 0.25));
+}
+
+[data-theme="custom"] input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+[data-theme="custom"] select,
+[data-theme="custom"] textarea,
+[data-theme="custom"] .ui-input {
+  border-width: 2px !important;
+  border-color: var(--border-ui) !important;
+}
+
+[data-theme="custom"] .ui-subtle {
+  border-width: 2px !important;
+  border-color: var(--border-subtle) !important;
+}
+
+[data-theme="custom"] .tsumiki-btn,
+[data-theme="custom"] button.border {
+  border-width: 2px !important;
 }
 
 .gdvn-swatch-rgb {

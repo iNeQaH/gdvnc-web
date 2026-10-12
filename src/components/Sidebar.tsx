@@ -110,7 +110,10 @@ export const Sidebar = () => {
       document.body.style.backgroundPosition = "center";
       document.body.style.backgroundAttachment = "fixed";
     } else {
-      document.body.style.backgroundImage = "none";
+      document.body.style.removeProperty('background-image');
+      document.body.style.removeProperty('background-size');
+      document.body.style.removeProperty('background-position');
+      document.body.style.removeProperty('background-attachment');
     }
 
     if (u) {

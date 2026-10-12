@@ -273,7 +273,7 @@ function SubmitForm() {
                 __html: sanitizeFaqHtml(
                   currentSubmitNoteHtml ||
                     (tab === 'CREATOR'
-                      ? `<div class="font-bold ui-title mb-1">Lưu ý khi nộp tác phẩm (Creator):</div><ul class="list-disc list-inside space-y-0.5"><li>Tác phẩm nộp phải do chính bạn hoặc nhóm tác giả tạo ra.</li><li>Điền chính xác ID màn chơi (GD Level ID) nếu level đã công bố trên GD.</li><li>Điền các thông tin lưu ý cần thiết cho BQT để tiện theo dõi và kiểm duyệt.</li></ul>`
+                      ? `<div class="font-bold ui-title mb-1">${t('submit.creator_guidelines_title')}</div><ul class="list-disc list-inside space-y-0.5"><li>${t('submit.creator_guidelines_1')}</li><li>${t('submit.creator_guidelines_2')}</li><li>${t('submit.creator_guidelines_3')}</li></ul>`
                       : `<div class="font-bold ui-title mb-1">${t('submit.guidelines_title')}</div><ul class="list-disc list-inside space-y-0.5"><li>${t('submit.guidelines_1')}</li><li>${t('submit.guidelines_2')}</li><li>${t('submit.guidelines_3')}</li></ul>`)
                 ),
               }}
@@ -286,8 +286,8 @@ function SubmitForm() {
                 setNoteDraft(
                   currentSubmitNoteHtml ||
                     (tab === 'CREATOR'
-                      ? `<div class="font-bold ui-title mb-1">Lưu ý khi nộp tác phẩm (Creator):</div><ul class="list-disc list-inside space-y-0.5"><li>Tác phẩm nộp phải do chính bạn hoặc nhóm tác giả tạo ra.</li><li>Điền chính xác ID màn chơi (GD Level ID) nếu level đã công bố trên GD.</li><li>Điền các thông tin lưu ý cần thiết cho BQT để tiện theo dõi và kiểm duyệt.</li></ul>`
-                      : `<div class="font-bold ui-title mb-1">Lưu ý khi nộp kỷ lục:</div><ul class="list-disc list-inside space-y-0.5"><li>Video hoàn thành phải có tiếng clicks (micro) rõ ràng hoặc raw footage chưa cắt.</li><li>Điền chính xác tần số quét màn hình (Hz) và FPS (Physics Bypass).</li><li>Nếu dùng CBF thì để FPS là 0</li></ul>`)
+                      ? `<div class="font-bold ui-title mb-1">${t('submit.creator_guidelines_title')}</div><ul class="list-disc list-inside space-y-0.5"><li>${t('submit.creator_guidelines_1')}</li><li>${t('submit.creator_guidelines_2')}</li><li>${t('submit.creator_guidelines_3')}</li></ul>`
+                      : `<div class="font-bold ui-title mb-1">${t('submit.guidelines_title')}</div><ul class="list-disc list-inside space-y-0.5"><li>${t('submit.guidelines_1')}</li><li>${t('submit.guidelines_2')}</li><li>${t('submit.guidelines_3')}</li></ul>`)
                 );
                 setIsEditingNote(true);
               }}
@@ -295,7 +295,7 @@ function SubmitForm() {
               style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
             >
               <Pencil className="w-3.5 h-3.5" />
-              Sửa Note ({tab})
+              {t('submit.edit_note_btn', { tab })}
             </button>
           )}
         </div>
@@ -303,8 +303,8 @@ function SubmitForm() {
         {isEditingNote && isAdmin && (
           <div className="p-4 rounded-xl border space-y-3" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}>
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold ui-title">Sửa nội dung Note (HTML)</h3>
-              <span className="text-[10px] ui-dim">Hỗ trợ HTML và embed (iframe)</span>
+              <h3 className="text-xs font-bold ui-title">{t('submit.edit_note_title')}</h3>
+              <span className="text-[10px] ui-dim">{t('submit.edit_note_hint')}</span>
             </div>
             <textarea
               value={noteDraft}
@@ -341,22 +341,22 @@ function SubmitForm() {
             <CheckCircle className="w-6 h-6" />
           </div>
           <div className="space-y-1">
-            <h2 className="text-base font-bold ui-title">Đã Gửi Thành Công</h2>
-            <p className="text-xs ui-dim">Yêu cầu của bạn đã được gửi cho Ban Quản Trị xét duyệt.</p>
+            <h2 className="text-base font-bold ui-title">{t('submit.success_title')}</h2>
+            <p className="text-xs ui-dim">{t('submit.sent_success_desc')}</p>
           </div>
           <div className="pt-2 flex flex-col sm:flex-row gap-2 justify-center">
             <button 
               onClick={() => setSuccess(false)}
               className="px-4 py-2 rounded-xl text-xs font-bold bg-sky-500/10 text-sky-500 hover:bg-sky-500/20 transition-colors"
             >
-              Nộp thêm
+              {t('submit.submit_more')}
             </button>
             <button 
               onClick={() => router.push('/')}
               className="px-4 py-2 rounded-xl text-xs font-bold border transition-colors hover:opacity-80 ui-border"
               style={{ color: 'var(--text-title)' }}
             >
-              Về Trang Chủ
+              {t('submit.home')}
             </button>
           </div>
         </div>
@@ -409,24 +409,24 @@ function SubmitForm() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold ui-title">Tên Level *</label>
+                  <label className="text-xs font-bold ui-title">{t('submit.level_name')} *</label>
                   <input
                     type="text"
                     required
                     value={levelName}
                     onChange={(e) => setLevelName(e.target.value)}
-                    placeholder="Tên Level..."
+                    placeholder={t('submit.level_name_ph')}
                     className="w-full px-3 py-2 rounded-xl text-xs ui-input"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold ui-title">Creator *</label>
+                  <label className="text-xs font-bold ui-title">{t('submit.creator')} *</label>
                   <input
                     type="text"
                     required
                     value={creatorName}
                     onChange={(e) => setCreatorName(e.target.value)}
-                    placeholder="Tên Creator..."
+                    placeholder={t('submit.creator_ph')}
                     className="w-full px-3 py-2 rounded-xl text-xs ui-input"
                   />
                 </div>
@@ -541,7 +541,7 @@ function SubmitForm() {
                     rows={2}
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    placeholder="Attempts, timestamps, notes..."
+                    placeholder={t('submit.comment_placeholder')}
                     className="w-full px-3 py-2 rounded-xl text-xs ui-input resize-none"
                   ></textarea>
                 </div>
@@ -555,7 +555,7 @@ function SubmitForm() {
             style={{ backgroundColor: "var(--accent)" }}
           >
             <Send className="w-3.5 h-3.5" />
-            {loading ? t('submit.submitting') : 'Gửi Lên'}
+            {loading ? t('submit.submitting') : t('submit.btn_send')}
           </button>
         </form>
       )}

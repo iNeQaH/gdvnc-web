@@ -103,9 +103,15 @@ export default function ChangeLogTab() {
       month: '2-digit',
       year: 'numeric',
     });
+    const dayBeforeYesterday = new Date(Date.now() - 86400000 * 2).toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
 
-    if (dateStr === today) return 'Hôm nay';
-    if (dateStr === yesterday) return 'Hôm qua';
+    if (dateStr === today) return t('common.today');
+    if (dateStr === yesterday) return t('common.yesterday');
+    if (dateStr === dayBeforeYesterday) return t('common.day_before_yesterday');
     return dateStr;
   };
 
@@ -145,14 +151,14 @@ export default function ChangeLogTab() {
         {/* Counter & Refresh */}
         <div className="flex items-center gap-3 text-xs ui-dim">
           <span>
-            {getSubTabLabel(activeSubTab)}: <strong className="ui-title">{totalLogs}</strong> sự kiện
+            {getSubTabLabel(activeSubTab)}: <strong className="ui-title">{totalLogs}</strong> {t('changelog.events_label')}
           </span>
           <button
             type="button"
             onClick={() => fetchLogs(activeSubTab, page)}
             className="p-1.5 rounded-lg border transition-all hover:opacity-80 cursor-pointer"
             style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
-            title="Làm mới nhật ký"
+            title={t('changelog.refresh')}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -163,7 +169,7 @@ export default function ChangeLogTab() {
       {loading ? (
         <div className="py-20 text-center space-y-3">
           <RefreshCw className="w-6 h-6 animate-spin mx-auto" style={{ color: 'var(--accent)' }} />
-          <p className="text-xs ui-dim">Đang tải nhật ký thay đổi...</p>
+          <p className="text-xs ui-dim">{t('changelog.loading')}</p>
         </div>
       ) : Object.keys(groupedLogs).length === 0 ? (
         <div
@@ -171,9 +177,9 @@ export default function ChangeLogTab() {
           style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
         >
           <Clock className="w-8 h-8 mx-auto ui-dim" />
-          <p className="text-sm font-bold ui-title">Chưa có thay đổi nào cho {getSubTabLabel(activeSubTab)}</p>
+          <p className="text-sm font-bold ui-title">{t('changelog.empty_title', { list: getSubTabLabel(activeSubTab) })}</p>
           <p className="text-xs ui-dim max-w-sm mx-auto">
-            Hệ thống chỉ ghi nhận khi có level mới được thêm vào hoặc level bị đẩy ra khỏi top 150.
+            {t('changelog.empty_desc')}
           </p>
         </div>
       ) : (
@@ -215,7 +221,7 @@ export default function ChangeLogTab() {
                           <div
                             className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs"
                             style={{ backgroundColor: '#22c55e18', color: '#16a34a' }}
-                            title="Thêm Level Mới"
+                            title={t('changelog.level_added')}
                           >
                             <Plus className="w-4 h-4" />
                           </div>
@@ -224,7 +230,7 @@ export default function ChangeLogTab() {
                           <div
                             className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs"
                             style={{ backgroundColor: '#ef444418', color: '#ef4444' }}
-                            title="Đẩy khỏi Top 150"
+                            title={t('changelog.level_removed')}
                           >
                             <ArrowDownRight className="w-4 h-4" />
                           </div>
@@ -255,7 +261,7 @@ export default function ChangeLogTab() {
 
                           {log.eventType === 'LEVEL_REMOVED' && (
                             <span className="px-2 py-0.5 rounded-md text-[11px] font-extrabold tracking-tight bg-red-500/10 text-red-600 dark:text-red-400">
-                              Rớt khỏi Top 150
+                              {t('changelog.dropped_top150')}
                             </span>
                           )}
                         </div>
@@ -267,26 +273,26 @@ export default function ChangeLogTab() {
                               {log.newPlacement === 1 ? (
                                 log.belowLevelName && (
                                   <span>
-                                    Đứng trên <strong className="ui-title">{log.belowLevelName}</strong> (#2)
+                                    {t('changelog.above')} <strong className="ui-title">{log.belowLevelName}</strong> (#2)
                                   </span>
                                 )
                               ) : log.newPlacement === 150 ? (
                                 log.aboveLevelName && (
                                   <span>
-                                    Đứng dưới <strong className="ui-title">{log.aboveLevelName}</strong> (#149)
+                                    {t('changelog.below')} <strong className="ui-title">{log.aboveLevelName}</strong> (#149)
                                   </span>
                                 )
                               ) : (
                                 <>
                                   {log.aboveLevelName && (
                                     <span>
-                                      Đứng dưới <strong className="ui-title">{log.aboveLevelName}</strong> (#{log.newPlacement! - 1})
+                                      {t('changelog.below')} <strong className="ui-title">{log.aboveLevelName}</strong> (#{log.newPlacement! - 1})
                                     </span>
                                   )}
                                   {log.aboveLevelName && log.belowLevelName && <span>•</span>}
                                   {log.belowLevelName && (
                                     <span>
-                                      Đứng trên <strong className="ui-title">{log.belowLevelName}</strong> (#{log.newPlacement! + 1})
+                                      {t('changelog.above')} <strong className="ui-title">{log.belowLevelName}</strong> (#{log.newPlacement! + 1})
                                     </span>
                                   )}
                                 </>
@@ -297,7 +303,7 @@ export default function ChangeLogTab() {
                                 <span className="inline-flex items-center gap-1 font-semibold text-rose-500">
                                   <span>•</span>
                                   <ShieldAlert className="w-3 h-3 inline" />
-                                  Đẩy <strong className="underline">{log.pushedOutLevelName}</strong> khỏi top 150
+                                  {t('changelog.pushed_out', { level: log.pushedOutLevelName })}
                                 </span>
                               )}
                             </>
@@ -307,12 +313,13 @@ export default function ChangeLogTab() {
                             <span>
                               {log.causedByLevelName ? (
                                 <>
-                                  Bị đẩy ra khỏi top 150 bởi level mới{' '}
-                                  <strong className="ui-title">{log.causedByLevelName}</strong>{' '}
-                                  (vào #{log.causedByPlacement})
+                                  {t('changelog.pushed_out_by', {
+                                    level: log.causedByLevelName,
+                                    rank: log.causedByPlacement ?? 0,
+                                  })}
                                 </>
                               ) : (
-                                'Bị đẩy khỏi top 150 do có màn chơi mới lọt vào danh sách.'
+                                t('changelog.pushed_out_by_new')
                               )}
                             </span>
                           )}
@@ -341,11 +348,11 @@ export default function ChangeLogTab() {
                 style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
               >
                 <ChevronLeft className="w-4 h-4" />
-                Trước
+                {t('admin.prev')}
               </button>
 
               <span className="text-xs font-bold ui-dim px-2">
-                Trang {page} / {totalPages}
+                {t('admin.page_of', { n: page, total: totalPages })}
               </span>
 
               <button
@@ -355,7 +362,7 @@ export default function ChangeLogTab() {
                 className="flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
                 style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
               >
-                Sau
+                {t('admin.next')}
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>

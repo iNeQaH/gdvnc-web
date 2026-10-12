@@ -1,7 +1,7 @@
 /**
  * Dynamic Custom Theme Generator based on HSL (Hue, Saturation, Lightness/Brightness)
  * Exclusively for Supporters: Derives all page elements (backgrounds, cards, borders, text, accents)
- * from custom color(s) and gradient angle.
+ * from custom color(s), gradient angle, and dedicated border colors.
  */
 
 export interface HSL {
@@ -59,6 +59,9 @@ export const CUSTOM_THEME_KEYS = [
   '--bg-subtle',
   '--border-ui',
   '--border-subtle',
+  '--border-glow',
+  '--border-gradient-stops',
+  '--border-animation-play-state',
   '--text-title',
   '--text-body',
   '--text-dim',
@@ -73,12 +76,16 @@ export const CUSTOM_THEME_KEYS = [
 export interface CustomThemeStoredConfig {
   colors: string[];
   angle: number;
+  borderColors?: string[];
+  borderAnimation?: boolean;
 }
 
 export function getCustomThemeVars(
   colorsInput: string | string[],
   isDark: boolean,
-  angleInput: number = 135
+  angleInput: number = 135,
+  borderColorsInput?: string | string[],
+  borderAnimation: boolean = true
 ): Record<string, string> {
   const rawList = Array.isArray(colorsInput) ? colorsInput : [colorsInput];
   const cleanColors = rawList
@@ -90,61 +97,99 @@ export function getCustomThemeVars(
   const hslList = colors.map(hexToHsl);
   const primaryHsl = hslList[0];
 
+  // Border colors: if custom border colors provided, use them; otherwise use theme colors
+  const rawBorderList = borderColorsInput
+    ? Array.isArray(borderColorsInput)
+      ? borderColorsInput
+      : [borderColorsInput]
+    : [];
+  const cleanBorderColors = rawBorderList
+    .map((c) => (c ? c.trim() : ''))
+    .filter((c) => /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c));
+
+  const borderColors = cleanBorderColors.length > 0 ? cleanBorderColors : colors;
+  const borderHslList = borderColors.map(hexToHsl);
+  const primaryBorderHsl = borderHslList[0];
+
   if (isDark) {
+    // DARK MODE: Brightened backgrounds and elements so it is not too dark
+    const pageLightness = 16; // Up from 8% to 16% (rich & visible background)
+    const pageSat = 42;
+    const cardLightness = 22; // Up from 13% to 22% (crisp card contrast)
+    const subtleLightness = 18; // Up from 10% to 18%
+
     const pageStops = hslList
-      .map(({ h, s }) => `hsl(${h}, ${Math.round(Math.min(s, 30))}%, 8%)`)
+      .map(({ h, s }) => `hsl(${h}, ${Math.round(Math.min(s, pageSat))}%, ${pageLightness}%)`)
       .join(', ');
     const subtleStops = hslList
-      .map(({ h, s }) => `hsl(${h}, ${Math.round(Math.min(s, 24))}%, 10%)`)
+      .map(({ h, s }) => `hsl(${h}, ${Math.round(Math.min(s, 35))}%, ${subtleLightness}%)`)
       .join(', ');
     const accentBgStops = hslList
-      .map(({ h, s }) => `hsl(${h}, ${Math.round(Math.min(s, 60))}%, 22%)`)
+      .map(({ h, s }) => `hsl(${h}, ${Math.round(Math.min(s, 60))}%, 28%)`)
       .join(', ');
 
     const bgPage =
       colors.length > 1
         ? `linear-gradient(${angle}deg, ${pageStops})`
-        : `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 30))}%, 8%)`;
+        : `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, pageSat))}%, ${pageLightness}%)`;
 
     const bgSubtle =
       colors.length > 1
         ? `linear-gradient(${angle}deg, ${subtleStops})`
-        : `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 24))}%, 10%)`;
+        : `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 35))}%, ${subtleLightness}%)`;
 
     const accentBg =
       colors.length > 1
         ? `linear-gradient(${angle}deg, ${accentBgStops})`
-        : `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 60))}%, 22%)`;
+        : `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 60))}%, 28%)`;
 
     const accentGradient =
       colors.length > 1
         ? `linear-gradient(${angle}deg, ${colors.join(', ')})`
-        : `hsl(${primaryHsl.h}, ${primaryHsl.s}%, ${Math.max(52, primaryHsl.l)}%)`;
+        : `hsl(${primaryHsl.h}, ${primaryHsl.s}%, ${Math.max(56, primaryHsl.l)}%)`;
+
+    // Border in Dark Mode: Thick, luminous, bright and glowing!
+    const borderUiColor = `hsl(${primaryBorderHsl.h}, ${Math.round(Math.max(primaryBorderHsl.s, 75))}%, 68%)`;
+    const borderSubtleColor = `hsl(${primaryBorderHsl.h}, ${Math.round(Math.max(primaryBorderHsl.s, 60))}%, 52%)`;
+    const borderGlow = `hsla(${primaryBorderHsl.h}, ${primaryBorderHsl.s}%, 65%, 0.35)`;
+
+    // Conic gradient stops for rotating border:
+    const borderStops =
+      borderColors.length > 1
+        ? `${borderColors.join(', ')}, ${borderColors[0]}`
+        : `hsl(${primaryBorderHsl.h}, 85%, 72%), hsl(${primaryBorderHsl.h}, 65%, 48%), hsl(${primaryBorderHsl.h}, 85%, 72%)`;
 
     return {
       '--bg-page': bgPage,
-      '--bg-card': `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 22))}%, 13%)`,
+      '--bg-card': `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 30))}%, ${cardLightness}%)`,
       '--bg-subtle': bgSubtle,
-      '--border-ui': `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 25))}%, 24%)`,
-      '--border-subtle': `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 20))}%, 18%)`,
-      '--text-title': `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 15))}%, 96%)`,
-      '--text-body': `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 15))}%, 85%)`,
-      '--text-dim': `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 15))}%, 62%)`,
-      '--accent': `hsl(${primaryHsl.h}, ${primaryHsl.s}%, ${Math.max(52, primaryHsl.l)}%)`,
-      '--accent-hover': `hsl(${primaryHsl.h}, ${primaryHsl.s}%, ${Math.max(42, primaryHsl.l - 8)}%)`,
+      '--border-ui': borderUiColor,
+      '--border-subtle': borderSubtleColor,
+      '--border-glow': borderGlow,
+      '--border-gradient-stops': borderStops,
+      '--border-animation-play-state': borderAnimation ? 'running' : 'paused',
+      '--text-title': `hsl(${primaryHsl.h}, 20%, 98%)`,
+      '--text-body': `hsl(${primaryHsl.h}, 20%, 90%)`,
+      '--text-dim': `hsl(${primaryHsl.h}, 20%, 70%)`,
+      '--accent': `hsl(${primaryHsl.h}, ${primaryHsl.s}%, ${Math.max(56, primaryHsl.l)}%)`,
+      '--accent-hover': `hsl(${primaryHsl.h}, ${primaryHsl.s}%, ${Math.max(46, primaryHsl.l - 8)}%)`,
       '--accent-bg': accentBg,
-      '--accent-text': `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 40))}%, 92%)`,
+      '--accent-text': `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 40))}%, 94%)`,
       '--accent-fg': '#ffffff',
       '--accent-gradient': accentGradient,
     };
   }
 
-  // Light mode
+  // LIGHT MODE:
+  // Background gradient at 90-91% lightness so it is clearly colorful & distinct, NOT washed out white!
+  const pageLightness = 91;
+  const pageSat = 40;
+
   const pageStops = hslList
-    .map(({ h, s }) => `hsl(${h}, ${Math.round(Math.min(s, 25))}%, 96%)`)
+    .map(({ h, s }) => `hsl(${h}, ${Math.round(Math.min(s, pageSat))}%, ${pageLightness}%)`)
     .join(', ');
   const subtleStops = hslList
-    .map(({ h, s }) => `hsl(${h}, ${Math.round(Math.min(s, 22))}%, 97%)`)
+    .map(({ h, s }) => `hsl(${h}, ${Math.round(Math.min(s, 32))}%, 94%)`)
     .join(', ');
   const accentBgStops = hslList
     .map(({ h, s }) => `hsl(${h}, ${Math.round(Math.min(s, 45))}%, 93%)`)
@@ -153,12 +198,12 @@ export function getCustomThemeVars(
   const bgPage =
     colors.length > 1
       ? `linear-gradient(${angle}deg, ${pageStops})`
-      : `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 25))}%, 96%)`;
+      : `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, pageSat))}%, ${pageLightness}%)`;
 
   const bgSubtle =
     colors.length > 1
       ? `linear-gradient(${angle}deg, ${subtleStops})`
-      : `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 22))}%, 97%)`;
+      : `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 32))}%, 94%)`;
 
   const accentBg =
     colors.length > 1
@@ -170,15 +215,28 @@ export function getCustomThemeVars(
       ? `linear-gradient(${angle}deg, ${colors.join(', ')})`
       : `hsl(${primaryHsl.h}, ${primaryHsl.s}%, ${primaryHsl.l}%)`;
 
+  // Border in Light Mode: Darker, bolder contrast against light backgrounds!
+  const borderUiColor = `hsl(${primaryBorderHsl.h}, ${Math.round(Math.max(primaryBorderHsl.s, 70))}%, 26%)`;
+  const borderSubtleColor = `hsl(${primaryBorderHsl.h}, ${Math.round(Math.max(primaryBorderHsl.s, 50))}%, 40%)`;
+  const borderGlow = `hsla(${primaryBorderHsl.h}, ${primaryBorderHsl.s}%, 20%, 0.12)`;
+
+  const borderStops =
+    borderColors.length > 1
+      ? `${borderColors.join(', ')}, ${borderColors[0]}`
+      : `hsl(${primaryBorderHsl.h}, 75%, 22%), hsl(${primaryBorderHsl.h}, 60%, 42%), hsl(${primaryBorderHsl.h}, 75%, 22%)`;
+
   return {
     '--bg-page': bgPage,
     '--bg-card': '#ffffff',
     '--bg-subtle': bgSubtle,
-    '--border-ui': `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 28))}%, 82%)`,
-    '--border-subtle': `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 20))}%, 91%)`,
-    '--text-title': `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 40))}%, 12%)`,
-    '--text-body': `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 30))}%, 26%)`,
-    '--text-dim': `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 20))}%, 48%)`,
+    '--border-ui': borderUiColor,
+    '--border-subtle': borderSubtleColor,
+    '--border-glow': borderGlow,
+    '--border-gradient-stops': borderStops,
+    '--border-animation-play-state': borderAnimation ? 'running' : 'paused',
+    '--text-title': `hsl(${primaryHsl.h}, 45%, 12%)`,
+    '--text-body': `hsl(${primaryHsl.h}, 35%, 24%)`,
+    '--text-dim': `hsl(${primaryHsl.h}, 25%, 45%)`,
     '--accent': `hsl(${primaryHsl.h}, ${primaryHsl.s}%, ${primaryHsl.l}%)`,
     '--accent-hover': `hsl(${primaryHsl.h}, ${primaryHsl.s}%, ${Math.max(10, primaryHsl.l - 8)}%)`,
     '--accent-bg': accentBg,
@@ -195,6 +253,9 @@ export function applyCustomThemeVars(
 ): void {
   let colors: string[] = ['#0ea5e9'];
   let angle = 135;
+  let borderColors: string[] | undefined = undefined;
+  let borderAnimation = true;
+
   if (typeof config === 'string') {
     colors = [config];
   } else if (Array.isArray(config)) {
@@ -202,8 +263,12 @@ export function applyCustomThemeVars(
   } else if (config && typeof config === 'object') {
     colors = config.colors || ['#0ea5e9'];
     angle = typeof config.angle === 'number' ? config.angle : 135;
+    borderColors =
+      Array.isArray(config.borderColors) && config.borderColors.length > 0 ? config.borderColors : undefined;
+    borderAnimation = config.borderAnimation !== undefined ? Boolean(config.borderAnimation) : true;
   }
-  const vars = getCustomThemeVars(colors, isDark, angle);
+
+  const vars = getCustomThemeVars(colors, isDark, angle, borderColors, borderAnimation);
   for (const [key, val] of Object.entries(vars)) {
     root.style.setProperty(key, val);
   }
@@ -216,18 +281,22 @@ export function removeCustomThemeVars(root: HTMLElement): void {
 }
 
 export function getStoredCustomThemeConfig(): CustomThemeStoredConfig {
-  if (typeof window === 'undefined') return { colors: ['#0ea5e9'], angle: 135 };
+  if (typeof window === 'undefined') return { colors: ['#0ea5e9'], angle: 135, borderAnimation: true };
   const override = (window as any).__profileOverride;
   if (override?.customThemeColors && Array.isArray(override.customThemeColors) && override.customThemeColors.length > 0) {
     return {
       colors: override.customThemeColors,
       angle: typeof override.customThemeAngle === 'number' ? override.customThemeAngle : 135,
+      borderColors: override.customBorderColors,
+      borderAnimation: override.customBorderAnimation !== undefined ? Boolean(override.customBorderAnimation) : true,
     };
   }
   if (override?.customThemeColor) {
     return {
       colors: [override.customThemeColor],
       angle: 135,
+      borderColors: override.customBorderColors,
+      borderAnimation: override.customBorderAnimation !== undefined ? Boolean(override.customBorderAnimation) : true,
     };
   }
   try {
@@ -239,17 +308,21 @@ export function getStoredCustomThemeConfig(): CustomThemeStoredConfig {
         return {
           colors: cfg.customThemeColors,
           angle: typeof cfg.customThemeAngle === 'number' ? cfg.customThemeAngle : 135,
+          borderColors: cfg.customBorderColors,
+          borderAnimation: cfg.customBorderAnimation !== undefined ? Boolean(cfg.customBorderAnimation) : true,
         };
       }
       if (cfg?.customThemeColor) {
         return {
           colors: [cfg.customThemeColor],
           angle: 135,
+          borderColors: cfg.customBorderColors,
+          borderAnimation: cfg.customBorderAnimation !== undefined ? Boolean(cfg.customBorderAnimation) : true,
         };
       }
     }
   } catch {}
-  return { colors: ['#0ea5e9'], angle: 135 };
+  return { colors: ['#0ea5e9'], angle: 135, borderAnimation: true };
 }
 
 export function getStoredCustomThemeColor(): string {
