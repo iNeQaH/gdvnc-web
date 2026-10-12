@@ -18,6 +18,8 @@ import {
   Trash2,
   Copy,
   Check,
+  HardDrive,
+  Download,
 } from 'lucide-react';
 import BadgeIcon, { IconGlyph } from '@/components/BadgeIcon';
 import { useLanguage } from '@/components/LanguageContext';
@@ -243,12 +245,59 @@ export default function LevelsTab({
     setTimeout(() => setCopiedCodeId(null), 2000);
   };
 
+  // Backup state
+  const [backupStats, setBackupStats] = useState<{
+    usersCount: number;
+    levelsCount: number;
+    recordsCount: number;
+    dbSizeEst: string;
+    mediaSize: string;
+    mediaFilesCount: number;
+  } | null>(null);
+  const [loadingBackupStats, setLoadingBackupStats] = useState(false);
+  const [downloadingBackup, setDownloadingBackup] = useState(false);
+
+  const fetchBackupStats = async () => {
+    if (!isSuperAdmin) return;
+    try {
+      setLoadingBackupStats(true);
+      const res = await fetch('/api/admin/backup');
+      const data = await res.json();
+      if (data.success && data.stats) {
+        setBackupStats(data.stats);
+      }
+    } catch (e) {
+      console.error('Failed to load backup stats', e);
+    } finally {
+      setLoadingBackupStats(false);
+    }
+  };
+
+  const handleDownloadBackup = () => {
+    if (!isSuperAdmin) return;
+    setDownloadingBackup(true);
+    showToast('Đang đóng gói và tải xuống bản sao lưu toàn hệ thống...', 'info');
+    const link = document.createElement('a');
+    link.href = '/api/admin/backup?action=download';
+    link.download = `gdvn_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.tar.gz`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => {
+      setDownloadingBackup(false);
+      showToast('Đã bắt đầu tải file sao lưu về máy!', 'success');
+    }, 2500);
+  };
+
   useEffect(() => {
     fetchBadges();
     fetchBadgeCategories();
     fetchSiteLock();
     fetchRedeemCodes();
-  }, []);
+    if (isSuperAdmin) {
+      fetchBackupStats();
+    }
+  }, [isSuperAdmin]);
 
   const fetchSiteLock = async () => {
     try {
@@ -1163,6 +1212,86 @@ export default function LevelsTab({
           </div>
         </div>
       </FnSection>
+
+      {isSuperAdmin && (
+        <FnSection
+          title="Sao lưu hệ thống (System Backup)"
+          icon={<HardDrive className="w-4 h-4 text-emerald-400" />}
+          desc="Tải về bản sao lưu toàn bộ cơ sở dữ liệu PostgreSQL và toàn bộ ảnh/media tải lên của người dùng."
+        >
+          <div className="space-y-4">
+            <div className="p-3.5 rounded-2xl bg-black/5 dark:bg-white/5 border border-dashed border-[var(--border-subtle)] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold ui-title flex items-center gap-1.5">
+                  <HardDrive className="w-3.5 h-3.5 text-emerald-500" />
+                  Trạng thái dữ liệu hệ thống:
+                </span>
+                <button
+                  type="button"
+                  onClick={fetchBackupStats}
+                  disabled={loadingBackupStats}
+                  className="text-[11px] text-[var(--accent)] hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <RefreshCw className={`w-3 h-3 ${loadingBackupStats ? 'animate-spin' : ''}`} />
+                  Cập nhật
+                </button>
+              </div>
+
+              {loadingBackupStats ? (
+                <div className="text-xs ui-dim py-2 text-center animate-pulse">Đang kiểm tra dung lượng dữ liệu...</div>
+              ) : backupStats ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-center">
+                  <div className="p-2 rounded-xl bg-black/5 dark:bg-white/5">
+                    <div className="text-xs ui-dim">Người dùng</div>
+                    <div className="text-sm font-bold ui-title">{backupStats.usersCount.toLocaleString()}</div>
+                  </div>
+                  <div className="p-2 rounded-xl bg-black/5 dark:bg-white/5">
+                    <div className="text-xs ui-dim">Màn chơi (Levels)</div>
+                    <div className="text-sm font-bold ui-title">{backupStats.levelsCount.toLocaleString()}</div>
+                  </div>
+                  <div className="p-2 rounded-xl bg-black/5 dark:bg-white/5">
+                    <div className="text-xs ui-dim">Kỷ lục (Records)</div>
+                    <div className="text-sm font-bold ui-title">{backupStats.recordsCount.toLocaleString()}</div>
+                  </div>
+                  <div className="p-2 rounded-xl bg-black/5 dark:bg-white/5">
+                    <div className="text-xs ui-dim">Media & DB</div>
+                    <div className="text-sm font-bold text-emerald-500">{backupStats.mediaSize} ({backupStats.mediaFilesCount} files)</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-xs ui-dim py-1">Nhấn &quot;Cập nhật&quot; để xem chi tiết thống kê dung lượng.</div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <button
+                type="button"
+                disabled={downloadingBackup}
+                onClick={handleDownloadBackup}
+                className="w-full px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <Download className={`w-4 h-4 ${downloadingBackup ? 'animate-bounce' : ''}`} />
+                {downloadingBackup ? 'Đang chuẩn bị và tải xuống...' : 'Tải về toàn bộ dữ liệu (.tar.gz) ngay'}
+              </button>
+              <p className="text-[11px] ui-dim opacity-75 text-center">
+                Bao gồm: PostgreSQL Dump nén gzip + toàn bộ thư mục user-data (avatars, banners, media).
+              </p>
+            </div>
+
+            <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs space-y-1">
+              <div className="font-bold text-blue-400">💡 Sao lưu tự động & Tải qua dòng lệnh:</div>
+              <ul className="list-disc list-inside space-y-0.5 text-[11px] opacity-85">
+                <li>
+                  Tải trực tiếp về máy tính bằng Python script: <code className="px-1 py-0.5 rounded bg-black/20 font-mono">python backup.py</code> (lưu vào thư mục <code className="px-1 py-0.5 rounded bg-black/20 font-mono">backups/</code>).
+                </li>
+                <li>
+                  Cron job tự động sao lưu lúc 02:00 hàng ngày trên VPS và đồng bộ sang Google Drive qua rclone.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </FnSection>
+      )}
 
       <FnSection title={t('admin.lock_title')} icon={<Lock className="w-4 h-4" />} desc={t('admin.lock_desc')} danger>
         <button
