@@ -274,7 +274,7 @@ export const Sidebar = () => {
 
       {/* Sidebar (Desktop Fixed & Mobile Slide-in Drawer) */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-64 flex flex-col justify-between p-4 overflow-y-auto overflow-x-hidden border-r transition-transform duration-200 ease-in-out md:translate-x-0 ${currentUser?.profileConfig?.backgroundUrl ? "backdrop-blur-xl " : ""}${
+        className={`fixed top-0 bottom-0 left-0 z-50 w-64 flex flex-col justify-between p-4 overflow-y-auto overflow-x-hidden border-r backdrop-blur-xl transition-transform duration-200 ease-in-out md:translate-x-0 ${
           isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'
         }`}
         style={{

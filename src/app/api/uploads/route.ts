@@ -13,8 +13,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const limited = rateLimit(`uploads:${auth.userId}`, 10, 10 * 60_000);
-  if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
+  const isStaff = auth.role === 'ADMIN' || auth.role === 'MODERATOR';
+  const uploadLimit = isStaff ? 80 : 40;
+  const limited = rateLimit(`uploads:${auth.userId}`, uploadLimit, 2 * 60_000);
+  if (!limited.ok) {
+    return rateLimitResponse(
+      limited.retryAfterSec,
+      'Bạn đã tải ảnh lên quá số lần cho phép'
+    );
+  }
 
   try {
     const formData = await req.formData();

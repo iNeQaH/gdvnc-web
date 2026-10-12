@@ -17,8 +17,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const limited = rateLimit(`images:${auth.userId}`, 20, 60_000);
-  if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
+  const isStaff = auth.role === 'ADMIN' || auth.role === 'MODERATOR';
+  const imgLimit = isStaff ? 80 : 50;
+  const limited = rateLimit(`images:${auth.userId}`, imgLimit, 60_000);
+  if (!limited.ok) {
+    return rateLimitResponse(
+      limited.retryAfterSec,
+      'Bạn đã đổi ảnh quá nhiều lần'
+    );
+  }
 
   try {
     const { dataUrl, kind } = await req.json();

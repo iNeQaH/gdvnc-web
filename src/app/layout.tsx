@@ -64,7 +64,13 @@ export default function RootLayout({
                       {children}
                     </main>
 
-                    <footer className="border-t py-4 text-center text-xs tracking-widest font-black ui-dim" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <footer 
+                      className="border-t py-4 text-center text-xs tracking-widest font-black ui-dim backdrop-blur-xl transition-colors" 
+                      style={{ 
+                        backgroundColor: 'color-mix(in srgb, var(--bg-card) 70%, transparent)',
+                        borderColor: 'var(--border-subtle)',
+                      }}
+                    >
                       GDVN
                     </footer>
                   </div>

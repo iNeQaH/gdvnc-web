@@ -41,9 +41,23 @@ export function rateLimit(
   return { ok: true, retryAfterSec: Math.ceil((existing.resetAt - now) / 1000) };
 }
 
-export function rateLimitResponse(retryAfterSec: number) {
+export function rateLimitResponse(retryAfterSec: number, customMessage?: string) {
+  const waitDuration =
+    retryAfterSec >= 60
+      ? `${Math.ceil(retryAfterSec / 60)} phút (${retryAfterSec} giây)`
+      : `${retryAfterSec} giây`;
+
+  const error = customMessage
+    ? `${customMessage}. Vui lòng thử lại sau ${waitDuration}.`
+    : `Thao tác quá thường xuyên. Vui lòng thử lại sau ${waitDuration}.`;
+
   return Response.json(
-    { error: 'Too many requests. Please wait and try again.' },
+    {
+      error,
+      retryAfterSec,
+      retryAfter: retryAfterSec,
+      message: error,
+    },
     { status: 429, headers: { 'Retry-After': String(retryAfterSec) } }
   );
 }
