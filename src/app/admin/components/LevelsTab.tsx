@@ -888,7 +888,7 @@ export default function LevelsTab({
 
       {/* Redeem Code Management */}
       <FnSection
-        title="Quản Lý Redeem Code (Supporter)"
+        title="Quản Lý Mã Đổi Thưởng Supporter"
         icon={<Gift className="w-4 h-4 text-pink-500" />}
         desc="Tạo mã đổi thưởng tuỳ chỉnh quy đổi ra tháng sử dụng Supporter"
       >

@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   applyCustomThemeVars,
   removeCustomThemeVars,
-  getStoredCustomThemeColor,
+  getStoredCustomThemeConfig,
 } from '@/lib/customTheme';
 
 export type ThemeType = 'sky' | 'mint' | 'peach' | 'lavender' | 'mono' | 'sakura' | 'custom';
@@ -132,8 +132,8 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     const updateCustomTheme = () => {
-      const color = getStoredCustomThemeColor();
-      applyCustomThemeVars(root, color, resolvedMode === 'dark');
+      const config = getStoredCustomThemeConfig();
+      applyCustomThemeVars(root, config, resolvedMode === 'dark');
     };
 
     updateCustomTheme();

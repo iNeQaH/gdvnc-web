@@ -87,14 +87,26 @@ export const ThemeSwitcher = ({ dropUp = false }: { dropUp?: boolean }) => {
     { id: 'system', label: t('theme.system'), icon: Monitor },
   ];
 
-  const THEMES: { id: ThemeType; label: string; icon: typeof Sun; color: string; customColor?: string }[] = [
-    { id: 'sky', label: 'Sky (Default)', icon: Cloud, color: 'bg-sky-500' },
+  const customColors = currentUser?.profileConfig?.customThemeColors;
+  const customAngle = currentUser?.profileConfig?.customThemeAngle ?? 135;
+  const customGradient = Array.isArray(customColors) && customColors.length > 1
+    ? `linear-gradient(${customAngle}deg, ${customColors.join(', ')})`
+    : undefined;
+
+  const THEMES: { id: ThemeType; label: string; icon: typeof Sun; color: string; customColor?: string; customStyle?: React.CSSProperties }[] = [
+    { id: 'sky', label: t('theme.sky') || 'Sky', icon: Cloud, color: 'bg-sky-500' },
     { id: 'mint', label: t('theme.mint'), icon: Rainbow, color: 'gdvn-swatch-rgb' },
-    
     { id: 'lavender', label: 'iNeQaH', icon: Sparkles, color: 'bg-purple-500' },
     { id: 'sakura', label: t('theme.sakura'), icon: Flower2, color: 'bg-pink-400' },
     { id: 'mono', label: 'Mono', icon: Palette, color: 'bg-zinc-500' },
-    { id: 'custom', label: 'Custom', icon: Blend, color: '', customColor: currentUser?.profileConfig?.customThemeColor || '#0ea5e9' },
+    {
+      id: 'custom',
+      label: t('theme.custom') || 'Custom',
+      icon: Blend,
+      color: '',
+      customColor: currentUser?.profileConfig?.customThemeColor || '#0ea5e9',
+      customStyle: customGradient ? { background: customGradient } : undefined,
+    },
   ];
 
   const currentTheme = THEMES.find((item) => item.id === theme) || THEMES[0];
@@ -205,7 +217,7 @@ export const ThemeSwitcher = ({ dropUp = false }: { dropUp?: boolean }) => {
                   }}
                 >
                   <div className="flex items-center gap-2">
-                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${item.color}`} style={item.customColor ? { backgroundColor: item.customColor } : undefined}></span>
+                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${item.color}`} style={item.customStyle || (item.customColor ? { backgroundColor: item.customColor } : undefined)}></span>
                     <TIcon className="w-3.5 h-3.5" />
                     <span className={isSelected ? 'font-bold' : 'font-medium'}>{item.label}</span>
                       {['lavender', 'mint', 'custom'].includes(item.id) && !canUseLavender && <Lock className="w-3 h-3 ml-1 opacity-50" />}
