@@ -87,6 +87,115 @@ function mapLevelFaces<T extends DbLevelRow>(levels: T[]) {
   });
 }
 
+function removeDiacritics(str: string): string {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+}
+
+function getBigrams(str: string): Set<string> {
+  const s = str.toLowerCase();
+  const bigrams = new Set<string>();
+  for (let i = 0; i < s.length - 1; i++) {
+    bigrams.add(s.slice(i, i + 2));
+  }
+  return bigrams;
+}
+
+function diceCoefficient(a: string, b: string): number {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  if (a.length < 2 || b.length < 2) return 0;
+  const bigramsA = getBigrams(a);
+  const bigramsB = getBigrams(b);
+  let intersection = 0;
+  for (const bg of bigramsA) {
+    if (bigramsB.has(bg)) intersection++;
+  }
+  return (2 * intersection) / (bigramsA.size + bigramsB.size);
+}
+
+function calculateSearchScore(lvl: Record<string, unknown>, rawQ: string): number {
+  const qLower = rawQ.toLowerCase().trim();
+  const qNorm = removeDiacritics(qLower);
+  const qClean = qNorm.replace(/[^a-z0-9]/g, '');
+  const qTokens = qNorm.split(/[^a-z0-9]+/).filter(Boolean);
+
+  const name = String(lvl.name || '');
+  const nameLower = name.toLowerCase().trim();
+  const nameNorm = removeDiacritics(nameLower);
+  const nameClean = nameNorm.replace(/[^a-z0-9]/g, '');
+  const nameWords = nameNorm.split(/[^a-z0-9]+/).filter(Boolean);
+
+  let score = 0;
+
+  // GD Level ID match
+  const qNum = parseInt(qLower, 10);
+  if (Number.isFinite(qNum) && qNum > 0 && (lvl.gdLevelId as number | undefined) === qNum) {
+    score = Math.max(score, 12000);
+  }
+
+  // Exact matches
+  if (nameLower === qLower) {
+    score = Math.max(score, 10000);
+  } else if (nameNorm === qNorm) {
+    score = Math.max(score, 9500);
+  } else if (qClean.length >= 3 && nameClean === qClean) {
+    score = Math.max(score, 9000);
+  }
+
+  // Prefix / Word start
+  if (nameNorm.startsWith(qNorm)) {
+    score = Math.max(score, 7500);
+  } else if (nameWords.some((w) => w.startsWith(qNorm))) {
+    score = Math.max(score, 6500);
+  }
+
+  // Substring matches
+  if (nameNorm.includes(qNorm)) {
+    score = Math.max(score, 5500);
+  } else if (qClean.length >= 3 && nameClean.includes(qClean)) {
+    score = Math.max(score, 5000);
+  }
+
+  // Token matching (e.g. 'ice diablo' matching 'ICE Carbon Diablo X')
+  if (qTokens.length > 1) {
+    let matchedCount = 0;
+    for (const t of qTokens) {
+      if (nameWords.some((w) => w.includes(t)) || nameNorm.includes(t)) {
+        matchedCount++;
+      }
+    }
+    if (matchedCount === qTokens.length) {
+      score = Math.max(score, 4000 + qTokens.length * 200);
+    } else if (matchedCount > 0) {
+      score = Math.max(score, Math.round(2000 * (matchedCount / qTokens.length)));
+    }
+  }
+
+  // Fuzzy similarity (typos, near matches)
+  const dice = diceCoefficient(qClean.length >= 2 ? qClean : qNorm, nameClean.length >= 2 ? nameClean : nameNorm);
+  if (dice >= 0.4) {
+    score = Math.max(score, Math.round(2500 * dice));
+  }
+
+  // Creator name match
+  const creator = String(lvl.creatorName || '').toLowerCase();
+  if (creator.includes(qNorm)) {
+    score = Math.max(score, 1500);
+  }
+
+  if (score === 0) return 0;
+
+  // Secondary tie-breakers (rank & records)
+  let tieBreaker = 0;
+  if ((lvl.classicRank as number | null) != null) tieBreaker += 150;
+  if ((lvl.placement as number | null) != null) tieBreaker += 100;
+  if ((lvl.vnPlacement as number | null) != null) tieBreaker += 100;
+  const victorCount = (lvl.victorCount as number | undefined) || 0;
+  if (victorCount > 0) tieBreaker += Math.min(50, victorCount * 2);
+
+  return score + tieBreaker;
+}
+
 function buildSspWhere(input: {
   challenge: boolean;
   tab: string;
@@ -110,14 +219,15 @@ function buildSspWhere(input: {
   const tierClause = tierFieldWhere(rankField, input.filterTiers);
   if (tierClause) and.push(tierClause);
 
-  if (input.tab === 'classic') {
-    and.push({
-      mode: LevelMode.CLASSIC,
-      isChallenge: false,
-      classicRank: { not: null },
-    });
-  } else if (!input.challenge && !input.searching) {
-    if (input.tab === 'featured') {
+  // When searching, do NOT restrict by tab/rank rules so all matching levels appear regardless of rank
+  if (!input.challenge && !input.searching) {
+    if (input.tab === 'classic') {
+      and.push({
+        mode: LevelMode.CLASSIC,
+        isChallenge: false,
+        classicRank: { not: null },
+      });
+    } else if (input.tab === 'featured') {
       and.push({
         isVN: true,
         isChallenge: false,
@@ -139,11 +249,28 @@ function buildSspWhere(input: {
   }
 
   if (input.searching && input.q) {
-    const qNum = parseInt(input.q, 10);
+    const rawQ = input.q.trim();
+    const unaccentQ = removeDiacritics(rawQ);
+    const spacelessQ = rawQ.replace(/[\s\-_]+/g, '');
+    const tokens = unaccentQ.split(/[\s\-_]+/).filter((w) => w.length >= 2);
+
     const or: Prisma.LevelWhereInput[] = [
-      { name: { contains: input.q, mode: 'insensitive' } },
-      { creatorName: { contains: input.q, mode: 'insensitive' } },
+      { name: { contains: rawQ, mode: 'insensitive' } },
+      { creatorName: { contains: rawQ, mode: 'insensitive' } },
     ];
+    if (unaccentQ !== rawQ) {
+      or.push({ name: { contains: unaccentQ, mode: 'insensitive' } });
+      or.push({ creatorName: { contains: unaccentQ, mode: 'insensitive' } });
+    }
+    if (spacelessQ.length >= 3 && spacelessQ !== rawQ) {
+      or.push({ name: { contains: spacelessQ, mode: 'insensitive' } });
+    }
+    for (const t of tokens) {
+      if (t.length >= 3 && t !== rawQ && t !== unaccentQ) {
+        or.push({ name: { contains: t, mode: 'insensitive' } });
+      }
+    }
+    const qNum = parseInt(rawQ, 10);
     if (Number.isFinite(qNum) && qNum > 0) {
       or.push({ gdLevelId: qNum });
     }
@@ -181,12 +308,36 @@ async function loadSspLevelsPage(searchParams: URLSearchParams) {
     vnRanking,
   });
 
-  const rows = await prisma.level.findMany({
+  let rows = await prisma.level.findMany({
     where,
     select: dbLevelSelect,
   });
 
-  let mapped = mapLevelFaces(rows);
+  // If searching and initial exact/token query yielded 0 results, fallback to searching all candidates
+  // so fuzzy similarity (e.g. typos, near matches) can still discover the levels
+  if (searching && rows.length === 0) {
+    const fallbackWhere: Prisma.LevelWhereInput = {
+      isChallenge: challenge,
+      ...(filterModes.length > 0 ? { mode: { in: filterModes as LevelMode[] } } : {}),
+      ...(filterVN ? { isVN: true } : {}),
+    };
+    rows = await prisma.level.findMany({
+      where: fallbackWhere,
+      select: dbLevelSelect,
+    });
+  }
+
+  let candidates: (DbLevelRow & { _searchScore?: number })[] = rows;
+  if (searching) {
+    candidates = candidates
+      .map((lvl) => {
+        const score = calculateSearchScore(lvl, q);
+        return { ...lvl, _searchScore: score };
+      })
+      .filter((lvl) => (lvl._searchScore ?? 0) > 0);
+  }
+
+  let mapped = mapLevelFaces(candidates);
   mapped = await attachVictorCounts(mapped);
   let enriched = mapped;
 
@@ -199,20 +350,18 @@ async function loadSspLevelsPage(searchParams: URLSearchParams) {
     const face = (lvl.difficultyFace as number | null) ?? 10;
     if (!matchesDifficultyFilter(face, filterFaces)) return false;
 
-    if (!challenge) {
+    if (!challenge && !searching) {
       if (tab === 'classic') {
         if (!(lvl.classicRank as number | null)) return false;
-      } else if (!searching) {
-        if (tab === 'featured') {
-          if (!lvl.isVN) return false;
-          if (!lvl.vnPlacement && !isDemonDifficultyFace(face)) return false;
-        } else if (tab === 'demonlist') {
-          if (lvl.mode !== 'CLASSIC' || !lvl.placement || (lvl.placement as number) > 150) return false;
-        } else if (tab === 'pemonlist') {
-          if (lvl.mode !== 'PLATFORMER' || !lvl.placement || (lvl.placement as number) > 150) return false;
-        } else if (tab === 'vn') {
-          if (!lvl.isVN || lvl.isChallenge) return false;
-        }
+      } else if (tab === 'featured') {
+        if (!lvl.isVN) return false;
+        if (!lvl.vnPlacement && !isDemonDifficultyFace(face)) return false;
+      } else if (tab === 'demonlist') {
+        if (lvl.mode !== 'CLASSIC' || !lvl.placement || (lvl.placement as number) > 150) return false;
+      } else if (tab === 'pemonlist') {
+        if (lvl.mode !== 'PLATFORMER' || !lvl.placement || (lvl.placement as number) > 150) return false;
+      } else if (tab === 'vn') {
+        if (!lvl.isVN || lvl.isChallenge) return false;
       }
     }
 
@@ -226,6 +375,26 @@ async function loadSspLevelsPage(searchParams: URLSearchParams) {
   });
 
   filtered.sort((a: Record<string, unknown>, b: Record<string, unknown>) => {
+    if (searching) {
+      const scoreA = (a._searchScore as number) || 0;
+      const scoreB = (b._searchScore as number) || 0;
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA;
+      }
+      if (classicRanking) {
+        const aRank = (a.classicRank as number | null) ?? 999999;
+        const bRank = (b.classicRank as number | null) ?? 999999;
+        if (aRank !== bRank) return aRank - bRank;
+      }
+      const aPlace = (a.placement as number | null) ?? 999999;
+      const bPlace = (b.placement as number | null) ?? 999999;
+      if (aPlace !== bPlace) return aPlace - bPlace;
+      const aVic = (a.victorCount as number | null) ?? 0;
+      const bVic = (b.victorCount as number | null) ?? 0;
+      if (aVic !== bVic) return bVic - aVic;
+      return String(a.name || '').localeCompare(String(b.name || ''));
+    }
+
     if (!challenge && tab === 'vn') {
       const cpA = (a.creator as { creatorPoints?: number } | null)?.creatorPoints || 0;
       const cpB = (b.creator as { creatorPoints?: number } | null)?.creatorPoints || 0;

@@ -322,14 +322,24 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
         ) : (
           levels.map((lvl, idx) => {
             const listRank = (currentPage - 1) * pageSize + idx + 1;
-            const placement = classicRanking
-              ? (lvl.classicRank ? '#' + lvl.classicRank : '#-')
-              : vnRanking
-                ? (lvl.vnPlacement ? '#' + lvl.vnPlacement : '-')
-                : isChallengeList
-                  ? '#' + (lvl.placement || listRank)
-                  : searching
-                    ? '#' + (lvl.classicRank || lvl.placement || listRank)
+            const placement = searching
+              ? (classicRanking && lvl.classicRank
+                  ? '#' + lvl.classicRank
+                  : vnRanking && lvl.vnPlacement
+                    ? '#' + lvl.vnPlacement
+                    : lvl.classicRank
+                      ? '#' + lvl.classicRank
+                      : lvl.placement
+                        ? '#' + lvl.placement
+                        : lvl.vnPlacement
+                          ? '#' + lvl.vnPlacement
+                          : '#-')
+              : classicRanking
+                ? (lvl.classicRank ? '#' + lvl.classicRank : '#-')
+                : vnRanking
+                  ? (lvl.vnPlacement ? '#' + lvl.vnPlacement : '-')
+                  : isChallengeList
+                    ? '#' + (lvl.placement || listRank)
                     : (lvl.placement ? '#' + lvl.placement : '#' + listRank);
             if (viewMode === 'list') {
               return (
