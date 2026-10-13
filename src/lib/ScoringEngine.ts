@@ -14,6 +14,7 @@ export const RANKED_DECAY = 0.95;
 export const UNRANKED_DECAY = 0.7;
 export const UNRANKED_MAX_COUNT = 15;
 export const MIN_SCORING_DIFFICULTY_FACE = 13;
+export const UNRANKED_MIN_PP = 7;
 export const UNRANKED_INSANE_PP = 8;
 export const UNRANKED_EXTREME_PP = 14;
 
@@ -24,12 +25,12 @@ export function unrankedBonusPp(difficultyFace: number | null | undefined): numb
   const face = difficultyFace ?? 0;
   if (face >= 14) return UNRANKED_EXTREME_PP;
   if (face >= MIN_SCORING_DIFFICULTY_FACE) return UNRANKED_INSANE_PP;
-  return 0;
+  return UNRANKED_MIN_PP;
 }
 
 /**
  * Base PP stored on a level.
- * Ranked placement always wins. Unranked Insane Demon+ get a small bonus.
+ * Ranked placement always wins. Unranked levels get at least UNRANKED_MIN_PP (7).
  */
 export function calculateLevelBasePp(
   placement: number | null | undefined,
@@ -37,13 +38,14 @@ export function calculateLevelBasePp(
   isChallenge = false
 ): number {
   if (placement != null && placement >= 1) return calculateBasePp(placement);
-  if (isChallenge) return 0;
+  if (isChallenge) return UNRANKED_MIN_PP;
   return unrankedBonusPp(difficultyFace);
 }
 
 /**
  * Awards points for a classic record by progress.
  * At minPercent: 10% of basePp. At 100%: full basePp. Linear in between.
+ * Minimum awarded points for a qualifying record is UNRANKED_MIN_PP (7).
  */
 export function awardedPpForProgress(
   progress: number | null | undefined,
@@ -53,10 +55,11 @@ export function awardedPpForProgress(
   const p = progress ?? 0;
   const req = Math.min(100, Math.max(1, minPercent || 100));
   if (p < req) return 0;
-  if (p >= 100 || req >= 100) return Number(basePp.toFixed(2));
+  const effectiveBasePp = Math.max(UNRANKED_MIN_PP, basePp);
+  if (p >= 100 || req >= 100) return Number(effectiveBasePp.toFixed(2));
   const t = (p - req) / (100 - req);
   const ratio = MIN_PROGRESS_SCORE_RATIO + (1 - MIN_PROGRESS_SCORE_RATIO) * t;
-  return Number((basePp * ratio).toFixed(2));
+  return Number(Math.max(UNRANKED_MIN_PP, effectiveBasePp * ratio).toFixed(2));
 }
 
 /**

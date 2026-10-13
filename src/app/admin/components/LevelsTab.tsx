@@ -92,6 +92,7 @@ export default function LevelsTab({
   const [syncingSheet, setSyncingSheet] = useState(false);
   const [refreshingCreators, setRefreshingCreators] = useState(false);
   const [refreshingTimelineCopy, setRefreshingTimelineCopy] = useState(false);
+  const [recalculatingScores, setRecalculatingScores] = useState(false);
 
   // Badges state
   const [badgesList, setBadgesList] = useState<any[]>([]);
@@ -545,6 +546,25 @@ export default function LevelsTab({
     });
   };
 
+  const handleRecalculateScores = () => {
+    showConfirm('Xác nhận tính toán lại điểm hệ thống? Thao tác này sẽ cập nhật điểm Base PP cho tất cả màn chơi (tối thiểu 7 điểm) và tính lại toàn bộ điểm cho người chơi.', async () => {
+      setRecalculatingScores(true);
+      try {
+        const res = await fetch('/api/admin/levels/recalc-scores', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          showToast(data.error || 'Lỗi tính toán lại điểm', 'error');
+          return;
+        }
+        showToast(`Đã cập nhật ${data.levelsUpdated || 0} màn chơi và tính lại điểm cho ${data.usersRecalculated || 0} người chơi!`, 'success');
+      } catch {
+        showToast('Lỗi kết nối máy chủ', 'error');
+      } finally {
+        setRecalculatingScores(false);
+      }
+    });
+  };
+
   const filteredBadges = badgesList
     .filter((b) => {
       const q = badgeSearch.trim().toLowerCase();
@@ -646,11 +666,21 @@ export default function LevelsTab({
             type="button"
             disabled={refreshingTimelineCopy}
             onClick={handleRefreshTimelineCopy}
-            className="px-4 py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 sm:col-span-2"
+            className="px-4 py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
             style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
           >
             <Layers className={`w-3.5 h-3.5 ${refreshingTimelineCopy ? 'animate-spin' : ''}`} />
             {refreshingTimelineCopy ? t('admin.refreshing') : t('admin.refresh_timeline_copy')}
+          </button>
+          <button
+            type="button"
+            disabled={recalculatingScores}
+            onClick={handleRecalculateScores}
+            className="px-4 py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 sm:col-span-2"
+            style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${recalculatingScores ? 'animate-spin' : ''}`} />
+            {recalculatingScores ? 'Đang tính toán lại điểm...' : 'Tính lại điểm hệ thống (Min 7 PP)'}
           </button>
         </div>
       </FnSection>

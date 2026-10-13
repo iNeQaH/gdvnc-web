@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { LevelMode, RecordStatus } from '@prisma/client';
-import { awardedPpForProgress, calculatePlayerPp } from '@/lib/ScoringEngine';
+import { awardedPpForProgress, calculatePlayerPp, UNRANKED_MIN_PP } from '@/lib/ScoringEngine';
 
 export const RECORD_SCORING_LEVEL_SELECT = {
   id: true,
@@ -74,7 +74,7 @@ function collectModeAwardedPp(
     const pp =
       rec.level.mode === LevelMode.PLATFORMER
         ? isQualifyingPlatformerRecord(rec)
-          ? rec.level.basePp
+          ? Math.max(UNRANKED_MIN_PP, rec.level.basePp)
           : 0
         : isQualifyingClassicRecord(rec, rec.level)
           ? awardedPpForProgress(rec.progress, rec.level.minPercent, rec.level.basePp)

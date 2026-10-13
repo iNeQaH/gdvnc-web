@@ -2,7 +2,7 @@ import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { RecordStatus, LevelMode } from '@prisma/client';
-import { awardedPpForProgress, getWeightedPpBreakdown } from '@/lib/ScoringEngine';
+import { awardedPpForProgress, getWeightedPpBreakdown, UNRANKED_MIN_PP } from '@/lib/ScoringEngine';
 import {
   dedupeRecordsByLevel,
   isQualifyingClassicRecord,
