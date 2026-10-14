@@ -13,24 +13,32 @@ const BASE_PP_EXP_K = Math.log(MAX_PP / MIN_PP) / (LIST_SIZE - 1);
 export const RANKED_DECAY = 0.95;
 export const UNRANKED_DECAY = 0.7;
 export const UNRANKED_MAX_COUNT = 15;
-export const MIN_SCORING_DIFFICULTY_FACE = 13;
-export const UNRANKED_MIN_PP = 7;
-export const UNRANKED_INSANE_PP = 8;
-export const UNRANKED_EXTREME_PP = 14;
+export const MIN_SCORING_DIFFICULTY_FACE = 10;
+export const UNRANKED_MIN_PP = 1;
+export const UNRANKED_EASY_DEMON_PP = 3;
+export const UNRANKED_MEDIUM_DEMON_PP = 4;
+export const UNRANKED_HARD_DEMON_PP = 5;
+export const UNRANKED_INSANE_PP = 6;
+export const UNRANKED_EXTREME_PP = 7;
 
 /** Pointercrate: reaching the requirement awards 10% of the level's points. */
 export const MIN_PROGRESS_SCORE_RATIO = 0.1;
 
 export function unrankedBonusPp(difficultyFace: number | null | undefined): number {
   const face = difficultyFace ?? 0;
-  if (face >= 14) return UNRANKED_EXTREME_PP;
-  if (face >= MIN_SCORING_DIFFICULTY_FACE) return UNRANKED_INSANE_PP;
-  return UNRANKED_MIN_PP;
+  if (face >= 14) return UNRANKED_EXTREME_PP; // 7 (Extreme Demon tối thiểu +7)
+  if (face === 13) return UNRANKED_INSANE_PP;  // 6 (Insane Demon +6)
+  if (face === 12) return UNRANKED_HARD_DEMON_PP; // 5 (Hard Demon +5)
+  if (face === 11) return UNRANKED_MEDIUM_DEMON_PP; // 4 (Medium Demon +4)
+  if (face === 10) return UNRANKED_EASY_DEMON_PP; // 3 (Easy Demon +3)
+  if (face >= 8) return 2; // Insane non-demon (8-9 stars)
+  return UNRANKED_MIN_PP; // 1 (các màn khác / unrated)
 }
 
 /**
  * Base PP stored on a level.
- * Ranked placement always wins. Unranked levels get at least UNRANKED_MIN_PP (7).
+ * Ranked placement always wins (placement 1..500 gives 20..400 PP).
+ * Unranked levels scale by difficulty: Extreme 7, Insane 6, Hard 5, Medium 4, Easy 3.
  */
 export function calculateLevelBasePp(
   placement: number | null | undefined,
@@ -38,14 +46,13 @@ export function calculateLevelBasePp(
   isChallenge = false
 ): number {
   if (placement != null && placement >= 1) return calculateBasePp(placement);
-  if (isChallenge) return UNRANKED_MIN_PP;
   return unrankedBonusPp(difficultyFace);
 }
 
 /**
  * Awards points for a classic record by progress.
  * At minPercent: 10% of basePp. At 100%: full basePp. Linear in between.
- * Minimum awarded points for a qualifying record is UNRANKED_MIN_PP (7).
+ * Minimum awarded points for a qualifying record is UNRANKED_MIN_PP (1).
  */
 export function awardedPpForProgress(
   progress: number | null | undefined,

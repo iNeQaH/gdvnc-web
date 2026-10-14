@@ -680,7 +680,7 @@ export default function LevelsTab({
             style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${recalculatingScores ? 'animate-spin' : ''}`} />
-            {recalculatingScores ? 'Đang tính toán lại điểm...' : 'Tính lại điểm hệ thống (Min 7 PP)'}
+            {recalculatingScores ? 'Đang tính toán lại điểm...' : 'Tính lại điểm hệ thống (Extreme 7, Insane 6...)'}
           </button>
         </div>
       </FnSection>
