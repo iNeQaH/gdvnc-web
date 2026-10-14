@@ -9,7 +9,8 @@ import {
   X,
   Play,
   Check,
-  ChevronDown
+  ChevronDown,
+  Heart
 } from 'lucide-react';
 import BadgeIcon from '@/components/BadgeIcon';
 import { useLanguage } from '@/components/LanguageContext';
@@ -420,9 +421,20 @@ const confirmWorkReviews = async () => {
                         )}
                       </Link>
                       <div>
-                        <Link href={`/profile/${work.user.username}`} className="font-bold ui-title text-xs hover:underline" style={{ color: 'var(--accent)' }}>
-                          {work.user.gdUsername || work.user.username}
-                        </Link>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Link href={`/profile/${work.user.username}`} className="font-bold ui-title text-xs hover:underline" style={{ color: 'var(--accent)' }}>
+                            {work.user.gdUsername || work.user.username}
+                          </Link>
+                          {work.user?.supporterUntil && new Date(work.user.supporterUntil) > new Date() && (
+                            <span
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase shrink-0"
+                              style={{ backgroundColor: 'rgba(236, 72, 153, 0.15)', color: '#ec4899', border: '1px solid rgba(236, 72, 153, 0.3)' }}
+                              title="Supporter"
+                            >
+                              <Heart className="w-3 h-3 fill-pink-500 text-pink-500" /> Supporter
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[11px] ui-dim">
                           <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-violet-500/15 text-violet-500 border border-violet-500/25 mr-1.5">Tác phẩm</span>
                           {work.levelName || 'Untitled'} {work.gdLevelId ? `(ID: ${work.gdLevelId})` : ''}
@@ -571,9 +583,20 @@ const confirmWorkReviews = async () => {
                         )}
                       </Link>
                       <div>
-                        <Link href={`/profile/${sub.user?.username}`} className="font-bold ui-title text-xs hover:underline" style={{ color: 'var(--accent)' }}>
-                          {sub.user?.gdUsername || sub.user?.username}
-                        </Link>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Link href={`/profile/${sub.user?.username}`} className="font-bold ui-title text-xs hover:underline" style={{ color: 'var(--accent)' }}>
+                            {sub.user?.gdUsername || sub.user?.username}
+                          </Link>
+                          {sub.user?.supporterUntil && new Date(sub.user.supporterUntil) > new Date() && (
+                            <span
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase shrink-0"
+                              style={{ backgroundColor: 'rgba(236, 72, 153, 0.15)', color: '#ec4899', border: '1px solid rgba(236, 72, 153, 0.3)' }}
+                              title="Supporter"
+                            >
+                              <Heart className="w-3 h-3 fill-pink-500 text-pink-500" /> Supporter
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[11px] ui-dim">
                           <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-sky-500/15 text-sky-500 border border-sky-500/25 mr-1.5">Submit Level</span>
                           GD ID {sub.gdLevelId} · {sub.mode} {sub.placement ? `· #${sub.placement}` : '· Unranked'} {sub.isVN ? `· VN${sub.vnPlacement ? ` #${sub.vnPlacement}` : ''}` : ''}

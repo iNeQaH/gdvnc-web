@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ShieldCheck, UserCheck, X } from 'lucide-react';
+import { ShieldCheck, UserCheck, X, Heart } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import { AdminListPager, UserAvatar } from './SharedUI';
@@ -111,9 +111,20 @@ export default function HelpsTab({
               />
             </Link>
             <div>
-              <Link href={`/profile/${h.user?.username}`} onClick={(e) => e.stopPropagation()} className="text-xs font-bold ui-dim hover:underline">
-                {h.user?.gdUsername || h.user?.username || 'Unknown'}
-              </Link>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Link href={`/profile/${h.user?.username}`} onClick={(e) => e.stopPropagation()} className="text-xs font-bold ui-dim hover:underline">
+                  {h.user?.gdUsername || h.user?.username || 'Unknown'}
+                </Link>
+                {h.user?.supporterUntil && new Date(h.user.supporterUntil) > new Date() && (
+                  <span
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase shrink-0"
+                    style={{ backgroundColor: 'rgba(236, 72, 153, 0.15)', color: '#ec4899', border: '1px solid rgba(236, 72, 153, 0.3)' }}
+                    title="Supporter"
+                  >
+                    <Heart className="w-2.5 h-2.5 fill-pink-500 text-pink-500" /> Supporter
+                  </span>
+                )}
+              </div>
               <h3 className="text-sm font-black truncate max-w-[200px] sm:max-w-md">{h.title}</h3>
             </div>
           </div>
@@ -136,9 +147,20 @@ export default function HelpsTab({
                     className="w-20 h-20 rounded-2xl shadow-md"
                   />
                 </Link>
-                <Link href={`/profile/${selectedHelp.user?.username}`} className="text-sm font-black hover:underline">
-                  {selectedHelp.user?.gdUsername || selectedHelp.user?.username}
-                </Link>
+                <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                  <Link href={`/profile/${selectedHelp.user?.username}`} className="text-sm font-black hover:underline">
+                    {selectedHelp.user?.gdUsername || selectedHelp.user?.username}
+                  </Link>
+                  {selectedHelp.user?.supporterUntil && new Date(selectedHelp.user.supporterUntil) > new Date() && (
+                    <span
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase shrink-0"
+                      style={{ backgroundColor: 'rgba(236, 72, 153, 0.15)', color: '#ec4899', border: '1px solid rgba(236, 72, 153, 0.3)' }}
+                      title="Supporter"
+                    >
+                      <Heart className="w-2.5 h-2.5 fill-pink-500 text-pink-500" /> Supporter
+                    </span>
+                  )}
+                </div>
                 {selectedHelp.user?.id ? (
                   selectedHelp.user.gdVerified ? (
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase text-emerald-600 bg-emerald-500/10">

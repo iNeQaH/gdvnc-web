@@ -43,7 +43,7 @@ export async function GET(req: Request) {
         where: whereClause,
         include: {
           user: {
-            select: { username: true, id: true, avatarUrl: true, gdUsername: true },
+            select: { username: true, id: true, avatarUrl: true, gdUsername: true, supporterUntil: true },
           },
           reviewer: { select: REVIEWER_SELECT },
         },

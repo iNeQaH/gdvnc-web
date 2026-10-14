@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { 
   Search, 
   RefreshCw, 
+  Heart,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
@@ -247,16 +248,27 @@ export default function RecordsTab({
                     </div>
                   )}
                   <div>
-                    {rec.user ? (
-                      <Link href={`/profile/${rec.user.username}`} className="font-bold ui-title text-xs hover:underline" style={{ color: 'var(--accent)' }}>
-                        {rec.user.gdUsername || rec.user.username}
-                      </Link>
-                    ) : (
-                      <div className="font-bold ui-title text-xs">
-                        {rec.legacyPlayerName || t('levelslist.legacy_player')}
-                        <span className="ml-1.5 text-[9px] font-bold uppercase ui-dim">{t('levelslist.unclaimed')}</span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {rec.user ? (
+                        <Link href={`/profile/${rec.user.username}`} className="font-bold ui-title text-xs hover:underline" style={{ color: 'var(--accent)' }}>
+                          {rec.user.gdUsername || rec.user.username}
+                        </Link>
+                      ) : (
+                        <div className="font-bold ui-title text-xs">
+                          {rec.legacyPlayerName || t('levelslist.legacy_player')}
+                          <span className="ml-1.5 text-[9px] font-bold uppercase ui-dim">{t('levelslist.unclaimed')}</span>
+                        </div>
+                      )}
+                      {rec.user?.supporterUntil && new Date(rec.user.supporterUntil) > new Date() && (
+                        <span
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase shrink-0"
+                          style={{ backgroundColor: 'rgba(236, 72, 153, 0.15)', color: '#ec4899', border: '1px solid rgba(236, 72, 153, 0.3)' }}
+                          title="Supporter"
+                        >
+                          <Heart className="w-3 h-3 fill-pink-500 text-pink-500" /> Supporter
+                        </span>
+                      )}
+                    </div>
                     <div className="text-[11px] ui-dim">
                       {t('admin.level_label', { name: rec.level.name, placement: rec.level.placement || '-', mode: rec.level.mode })}
                       <span className="ml-2 font-bold px-1.5 py-0.5 rounded text-[10px]" style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}>

@@ -43,7 +43,7 @@ export async function GET(req: Request) {
       prisma.record.findMany({
         where: whereClause,
         include: {
-          user: { select: { id: true, username: true, gdUsername: true, avatarUrl: true, role: true } },
+          user: { select: { id: true, username: true, gdUsername: true, avatarUrl: true, role: true, supporterUntil: true } },
           level: { include: { _count: { select: { records: { where: { status: 'APPROVED' } } } } } },
           reviewer: { select: REVIEWER_SELECT },
         },

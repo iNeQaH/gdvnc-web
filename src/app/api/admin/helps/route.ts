@@ -22,7 +22,7 @@ export async function GET(req: Request) {
         skip,
         take: ADMIN_LIST_LIMIT,
         include: {
-          user: { select: { id: true, username: true, avatarUrl: true, gdUsername: true, gdVerified: true } },
+          user: { select: { id: true, username: true, avatarUrl: true, gdUsername: true, gdVerified: true, supporterUntil: true } },
         },
       }),
       prisma.helpRequest.count({ where: pending }),

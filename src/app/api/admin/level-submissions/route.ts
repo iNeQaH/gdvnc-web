@@ -61,7 +61,7 @@ export async function GET(req: Request) {
       ? await prisma.levelSubmission.findMany({
           where: { id: { in: pageIds } },
           include: {
-            user: { select: { id: true, username: true, avatarUrl: true, gdUsername: true } },
+            user: { select: { id: true, username: true, avatarUrl: true, gdUsername: true, supporterUntil: true } },
             reviewer: { select: REVIEWER_SELECT },
           },
         })

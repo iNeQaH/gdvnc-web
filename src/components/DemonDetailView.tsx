@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, CheckCircle, Video, Clock, Trash2, Pencil } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Video, Clock, Trash2, Pencil, Heart } from 'lucide-react';
 import LevelTagChips from '@/components/LevelTagChips';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
@@ -224,7 +224,16 @@ export default function DemonDetailView({
                                     {displayName[0]}
                                   </div>
                                 )}
-                                {displayName}
+                                <span>{displayName}</span>
+                                {rec.user?.supporterUntil && new Date(rec.user.supporterUntil) > new Date() && (
+                                  <span
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase shrink-0"
+                                    style={{ backgroundColor: 'rgba(236, 72, 153, 0.15)', color: '#ec4899', border: '1px solid rgba(236, 72, 153, 0.3)' }}
+                                    title="Supporter"
+                                  >
+                                    <Heart className="w-2.5 h-2.5 fill-pink-500 text-pink-500" /> Supporter
+                                  </span>
+                                )}
                               </Link>
                             ) : (
                               <span className="flex items-center gap-2">
