@@ -446,7 +446,7 @@ export const Sidebar = () => {
                   </div>
                   <div className="text-[10px] ui-dim flex items-center gap-1">
                     {currentUser.isSuperAdmin || isSuperAdminUser(currentUser) ? (
-                      <span className="text-rose-500 font-bold flex items-center gap-1"><Crown className="w-3 h-3 text-rose-500 fill-rose-500" /> Super Admin</span>
+                      <span className="text-rose-500 font-bold flex items-center gap-1"><Crown className="w-3 h-3 text-rose-500 fill-rose-500" /> Owner</span>
                     ) : currentUser.role === 'ADMIN' ? (
                       <span className="text-rose-500 font-bold flex items-center gap-1"><Shield className="w-3 h-3 text-rose-500" /> Admin</span>
                     ) : currentUser.role === 'MODERATOR' ? (

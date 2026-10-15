@@ -15,9 +15,19 @@ import {
   LayoutGrid,
   List,
   FolderPlus,
-  Plus
+  Plus,
+  MoreVertical,
+  ExternalLink,
+  Ban,
+  Unlock,
+  Check,
+  RotateCcw,
+  Medal,
+  ShieldAlert,
+  User as UserIcon,
 } from 'lucide-react';
 import BadgeIcon, { IconGlyph } from '@/components/BadgeIcon';
+import BadgePickerModal from '@/components/BadgePickerModal';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import ColorPicker from '@/components/ColorPicker';
@@ -93,6 +103,190 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
   const [givingSupporter, setGivingSupporter] = useState(false);
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // Role privileges
+  const isSuperAdmin = Boolean(currentUser && isSuperAdminUser(currentUser));
+  const isFullAdmin = currentUser?.role === 'ADMIN' || isSuperAdmin;
+  const isStaff = isFullAdmin || currentUser?.role === 'MODERATOR';
+
+  // Context Menu state
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    user: any | null;
+  }>({ visible: false, x: 0, y: 0, user: null });
+
+  // Manage Role & Badges Modal state
+  const [manageRoleTarget, setManageRoleTarget] = useState<any | null>(null);
+  const [selectedRole, setSelectedRole] = useState<'USER' | 'MODERATOR' | 'ADMIN'>('USER');
+  const [supporterMonthsToAdd, setSupporterMonthsToAdd] = useState<string>('0');
+  const [badgesList, setBadgesList] = useState<any[]>([]);
+  const [selectedBadgeIds, setSelectedBadgeIds] = useState<string[]>([]);
+  const [showBadgePicker, setShowBadgePicker] = useState(false);
+  const [savingRoleChanges, setSavingRoleChanges] = useState(false);
+
+  // Reset Password Modal state
+  const [resetPasswordTarget, setResetPasswordTarget] = useState<any | null>(null);
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
+
+  // Ban / Unban Modal state
+  const [banTarget, setBanTarget] = useState<any | null>(null);
+  const [banReason, setBanReason] = useState('');
+  const [banningUser, setBanningUser] = useState(false);
+
+  useEffect(() => {
+    const handleCloseMenu = () => {
+      setContextMenu((prev) => (prev.visible ? { ...prev, visible: false } : prev));
+    };
+    window.addEventListener('click', handleCloseMenu);
+    return () => {
+      window.removeEventListener('click', handleCloseMenu);
+    };
+  }, []);
+
+  const handleOpenContextMenu = (e: React.MouseEvent, user: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const menuWidth = 230;
+    const menuHeight = 300;
+    const x = Math.min(e.clientX, window.innerWidth - menuWidth - 10);
+    const y = Math.min(e.clientY, window.innerHeight - menuHeight - 10);
+    setContextMenu({ visible: true, x: Math.max(10, x), y: Math.max(10, y), user });
+  };
+
+  const handleOpenManageRole = async (user: any) => {
+    setManageRoleTarget(user);
+    setSelectedRole(user.role === 'ADMIN' ? 'ADMIN' : (user.role === 'MODERATOR' ? 'MODERATOR' : 'USER'));
+    setSupporterMonthsToAdd('0');
+    setSavingRoleChanges(false);
+
+    if (badgesList.length === 0) {
+      try {
+        const res = await fetch('/api/admin/badges');
+        const json = await res.json();
+        if (json.success && Array.isArray(json.badges)) {
+          setBadgesList(json.badges);
+        }
+      } catch (err) {}
+    }
+
+    try {
+      const res = await fetch(`/api/profile/${user.username}`);
+      const json = await res.json();
+      if (json.success && json.user?.badges) {
+        setSelectedBadgeIds(json.user.badges.map((b: any) => b.id));
+      } else {
+        setSelectedBadgeIds([]);
+      }
+    } catch {
+      setSelectedBadgeIds([]);
+    }
+  };
+
+  const handleSaveManageRole = async () => {
+    if (!manageRoleTarget) return;
+    setSavingRoleChanges(true);
+    try {
+      const roleChanged = selectedRole !== manageRoleTarget.role;
+      const monthsToAdd = parseInt(supporterMonthsToAdd, 10);
+      if (roleChanged || monthsToAdd > 0) {
+        const payload: any = {};
+        if (roleChanged) payload.newRole = selectedRole;
+        if (monthsToAdd > 0) payload.grantSupporterMonths = monthsToAdd;
+        const resRole = await fetch(`/api/admin/users/${manageRoleTarget.id}/role`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const jsonRole = await resRole.json();
+        if (!resRole.ok || !jsonRole.success) {
+          showToast(jsonRole.error || 'Cập nhật quyền thất bại', 'error');
+          setSavingRoleChanges(false);
+          return;
+        }
+      }
+
+      const resBadges = await fetch(`/api/admin/users/${manageRoleTarget.id}/badges`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ badgeIds: selectedBadgeIds }),
+      });
+      const jsonBadges = await resBadges.json();
+      if (!resBadges.ok || !jsonBadges.success) {
+        showToast(jsonBadges.error || 'Cập nhật huy hiệu thất bại', 'error');
+        setSavingRoleChanges(false);
+        return;
+      }
+
+      showToast(`Đã cập nhật role và huy hiệu cho ${manageRoleTarget.username}`, 'success');
+      setManageRoleTarget(null);
+      fetchUsers(userQuery);
+    } catch {
+      showToast('Có lỗi xảy ra khi lưu', 'error');
+    } finally {
+      setSavingRoleChanges(false);
+    }
+  };
+
+  const handleConfirmResetPassword = async () => {
+    if (!resetPasswordTarget) return;
+    if (newPasswordInput.trim().length < 6) {
+      showToast('Mật khẩu mới phải có tối thiểu 6 ký tự.', 'error');
+      return;
+    }
+    setResettingPassword(true);
+    try {
+      const res = await fetch(`/api/admin/users/${resetPasswordTarget.id}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword: newPasswordInput.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        showToast(json.error || 'Đổi mật khẩu thất bại.', 'error');
+        return;
+      }
+      showToast(`Đã reset mật khẩu cho ${resetPasswordTarget.username}`, 'success');
+      setResetPasswordTarget(null);
+      setNewPasswordInput('');
+    } catch {
+      showToast('Lỗi hệ thống khi reset mật khẩu.', 'error');
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
+  const handleConfirmBanToggle = async () => {
+    if (!banTarget) return;
+    const action = banTarget.isBanned ? 'unban' : 'ban';
+    if (action === 'ban' && !banReason.trim()) {
+      showToast('Vui lòng nhập lý do khoá tài khoản.', 'error');
+      return;
+    }
+    setBanningUser(true);
+    try {
+      const res = await fetch(`/api/admin/users/${banTarget.id}/ban`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, reason: banReason.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        showToast(json.error || 'Thao tác thất bại.', 'error');
+        return;
+      }
+      showToast(action === 'ban' ? `Đã khoá tài khoản ${banTarget.username}` : `Đã mở khoá tài khoản ${banTarget.username}`, 'success');
+      setBanTarget(null);
+      setBanReason('');
+      fetchUsers(userQuery);
+    } catch {
+      showToast('Lỗi hệ thống khi khoá/mở tài khoản.', 'error');
+    } finally {
+      setBanningUser(false);
+    }
+  };
 
   const fetchUsers = async (q: string, role = roleFilter) => {
     setLoadingUsers(true);
@@ -331,6 +525,7 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
                         role="link"
                         tabIndex={0}
                         onClick={() => router.push(`/profile/${user.username}`)}
+                        onContextMenu={(e) => handleOpenContextMenu(e, user)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
@@ -349,13 +544,18 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
                               </div>
                             )}
                             <span className="font-bold ui-title truncate">{user.username}</span>
+                            {user.isBanned && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-red-500/15 text-red-500 border border-red-500/20 shrink-0">
+                                <Ban className="w-2.5 h-2.5" /> Banned
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {isTargetSuper ? (
                               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
-                                <Crown className="w-3 h-3 text-rose-500 fill-rose-500" /> Super Admin
+                                <Crown className="w-3 h-3 text-rose-500 fill-rose-500" /> Owner
                               </span>
                             ) : user.role === 'ADMIN' ? (
                               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'var(--badge-red-bg)', color: 'var(--badge-red-text)' }}>
@@ -414,7 +614,7 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
                           {user.classicPp.toFixed(1)}
                           <span className="text-[10px] font-normal ui-dim ml-1">Pts</span>
                         </td>
-                        <td className="px-5 py-3.5 text-right flex justify-end gap-1">
+                        <td className="px-5 py-3.5 text-right flex justify-end gap-1 items-center">
                           {currentUser?.role === 'ADMIN' && (
                             <button
                               type="button"
@@ -447,6 +647,14 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
                               <Trash2 className="w-4 h-4" />
                             </button>
                           )}
+                          <button
+                            type="button"
+                            title="Tuỳ chọn quản lý (hoặc bấm chuột phải)"
+                            onClick={(e) => handleOpenContextMenu(e, user)}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-zinc-800 transition-all cursor-pointer inline-flex items-center"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
                         </td>
                       </tr>
                     );
@@ -639,6 +847,522 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Right-click / Action Context Menu */}
+      {contextMenu.visible && contextMenu.user && (
+        <div
+          className="fixed z-[999999] rounded-2xl border shadow-2xl p-1.5 min-w-[210px] space-y-1 animate-in fade-in zoom-in-95"
+          style={{
+            top: contextMenu.y,
+            left: contextMenu.x,
+            backgroundColor: 'var(--bg-card)',
+            borderColor: 'var(--border-ui)',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="px-3 py-1.5 border-b mb-1 flex items-center justify-between" style={{ borderColor: 'var(--border-subtle)' }}>
+            <span className="text-[11px] font-bold ui-title truncate max-w-[140px]">
+              {contextMenu.user.username}
+            </span>
+            {contextMenu.user.isBanned && (
+              <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-red-500/15 text-red-500">
+                Banned
+              </span>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              const u = contextMenu.user.username;
+              setContextMenu((prev) => ({ ...prev, visible: false }));
+              router.push(`/profile/${u}`);
+            }}
+            className="w-full flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold ui-title hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
+          >
+            <ExternalLink className="w-3.5 h-3.5 ui-dim" /> Xem trang cá nhân
+          </button>
+
+          {isStaff && (
+            <button
+              type="button"
+              onClick={() => {
+                const u = contextMenu.user;
+                setContextMenu((prev) => ({ ...prev, visible: false }));
+                handleOpenManageRole(u);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold text-amber-500 hover:bg-amber-500/10 transition-colors text-left cursor-pointer"
+            >
+              <ShieldAlert className="w-3.5 h-3.5" /> Quản lý Role & Huy hiệu
+            </button>
+          )}
+
+          {isFullAdmin && (
+            <button
+              type="button"
+              onClick={() => {
+                const u = contextMenu.user;
+                setContextMenu((prev) => ({ ...prev, visible: false }));
+                setSupporterTarget({ id: u.id, username: u.username });
+                setSupporterMonths('1');
+                setIsSupporterModalOpen(true);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold text-pink-500 hover:bg-pink-500/10 transition-colors text-left cursor-pointer"
+            >
+              <Heart className="w-3.5 h-3.5" /> Cấp quyền Supporter
+            </button>
+          )}
+
+          {!contextMenu.user.gdVerified && (
+            <button
+              type="button"
+              onClick={() => {
+                const u = contextMenu.user;
+                setContextMenu((prev) => ({ ...prev, visible: false }));
+                verifyUser(u.id, u.username);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold text-emerald-500 hover:bg-emerald-500/10 transition-colors text-left cursor-pointer"
+            >
+              <UserCheck className="w-3.5 h-3.5" /> Xác minh GD
+            </button>
+          )}
+
+          {isSuperAdmin && (
+            <button
+              type="button"
+              onClick={() => {
+                const u = contextMenu.user;
+                setContextMenu((prev) => ({ ...prev, visible: false }));
+                setResetPasswordTarget(u);
+                setNewPasswordInput('');
+              }}
+              className="w-full flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold text-yellow-500 hover:bg-yellow-500/10 transition-colors text-left cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" /> Reset mật khẩu
+            </button>
+          )}
+
+          {isFullAdmin && !isSuperAdminUser(contextMenu.user) && contextMenu.user.id !== currentUser?.id && (
+            <button
+              type="button"
+              onClick={() => {
+                const u = contextMenu.user;
+                setContextMenu((prev) => ({ ...prev, visible: false }));
+                setBanTarget(u);
+                setBanReason('');
+              }}
+              className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors text-left cursor-pointer ${
+                contextMenu.user.isBanned
+                  ? 'text-green-500 hover:bg-green-500/10'
+                  : 'text-orange-500 hover:bg-orange-500/10'
+              }`}
+            >
+              {contextMenu.user.isBanned ? (
+                <>
+                  <Unlock className="w-3.5 h-3.5" /> Mở khoá tài khoản
+                </>
+              ) : (
+                <>
+                  <Ban className="w-3.5 h-3.5" /> Khoá tài khoản
+                </>
+              )}
+            </button>
+          )}
+
+          {isFullAdmin && !isSuperAdminUser(contextMenu.user) && contextMenu.user.id !== currentUser?.id && (
+            <button
+              type="button"
+              onClick={() => {
+                const u = contextMenu.user;
+                setContextMenu((prev) => ({ ...prev, visible: false }));
+                setDeleteUserTarget({ id: u.id, username: u.username });
+                setDeleteUserReason('');
+                setIsDeleteUserModalOpen(true);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold text-red-500 hover:bg-red-500/10 transition-colors text-left cursor-pointer border-t pt-1.5"
+              style={{ borderColor: 'var(--border-subtle)' }}
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Xoá tài khoản
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Manage Role & Badges Modal */}
+      {manageRoleTarget && (
+        <div
+          className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => {
+            if (!savingRoleChanges) setManageRoleTarget(null);
+          }}
+        >
+          <div
+            className="w-full max-w-lg rounded-3xl border shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 pb-3 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div className="flex items-center gap-3">
+                {manageRoleTarget.avatarUrl ? (
+                  <img src={manageRoleTarget.avatarUrl} alt="" className="w-11 h-11 rounded-2xl object-cover" />
+                ) : (
+                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-sm text-[color:var(--accent-fg)]" style={{ backgroundColor: 'var(--accent)' }}>
+                    {manageRoleTarget.username[0]}
+                  </div>
+                )}
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <h2 className="font-extrabold text-base ui-title">
+                      {manageRoleTarget.username}
+                    </h2>
+                    {manageRoleTarget.supporterUntil && new Date(manageRoleTarget.supporterUntil) > new Date() && (
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase" style={{ backgroundColor: 'var(--badge-green-bg)', color: 'var(--badge-green-text)' }}>
+                        Supporter
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[11px] ui-dim flex items-center gap-2">
+                    <span>Role hiện tại: <strong>{manageRoleTarget.role}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setManageRoleTarget(null)}
+                className="p-1.5 rounded-xl border hover:opacity-80 transition-colors cursor-pointer"
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Section 1: Role Selection (For Full Admin) */}
+            {isFullAdmin && (
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider ui-dim flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-sky-500" />
+                  Phân vai trò (Role)
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'USER', label: 'User', desc: 'Thành viên thường' },
+                    { id: 'MODERATOR', label: 'Moderator', desc: 'Kiểm duyệt viên' },
+                    { id: 'ADMIN', label: 'Admin', desc: 'Quản trị viên' },
+                  ].map((r) => {
+                    const isSelected = selectedRole === r.id;
+                    const canSelectAdmin = isSuperAdmin || manageRoleTarget.role === 'ADMIN';
+                    const isDisabled = r.id === 'ADMIN' && !canSelectAdmin;
+
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        disabled={isDisabled}
+                        onClick={() => setSelectedRole(r.id as any)}
+                        className={`p-3 rounded-2xl border text-left transition-all ${
+                          isDisabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:opacity-90'
+                        } ${isSelected ? 'ring-2' : ''}`}
+                        style={{
+                          backgroundColor: isSelected ? 'var(--accent)' : 'var(--bg-subtle)',
+                          borderColor: isSelected ? 'var(--accent)' : 'var(--border-ui)',
+                          color: isSelected ? '#fff' : 'var(--text-title)',
+                        }}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`text-xs ${isSelected ? 'font-black' : 'font-bold'}`}>{r.label}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                        </div>
+                        <div className={`text-[10px] ${isSelected ? 'opacity-90' : 'ui-dim'}`}>{r.desc}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Section 2: Supporter Duration */}
+            {isFullAdmin && (
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider ui-dim flex items-center gap-1.5">
+                  <Heart className="w-3.5 h-3.5 text-pink-500" />
+                  Gia hạn Supporter
+                </label>
+
+                {manageRoleTarget.supporterUntil && new Date(manageRoleTarget.supporterUntil) > new Date() ? (
+                  <div className="p-2.5 rounded-xl border text-[11px] flex items-center justify-between" style={{ backgroundColor: 'var(--badge-green-bg)', color: 'var(--badge-green-text)', borderColor: 'var(--badge-green-text)' }}>
+                    <span>Hạn Supporter hiện tại:</span>
+                    <strong>{new Date(manageRoleTarget.supporterUntil).toLocaleDateString()}</strong>
+                  </div>
+                ) : (
+                  <div className="p-2.5 rounded-xl border text-[11px] ui-dim" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                    Chưa có hạn Supporter
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-1">
+                  {[
+                    { val: '0', label: 'Giữ nguyên' },
+                    { val: '1', label: '+1 tháng' },
+                    { val: '3', label: '+3 tháng' },
+                    { val: '6', label: '+6 tháng' },
+                    { val: '12', label: '+1 năm' },
+                  ].map((item) => (
+                    <button
+                      key={item.val}
+                      type="button"
+                      onClick={() => setSupporterMonthsToAdd(item.val)}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
+                        supporterMonthsToAdd === item.val ? 'ring-2' : 'hover:opacity-80'
+                      }`}
+                      style={{
+                        backgroundColor: supporterMonthsToAdd === item.val ? 'var(--accent)' : 'var(--bg-subtle)',
+                        borderColor: supporterMonthsToAdd === item.val ? 'var(--accent)' : 'var(--border-ui)',
+                        color: supporterMonthsToAdd === item.val ? '#fff' : 'var(--text-title)',
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Section 3: Badges */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider ui-dim flex items-center gap-1.5">
+                <Medal className="w-3.5 h-3.5 text-amber-500" />
+                Huy hiệu người dùng ({selectedBadgeIds.length})
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowBadgePicker(true)}
+                className="w-full p-3 rounded-2xl border text-left hover:opacity-90 cursor-pointer transition-colors"
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+              >
+                <div className="text-xs font-bold ui-title">Chọn huy hiệu được cấp</div>
+                <div className="text-[11px] ui-dim mt-0.5">
+                  {selectedBadgeIds.length === 0
+                    ? 'Chưa chọn huy hiệu nào. Bấm để mở danh sách.'
+                    : `Đã chọn ${selectedBadgeIds.length} huy hiệu`}
+                </div>
+                {selectedBadgeIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {badgesList.filter((b: any) => selectedBadgeIds.includes(b.id)).map((b: any) => (
+                      <BadgeIcon
+                        key={b.id}
+                        icon={b.icon || 'Star'}
+                        color={b.color}
+                        glow={b.glowColor}
+                        className="w-5 h-5"
+                        title={b.name}
+                      />
+                    ))}
+                  </div>
+                )}
+              </button>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="pt-3 border-t flex items-center justify-end gap-2" style={{ borderColor: 'var(--border-subtle)' }}>
+              <button
+                type="button"
+                onClick={() => setManageRoleTarget(null)}
+                className="px-4 py-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer"
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                disabled={savingRoleChanges}
+                onClick={handleSaveManageRole}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                style={{ backgroundColor: 'var(--accent)' }}
+              >
+                {savingRoleChanges ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Đang lưu...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5" /> Lưu thay đổi
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {resetPasswordTarget && (
+        <div
+          className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => {
+            if (!resettingPassword) setResetPasswordTarget(null);
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl border shadow-2xl p-6 space-y-4"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+              <h3 className="font-extrabold text-sm sm:text-base ui-title text-amber-500 flex items-center gap-2">
+                <RotateCcw className="w-5 h-5" />
+                Reset mật khẩu: {resetPasswordTarget.username}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setResetPasswordTarget(null)}
+                className="p-1 rounded-xl border ui-dim cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-500 leading-relaxed font-semibold">
+              Với quyền Owner, bạn có thể thiết lập trực tiếp mật khẩu mới cho tài khoản này. Sau khi đổi, phiên đăng nhập hiện tại của người dùng sẽ bị thu hồi.
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold ui-title">Mật khẩu mới (tối thiểu 6 ký tự):</label>
+              <input
+                type="text"
+                value={newPasswordInput}
+                onChange={(e) => setNewPasswordInput(e.target.value)}
+                placeholder="Nhập mật khẩu mới..."
+                className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                autoFocus
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+              <button
+                type="button"
+                disabled={resettingPassword}
+                onClick={() => setResetPasswordTarget(null)}
+                className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border cursor-pointer"
+                style={{ borderColor: 'var(--border-ui)' }}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={resettingPassword || newPasswordInput.trim().length < 6}
+                onClick={handleConfirmResetPassword}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 transition-colors disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+              >
+                {resettingPassword ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Đang cập nhật...
+                  </>
+                ) : (
+                  'Xác nhận đổi mật khẩu'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ban / Unban Modal */}
+      {banTarget && (
+        <div
+          className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => {
+            if (!banningUser) setBanTarget(null);
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl border shadow-2xl p-6 space-y-4"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+              <h3 className={`font-extrabold text-sm sm:text-base flex items-center gap-2 ${banTarget.isBanned ? 'text-green-500' : 'text-red-500'}`}>
+                {banTarget.isBanned ? <Unlock className="w-5 h-5" /> : <Ban className="w-5 h-5" />}
+                {banTarget.isBanned ? `Mở khoá tài khoản: ${banTarget.username}` : `Khoá tài khoản: ${banTarget.username}`}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setBanTarget(null)}
+                className="p-1 rounded-xl border ui-dim cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs ui-dim leading-relaxed">
+              {banTarget.isBanned
+                ? `Bạn có chắc chắn muốn mở khoá tài khoản cho ${banTarget.username}? Người dùng sẽ có thể đăng nhập và gửi kỷ lục trở lại bình thường.`
+                : `Khi bị khoá, người dùng ${banTarget.username} sẽ bị đăng xuất ngay lập tức và không thể truy cập các tính năng của tài khoản.`}
+            </p>
+
+            {!banTarget.isBanned && (
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold ui-title">Lý do khoá tài khoản:</label>
+                <textarea
+                  value={banReason}
+                  onChange={(e) => setBanReason(e.target.value)}
+                  placeholder="Nhập lý do khoá tài khoản..."
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  autoFocus
+                />
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+              <button
+                type="button"
+                disabled={banningUser}
+                onClick={() => setBanTarget(null)}
+                className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border cursor-pointer"
+                style={{ borderColor: 'var(--border-ui)' }}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={banningUser || (!banTarget.isBanned && !banReason.trim())}
+                onClick={handleConfirmBanToggle}
+                className={`px-4 py-2 rounded-xl text-xs font-bold text-white transition-colors disabled:opacity-50 cursor-pointer flex items-center gap-1.5 ${
+                  banTarget.isBanned ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+                }`}
+              >
+                {banningUser ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Đang xử lý...
+                  </>
+                ) : banTarget.isBanned ? (
+                  'Xác nhận mở khoá'
+                ) : (
+                  'Xác nhận khoá tài khoản'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Badge Picker Modal */}
+      {showBadgePicker && (
+        <BadgePickerModal
+          isOpen
+          onClose={() => setShowBadgePicker(false)}
+          badges={badgesList}
+          selectedIds={selectedBadgeIds}
+          onConfirm={(ids) => {
+            setSelectedBadgeIds(ids);
+            setShowBadgePicker(false);
+          }}
+        />
       )}
     </>
   );

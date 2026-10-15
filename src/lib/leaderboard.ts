@@ -57,7 +57,7 @@ function buildLeaderboardRoles(player: { id?: string | null; username?: string |
   if (isSuperAdmin) {
     roles.push({
       id: 'role-super-admin',
-      name: 'Super Admin',
+      name: 'Owner',
       icon: 'Crown',
       bgColor: 'rgba(239, 68, 68, 0.2)',
       color: '#ef4444',

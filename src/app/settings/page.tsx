@@ -42,6 +42,7 @@ export default function SettingsPage() {
   const [gdUsername, setGdUsername] = useState('');
   const [discordTag, setDiscordTag] = useState('');
   const [country, setCountry] = useState('');
+  const [bio, setBio] = useState('');
   const [savingInfo, setSavingInfo] = useState(false);
 
   // Supporter custom theme colors, angle & border customization
@@ -101,6 +102,7 @@ export default function SettingsPage() {
         setGdUsername(json.user.gdUsername || '');
         setDiscordTag(json.user.discordTag || '');
         setCountry(json.user.country || '');
+        setBio(json.user.bio || '');
 
         const cfg = json.user.profileConfig || {};
         const initColors =
@@ -192,7 +194,7 @@ export default function SettingsPage() {
       const res = await fetch(`/api/profile/${currentUser.username}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gdUsername, discordTag, country }),
+        body: JSON.stringify({ gdUsername, discordTag, country, bio }),
       });
       if (res.ok) showToast(t('settings.save_info_success'), 'success');
       else showToast(t('settings.save_info_error'), 'error');
@@ -462,6 +464,19 @@ export default function SettingsPage() {
                     onChange={(e) => setCountry(e.target.value)}
                     className="flex-1 px-3 py-1.5 rounded-lg text-sm border focus:ring-1 focus:ring-sky-500"
                     style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-[11px] font-bold ui-dim">{t('profile.bio') || 'Tiểu sử'}</label>
+                <div className="mt-1">
+                  <textarea
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder="Viết gì đó về bản thân..."
+                    rows={3}
+                    className="w-full px-3 py-2 rounded-lg text-sm border focus:ring-1 focus:ring-sky-500 resize-y"
+                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                   />
                 </div>
               </div>

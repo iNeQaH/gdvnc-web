@@ -660,15 +660,17 @@ export default function ProfilePage() {
   }> = [];
 
   if (isTargetSuperAdmin) {
-    roleBadges.push({
-      id: 'role-super-admin',
-      name: 'Super Admin',
-      description: 'Super Administrator',
-      icon: 'Crown',
-      color: '#ef4444',
-      glowColor: '#ef4444',
-      sortOrder: 10000,
-    });
+    if (isStaff || isSuperAdmin) {
+      roleBadges.push({
+        id: 'role-super-admin',
+        name: 'Owner',
+        description: 'Website Owner',
+        icon: 'Crown',
+        color: '#ef4444',
+        glowColor: '#ef4444',
+        sortOrder: 10000,
+      });
+    }
   } else if (data.role === 'ADMIN') {
     roleBadges.push({
       id: 'role-admin',
@@ -820,44 +822,10 @@ export default function ProfilePage() {
 
             {/* BIO */}
             <div className="pt-2 px-2">
-              <div className="text-xs font-bold ui-dim mb-1 flex items-center justify-between">
-                <span>{t('profile.bio') || 'TIỂU SỬ'}</span>
-                <div className="flex items-center gap-2">
-                  {canEditInfo && (
-                    <button 
-                      onClick={() => setShowThemeModal(true)} 
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${
-                        isLavender ? 'tsumiki-btn text-white' : 'hover:bg-slate-100 dark:hover:bg-zinc-800'
-                      }`}
-                      style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
-                      title="Đổi theme hiển thị của profile"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                      Giao diện: {data.profileTheme === 'lavender' ? 'iNeQaH' : (data.profileTheme === 'sakura' ? 'Sakura' : (data.profileTheme === 'mint' ? 'Mint' : (data.profileTheme === 'mono' ? 'Mono' : 'Sky')))}
-                    </button>
-                  )}
-                  {isOwner && !isEditingBio && (
-                    <button onClick={() => { setBioInput(data.bio || ''); setIsEditingBio(true); }} className="text-sky-500 hover:opacity-80"><Edit className="w-3.5 h-3.5" /></button>
-                  )}
-                </div>
+              <div className="text-xs font-bold ui-dim mb-1">
+                {t('profile.bio') || 'TIỂU SỬ'}
               </div>
-              {isEditingBio ? (
-                <div className="space-y-2">
-                  <textarea
-                    value={bioInput}
-                    onChange={(e) => setBioInput(e.target.value)}
-                    className="w-full h-24 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900 border text-xs"
-                    style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                    placeholder="Viết gì đó về bản thân..."
-                  />
-                  <div className="flex gap-2">
-                    <button onClick={() => updateProfileField({ bio: bioInput }).then(() => setIsEditingBio(false))} className="tsumiki-btn-green px-4 py-1.5 text-xs font-bold text-white rounded-xl">Lưu</button>
-                    <button onClick={() => setIsEditingBio(false)} className="px-4 py-1.5 text-xs font-bold border rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all">Huỷ</button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-sm ui-title whitespace-pre-wrap">{data.bio || <span className="ui-dim italic">Chưa có tiểu sử.</span>}</div>
-              )}
+              <div className="text-sm ui-title whitespace-pre-wrap">{data.bio || <span className="ui-dim italic">Chưa có tiểu sử.</span>}</div>
             </div>
 
             {/* Socials & Info */}
@@ -927,15 +895,6 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* Admin Controls */}
-            {isStaff && (
-              <div className="pt-4 px-2 border-t flex flex-wrap gap-2" style={{ borderColor: 'var(--border-subtle)' }}>
-                {canEditInfo && <button onClick={handleOpenManageModal} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 transition-all border border-amber-500/20"><ShieldAlert className="w-3.5 h-3.5" /> {t('profile.manage_role_badge')}</button>}
-                {isSuperAdmin && <button onClick={() => setShowResetPasswordModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20 transition-all border border-yellow-500/20"><RefreshCw className="w-3.5 h-3.5" /> {t('profile.reset_password')}</button>}
-                {isSuperAdmin && !data.isBanned && <button onClick={() => setShowBanModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all border border-red-500/20"><Ban className="w-3.5 h-3.5" /> {t('profile.lock_account')}</button>}
-                {isSuperAdmin && data.isBanned && <button onClick={() => handleToggleBan('unban')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-green-500/10 text-green-500 hover:bg-green-500/20 transition-all border border-green-500/20"><Unlock className="w-3.5 h-3.5" /> {t('profile.unlock_account')}</button>}
-              </div>
-            )}
           </div>
         </div>
 
@@ -949,34 +908,49 @@ export default function ProfilePage() {
               <button 
                 type="button"
                 onClick={() => setShowClassicPoints(!showClassicPoints)}
-                className="p-3.5 rounded-2xl flex flex-col items-center text-center shadow-md relative transition-all cursor-pointer active:scale-95 tsumiki-btn-yellow text-white" 
+                className={`p-3.5 rounded-2xl flex flex-col items-center text-center shadow-md relative transition-all cursor-pointer active:scale-95 ${
+                  isLavender
+                    ? 'tsumiki-btn-yellow text-white'
+                    : 'bg-slate-50 dark:bg-zinc-800/50 border hover:opacity-90'
+                }`}
+                style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
               >
-                <Star className="w-5 h-5 mb-1 text-white drop-shadow" />
-                <div className="text-xs font-bold uppercase text-white/90">Classic</div>
-                <div className="text-xl font-black transition-all text-white drop-shadow-sm">
+                <Star className={`w-5 h-5 mb-1 ${isLavender ? 'text-white drop-shadow' : 'text-amber-500'}`} />
+                <div className={`text-xs font-bold uppercase ${isLavender ? 'text-white/90' : 'ui-dim'}`}>Classic</div>
+                <div className={`text-xl font-black transition-all ${isLavender ? 'text-white drop-shadow-sm' : 'text-amber-500'}`}>
                   {showClassicPoints ? (data.classicPp?.toFixed(2) || '0.00') : ((data.classicPp || 0) > 0.005 && data.classicRank ? "#" + data.classicRank : '#-')}
                 </div>
               </button>
               <button 
                 type="button"
                 onClick={() => setShowPlatformerPoints(!showPlatformerPoints)}
-                className="p-3.5 rounded-2xl flex flex-col items-center text-center shadow-md relative transition-all cursor-pointer active:scale-95 tsumiki-btn-blue text-white" 
+                className={`p-3.5 rounded-2xl flex flex-col items-center text-center shadow-md relative transition-all cursor-pointer active:scale-95 ${
+                  isLavender
+                    ? 'tsumiki-btn-blue text-white'
+                    : 'bg-slate-50 dark:bg-zinc-800/50 border hover:opacity-90'
+                }`}
+                style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
               >
-                <Moon className="w-5 h-5 mb-1 text-white drop-shadow" />
-                <div className="text-xs font-bold uppercase text-white/90">Platformer</div>
-                <div className="text-xl font-black transition-all text-white drop-shadow-sm">
+                <Moon className={`w-5 h-5 mb-1 ${isLavender ? 'text-white drop-shadow' : 'text-sky-500'}`} />
+                <div className={`text-xs font-bold uppercase ${isLavender ? 'text-white/90' : 'ui-dim'}`}>Platformer</div>
+                <div className={`text-xl font-black transition-all ${isLavender ? 'text-white drop-shadow-sm' : 'text-sky-500'}`}>
                   {showPlatformerPoints ? (data.platformerPp?.toFixed(2) || '0.00') : ((data.platformerPp || 0) > 0.005 && data.platformerRank ? "#" + data.platformerRank : '#-')}
                 </div>
               </button>
               <button
                 type="button"
                 onClick={() => !isEditingCp && setShowCreatorRank(!showCreatorRank)}
-                className="col-span-2 p-3.5 rounded-2xl flex flex-col items-center text-center shadow-md relative transition-all cursor-pointer active:scale-95 tsumiki-btn-pink-cyan text-white"
+                className={`col-span-2 p-3.5 rounded-2xl flex flex-col items-center text-center shadow-md relative transition-all cursor-pointer active:scale-95 ${
+                  isLavender
+                    ? 'tsumiki-btn-pink-cyan text-white'
+                    : 'bg-slate-50 dark:bg-zinc-800/50 border hover:opacity-90'
+                }`}
+                style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
               >
-                <Hammer className="w-5 h-5 mb-1 text-white drop-shadow" />
-                <div className="text-xs font-bold uppercase text-white/90">Creator Points</div>
+                <Hammer className={`w-5 h-5 mb-1 ${isLavender ? 'text-white drop-shadow' : 'text-pink-500'}`} />
+                <div className={`text-xs font-bold uppercase ${isLavender ? 'text-white/90' : 'ui-dim'}`}>Creator Points</div>
                 
-                <div className="text-xl font-black mt-0.5 flex items-center justify-center gap-2 text-white drop-shadow-sm">
+                <div className={`text-xl font-black mt-0.5 flex items-center justify-center gap-2 ${isLavender ? 'text-white drop-shadow-sm' : 'text-pink-500'}`}>
                   {isFullAdmin && isEditingCp ? (
                     <input
                       type="number"
@@ -997,7 +971,7 @@ export default function ProfilePage() {
                   )}
                 </div>
                 
-                <div className="text-[10px] font-bold mt-1 text-white/80">
+                <div className={`text-[10px] font-bold mt-1 ${isLavender ? 'text-white/80' : 'ui-dim'}`}>
                   {t('profile.created_count', { n: data.createdLevels?.length || 0 })}
                 </div>
 
@@ -1005,7 +979,8 @@ export default function ProfilePage() {
                   <div className="flex items-center justify-center gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={handleResetCp}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border hover:opacity-80 bg-black/20 text-white border-white/20"
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border hover:opacity-80 ${isLavender ? 'bg-black/20 text-white border-white/20' : 'bg-slate-100 dark:bg-zinc-700/50'}`}
+                      style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
                     >
                       <RotateCcw className="w-3 h-3" /> Reset
                     </button>
@@ -1042,7 +1017,7 @@ export default function ProfilePage() {
                     ) : (
                       <button
                         onClick={() => { setCpInput(String(data.creatorPoints ?? 0)); setIsEditingCp(true); }}
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border hover:opacity-80 ${isLavender ? 'bg-black/20 text-white border-white/20' : ''}`}
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border hover:opacity-80 ${isLavender ? 'bg-black/20 text-white border-white/20' : 'bg-slate-100 dark:bg-zinc-700/50'}`}
                         style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
                       >
                         <Pencil className="w-3 h-3" /> {t('common.edit')}

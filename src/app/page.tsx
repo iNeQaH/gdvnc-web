@@ -379,7 +379,9 @@ export default function HomePage() {
                               {/* Top Badges */}
                               {player.topBadges && player.topBadges.length > 0 && (
                                 <div className="flex items-center gap-1 ml-1">
-                                  {player.topBadges.map((ub: any) => (
+                                  {player.topBadges
+                                    .filter((ub: any) => ub.id !== 'role-super-admin' || isStaff)
+                                    .map((ub: any) => (
                                     <div 
                                       key={ub.id}
                                       className="flex items-center justify-center rounded-full"

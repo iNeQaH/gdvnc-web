@@ -98,7 +98,7 @@ export default function AdminClientWrapper({ children, initialUser }: { children
               {t('admin.dashboard')}
             </h1>
             <div className="text-xs ui-dim">
-              {t('admin.account', { name: currentUser.username, role: isSuperAdmin ? 'Super Admin' : currentUser.role })}
+              {t('admin.account', { name: currentUser.username, role: isSuperAdmin ? 'Owner' : currentUser.role })}
             </div>
           </div>
 
