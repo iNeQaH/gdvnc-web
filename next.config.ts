@@ -15,6 +15,7 @@ const scriptSrc = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  serverExternalPackages: ["@prisma/client", "bcryptjs"],
   devIndicators: false,
   async headers() {
     return [
