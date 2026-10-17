@@ -251,8 +251,9 @@ function LeaderboardPodium({
 
 export default function HomePage() {
   const { t } = useLanguage();
-  const { resolvedMode } = useTheme();
+  const { theme, resolvedMode } = useTheme();
   const isDark = resolvedMode === 'dark';
+  const isLavender = theme === 'lavender';
   const { showConfirm, showToast } = useToast();
   const router = useRouter();
   const [mode, setMode] = useState<'CLASSIC' | 'PLATFORMER' | 'CHALLENGE' | 'CREATOR'>('CLASSIC');
@@ -431,13 +432,13 @@ export default function HomePage() {
           </h1>
         </div>
 
-        {/* Quick Stats Cards with staggered 10s slide-up animation and themed click buttons */}
+        {/* Quick Stats Cards with staggered 10s slide-up animation and Tsumiki 3D block style for iNeQaH theme */}
         <div 
           className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2"
           onMouseEnter={() => setIsCardsHovered(true)}
           onMouseLeave={() => setIsCardsHovered(false)}
         >
-          {/* Card 1: Top 1 Classic Demon / Top 1 Player Classic (Màu CAM) */}
+          {/* Card 1: Top 1 Classic Demon / Top 1 Player Classic (Màu CAM / VÀNG) */}
           {(() => {
             const isPlayer = (card1Step % 2) === 1;
             const p = highlights?.topPlayer;
@@ -445,48 +446,50 @@ export default function HomePage() {
             const href = isPlayer
               ? (p?.username ? `/profile/${p.username}` : '#')
               : (lvl ? levelPath(lvl) : '/levels');
+            const hasLink = href && href !== '#';
+
+            const cardClasses = isLavender
+              ? 'tsumiki-card tsumiki-btn-yellow p-3.5 sm:p-4 rounded-2xl relative overflow-hidden transition-all select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between'
+              : 'p-3.5 sm:p-4 rounded-2xl border border-amber-500/35 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-transparent hover:border-amber-500/60 shadow-[0_4px_20px_-4px_rgba(245,158,11,0.2)] hover:shadow-[0_8px_28px_-4px_rgba(245,158,11,0.3)] transition-all relative overflow-hidden group select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between';
+
+            const CardWrapper = hasLink ? Link : 'div';
+            const wrapperProps = hasLink ? { href } : {};
 
             return (
-              <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 hover:border-amber-500/50 hover:bg-amber-500/10 transition-all p-3.5 relative overflow-hidden group">
-                {/* Header: Label + Clickable indicator buttons (Cam) */}
-                <div className="flex items-center justify-between gap-1">
-                  <div className="text-[11px] font-bold uppercase text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                    {isPlayer ? <User className="w-3 h-3" /> : <Star className="w-3 h-3 fill-amber-500" />}
-                    {isPlayer ? t('leaderboard.stats.top_classic_player') : t('leaderboard.stats.top_classic_demon')}
+              <CardWrapper {...(wrapperProps as any)} className={cardClasses}>
+                <div key={`card1-${isPlayer ? 'player' : 'demon'}-${card1Step}`} className="animate-card-slide-up flex flex-col justify-between h-full space-y-1.5">
+                  {/* Header: Label + Icon */}
+                  <div className={`text-[11px] font-extrabold uppercase tracking-wide flex items-center gap-1.5 ${
+                    isLavender 
+                      ? (isDark ? 'text-white/95 drop-shadow-xs' : 'text-amber-950')
+                      : 'text-amber-500 dark:text-amber-400'
+                  }`}>
+                    {isPlayer ? (
+                      <User className={`w-3.5 h-3.5 shrink-0 ${isLavender ? (isDark ? 'text-white' : 'text-amber-950') : 'text-amber-500'}`} />
+                    ) : (
+                      <Star className={`w-3.5 h-3.5 shrink-0 ${isLavender ? (isDark ? 'fill-white text-white' : 'fill-amber-950 text-amber-950') : 'fill-amber-500 text-amber-500'}`} />
+                    )}
+                    <span className="truncate">
+                      {isPlayer ? t('leaderboard.stats.top_classic_player') : t('leaderboard.stats.top_classic_demon')}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCard1Step(0); }}
-                      className={`px-1.5 py-0.5 rounded text-[8px] font-black transition-all cursor-pointer ${
-                        !isPlayer ? 'bg-amber-500 text-white shadow-xs' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30'
-                      }`}
-                      title="Top 1 Classic Demon"
-                    >
-                      Demon
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCard1Step(1); }}
-                      className={`px-1.5 py-0.5 rounded text-[8px] font-black transition-all cursor-pointer ${
-                        isPlayer ? 'bg-amber-500 text-white shadow-xs' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30'
-                      }`}
-                      title="Top 1 Player Classic"
-                    >
-                      Player
-                    </button>
-                  </div>
-                </div>
 
-                {/* Content: Slide up vertically */}
-                <Link href={href} className="block mt-1.5 overflow-hidden">
-                  <div key={`card1-${isPlayer ? 'player' : 'demon'}-${card1Step}`} className="animate-card-slide-up space-y-0.5">
-                    <div className="text-base font-extrabold ui-title truncate">
+                  {/* Body: Name & Points/Creator */}
+                  <div className="space-y-0.5">
+                    <div className={`text-base font-black truncate ${
+                      isLavender
+                        ? (isDark ? 'text-white drop-shadow-sm' : 'text-amber-950')
+                        : 'ui-title group-hover:text-amber-500 transition-colors'
+                    }`}>
                       {isPlayer
                         ? (p?.displayName || p?.gdUsername || p?.username || t('leaderboard.stats.no_data'))
                         : (lvl?.name || t('leaderboard.stats.no_data'))}
                     </div>
-                    <div className="text-[10px] ui-dim truncate">
+                    <div className={`text-[11px] truncate ${
+                      isLavender
+                        ? (isDark ? 'text-white/90 drop-shadow-xs font-semibold' : 'text-amber-900/90 font-semibold')
+                        : 'ui-dim'
+                    }`}>
                       {isPlayer
                         ? (p ? `${Number(p.classicPp || 0).toFixed(2)} ${t('leaderboard.points')}` : '—')
                         : (lvl?.creatorName
@@ -496,8 +499,8 @@ export default function HomePage() {
                               : '—')}
                     </div>
                   </div>
-                </Link>
-              </div>
+                </div>
+              </CardWrapper>
             );
           })()}
 
@@ -509,48 +512,50 @@ export default function HomePage() {
             const href = isPlayer
               ? (p?.username ? `/profile/${p.username}` : '#')
               : (lvl ? levelPath(lvl) : '/levels');
+            const hasLink = href && href !== '#';
+
+            const cardClasses = isLavender
+              ? 'tsumiki-card tsumiki-btn-blue p-3.5 sm:p-4 rounded-2xl relative overflow-hidden transition-all select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between'
+              : 'p-3.5 sm:p-4 rounded-2xl border border-sky-500/35 bg-gradient-to-br from-sky-500/15 via-sky-500/5 to-transparent hover:border-sky-500/60 shadow-[0_4px_20px_-4px_rgba(14,165,233,0.2)] hover:shadow-[0_8px_28px_-4px_rgba(14,165,233,0.3)] transition-all relative overflow-hidden group select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between';
+
+            const CardWrapper = hasLink ? Link : 'div';
+            const wrapperProps = hasLink ? { href } : {};
 
             return (
-              <div className="rounded-xl border border-sky-500/25 bg-sky-500/5 hover:border-sky-500/50 hover:bg-sky-500/10 transition-all p-3.5 relative overflow-hidden group">
-                {/* Header: Label + Clickable indicator buttons (Xanh dương nhạt) */}
-                <div className="flex items-center justify-between gap-1">
-                  <div className="text-[11px] font-bold uppercase text-sky-600 dark:text-sky-400 flex items-center gap-1">
-                    {isPlayer ? <Gamepad2 className="w-3 h-3" /> : <Moon className="w-3 h-3 fill-sky-500 -rotate-12" />}
-                    {isPlayer ? t('leaderboard.stats.top_plat_player') : t('leaderboard.stats.top_plat_demon')}
+              <CardWrapper {...(wrapperProps as any)} className={cardClasses}>
+                <div key={`card2-${isPlayer ? 'player' : 'demon'}-${card2Step}`} className="animate-card-slide-up flex flex-col justify-between h-full space-y-1.5">
+                  {/* Header: Label + Icon */}
+                  <div className={`text-[11px] font-extrabold uppercase tracking-wide flex items-center gap-1.5 ${
+                    isLavender 
+                      ? 'text-white/95 drop-shadow-xs'
+                      : 'text-sky-500 dark:text-sky-400'
+                  }`}>
+                    {isPlayer ? (
+                      <Gamepad2 className={`w-3.5 h-3.5 shrink-0 ${isLavender ? 'text-white' : 'text-sky-500'}`} />
+                    ) : (
+                      <Moon className={`w-3.5 h-3.5 shrink-0 -rotate-12 ${isLavender ? 'fill-white text-white' : 'fill-sky-500 text-sky-500'}`} />
+                    )}
+                    <span className="truncate">
+                      {isPlayer ? t('leaderboard.stats.top_plat_player') : t('leaderboard.stats.top_plat_demon')}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCard2Step(0); }}
-                      className={`px-1.5 py-0.5 rounded text-[8px] font-black transition-all cursor-pointer ${
-                        !isPlayer ? 'bg-sky-500 text-white shadow-xs' : 'bg-sky-500/15 text-sky-600 dark:text-sky-400 hover:bg-sky-500/30'
-                      }`}
-                      title="Top 1 Plat Demon"
-                    >
-                      Demon
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCard2Step(1); }}
-                      className={`px-1.5 py-0.5 rounded text-[8px] font-black transition-all cursor-pointer ${
-                        isPlayer ? 'bg-sky-500 text-white shadow-xs' : 'bg-sky-500/15 text-sky-600 dark:text-sky-400 hover:bg-sky-500/30'
-                      }`}
-                      title="Top 1 Player Plat"
-                    >
-                      Player
-                    </button>
-                  </div>
-                </div>
 
-                {/* Content: Slide up vertically */}
-                <Link href={href} className="block mt-1.5 overflow-hidden">
-                  <div key={`card2-${isPlayer ? 'player' : 'demon'}-${card2Step}`} className="animate-card-slide-up space-y-0.5">
-                    <div className="text-base font-extrabold ui-title truncate">
+                  {/* Body: Name & Points/Creator */}
+                  <div className="space-y-0.5">
+                    <div className={`text-base font-black truncate ${
+                      isLavender
+                        ? 'text-white drop-shadow-sm'
+                        : 'ui-title group-hover:text-sky-500 transition-colors'
+                    }`}>
                       {isPlayer
                         ? (p?.displayName || p?.gdUsername || p?.username || t('leaderboard.stats.no_data'))
                         : (lvl?.name || t('leaderboard.stats.no_data'))}
                     </div>
-                    <div className="text-[10px] ui-dim truncate">
+                    <div className={`text-[11px] truncate ${
+                      isLavender
+                        ? 'text-white/90 drop-shadow-xs font-semibold'
+                        : 'ui-dim'
+                    }`}>
                       {isPlayer
                         ? (p ? `${Number(p.platformerPp || 0).toFixed(2)} ${t('leaderboard.points')}` : '—')
                         : (lvl?.creatorName
@@ -560,8 +565,8 @@ export default function HomePage() {
                               : '—')}
                     </div>
                   </div>
-                </Link>
-              </div>
+                </div>
+              </CardWrapper>
             );
           })()}
 
@@ -571,8 +576,7 @@ export default function HomePage() {
               {
                 id: 0,
                 key: 'clan-classic',
-                label: 'Classic',
-                icon: <Swords className="w-3 h-3 text-emerald-500" />,
+                icon: (cls: string) => <Swords className={`w-3.5 h-3.5 shrink-0 ${cls}`} />,
                 title: t('leaderboard.stats.clan_classic'),
                 data: highlights?.topClans?.classic,
                 formatVal: (val: number) => `${Number(val || 0).toFixed(2)} Classic Pt`,
@@ -580,8 +584,7 @@ export default function HomePage() {
               {
                 id: 1,
                 key: 'clan-platformer',
-                label: 'Plat',
-                icon: <Gamepad2 className="w-3 h-3 text-emerald-500" />,
+                icon: (cls: string) => <Gamepad2 className={`w-3.5 h-3.5 shrink-0 ${cls}`} />,
                 title: t('leaderboard.stats.clan_plat'),
                 data: highlights?.topClans?.platformer,
                 formatVal: (val: number) => `${Number(val || 0).toFixed(2)} Plat Pt`,
@@ -589,8 +592,7 @@ export default function HomePage() {
               {
                 id: 2,
                 key: 'clan-creator',
-                label: 'CP',
-                icon: <Wrench className="w-3 h-3 text-emerald-500" />,
+                icon: (cls: string) => <Wrench className={`w-3.5 h-3.5 shrink-0 ${cls}`} />,
                 title: t('leaderboard.stats.clan_creator'),
                 data: highlights?.topClans?.creator,
                 formatVal: (val: number) => `${formatCp(val || 0)} CP`,
@@ -598,8 +600,7 @@ export default function HomePage() {
               {
                 id: 3,
                 key: 'clan-sp',
-                label: 'SP',
-                icon: <Star className="w-3 h-3 text-emerald-500" />,
+                icon: (cls: string) => <Star className={`w-3.5 h-3.5 shrink-0 fill-current ${cls}`} />,
                 title: t('leaderboard.stats.clan_sp'),
                 data: highlights?.topClans?.sp,
                 formatVal: (val: number) => `${Number(val || 0).toLocaleString()} SP Coin`,
@@ -607,8 +608,7 @@ export default function HomePage() {
               {
                 id: 4,
                 key: 'clan-members',
-                label: 'Mem',
-                icon: <User className="w-3 h-3 text-emerald-500" />,
+                icon: (cls: string) => <User className={`w-3.5 h-3.5 shrink-0 ${cls}`} />,
                 title: t('leaderboard.stats.clan_members'),
                 data: highlights?.topClans?.members,
                 formatVal: (val: number) => t('leaderboard.stats.members_count', { n: val || 0 }),
@@ -619,44 +619,48 @@ export default function HomePage() {
             const current = clanConfigs[clanPhase];
             const clanInfo = current.data?.clan;
             const href = clanInfo?.slug ? `/clan/${clanInfo.slug}` : '/clan';
+            const hasLink = Boolean(clanInfo?.slug);
             const displayName = clanInfo?.name ? `[${clanInfo.tag}] ${clanInfo.name}` : t('leaderboard.stats.no_data');
 
-            return (
-              <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all p-3.5 relative overflow-hidden group">
-                {/* Header: Label + Clickable indicator buttons (Xanh lá) */}
-                <div className="flex items-center justify-between gap-1">
-                  <div className="text-[11px] font-bold uppercase text-emerald-600 dark:text-emerald-400 flex items-center gap-1 truncate">
-                    {current.icon} {current.title}
-                  </div>
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    {clanConfigs.map((cfg) => (
-                      <button
-                        key={cfg.key}
-                        type="button"
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCard3Step(cfg.id); }}
-                        className={`px-1 py-0.5 rounded text-[8px] font-black transition-all cursor-pointer ${
-                          clanPhase === cfg.id ? 'bg-emerald-500 text-white shadow-xs' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/30'
-                        }`}
-                        title={cfg.title}
-                      >
-                        {cfg.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            const cardClasses = isLavender
+              ? 'tsumiki-card tsumiki-btn-green p-3.5 sm:p-4 rounded-2xl relative overflow-hidden transition-all select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between'
+              : 'p-3.5 sm:p-4 rounded-2xl border border-emerald-500/35 bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent hover:border-emerald-500/60 shadow-[0_4px_20px_-4px_rgba(16,185,129,0.2)] hover:shadow-[0_8px_28px_-4px_rgba(16,185,129,0.3)] transition-all relative overflow-hidden group select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between';
 
-                {/* Content: Slide up vertically */}
-                <Link href={href} className="block mt-1.5 overflow-hidden">
-                  <div key={`card3-${current.key}-${card3Step}`} className="animate-card-slide-up space-y-0.5">
-                    <div className="text-base font-extrabold ui-title truncate">
+            const CardWrapper = hasLink ? Link : 'div';
+            const wrapperProps = hasLink ? { href } : {};
+
+            return (
+              <CardWrapper {...(wrapperProps as any)} className={cardClasses}>
+                <div key={`card3-${current.key}-${card3Step}`} className="animate-card-slide-up flex flex-col justify-between h-full space-y-1.5">
+                  {/* Header: Label + Icon */}
+                  <div className={`text-[11px] font-extrabold uppercase tracking-wide flex items-center gap-1.5 truncate ${
+                    isLavender 
+                      ? (isDark ? 'text-white/95 drop-shadow-xs' : 'text-emerald-950')
+                      : 'text-emerald-500 dark:text-emerald-400'
+                  }`}>
+                    {current.icon(isLavender ? (isDark ? 'text-white' : 'text-emerald-950') : 'text-emerald-500 dark:text-emerald-400')}
+                    <span className="truncate">{current.title}</span>
+                  </div>
+
+                  {/* Body: Clan Name & Value */}
+                  <div className="space-y-0.5">
+                    <div className={`text-base font-black truncate ${
+                      isLavender
+                        ? (isDark ? 'text-white drop-shadow-sm' : 'text-emerald-950')
+                        : 'ui-title group-hover:text-emerald-500 transition-colors'
+                    }`}>
                       {displayName}
                     </div>
-                    <div className="text-[10px] ui-dim truncate">
+                    <div className={`text-[11px] truncate ${
+                      isLavender
+                        ? (isDark ? 'text-white/90 drop-shadow-xs font-semibold' : 'text-emerald-900/90 font-semibold')
+                        : 'ui-dim'
+                    }`}>
                       {clanInfo ? current.formatVal(current.data?.value) : '—'}
                     </div>
                   </div>
-                </Link>
-              </div>
+                </div>
+              </CardWrapper>
             );
           })()}
 
@@ -668,55 +672,57 @@ export default function HomePage() {
             const href = isSupporter
               ? (s?.username ? `/profile/${s.username}` : '#')
               : (c?.username ? `/profile/${c.username}` : '#');
+            const hasLink = href && href !== '#';
+
+            const cardClasses = isLavender
+              ? 'tsumiki-card tsumiki-btn-pink p-3.5 sm:p-4 rounded-2xl relative overflow-hidden transition-all select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between'
+              : 'p-3.5 sm:p-4 rounded-2xl border border-pink-500/35 bg-gradient-to-br from-pink-500/15 via-pink-500/5 to-transparent hover:border-pink-500/60 shadow-[0_4px_20px_-4px_rgba(236,72,153,0.2)] hover:shadow-[0_8px_28px_-4px_rgba(236,72,153,0.3)] transition-all relative overflow-hidden group select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between';
+
+            const CardWrapper = hasLink ? Link : 'div';
+            const wrapperProps = hasLink ? { href } : {};
 
             return (
-              <div className="rounded-xl border border-pink-500/25 bg-pink-500/5 hover:border-pink-500/50 hover:bg-pink-500/10 transition-all p-3.5 relative overflow-hidden group">
-                {/* Header: Label + Clickable indicator buttons (Hồng) */}
-                <div className="flex items-center justify-between gap-1">
-                  <div className="text-[11px] font-bold uppercase text-pink-600 dark:text-pink-400 flex items-center gap-1">
-                    {isSupporter ? <Heart className="w-3 h-3 fill-pink-500" /> : <Wrench className="w-3 h-3 text-pink-500" />}
-                    {isSupporter ? t('leaderboard.stats.top_supporter') : t('leaderboard.stats.top1_creator')}
+              <CardWrapper {...(wrapperProps as any)} className={cardClasses}>
+                <div key={`card4-${isSupporter ? 'supporter' : 'creator'}-${card4Step}`} className="animate-card-slide-up flex flex-col justify-between h-full space-y-1.5">
+                  {/* Header: Label + Icon */}
+                  <div className={`text-[11px] font-extrabold uppercase tracking-wide flex items-center gap-1.5 ${
+                    isLavender 
+                      ? (isDark ? 'text-white/95 drop-shadow-xs' : 'text-pink-950')
+                      : 'text-pink-500 dark:text-pink-400'
+                  }`}>
+                    {isSupporter ? (
+                      <Heart className={`w-3.5 h-3.5 shrink-0 ${isLavender ? (isDark ? 'fill-white text-white' : 'fill-pink-950 text-pink-950') : 'fill-pink-500 text-pink-500'}`} />
+                    ) : (
+                      <Wrench className={`w-3.5 h-3.5 shrink-0 ${isLavender ? (isDark ? 'text-white' : 'text-pink-950') : 'text-pink-500'}`} />
+                    )}
+                    <span className="truncate">
+                      {isSupporter ? t('leaderboard.stats.top_supporter') : t('leaderboard.stats.top1_creator')}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCard4Step(0); }}
-                      className={`px-1.5 py-0.5 rounded text-[8px] font-black transition-all cursor-pointer ${
-                        !isSupporter ? 'bg-pink-500 text-white shadow-xs' : 'bg-pink-500/15 text-pink-600 dark:text-pink-400 hover:bg-pink-500/30'
-                      }`}
-                      title="Top 1 Creator"
-                    >
-                      Creator
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCard4Step(1); }}
-                      className={`px-1.5 py-0.5 rounded text-[8px] font-black transition-all cursor-pointer ${
-                        isSupporter ? 'bg-pink-500 text-white shadow-xs' : 'bg-pink-500/15 text-pink-600 dark:text-pink-400 hover:bg-pink-500/30'
-                      }`}
-                      title="Top 1 Supporter"
-                    >
-                      Supporter
-                    </button>
-                  </div>
-                </div>
 
-                {/* Content: Slide up vertically */}
-                <Link href={href} className="block mt-1.5 overflow-hidden">
-                  <div key={`card4-${isSupporter ? 'supporter' : 'creator'}-${card4Step}`} className="animate-card-slide-up space-y-0.5">
-                    <div className="text-base font-extrabold ui-title truncate">
+                  {/* Body: User Name & Details */}
+                  <div className="space-y-0.5">
+                    <div className={`text-base font-black truncate ${
+                      isLavender
+                        ? (isDark ? 'text-white drop-shadow-sm' : 'text-pink-950')
+                        : 'ui-title group-hover:text-pink-500 transition-colors'
+                    }`}>
                       {isSupporter
                         ? (s?.displayName || s?.gdUsername || s?.username || t('leaderboard.stats.no_data'))
                         : (c?.displayName || c?.gdUsername || c?.username || t('leaderboard.stats.no_data'))}
                     </div>
-                    <div className="text-[10px] ui-dim truncate">
+                    <div className={`text-[11px] truncate ${
+                      isLavender
+                        ? (isDark ? 'text-white/90 drop-shadow-xs font-semibold' : 'text-pink-900/90 font-semibold')
+                        : 'ui-dim'
+                    }`}>
                       {isSupporter
                         ? (s ? t('leaderboard.stats.donated_months', { n: s.totalMonths }) : '—')
                         : (c ? `${formatCp(c.creatorPoints)} CP` : '—')}
                     </div>
                   </div>
-                </Link>
-              </div>
+                </div>
+              </CardWrapper>
             );
           })()}
         </div>

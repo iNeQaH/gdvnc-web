@@ -480,3 +480,25 @@
     linear-gradient(to top, #161324, #26223b) !important;
 }
 
+/* Quick Stats cards shaped like Tsumiki 3D buttons (border-radius 16px) */
+[data-theme="lavender"] .tsumiki-card,
+.dark[data-theme="lavender"] .tsumiki-card {
+  border-radius: 16px !important;
+  box-sizing: border-box !important;
+  display: block !important;
+}
+[data-theme="lavender"] .tsumiki-card:hover,
+.dark[data-theme="lavender"] .tsumiki-card:hover {
+  filter: brightness(1.05);
+}
+[data-theme="lavender"] .tsumiki-card.tsumiki-btn-green,
+[data-theme="lavender"] .tsumiki-card.tsumiki-btn-pink,
+[data-theme="lavender"] .tsumiki-card.tsumiki-btn-yellow,
+[data-theme="lavender"] .tsumiki-card.tsumiki-btn-blue,
+.dark[data-theme="lavender"] .tsumiki-card.tsumiki-btn-green,
+.dark[data-theme="lavender"] .tsumiki-card.tsumiki-btn-pink,
+.dark[data-theme="lavender"] .tsumiki-card.tsumiki-btn-yellow,
+.dark[data-theme="lavender"] .tsumiki-card.tsumiki-btn-blue {
+  border-radius: 16px !important;
+}
+
