@@ -809,7 +809,7 @@ const vi: Record<DictKey, string> = {
 
   // Settings
   'settings.title': 'Cài Đặt Cá Nhân',
-  'settings.identity': 'Hình ảnh & Nhận diện',
+  'settings.identity': 'Thông tin cá nhân',
   'settings.change_avatar': 'Đổi Avatar',
   'settings.change_banner': 'Đổi Banner',
   'settings.gd_username': 'Tên Geometry Dash',
@@ -896,8 +896,10 @@ const vi: Record<DictKey, string> = {
   'settings.border_color': 'Màu Viền',
   'settings.add_border_color': 'Thêm Màu Viền',
 
-  // Font & Name Style
-  'settings.tab_appearance': 'Giao Diện & Theme',
+  // Settings Tabs
+  'settings.tab_general': 'Chung',
+  'settings.tab_profile': 'Thông tin cá nhân',
+  'settings.tab_appearance': 'Giao diện',
   'settings.tab_font': 'Font',
   'settings.tab_security': 'Bảo Mật & Quà Tặng',
   'settings.font_title': 'Tùy Biến Font & Phong Cách Tên (Supporter)',

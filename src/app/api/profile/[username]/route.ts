@@ -294,10 +294,32 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
 
     const current = await prisma.user.findUnique({
       where: { username },
-      select: { id: true, role: true, username: true, gdVerified: true, gdUsername: true, avatarUrl: true, coverUrl: true },
+      select: { id: true, role: true, username: true, gdVerified: true, gdUsername: true, avatarUrl: true, coverUrl: true, supporterUntil: true },
     });
     if (!current) {
       return NextResponse.json({ error: 'Không tìm thấy người chơi.' }, { status: 404 });
+    }
+
+    const isSupporterOrOwner =
+      isSuperAdminUser(auth) ||
+      Boolean(current.supporterUntil && new Date(current.supporterUntil) > new Date());
+
+    if (
+      body.profileTheme !== undefined &&
+      ['mint', 'custom', 'lavender'].includes(body.profileTheme) &&
+      !isSupporterOrOwner
+    ) {
+      return NextResponse.json(
+        { error: 'Giao diện này yêu cầu đặc quyền Supporter.' },
+        { status: 403 }
+      );
+    }
+
+    if (body.profileConfig !== undefined && !isSupporterOrOwner) {
+      return NextResponse.json(
+        { error: 'Tùy biến giao diện yêu cầu đặc quyền Supporter.' },
+        { status: 403 }
+      );
     }
 
     if (!isSelf) {

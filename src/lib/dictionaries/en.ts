@@ -818,7 +818,7 @@ const en = {
 
   // Settings
   'settings.title': 'Account Settings',
-  'settings.identity': 'Images & Identity',
+  'settings.identity': 'Personal Information',
   'settings.change_avatar': 'Change Avatar',
   'settings.change_banner': 'Change Banner',
   'settings.gd_username': 'Geometry Dash Username',
@@ -905,8 +905,10 @@ const en = {
   'settings.border_color': 'Border Color',
   'settings.add_border_color': 'Add Border Color',
 
-  // Font & Name Style
-  'settings.tab_appearance': 'Appearance & Theme',
+  // Settings Tabs
+  'settings.tab_general': 'General',
+  'settings.tab_profile': 'Personal Information',
+  'settings.tab_appearance': 'Appearance',
   'settings.tab_font': 'Font',
   'settings.tab_security': 'Security & Gifts',
   'settings.font_title': 'Custom Display Font & Name Styling (Supporter)',

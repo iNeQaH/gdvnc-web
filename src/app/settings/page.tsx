@@ -52,7 +52,7 @@ export default function SettingsPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'name_style' | 'security'>('profile');
+  const [activeTab, setActiveTab] = useState<'general' | 'profile' | 'appearance' | 'name_style'>('general');
 
   // States
   const [gdUsername, setGdUsername] = useState('');
@@ -206,6 +206,16 @@ export default function SettingsPage() {
     loadData();
   }, []);
 
+  const isSupporter = Boolean(
+    (currentUser?.supporterUntil && new Date(currentUser.supporterUntil) > new Date()) ||
+    (data?.supporterUntil && new Date(data.supporterUntil) > new Date())
+  );
+  const isSuperAdmin = Boolean(
+    currentUser?.role === 'ADMIN' ||
+    (currentUser?.username && currentUser.username.toLowerCase() === 'ineqah')
+  );
+  const canAccessSupporter = isSupporter || isSuperAdmin;
+
   const handleSaveNameStyle = async (reset = false) => {
     setSavingNameStyle(true);
     try {
@@ -277,6 +287,15 @@ export default function SettingsPage() {
     newGlowColors?: string[],
     newGlowAngle?: number
   ) => {
+    if (!canAccessSupporter) {
+      showToast(
+        language === 'en'
+          ? 'Supporter role required to customize theme.'
+          : 'Cần có đặc quyền Supporter để tùy biến giao diện.',
+        'error'
+      );
+      return;
+    }
     const safeColors = newColors.length > 0 ? newColors : ['#0ea5e9'];
     const safeBorderMode = newBorderMode !== undefined ? newBorderMode : customBorderMode;
     const safeBorderColors = newBorderColors && newBorderColors.length > 0 ? newBorderColors : borderColors;
@@ -335,6 +354,7 @@ export default function SettingsPage() {
   };
 
   const handleRandomThemeColors = () => {
+    if (!canAccessSupporter) return;
     const PRESETS = [
       ['#0ea5e9', '#8b5cf6'],
       ['#ec4899', '#f59e0b'],
@@ -595,16 +615,6 @@ export default function SettingsPage() {
   if (loading) return <div className="p-8 text-center text-sm ui-dim">{t('common.loading')}</div>;
   if (!data) return null;
 
-  const isSupporter = Boolean(
-    (currentUser?.supporterUntil && new Date(currentUser.supporterUntil) > new Date()) ||
-    (data?.supporterUntil && new Date(data.supporterUntil) > new Date())
-  );
-  const isSuperAdmin = Boolean(
-    currentUser?.role === 'ADMIN' ||
-    (currentUser?.username && currentUser.username.toLowerCase() === 'ineqah')
-  );
-  const canAccessSupporter = isSupporter || isSuperAdmin;
-
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
       {/* Title */}
@@ -729,35 +739,183 @@ export default function SettingsPage() {
       </div>
 
       {/* Category Tabs */}
-      <AnimatedTabs<'profile' | 'appearance' | 'name_style' | 'security'>
+      <AnimatedTabs<'general' | 'profile' | 'appearance' | 'name_style'>
         active={activeTab}
         onChange={setActiveTab}
         themeOverride={data?.profileTheme || undefined}
         options={[
           {
+            id: 'general',
+            label: t('settings.tab_general') || 'Chung',
+            icon: <Settings className="w-4 h-4" />,
+          },
+          {
             id: 'profile',
-            label: t('settings.identity') || 'Hồ Sơ',
+            label: t('settings.tab_profile') || 'Thông tin cá nhân',
             icon: <UserIcon className="w-4 h-4" />,
           },
           {
             id: 'appearance',
-            label: t('settings.tab_appearance') || 'Giao Diện & Theme',
-            icon: <Sparkles className="w-4 h-4" />,
+            label: t('settings.tab_appearance') || 'Giao diện',
+            icon: <Palette className="w-4 h-4" />,
           },
           {
             id: 'name_style',
             label: t('settings.tab_font') || 'Font',
             icon: <Type className="w-4 h-4" />,
           },
-          {
-            id: 'security',
-            label: t('settings.tab_security') || 'Bảo Mật & Quà Tặng',
-            icon: <ShieldCheck className="w-4 h-4" />,
-          },
         ]}
       />
 
-      {/* Tab 1: Profile (Hồ Sơ & Nhận Diện) */}
+      {/* Tab 1: General (Chung - Bảo Mật & Quà Tặng) */}
+      {activeTab === 'general' && (
+        <div className="space-y-6 animate-in fade-in-50 duration-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left Sub-column */}
+            <div className="space-y-6">
+              {/* Redeem Gift Code */}
+              <div className="ui-card p-5 space-y-4 border-amber-500/20">
+                <div className="border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <h2 className="text-sm font-bold flex items-center gap-2 text-amber-500">
+                    <Gift className="w-4 h-4" /> {t('settings.redeem_title')}
+                  </h2>
+                  <p className="text-xs ui-dim mt-0.5">{t('settings.redeem_desc')}</p>
+                </div>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Ticket className="w-4 h-4 ui-dim absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={redeemCode}
+                      onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleRedeem();
+                      }}
+                      placeholder={t('settings.redeem_placeholder')}
+                      className="w-full pl-9 pr-3 py-2 rounded-xl text-xs font-mono font-bold tracking-wider border focus:ring-1 focus:ring-amber-500 outline-none uppercase"
+                      style={{
+                        backgroundColor: 'var(--bg-subtle)',
+                        borderColor: 'var(--border-ui)',
+                        color: 'var(--text-title)',
+                      }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRedeem}
+                    disabled={redeeming || !redeemCode.trim()}
+                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors disabled:opacity-50 shrink-0 flex items-center gap-1.5 shadow-xs"
+                  >
+                    <Gift className="w-3.5 h-3.5" />
+                    {redeeming ? t('settings.redeem_checking') : t('settings.redeem_btn')}
+                  </button>
+                </div>
+              </div>
+
+              {/* 2FA Card */}
+              <div className="ui-card p-5 space-y-4">
+                <div className="border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <h2 className="text-sm font-bold flex items-center gap-2 ui-title">
+                    <ShieldCheck className="w-4 h-4 text-emerald-500" /> {t('settings.security')}
+                  </h2>
+                  <p className="text-xs ui-dim mt-0.5">Xác thực 2 bước tăng cường bảo mật cho tài khoản</p>
+                </div>
+
+                <div className="flex items-center justify-between p-3.5 rounded-xl border bg-emerald-500/5 border-emerald-500/20">
+                  <div>
+                    <div className="font-bold text-xs ui-title flex items-center gap-2">
+                      <span>{t('settings.two_factor')}</span>
+                      {data.totpEnabled ? (
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          Đã Bật
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-zinc-500/20 text-zinc-400 border border-zinc-500/30">
+                          Chưa Bật
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] ui-dim mt-0.5">{t('settings.two_factor_desc')}</div>
+                  </div>
+                  {data.totpEnabled ? (
+                    <button
+                      type="button"
+                      onClick={handleDisable2FA}
+                      className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold text-xs rounded-xl cursor-pointer transition-colors border border-red-500/20"
+                    >
+                      {t('settings.disable_2fa')}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSetup2FA}
+                      className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 font-bold text-xs rounded-xl cursor-pointer transition-colors border border-emerald-500/20"
+                    >
+                      {t('settings.enable_2fa')}
+                    </button>
+                  )}
+                </div>
+
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordModal(true)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                    style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  >
+                    <Lock className="w-4 h-4 text-sky-500" /> {t('settings.change_password')}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Sub-column */}
+            <div className="space-y-6">
+              {/* Support & Logout Card */}
+              <div className="ui-card p-5 space-y-3">
+                <div className="border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <h2 className="text-sm font-bold flex items-center gap-2 ui-title">
+                    <HelpCircle className="w-4 h-4 text-pink-500" /> Liên Kết & Phiên Đăng Nhập
+                  </h2>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => router.push('/support')}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-pink-50 dark:hover:bg-pink-950/30 text-pink-500 border-pink-500/20 transition-colors"
+                >
+                  <Heart className="w-4 h-4" /> {t('settings.support_gdvn')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-red-50 hover:text-red-500 hover:border-red-500/30 dark:hover:bg-red-950/30 text-slate-500 transition-colors"
+                  style={{ borderColor: 'var(--border-ui)' }}
+                >
+                  <LogOut className="w-4 h-4" /> {t('settings.logout')}
+                </button>
+              </div>
+
+              {/* Danger Zone: Delete Account */}
+              <div className="ui-card p-5 space-y-3 border-red-500/25 bg-red-500/5">
+                <h2 className="text-sm font-bold flex items-center gap-2 text-red-500 border-b border-red-500/20 pb-2">
+                  <Trash2 className="w-4 h-4" /> {t('settings.delete_account')}
+                </h2>
+                <p className="text-xs ui-dim leading-relaxed">{t('settings.delete_account_warn')}</p>
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  className="px-4 py-2.5 bg-red-500/15 hover:bg-red-500/25 text-red-500 rounded-xl text-xs font-bold w-full cursor-pointer transition-colors border border-red-500/30"
+                >
+                  {t('settings.delete_account_btn')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 2: Profile (Thông Tin Cá Nhân) */}
       {activeTab === 'profile' && (
         <div className="space-y-6 animate-in fade-in-50 duration-200">
           <div className="ui-card p-6 space-y-6">
@@ -852,14 +1010,14 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Tab 2: Appearance (Giao Diện & Theme) */}
+      {/* Tab 3: Appearance (Giao Diện) */}
       {activeTab === 'appearance' && (
         <div className="space-y-6 animate-in fade-in-50 duration-200">
           {/* Profile Theme Card */}
           <div className="ui-card p-6 space-y-4">
             <div className="border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
               <h2 className="text-sm font-bold flex items-center gap-2 text-purple-500">
-                <Sparkles className="w-4 h-4" /> {t('settings.profile_theme')}
+                <Palette className="w-4 h-4" /> {t('settings.profile_theme')}
               </h2>
               <p className="text-xs ui-dim mt-0.5">{t('settings.profile_theme_desc')}</p>
             </div>
@@ -869,7 +1027,7 @@ export default function SettingsPage() {
                 { id: 'sky', label: t('theme.sky') || 'Sky', color: 'bg-sky-500' },
                 { id: 'sakura', label: t('theme.sakura') || 'Sakura', color: 'bg-pink-400' },
                 { id: 'mono', label: 'Mono', color: 'bg-zinc-500' },
-                { id: 'mint', label: t('theme.mint') || 'Mint (RGB)', color: 'bg-emerald-400' },
+                { id: 'mint', label: t('theme.mint') || 'Mint (RGB)', color: 'bg-emerald-400', supporterOnly: true },
                 {
                   id: 'custom',
                   label: t('theme.custom') || 'Custom',
@@ -878,15 +1036,26 @@ export default function SettingsPage() {
                     themeColors.length > 1
                       ? { background: `linear-gradient(${themeAngle}deg, ${themeColors.join(', ')})` }
                       : undefined,
+                  supporterOnly: true,
                 },
-                { id: 'lavender', label: 'iNeQaH', color: 'bg-purple-500' },
+                { id: 'lavender', label: 'iNeQaH', color: 'bg-purple-500', supporterOnly: true },
               ].map((th) => {
                 const isSelected = (data.profileTheme || 'sky') === th.id;
+                const isLocked = Boolean(th.supporterOnly && !canAccessSupporter);
                 return (
                   <button
                     key={th.id}
                     type="button"
                     onClick={async () => {
+                      if (isLocked) {
+                        showToast(
+                          language === 'en'
+                            ? 'This theme requires Supporter role.'
+                            : 'Giao diện này yêu cầu đặc quyền Supporter.',
+                          'error'
+                        );
+                        return;
+                      }
                       setData({ ...data, profileTheme: th.id });
                       await fetch('/api/profile/' + currentUser.username, {
                         method: 'PATCH',
@@ -899,19 +1068,28 @@ export default function SettingsPage() {
                       showToast(t('settings.profile_theme_saved'), 'success');
                       window.dispatchEvent(new Event('gdvnc_user_update'));
                     }}
-                    className={`flex items-center gap-2.5 p-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
+                    className={`flex items-center gap-2.5 p-3 rounded-2xl border text-xs font-bold transition-all relative ${
+                      isLocked
+                        ? 'opacity-65 cursor-not-allowed ui-subtle'
+                        : 'cursor-pointer hover:bg-slate-50 dark:hover:bg-zinc-800/60'
+                    } ${
                       isSelected
                         ? 'ring-2 ring-purple-500 bg-purple-500/10 text-purple-600 dark:text-purple-300 border-purple-500/30 shadow-xs'
-                        : 'hover:bg-slate-50 dark:hover:bg-zinc-800/60'
+                        : ''
                     }`}
                     style={!isSelected ? { borderColor: 'var(--border-ui)' } : {}}
+                    title={isLocked ? (language === 'en' ? 'Supporter Required' : 'Yêu cầu Supporter') : undefined}
                   >
                     <span
                       className={`w-3.5 h-3.5 rounded-full shrink-0 ${th.color}`}
                       style={th.style}
                     />
                     <span className="truncate">{th.label}</span>
-                    {isSelected && <Check className="w-3.5 h-3.5 ml-auto text-purple-500 shrink-0" />}
+                    {isLocked ? (
+                      <Lock className="w-3.5 h-3.5 ml-auto text-pink-400 shrink-0" />
+                    ) : isSelected ? (
+                      <Check className="w-3.5 h-3.5 ml-auto text-purple-500 shrink-0" />
+                    ) : null}
                   </button>
                 );
               })}
@@ -919,23 +1097,44 @@ export default function SettingsPage() {
           </div>
 
           {/* Supporter Theme Perks */}
-          {canAccessSupporter ? (
-            <div className="ui-card p-6 space-y-6 border-pink-500/20">
-              <div className="border-b pb-3 flex items-center justify-between" style={{ borderColor: 'var(--border-subtle)' }}>
-                <div>
+          <div className="ui-card p-6 space-y-6 border-pink-500/20 relative">
+            <div className="border-b pb-3 flex items-center justify-between gap-3 flex-wrap" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-sm font-bold flex items-center gap-2 text-pink-500">
                     <Heart className="w-4 h-4" /> {t('settings.supporter_perks')} — Màu Sắc & Hiệu Ứng
                   </h2>
-                  <p className="text-xs ui-dim mt-0.5">
-                    Tùy biến dải màu chủ đạo, góc xoay gradient, hiệu ứng phát sáng viền và ảnh nền cho theme Custom
-                  </p>
+                  {!canAccessSupporter && (
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-pink-500/15 text-pink-400 border border-pink-500/30 flex items-center gap-1">
+                      <Lock className="w-3 h-3" />
+                      {language === 'en' ? 'Supporter Required' : 'Yêu cầu Supporter'}
+                    </span>
+                  )}
                 </div>
+                <p className="text-xs ui-dim mt-0.5">
+                  Tùy biến dải màu chủ đạo, góc xoay gradient, hiệu ứng phát sáng viền và ảnh nền cho theme Custom
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {!canAccessSupporter && (
+                  <Link
+                    href="/support"
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-pink-500 hover:bg-pink-600 text-white flex items-center gap-1.5 transition-all shadow-xs"
+                  >
+                    <Heart className="w-3.5 h-3.5" />
+                    <span>{language === 'en' ? 'Upgrade Supporter' : 'Nâng cấp Supporter'}</span>
+                  </Link>
+                )}
                 {themeColors.length >= 2 && (
                   <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-lg bg-pink-500/10 text-pink-500 border border-pink-500/20">
                     {themeAngle}°
                   </span>
                 )}
               </div>
+            </div>
+
+            {/* Controls body */}
+            <div className={`space-y-6 ${!canAccessSupporter ? 'opacity-60 pointer-events-none select-none' : ''}`}>
 
               {/* Theme Colors & Gradient Section */}
               <div className="space-y-3">
@@ -1310,23 +1509,7 @@ export default function SettingsPage() {
                 )}
               </div>
             </div>
-          ) : (
-            <div className="ui-card p-6 border-dashed border-pink-500/30 text-center space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-pink-500/10 text-pink-500 flex items-center justify-center mx-auto border border-pink-500/20">
-                <Heart className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-sm ui-title">{t('settings.theme_perks_title')}</h3>
-              <p className="text-xs ui-dim max-w-md mx-auto leading-relaxed">
-                {t('settings.theme_perks_desc')}
-              </p>
-              <Link
-                href="/support"
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
-              >
-                <Heart className="w-3.5 h-3.5" /> {t('settings.theme_perks_btn')}
-              </Link>
-            </div>
-          )}
+          </div>
         </div>
       )}
 
@@ -1671,153 +1854,7 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Tab 4: Security (Bảo Mật & Quà Tặng) */}
-      {activeTab === 'security' && (
-        <div className="space-y-6 animate-in fade-in-50 duration-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left Sub-column */}
-            <div className="space-y-6">
-              {/* Redeem Gift Code */}
-              <div className="ui-card p-5 space-y-4 border-amber-500/20">
-                <div className="border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
-                  <h2 className="text-sm font-bold flex items-center gap-2 text-amber-500">
-                    <Gift className="w-4 h-4" /> {t('settings.redeem_title')}
-                  </h2>
-                  <p className="text-xs ui-dim mt-0.5">{t('settings.redeem_desc')}</p>
-                </div>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Ticket className="w-4 h-4 ui-dim absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      type="text"
-                      value={redeemCode}
-                      onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleRedeem();
-                      }}
-                      placeholder={t('settings.redeem_placeholder')}
-                      className="w-full pl-9 pr-3 py-2 rounded-xl text-xs font-mono font-bold tracking-wider border focus:ring-1 focus:ring-amber-500 outline-none uppercase"
-                      style={{
-                        backgroundColor: 'var(--bg-subtle)',
-                        borderColor: 'var(--border-ui)',
-                        color: 'var(--text-title)',
-                      }}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleRedeem}
-                    disabled={redeeming || !redeemCode.trim()}
-                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors disabled:opacity-50 shrink-0 flex items-center gap-1.5 shadow-xs"
-                  >
-                    <Gift className="w-3.5 h-3.5" />
-                    {redeeming ? t('settings.redeem_checking') : t('settings.redeem_btn')}
-                  </button>
-                </div>
-              </div>
 
-              {/* 2FA Card */}
-              <div className="ui-card p-5 space-y-4">
-                <div className="border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
-                  <h2 className="text-sm font-bold flex items-center gap-2 ui-title">
-                    <ShieldCheck className="w-4 h-4 text-emerald-500" /> {t('settings.security')}
-                  </h2>
-                  <p className="text-xs ui-dim mt-0.5">Xác thực 2 bước tăng cường bảo mật cho tài khoản</p>
-                </div>
-
-                <div className="flex items-center justify-between p-3.5 rounded-xl border bg-emerald-500/5 border-emerald-500/20">
-                  <div>
-                    <div className="font-bold text-xs ui-title flex items-center gap-2">
-                      <span>{t('settings.two_factor')}</span>
-                      {data.totpEnabled ? (
-                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                          Đã Bật
-                        </span>
-                      ) : (
-                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-zinc-500/20 text-zinc-400 border border-zinc-500/30">
-                          Chưa Bật
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-[11px] ui-dim mt-0.5">{t('settings.two_factor_desc')}</div>
-                  </div>
-                  {data.totpEnabled ? (
-                    <button
-                      type="button"
-                      onClick={handleDisable2FA}
-                      className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold text-xs rounded-xl cursor-pointer transition-colors border border-red-500/20"
-                    >
-                      {t('settings.disable_2fa')}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleSetup2FA}
-                      className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 font-bold text-xs rounded-xl cursor-pointer transition-colors border border-emerald-500/20"
-                    >
-                      {t('settings.enable_2fa')}
-                    </button>
-                  )}
-                </div>
-
-                <div className="pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowPasswordModal(true)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
-                    style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                  >
-                    <Lock className="w-4 h-4 text-sky-500" /> {t('settings.change_password')}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Sub-column */}
-            <div className="space-y-6">
-              {/* Support & Logout Card */}
-              <div className="ui-card p-5 space-y-3">
-                <div className="border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
-                  <h2 className="text-sm font-bold flex items-center gap-2 ui-title">
-                    <HelpCircle className="w-4 h-4 text-pink-500" /> Liên Kết & Phiên Đăng Nhập
-                  </h2>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => router.push('/support')}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-pink-50 dark:hover:bg-pink-950/30 text-pink-500 border-pink-500/20 transition-colors"
-                >
-                  <Heart className="w-4 h-4" /> {t('settings.support_gdvn')}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-red-50 hover:text-red-500 hover:border-red-500/30 dark:hover:bg-red-950/30 text-slate-500 transition-colors"
-                  style={{ borderColor: 'var(--border-ui)' }}
-                >
-                  <LogOut className="w-4 h-4" /> {t('settings.logout')}
-                </button>
-              </div>
-
-              {/* Danger Zone: Delete Account */}
-              <div className="ui-card p-5 space-y-3 border-red-500/25 bg-red-500/5">
-                <h2 className="text-sm font-bold flex items-center gap-2 text-red-500 border-b border-red-500/20 pb-2">
-                  <Trash2 className="w-4 h-4" /> {t('settings.delete_account')}
-                </h2>
-                <p className="text-xs ui-dim leading-relaxed">{t('settings.delete_account_warn')}</p>
-                <button
-                  type="button"
-                  onClick={handleDeleteAccount}
-                  className="px-4 py-2.5 bg-red-500/15 hover:bg-red-500/25 text-red-500 rounded-xl text-xs font-bold w-full cursor-pointer transition-colors border border-red-500/30"
-                >
-                  {t('settings.delete_account_btn')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <ImageEditorModal
         isOpen={imageModal.open}
