@@ -537,8 +537,8 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
             <div className="flex items-center gap-3 flex-wrap min-w-0">
               {/* Isolated Tag container so backgroundClip does not cause black box glitch */}
               <span
-                className="inline-flex items-center px-3 py-1 rounded-xl border font-mono font-black text-sm shadow-xs shrink-0"
-                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+                className="inline-flex items-center px-3 py-1 rounded-xl border font-mono font-black text-sm shadow-xs shrink-0 backdrop-blur-xs select-none"
+                style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', borderColor: 'rgba(255, 255, 255, 0.15)' }}
               >
                 <span
                   style={
@@ -902,7 +902,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
 
               <div className="space-y-2">
                 {leaderboardMembers.map((m: any, idx: number) => {
-                  const rankNum = idx + 1;
+                  const rankNumVal = idx + 1;
                   return (
                     <div
                       key={m.id || m.userId}
@@ -912,16 +912,16 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                       <div className="flex items-center gap-3 min-w-0">
                         <span
                           className={`w-6 text-center font-black text-xs shrink-0 ${
-                            rankNum === 1
+                            rankNumVal === 1
                               ? 'text-amber-400'
-                              : rankNum === 2
+                              : rankNumVal === 2
                               ? 'text-slate-300'
-                              : rankNum === 3
+                              : rankNumVal === 3
                               ? 'text-amber-600'
                               : 'ui-dim'
                           }`}
                         >
-                          #{rankNum}
+                          #{rankNumVal}
                         </span>
 
                         <div
@@ -983,21 +983,36 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               {/* Grid of Level Embed Cards matching level list */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {clan.creatorWorks.map((work: any) => {
-                  const thumb = getYouTubeThumbnail(work.videoUrl) || work.imageUrl || '/gdvn-logo.png';
+                  const ytIdFromUrl = work.videoUrl
+                    ? (work.videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/) || [])[1]
+                    : null;
+                  const ytId = work.youtubeId || ytIdFromUrl;
+                  const thumb = ytId
+                    ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`
+                    : work.imageUrl || 'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
+
+                  const matchedLevel = work.matchedLevel;
+                  const targetLevelUrl = matchedLevel ? levelPath(matchedLevel) : work.gdLevelId ? `/levels?search=${work.gdLevelId}` : null;
+
                   return (
                     <div
                       key={work.id}
                       className="group relative rounded-2xl overflow-hidden shadow-xs hover:shadow-xl transition-all border ui-card flex flex-col h-44 justify-between p-3.5"
                       style={{ borderColor: 'var(--border-ui)' }}
                     >
-                      {/* Background Thumbnail */}
-                      <div
-                        className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-                        style={{
-                          backgroundImage: `url(${thumb})`,
-                          filter: 'brightness(0.55)',
-                        }}
-                      />
+                      {/* Background Thumbnail with fallback */}
+                      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        <img
+                          src={thumb}
+                          alt=""
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          style={{ filter: 'brightness(0.55)' }}
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src =
+                              'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
+                          }}
+                        />
+                      </div>
 
                       {/* Overlay Gradient */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
@@ -1021,12 +1036,21 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
 
                       {/* Bottom Info Row */}
                       <div className="relative z-10 space-y-1">
-                        <h4 className="font-bold text-sm text-white drop-shadow-sm truncate group-hover:text-sky-400 transition-colors">
-                          {work.levelName}
-                        </h4>
+                        {targetLevelUrl ? (
+                          <Link
+                            href={targetLevelUrl}
+                            className="font-bold text-sm text-white drop-shadow-sm truncate block hover:text-sky-400 transition-colors"
+                          >
+                            {work.levelName || 'Untitled Level'}
+                          </Link>
+                        ) : (
+                          <h4 className="font-bold text-sm text-white drop-shadow-sm truncate">
+                            {work.levelName || 'Untitled Level'}
+                          </h4>
+                        )}
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-slate-300 text-[11px] truncate">
-                            bởi <span className="font-semibold text-white">{work.user?.username || work.creatorName}</span>
+                            bởi <span className="font-semibold text-white">{work.user?.username || work.creatorName || 'GD Creator'}</span>
                           </span>
 
                           {work.videoUrl && (

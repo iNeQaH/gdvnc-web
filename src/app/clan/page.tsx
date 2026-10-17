@@ -90,6 +90,7 @@ export default function ClanListPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams({
+        q: search,
         search,
         sort,
         order,
@@ -255,7 +256,9 @@ export default function ClanListPage() {
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {clans.map((clan) => {
-            const tierInfo = getClanTier(clan.effectiveSp || 0);
+            const sp = clan.totalSp ?? clan.effectiveSp ?? 0;
+            const memberCount = clan.memberCount ?? clan._count?.members ?? clan.members?.length ?? 0;
+            const tierInfo = getClanTier(sp);
             return (
               <Link
                 key={clan.id}
@@ -285,7 +288,9 @@ export default function ClanListPage() {
                         ? 'bg-purple-950/80 text-purple-300 border-purple-500/30'
                         : tierInfo.tier === 2
                         ? 'bg-sky-950/80 text-sky-300 border-sky-500/30'
-                        : 'bg-amber-950/80 text-amber-300 border-amber-500/30'
+                        : tierInfo.tier === 1
+                        ? 'bg-amber-950/80 text-amber-300 border-amber-500/30'
+                        : 'bg-red-950/80 text-red-300 border-red-500/30'
                     }`}
                   >
                     {tierInfo.name}
@@ -305,20 +310,25 @@ export default function ClanListPage() {
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span
-                        className="font-mono font-black text-xs px-2 py-0.5 rounded-md border"
+                        className="inline-flex items-center px-2 py-0.5 rounded-lg border font-mono font-black text-xs shadow-2xs backdrop-blur-xs select-none"
                         style={{
-                          backgroundColor: 'var(--bg-subtle)',
-                          borderColor: 'var(--border-subtle)',
-                          ...(clan.colorGradient
-                            ? {
-                                backgroundImage: clan.colorGradient,
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                              }
-                            : { color: clan.color || '#f59e0b' }),
+                          backgroundColor: 'rgba(0, 0, 0, 0.45)',
+                          borderColor: 'rgba(255, 255, 255, 0.12)',
                         }}
                       >
-                        [{clan.tag}]
+                        <span
+                          style={
+                            clan.colorGradient
+                              ? {
+                                  backgroundImage: clan.colorGradient,
+                                  WebkitBackgroundClip: 'text',
+                                  WebkitTextFillColor: 'transparent',
+                                }
+                              : { color: clan.color || '#f59e0b' }
+                          }
+                        >
+                          [{clan.tag}]
+                        </span>
                       </span>
                       <h2 className="font-bold text-sm ui-title truncate group-hover:text-sky-400 transition-colors">
                         {clan.name}
@@ -340,13 +350,13 @@ export default function ClanListPage() {
                     <div className="flex items-center gap-1.5" title="Thành viên">
                       <Users className="w-3.5 h-3.5 text-sky-400" />
                       <span>
-                        {clan._count?.members || clan.members?.length || 0} / {tierInfo.maxMembers}
+                        {memberCount} / {tierInfo.maxMembers}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-1.5" title="Tổng SP Coin duy trì">
                       <Coins className="w-3.5 h-3.5 text-amber-400" />
-                      <span className="font-mono text-amber-400 font-bold">{clan.effectiveSp || 0} SP</span>
+                      <span className="font-mono text-amber-400 font-bold">{sp} SP</span>
                     </div>
 
                     {clan.leader && (
@@ -367,7 +377,9 @@ export default function ClanListPage() {
         /* List Mode */
         <div className="ui-card rounded-2xl border divide-y overflow-hidden" style={{ borderColor: 'var(--border-ui)' }}>
           {clans.map((clan) => {
-            const tierInfo = getClanTier(clan.effectiveSp || 0);
+            const sp = clan.totalSp ?? clan.effectiveSp ?? 0;
+            const memberCount = clan.memberCount ?? clan._count?.members ?? clan.members?.length ?? 0;
+            const tierInfo = getClanTier(sp);
             return (
               <Link
                 key={clan.id}
@@ -391,18 +403,25 @@ export default function ClanListPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span
-                        className="font-mono font-black text-xs"
-                        style={
-                          clan.colorGradient
-                            ? {
-                                backgroundImage: clan.colorGradient,
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                              }
-                            : { color: clan.color || '#f59e0b' }
-                        }
+                        className="inline-flex items-center px-2 py-0.5 rounded-lg border font-mono font-black text-xs shadow-2xs backdrop-blur-xs select-none"
+                        style={{
+                          backgroundColor: 'rgba(0, 0, 0, 0.45)',
+                          borderColor: 'rgba(255, 255, 255, 0.12)',
+                        }}
                       >
-                        [{clan.tag}]
+                        <span
+                          style={
+                            clan.colorGradient
+                              ? {
+                                  backgroundImage: clan.colorGradient,
+                                  WebkitBackgroundClip: 'text',
+                                  WebkitTextFillColor: 'transparent',
+                                }
+                              : { color: clan.color || '#f59e0b' }
+                          }
+                        >
+                          [{clan.tag}]
+                        </span>
                       </span>
                       <span className="font-bold text-sm ui-title truncate">{clan.name}</span>
                     </div>
@@ -415,12 +434,12 @@ export default function ClanListPage() {
                 <div className="flex items-center gap-5 shrink-0 text-xs font-semibold">
                   <div className="flex items-center gap-1.5 ui-dim">
                     <Users className="w-3.5 h-3.5 text-sky-400" />
-                    <span>{clan._count?.members || 0} / {tierInfo.maxMembers}</span>
+                    <span>{memberCount} / {tierInfo.maxMembers}</span>
                   </div>
 
                   <div className="flex items-center gap-1.5 text-amber-400 font-mono font-bold">
                     <Coins className="w-3.5 h-3.5" />
-                    <span>{clan.effectiveSp || 0} SP</span>
+                    <span>{sp} SP</span>
                   </div>
 
                   <span

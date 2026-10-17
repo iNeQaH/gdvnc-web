@@ -141,7 +141,46 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         },
       },
       orderBy: { submittedAt: 'desc' },
-      take: 10,
+      take: 20,
+    });
+
+    // Lookup matching Level rows by gdLevelId to enrich with level thumbnail, youtubeId, difficultyFace, etc.
+    const gdIds = creatorWorks
+      .map((w) => w.gdLevelId)
+      .filter((id): id is number => typeof id === 'number' && id > 0);
+
+    const levelsByGdId = new Map<number, any>();
+    if (gdIds.length > 0) {
+      const dbLevels = await prisma.level.findMany({
+        where: { gdLevelId: { in: gdIds } },
+        select: {
+          id: true,
+          gdLevelId: true,
+          name: true,
+          difficulty: true,
+          difficultyFace: true,
+          ratingType: true,
+          youtubeId: true,
+          creatorName: true,
+          mode: true,
+          basePp: true,
+        },
+      });
+      for (const lvl of dbLevels) {
+        if (lvl.gdLevelId) levelsByGdId.set(lvl.gdLevelId, lvl);
+      }
+    }
+
+    const enrichedCreatorWorks = creatorWorks.map((work) => {
+      const lvl = work.gdLevelId ? levelsByGdId.get(work.gdLevelId) : null;
+      return {
+        ...work,
+        youtubeId: lvl?.youtubeId || null,
+        levelId: lvl?.id || null,
+        difficultyFace: work.difficultyFace || lvl?.difficultyFace || 0,
+        ratingType: work.ratingType && work.ratingType !== 'NONE' ? work.ratingType : (lvl?.ratingType || 'NONE'),
+        matchedLevel: lvl || null,
+      };
     });
 
     // 3. Phân chia danh sách thành viên theo quyền hạn
@@ -213,7 +252,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         gracePeriodUntil: clan.gracePeriodUntil,
         leader: rawClan.leader,
         top5Beaten,
-        creatorWorks,
+        creatorWorks: enrichedCreatorWorks,
         membersGrouped: {
           leader: leaderMember,
           mods: modMembers,

@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const q = (searchParams.get('q') || '').trim().toLowerCase();
+    const q = (searchParams.get('q') || searchParams.get('search') || '').trim().toLowerCase();
     const sort = searchParams.get('sort') || 'members';
     const order = searchParams.get('order') === 'asc' ? 'asc' : 'desc';
 
@@ -57,10 +57,12 @@ export async function GET(req: Request) {
         color: c.color,
         colorGradient: tierInfo.tier >= 2 ? c.colorGradient : null,
         totalSp,
+        effectiveSp: totalSp,
         tier: tierInfo.tier,
         tierName: tierInfo.name,
         maxMembers: tierInfo.maxMembers,
         memberCount: c.members.length,
+        _count: { members: c.members.length },
         isSuspended,
         gracePeriodUntil: c.gracePeriodUntil,
         leader: {

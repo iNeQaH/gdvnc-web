@@ -6,12 +6,21 @@ import { Crown, ShieldCheck } from 'lucide-react';
 
 export const FONT_PRESETS: Record<string, { label: string; family: string; weight?: string }> = {
   default: { label: 'Mặc định (Inter)', family: 'inherit', weight: '700' },
-  outfit: { label: 'Outfit (Geometria)', family: "'Outfit', sans-serif", weight: '700' },
-  orbitron: { label: 'Orbitron (Sci-fi)', family: "'Orbitron', sans-serif", weight: '800' },
+  pixel: { label: 'Press Start (8-Bit Pixel)', family: "'Press Start 2P', monospace", weight: '400' },
+  glitch: { label: 'Rubik Glitch (Cyber Glitch)', family: "'Rubik Glitch', display", weight: '400' },
+  stencil: { label: 'Black Ops (Heavy Stencil)', family: "'Black Ops One', display", weight: '400' },
+  graffiti: { label: 'Permanent Marker (Graffiti)', family: "'Permanent Marker', cursive", weight: '400' },
+  arcade: { label: 'Righteous (Arcade Synth)', family: "'Righteous', display", weight: '400' },
+  techno: { label: 'Audiowide (Techno Space)', family: "'Audiowide', display", weight: '400' },
+  gothic: { label: 'Cinzel (Gothic Fantasy)', family: "'Cinzel Decorative', serif", weight: '700' },
+  neon: { label: 'Monoton (Neon Lines)', family: "'Monoton', display", weight: '400' },
+  terminal: { label: 'VT323 (CRT Terminal)', family: "'VT323', monospace", weight: '400' },
+  orbitron: { label: 'Orbitron (Sci-Fi Cyber)', family: "'Orbitron', sans-serif", weight: '800' },
+  firacode: { label: 'Fira Code (Tech Code)', family: "'Fira Code', monospace", weight: '700' },
+  unbounded: { label: 'Unbounded (Heavy Bold)', family: "'Unbounded', sans-serif", weight: '800' },
   exo2: { label: 'Exo 2 (Esports)', family: "'Exo 2', sans-serif", weight: '800' },
-  unbounded: { label: 'Unbounded (Bold)', family: "'Unbounded', sans-serif", weight: '800' },
+  outfit: { label: 'Outfit (Geometria)', family: "'Outfit', sans-serif", weight: '700' },
   montserrat: { label: 'Montserrat (Clean)', family: "'Montserrat', sans-serif", weight: '800' },
-  firacode: { label: 'Fira Code (Tech)', family: "'Fira Code', monospace", weight: '700' },
 };
 
 export interface UserDisplayNameProps {
@@ -111,11 +120,14 @@ export function UserDisplayName({
 
     const content = (
       <span
-        className={`font-black text-[11px] tracking-wider shrink-0 mr-1 select-none ${tagClassName}`}
-        style={clanTagStyle}
+        className={`inline-flex items-center px-1.5 py-0.5 rounded-md border font-mono font-black text-[10px] tracking-wider shrink-0 mr-1 select-none shadow-2xs backdrop-blur-xs ${tagClassName}`}
+        style={{
+          backgroundColor: 'rgba(0, 0, 0, 0.45)',
+          borderColor: 'rgba(255, 255, 255, 0.12)',
+        }}
         title={`Clan [${clan.tag}]`}
       >
-        [{clan.tag}]
+        <span style={clanTagStyle}>[{clan.tag}]</span>
       </span>
     );
 
@@ -124,7 +136,7 @@ export function UserDisplayName({
         <Link
           href={`/clan/${clan.slug}`}
           onClick={(e) => e.stopPropagation()}
-          className="hover:opacity-80 transition-opacity"
+          className="hover:opacity-80 transition-opacity inline-flex items-center align-middle"
         >
           {content}
         </Link>
