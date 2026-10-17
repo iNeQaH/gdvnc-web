@@ -438,28 +438,36 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
 
   return (
     <div
-      className="relative min-h-[calc(100vh-5rem)] -mt-4 -mx-4 px-4 pt-4 pb-16 transition-colors duration-300"
-      style={{
-        ...clanThemeStyle,
-        ...(hasCustomClanTheme ? { background: 'var(--bg-page)', color: 'var(--text-body)' } : {}),
-      }}
+      className="relative min-h-[calc(100vh-8rem)] pb-16 transition-colors duration-300"
+      style={clanThemeStyle}
     >
-      {/* Ambient background glow for clan theme (chỉ nằm trọn trong trang Clan, không đè hay ảnh hưởng Sidebar) */}
-      {clan.themeGradient ? (
+      {/* Full-bleed Clan Theme Backdrop (covers entire content pane to the right of the sidebar) */}
+      {hasCustomClanTheme && (
         <div
-          className="absolute inset-0 pointer-events-none opacity-20 dark:opacity-25 overflow-hidden"
-          style={{ background: clan.themeGradient }}
-        />
-      ) : clan.themeColor ? (
-        <div
-          className="absolute inset-0 pointer-events-none opacity-15 dark:opacity-20 overflow-hidden"
+          className="fixed inset-0 md:left-64 pointer-events-none z-0 transition-colors duration-500 overflow-hidden"
           style={{
-            background: `radial-gradient(ellipse at 50% 15%, ${clan.themeColor} 0%, transparent 65%)`
+            backgroundColor: 'var(--bg-page)',
           }}
-        />
-      ) : null}
+        >
+          {clan.themeGradient ? (
+            <div
+              className="absolute inset-0 opacity-25 dark:opacity-30"
+              style={{ background: clan.themeGradient }}
+            />
+          ) : clan.themeColor ? (
+            <div
+              className="absolute inset-0 opacity-20 dark:opacity-25"
+              style={{
+                background: `radial-gradient(ellipse 80% 50% at 50% -10%, ${clan.themeColor} 0%, transparent 75%)`,
+              }}
+            />
+          ) : null}
+          {/* Subtle vignette gradient from top to bottom */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/15 to-black/50 pointer-events-none" />
+        </div>
+      )}
 
-      <div className="relative z-1 max-w-6xl mx-auto space-y-6">
+      <div className="relative z-[1] max-w-6xl mx-auto space-y-6">
         {/* Clan Hero Banner */}
         <div
           className="rounded-3xl border overflow-hidden shadow-2xl relative"

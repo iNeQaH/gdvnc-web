@@ -40,6 +40,7 @@ import { logoutClient } from '@/lib/sessionClient';
 import ImageEditorModal from '@/components/ImageEditorModal';
 import SmartCaptcha from '@/components/SmartCaptcha';
 import ColorPicker from '@/components/ColorPicker';
+import { CircularAnglePicker } from '@/components/CircularAnglePicker';
 import { AnimatedTabs } from '@/components/AnimatedTabs';
 import { UserDisplayName, FONT_PRESETS } from '@/components/UserDisplayName';
 
@@ -934,37 +935,14 @@ export default function SettingsPage() {
                 {/* Gradient Direction & Preview when >= 2 colors */}
                 {themeColors.length >= 2 && (
                   <div
-                    className="p-3.5 rounded-2xl border space-y-2.5 bg-slate-500/5 mt-3 animate-in fade-in duration-200"
+                    className="p-3.5 rounded-2xl border space-y-3 bg-slate-500/5 mt-3 animate-in fade-in duration-200"
                     style={{ borderColor: 'var(--border-subtle)' }}
                   >
-                    <div className="flex items-center justify-between text-xs font-bold">
-                      <span className="ui-dim">{t('settings.gradient_angle')}</span>
-                      <div className="flex items-center gap-1 text-[11px]">
-                        {[0, 45, 90, 135, 180, 270].map((deg) => (
-                          <button
-                            key={deg}
-                            type="button"
-                            onClick={() => updateThemeConfig(themeColors, deg)}
-                            className={`px-1.5 py-0.5 rounded-md font-mono cursor-pointer transition-colors ${
-                              themeAngle === deg
-                                ? 'bg-pink-500 text-white font-bold'
-                                : 'ui-subtle hover:text-pink-500'
-                            }`}
-                          >
-                            {deg}°
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <input
-                      type="range"
-                      min="0"
-                      max="360"
-                      step="5"
+                    <CircularAnglePicker
                       value={themeAngle}
-                      onChange={(e) => updateThemeConfig(themeColors, parseInt(e.target.value, 10) || 0)}
-                      className="w-full accent-pink-500 cursor-pointer"
+                      onChange={(deg) => updateThemeConfig(themeColors, deg)}
+                      label={t('settings.gradient_angle')}
+                      accentColor="var(--accent, #ec4899)"
                     />
 
                     <div
@@ -1360,22 +1338,13 @@ export default function SettingsPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs font-bold pt-1">
-                      <span className="ui-dim">Góc Nghiêng Gradient</span>
-                      <div className="flex items-center gap-1 text-[11px]">
-                        {[0, 45, 90, 135, 180].map((deg) => (
-                          <button
-                            key={deg}
-                            type="button"
-                            onClick={() => setNameGradAngle(deg)}
-                            className={`px-2 py-0.5 rounded-md font-mono cursor-pointer transition-colors ${
-                              nameGradAngle === deg ? 'bg-purple-500 text-white font-bold' : 'ui-subtle hover:text-purple-400'
-                            }`}
-                          >
-                            {deg}°
-                          </button>
-                        ))}
-                      </div>
+                    <div className="pt-1">
+                      <CircularAnglePicker
+                        value={nameGradAngle}
+                        onChange={setNameGradAngle}
+                        label="Góc Nghiêng Gradient"
+                        accentColor="#a855f7"
+                      />
                     </div>
                   </div>
                 )}

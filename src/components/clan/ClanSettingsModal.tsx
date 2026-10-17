@@ -16,6 +16,7 @@ import {
   Upload,
 } from 'lucide-react';
 import ColorPicker from '@/components/ColorPicker';
+import { CircularAnglePicker } from '@/components/CircularAnglePicker';
 import { useToast } from '@/components/GlobalToast';
 
 interface ClanSettingsModalProps {
@@ -89,6 +90,13 @@ export default function ClanSettingsModal({
     }
     return '#8b5cf6';
   });
+  const [themeAngle, setThemeAngle] = useState(() => {
+    if (clan.themeGradient) {
+      const match = clan.themeGradient.match(/(\d+)deg/);
+      if (match) return parseInt(match[1], 10);
+    }
+    return 135;
+  });
 
   const [saving, setSaving] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -144,7 +152,7 @@ export default function ClanSettingsModal({
           ? `linear-gradient(${tagAngle}deg, ${tagGrad1}, ${tagGrad2})`
           : null;
         payload.themeGradient = useThemeGradient
-          ? `linear-gradient(135deg, ${themeGrad1}, ${themeGrad2})`
+          ? `linear-gradient(${themeAngle}deg, ${themeGrad1}, ${themeGrad2})`
           : null;
       } else {
         payload.colorGradient = null;
@@ -226,7 +234,7 @@ export default function ClanSettingsModal({
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSave} className="p-6 overflow-y-auto space-y-5">
+        <form noValidate onSubmit={handleSave} className="p-6 overflow-y-auto space-y-5">
           {error && (
             <div className="p-3 rounded-xl text-xs font-medium flex items-center gap-2 border border-red-500/20 bg-red-500/10 text-red-400">
               <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -283,21 +291,12 @@ export default function ClanSettingsModal({
                     <span className="font-mono text-xs uppercase">{tagGrad2}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-xs font-bold">
-                  <span className="ui-dim">Góc nghiêng:</span>
-                  {[0, 45, 90, 135, 180].map((deg) => (
-                    <button
-                      key={deg}
-                      type="button"
-                      onClick={() => setTagAngle(deg)}
-                      className={`px-2 py-0.5 rounded text-[11px] font-mono ${
-                        tagAngle === deg ? 'bg-amber-500 text-black' : 'ui-subtle'
-                      }`}
-                    >
-                      {deg}°
-                    </button>
-                  ))}
-                </div>
+                <CircularAnglePicker
+                  value={tagAngle}
+                  onChange={setTagAngle}
+                  label="Góc xoay Tag"
+                  accentColor="#f59e0b"
+                />
               </div>
             )}
 
@@ -343,7 +342,7 @@ export default function ClanSettingsModal({
               </label>
               <div className="flex items-center gap-2">
                 <input
-                  type="url"
+                  type="text"
                   value={coverUrl}
                   onChange={(e) => setCoverUrl(e.target.value)}
                   placeholder="URL ảnh bìa hoặc tải ảnh từ máy tính"
@@ -382,7 +381,7 @@ export default function ClanSettingsModal({
                 <Video className="w-3.5 h-3.5 text-red-400" /> Video giới thiệu (YouTube)
               </label>
               <input
-                type="url"
+                type="text"
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
                 placeholder="URL video YouTube"
@@ -453,15 +452,23 @@ export default function ClanSettingsModal({
                 <span className="font-mono text-xs uppercase font-bold">{themeColor}</span>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center gap-2 p-2 rounded-lg border bg-black/20" style={{ borderColor: 'var(--border-subtle)' }}>
-                  <ColorPicker value={themeGrad1} onChange={setThemeGrad1} size={26} round ariaLabel="Theme Grad 1" />
-                  <span className="font-mono text-xs uppercase">{themeGrad1}</span>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2 p-2 rounded-lg border bg-black/20" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <ColorPicker value={themeGrad1} onChange={setThemeGrad1} size={26} round ariaLabel="Theme Grad 1" />
+                    <span className="font-mono text-xs uppercase">{themeGrad1}</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg border bg-black/20" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <ColorPicker value={themeGrad2} onChange={setThemeGrad2} size={26} round ariaLabel="Theme Grad 2" />
+                    <span className="font-mono text-xs uppercase">{themeGrad2}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 p-2 rounded-lg border bg-black/20" style={{ borderColor: 'var(--border-subtle)' }}>
-                  <ColorPicker value={themeGrad2} onChange={setThemeGrad2} size={26} round ariaLabel="Theme Grad 2" />
-                  <span className="font-mono text-xs uppercase">{themeGrad2}</span>
-                </div>
+                <CircularAnglePicker
+                  value={themeAngle}
+                  onChange={setThemeAngle}
+                  label="Góc xoay Theme"
+                  accentColor="#38bdf8"
+                />
               </div>
             )}
           </div>

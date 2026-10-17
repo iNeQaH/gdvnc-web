@@ -117,20 +117,20 @@ export function getCustomThemeVars(
   const primaryBorderHsl = borderHslList[0];
 
   if (isDark) {
-    // DARK MODE: Brightened backgrounds and elements so it is not too dark
-    const pageLightness = 16; // Up from 8% to 16% (rich & visible background)
-    const pageSat = 42;
-    const cardLightness = 22; // Up from 13% to 22% (crisp card contrast)
-    const subtleLightness = 18; // Up from 10% to 18%
+    // DARK MODE: Deep, elegant dark canvas with crisp contrast and refined borders
+    const pageLightness = 8;
+    const pageSat = 28;
+    const cardLightness = 13;
+    const subtleLightness = 10;
 
     const pageStops = hslList
       .map(({ h, s }) => `hsl(${h}, ${Math.round(Math.min(s, pageSat))}%, ${pageLightness}%)`)
       .join(', ');
     const subtleStops = hslList
-      .map(({ h, s }) => `hsl(${h}, ${Math.round(Math.min(s, 35))}%, ${subtleLightness}%)`)
+      .map(({ h, s }) => `hsl(${h}, ${Math.round(Math.min(s, 24))}%, ${subtleLightness}%)`)
       .join(', ');
     const accentBgStops = hslList
-      .map(({ h, s }) => `hsl(${h}, ${Math.round(Math.min(s, 60))}%, 28%)`)
+      .map(({ h, s }) => `hsla(${h}, ${Math.round(Math.min(s, 60))}%, 28%, 0.45)`)
       .join(', ');
 
     const bgPage =
@@ -141,30 +141,30 @@ export function getCustomThemeVars(
     const bgSubtle =
       colors.length > 1
         ? `linear-gradient(${angle}deg, ${subtleStops})`
-        : `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 35))}%, ${subtleLightness}%)`;
+        : `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 24))}%, ${subtleLightness}%)`;
 
     const accentBg =
       colors.length > 1
         ? `linear-gradient(${angle}deg, ${accentBgStops})`
-        : `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 60))}%, 28%)`;
+        : `hsla(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 60))}%, 28%, 0.45)`;
 
     const accentGradient =
       colors.length > 1
         ? `linear-gradient(${angle}deg, ${colors.join(', ')})`
-        : `hsl(${primaryHsl.h}, ${primaryHsl.s}%, ${Math.max(56, primaryHsl.l)}%)`;
+        : `hsl(${primaryHsl.h}, ${primaryHsl.s}%, ${Math.max(54, primaryHsl.l)}%)`;
 
-    // Border in Dark Mode: Thick, luminous, bright and glowing!
-    const borderUiColor = `hsl(${primaryBorderHsl.h}, ${Math.round(Math.max(primaryBorderHsl.s, 75))}%, 68%)`;
-    const borderSubtleColor = `hsl(${primaryBorderHsl.h}, ${Math.round(Math.max(primaryBorderHsl.s, 60))}%, 52%)`;
+    // Border in Dark Mode: Refined, tasteful contrast with subtle accent tint
+    const borderUiColor = `hsl(${primaryBorderHsl.h}, ${Math.round(Math.min(primaryBorderHsl.s, 42))}%, 26%)`;
+    const borderSubtleColor = `hsl(${primaryBorderHsl.h}, ${Math.round(Math.min(primaryBorderHsl.s, 32))}%, 18%)`;
     const glowHsl =
       borderGlowColorInput && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(borderGlowColorInput.trim())
         ? hexToHsl(borderGlowColorInput)
         : primaryBorderHsl;
     const borderGlow = borderGlowEnabled
-      ? `hsla(${glowHsl.h}, ${Math.max(glowHsl.s, 75)}%, 65%, 0.45)`
+      ? `hsla(${glowHsl.h}, ${Math.max(glowHsl.s, 75)}%, 65%, 0.35)`
       : 'transparent';
     const borderGlowShadow = borderGlowEnabled
-      ? `0 0 22px 2px ${borderGlow}, 0 0 38px -6px ${borderGlow}`
+      ? `0 0 18px 1px ${borderGlow}`
       : 'none';
 
     // Conic gradient stops for rotating border:
@@ -175,7 +175,7 @@ export function getCustomThemeVars(
 
     return {
       '--bg-page': bgPage,
-      '--bg-card': `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 30))}%, ${cardLightness}%)`,
+      '--bg-card': `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 22))}%, ${cardLightness}%)`,
       '--bg-subtle': bgSubtle,
       '--border-ui': borderUiColor,
       '--border-subtle': borderSubtleColor,
@@ -183,10 +183,10 @@ export function getCustomThemeVars(
       '--border-glow-shadow': borderGlowShadow,
       '--border-gradient-stops': borderStops,
       '--border-animation-play-state': borderAnimation ? 'running' : 'paused',
-      '--text-title': `hsl(${primaryHsl.h}, 20%, 98%)`,
-      '--text-body': `hsl(${primaryHsl.h}, 20%, 90%)`,
-      '--text-dim': `hsl(${primaryHsl.h}, 20%, 70%)`,
-      '--accent': `hsl(${primaryHsl.h}, ${primaryHsl.s}%, ${Math.max(56, primaryHsl.l)}%)`,
+      '--text-title': `hsl(${primaryHsl.h}, 15%, 98%)`,
+      '--text-body': `hsl(${primaryHsl.h}, 12%, 86%)`,
+      '--text-dim': `hsl(${primaryHsl.h}, 10%, 65%)`,
+      '--accent': `hsl(${primaryHsl.h}, ${primaryHsl.s}%, ${Math.max(54, primaryHsl.l)}%)`,
       '--accent-hover': `hsl(${primaryHsl.h}, ${primaryHsl.s}%, ${Math.max(46, primaryHsl.l - 8)}%)`,
       '--accent-bg': accentBg,
       '--accent-text': `hsl(${primaryHsl.h}, ${Math.round(Math.min(primaryHsl.s, 40))}%, 94%)`,
@@ -230,9 +230,9 @@ export function getCustomThemeVars(
       ? `linear-gradient(${angle}deg, ${colors.join(', ')})`
       : `hsl(${primaryHsl.h}, ${primaryHsl.s}%, ${primaryHsl.l}%)`;
 
-  // Border in Light Mode: Darker, bolder contrast against light backgrounds!
-  const borderUiColor = `hsl(${primaryBorderHsl.h}, ${Math.round(Math.max(primaryBorderHsl.s, 70))}%, 26%)`;
-  const borderSubtleColor = `hsl(${primaryBorderHsl.h}, ${Math.round(Math.max(primaryBorderHsl.s, 50))}%, 40%)`;
+  // Border in Light Mode: Clean subtle UI borders
+  const borderUiColor = `hsl(${primaryBorderHsl.h}, ${Math.round(Math.min(primaryBorderHsl.s, 35))}%, 78%)`;
+  const borderSubtleColor = `hsl(${primaryBorderHsl.h}, ${Math.round(Math.min(primaryBorderHsl.s, 25))}%, 86%)`;
   const lightGlowHsl =
     borderGlowColorInput && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(borderGlowColorInput.trim())
       ? hexToHsl(borderGlowColorInput)
