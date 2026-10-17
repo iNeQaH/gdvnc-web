@@ -270,16 +270,25 @@ export default function ClanListPage() {
             if (isTier2Plus) {
               if (clan.themeGradient) {
                 cardStyle.backgroundImage = `linear-gradient(to bottom, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.94)), ${clan.themeGradient}`;
+                const gMatch = clan.themeGradient.match(/(\d+)deg/);
+                const colMatch = clan.themeGradient.match(/#[a-fA-F0-9]{3,8}/g);
+                if (gMatch && colMatch && colMatch.length >= 2) {
+                  const angle = parseInt(gMatch[1], 10) || 135;
+                  const rad = (angle * Math.PI) / 180;
+                  const ox = Math.round(Math.sin(rad) * 8);
+                  const oy = Math.round(-Math.cos(rad) * 8);
+                  cardStyle.borderColor = colMatch[0];
+                  cardStyle.boxShadow = isTier3
+                    ? `${ox}px ${oy}px 24px 2px ${colMatch[1]}77, ${-ox}px ${-oy}px 24px 2px ${colMatch[0]}77, 0 0 20px 2px ${colMatch[0]}55`
+                    : `${ox}px ${oy}px 16px 1px ${colMatch[1]}55, ${-ox}px ${-oy}px 16px 1px ${colMatch[0]}55`;
+                } else {
+                  cardStyle.borderColor = `color-mix(in srgb, ${primaryThemeColor} 55%, var(--border-ui))`;
+                  cardStyle.boxShadow = `0 0 16px color-mix(in srgb, ${primaryThemeColor} 35%, transparent)`;
+                }
               } else if (clan.themeColor) {
                 cardStyle.backgroundColor = `color-mix(in srgb, ${clan.themeColor} 12%, var(--bg-card))`;
-              }
-
-              if (isTier3) {
-                cardStyle.borderColor = `color-mix(in srgb, ${primaryThemeColor} 65%, var(--border-ui))`;
-                cardStyle.boxShadow = `0 0 22px color-mix(in srgb, ${primaryThemeColor} 45%, transparent), 0 0 45px color-mix(in srgb, ${primaryThemeColor} 25%, transparent)`;
-              } else {
-                cardStyle.borderColor = `color-mix(in srgb, ${primaryThemeColor} 45%, var(--border-ui))`;
-                cardStyle.boxShadow = `0 0 14px color-mix(in srgb, ${primaryThemeColor} 30%, transparent)`;
+                cardStyle.borderColor = `color-mix(in srgb, ${primaryThemeColor} 55%, var(--border-ui))`;
+                cardStyle.boxShadow = `0 0 16px color-mix(in srgb, ${primaryThemeColor} 35%, transparent)`;
               }
             }
 

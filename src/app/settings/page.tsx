@@ -82,7 +82,10 @@ export default function SettingsPage() {
   const [nameGradColor2, setNameGradColor2] = useState<string>('#ec4899');
   const [nameGradAngle, setNameGradAngle] = useState<number>(90);
   const [nameUseGlow, setNameUseGlow] = useState<boolean>(false);
-  const [nameGlowColor, setNameGlowColor] = useState<string>('#38bdf8');
+  const [nameGlowMode, setNameGlowMode] = useState<boolean>(false); // false = solid, true = 2-color gradient
+  const [nameGlowColor1, setNameGlowColor1] = useState<string>('#38bdf8');
+  const [nameGlowColor2, setNameGlowColor2] = useState<string>('#ec4899');
+  const [nameGlowAngle, setNameGlowAngle] = useState<number>(135);
   const [nameFont, setNameFont] = useState<string>('default');
   const [savingNameStyle, setSavingNameStyle] = useState<boolean>(false);
 
@@ -181,7 +184,18 @@ export default function SettingsPage() {
         }
         if (json.user.nameGlow) {
           setNameUseGlow(true);
-          setNameGlowColor(json.user.nameGlow);
+          const glowGradMatch = json.user.nameGlow.match(
+            /linear-gradient\s*\(\s*(\d+)deg\s*,\s*(#[a-fA-F0-9]{3,8}|[^\s,]+)\s*,\s*(#[a-fA-F0-9]{3,8}|[^\s,]+)\s*\)/i
+          );
+          if (glowGradMatch) {
+            setNameGlowMode(true);
+            setNameGlowAngle(parseInt(glowGradMatch[1], 10) || 135);
+            setNameGlowColor1(glowGradMatch[2].trim());
+            setNameGlowColor2(glowGradMatch[3].trim());
+          } else {
+            setNameGlowMode(false);
+            setNameGlowColor1(json.user.nameGlow);
+          }
         }
       }
     } catch (e) {}
@@ -207,7 +221,11 @@ export default function SettingsPage() {
             nameGradient: nameUseGradient
               ? `linear-gradient(${nameGradAngle}deg, ${nameGradColor1}, ${nameGradColor2})`
               : null,
-            nameGlow: nameUseGlow ? (nameGlowColor || '#38bdf8') : null,
+            nameGlow: !nameUseGlow
+              ? null
+              : nameGlowMode
+              ? `linear-gradient(${nameGlowAngle}deg, ${nameGlowColor1}, ${nameGlowColor2})`
+              : (nameGlowColor1 || '#38bdf8'),
             nameFont: nameFont === 'default' ? null : nameFont,
           };
 
@@ -225,7 +243,10 @@ export default function SettingsPage() {
           setNameGradColor2('#ec4899');
           setNameGradAngle(90);
           setNameUseGlow(false);
-          setNameGlowColor('#38bdf8');
+          setNameGlowMode(false);
+          setNameGlowColor1('#38bdf8');
+          setNameGlowColor2('#ec4899');
+          setNameGlowAngle(135);
           setNameFont('default');
         }
         const updatedUser = { ...currentUser, ...payload };
@@ -364,6 +385,39 @@ export default function SettingsPage() {
       setNameGradColor1(pair[0]);
       setNameGradColor2(pair[1]);
       setNameGradAngle(randAngle);
+    }
+  };
+
+  const handleRandomGlowColor = () => {
+    const RANDOM_SOLO_COLORS = [
+      '#38bdf8', '#0ea5e9', '#06b6d4', '#10b981', '#22c55e',
+      '#ef4444', '#f43f5e', '#ec4899', '#d946ef', '#a855f7',
+      '#8b5cf6', '#6366f1', '#3b82f6', '#facc15', '#4ade80'
+    ];
+    const RANDOM_GRADIENT_PAIRS = [
+      ['#38bdf8', '#8b5cf6'],
+      ['#ec4899', '#f59e0b'],
+      ['#06b6d4', '#3b82f6'],
+      ['#10b981', '#06b6d4'],
+      ['#f43f5e', '#fb923c'],
+      ['#a855f7', '#ec4899'],
+      ['#facc15', '#ef4444'],
+      ['#4ade80', '#3b82f6'],
+      ['#d946ef', '#8b5cf6'],
+      ['#00f2fe', '#4facfe'],
+      ['#ff0844', '#ffb199'],
+      ['#b224ef', '#7579ff'],
+    ];
+    if (!nameGlowMode) {
+      const random = RANDOM_SOLO_COLORS[Math.floor(Math.random() * RANDOM_SOLO_COLORS.length)];
+      setNameGlowColor1(random);
+    } else {
+      const pair = RANDOM_GRADIENT_PAIRS[Math.floor(Math.random() * RANDOM_GRADIENT_PAIRS.length)];
+      const angles = [0, 45, 90, 135, 180, 225, 270, 315];
+      const randAngle = angles[Math.floor(Math.random() * angles.length)];
+      setNameGlowColor1(pair[0]);
+      setNameGlowColor2(pair[1]);
+      setNameGlowAngle(randAngle);
     }
   };
 
@@ -1316,7 +1370,11 @@ export default function SettingsPage() {
                       nameGradient: nameUseGradient
                         ? `linear-gradient(${nameGradAngle}deg, ${nameGradColor1}, ${nameGradColor2})`
                         : null,
-                      nameGlow: nameUseGlow ? (nameGlowColor || '#38bdf8') : null,
+                      nameGlow: !nameUseGlow
+                        ? null
+                        : nameGlowMode
+                        ? `linear-gradient(${nameGlowAngle}deg, ${nameGlowColor1}, ${nameGlowColor2})`
+                        : (nameGlowColor1 || '#38bdf8'),
                       nameFont: nameFont,
                       clan: data?.clanMember?.clan || data?.clan || null,
                       clanMember: data?.clanMember || null,
@@ -1334,22 +1392,33 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   {Object.entries(SETTINGS_FONT_PRESETS).map(([key, f]) => {
                     const active = nameFont === key;
+                    const scale = f.scale || 1;
                     return (
                       <button
                         key={key}
                         type="button"
                         onClick={() => setNameFont(key)}
-                        className={`p-3 rounded-2xl border text-left text-xs transition-all cursor-pointer flex flex-col gap-1 ${
+                        className={`p-3 rounded-2xl border text-left text-xs transition-all cursor-pointer flex flex-col justify-between min-h-[78px] overflow-hidden ${
                           active
                             ? 'border-purple-500 bg-purple-500/15 font-bold shadow-xs'
                             : 'ui-subtle hover:border-purple-500/40'
                         }`}
                         style={{ borderColor: active ? undefined : 'var(--border-ui)' }}
                       >
-                        <span className="text-[10px] ui-dim font-sans font-bold">{f.label}</span>
-                        <span className="truncate text-base" style={{ fontFamily: f.family, fontWeight: (f as any).weight || '700' }}>
-                          {currentUser.username}
-                        </span>
+                        <span className="text-[10px] ui-dim font-sans font-bold block">{f.label}</span>
+                        <div className="h-9 flex items-center overflow-hidden">
+                          <span
+                            className="truncate block"
+                            style={{
+                              fontFamily: f.family,
+                              fontWeight: (f as any).weight || '700',
+                              fontSize: `${scale}rem`,
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {currentUser.username}
+                          </span>
+                        </div>
                       </button>
                     );
                   })}
@@ -1453,9 +1522,22 @@ export default function SettingsPage() {
               {/* Glow Customization */}
               <div className="pt-3 border-t space-y-3" style={{ borderColor: 'var(--border-subtle)' }}>
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold ui-title flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400" /> {t('settings.font_glow')}
-                  </label>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-bold ui-title flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-purple-400" /> {t('settings.font_glow')}
+                    </label>
+                    {nameUseGlow && (
+                      <button
+                        type="button"
+                        onClick={handleRandomGlowColor}
+                        className="px-2.5 py-1 text-xs font-bold rounded-lg border border-purple-500/30 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                        title="Random Glow"
+                      >
+                        <Shuffle className="w-3.5 h-3.5" />
+                        <span>Random</span>
+                      </button>
+                    )}
+                  </div>
                   <label className="flex items-center gap-2 cursor-pointer text-xs font-bold ui-dim hover:text-purple-400 transition-colors">
                     <input
                       type="checkbox"
@@ -1468,20 +1550,89 @@ export default function SettingsPage() {
                 </div>
 
                 {nameUseGlow && (
-                  <div className="p-3.5 rounded-xl border bg-slate-500/5 space-y-2 animate-in fade-in duration-200" style={{ borderColor: 'var(--border-subtle)' }}>
-                    <div className="flex items-center gap-3">
-                      <ColorPicker
-                        value={nameGlowColor}
-                        onChange={setNameGlowColor}
-                        size={32}
-                        round
-                        ariaLabel={t('settings.font_glow_color')}
-                      />
-                      <div className="flex-1">
-                        <span className="text-xs font-bold ui-title block">{t('settings.font_glow_color')}</span>
-                        <span className="font-mono text-xs uppercase ui-dim">{nameGlowColor}</span>
+                  <div className="p-4 rounded-xl border bg-slate-500/5 space-y-3 animate-in fade-in duration-200" style={{ borderColor: 'var(--border-subtle)' }}>
+                    {/* Glow Mode Switcher */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold ui-title">
+                        {language === 'vi' ? 'Chế độ Glow' : 'Glow Mode'}
+                      </span>
+                      <div className="flex rounded-xl border p-0.5 bg-slate-500/5 text-xs font-bold" style={{ borderColor: 'var(--border-ui)' }}>
+                        <button
+                          type="button"
+                          onClick={() => setNameGlowMode(false)}
+                          className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                            !nameGlowMode ? 'bg-purple-500 text-white shadow-xs' : 'ui-dim hover:text-purple-400'
+                          }`}
+                        >
+                          {t('settings.font_solid')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNameGlowMode(true)}
+                          className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                            nameGlowMode ? 'bg-purple-500 text-white shadow-xs' : 'ui-dim hover:text-purple-400'
+                          }`}
+                        >
+                          {t('settings.font_gradient')}
+                        </button>
                       </div>
                     </div>
+
+                    {!nameGlowMode ? (
+                      <div className="flex items-center gap-3 p-3 rounded-xl border bg-slate-500/5" style={{ borderColor: 'var(--border-ui)' }}>
+                        <ColorPicker
+                          value={nameGlowColor1}
+                          onChange={setNameGlowColor1}
+                          size={32}
+                          round
+                          ariaLabel={t('settings.font_glow_color')}
+                        />
+                        <div className="flex-1">
+                          <span className="text-xs font-bold ui-title block">{t('settings.font_glow_color')}</span>
+                          <span className="font-mono text-xs uppercase ui-dim">{nameGlowColor1}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="flex items-center gap-2.5 p-2 rounded-xl border bg-slate-500/5" style={{ borderColor: 'var(--border-subtle)' }}>
+                            <ColorPicker
+                              value={nameGlowColor1}
+                              onChange={setNameGlowColor1}
+                              size={28}
+                              round
+                              ariaLabel="Màu Glow 1"
+                            />
+                            <div className="min-w-0">
+                              <span className="text-[11px] font-bold block ui-dim">Màu 1</span>
+                              <span className="font-mono text-[11px] uppercase truncate block">{nameGlowColor1}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2.5 p-2 rounded-xl border bg-slate-500/5" style={{ borderColor: 'var(--border-subtle)' }}>
+                            <ColorPicker
+                              value={nameGlowColor2}
+                              onChange={setNameGlowColor2}
+                              size={28}
+                              round
+                              ariaLabel="Màu Glow 2"
+                            />
+                            <div className="min-w-0">
+                              <span className="text-[11px] font-bold block ui-dim">Màu 2</span>
+                              <span className="font-mono text-[11px] uppercase truncate block">{nameGlowColor2}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="pt-1">
+                          <CircularAnglePicker
+                            value={nameGlowAngle}
+                            onChange={setNameGlowAngle}
+                            label={language === 'vi' ? 'Góc xoay Glow' : 'Glow Angle'}
+                            accentColor="#a855f7"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

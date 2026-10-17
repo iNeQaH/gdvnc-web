@@ -519,6 +519,26 @@ export default function ClanSettingsModal({
                 />
               </div>
             )}
+
+            {/* Live Preview of Clan Theme & Glow */}
+            <div
+              className="w-full h-11 rounded-xl border flex items-center justify-between px-3 text-xs font-mono font-bold transition-all mt-2"
+              style={{
+                borderColor: 'var(--border-ui)',
+                backgroundColor: 'var(--bg-card)',
+                boxShadow: useThemeGradient && isTier2OrHigher
+                  ? `${Math.round(Math.sin((themeAngle * Math.PI) / 180) * 8)}px ${Math.round(-Math.cos((themeAngle * Math.PI) / 180) * 8)}px 22px 1px ${themeGrad2}77, ${-Math.round(Math.sin((themeAngle * Math.PI) / 180) * 8)}px ${-Math.round(-Math.cos((themeAngle * Math.PI) / 180) * 8)}px 22px 1px ${themeGrad1}77, 0 0 16px 2px ${themeGrad1}55`
+                  : `0 0 18px 2px ${themeColor}66`,
+              }}
+            >
+              <span className="ui-dim text-[11px] flex items-center gap-1.5 font-sans font-bold">
+                <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                <span>{isEn ? 'Clan Theme & Glow Preview' : 'Xem thử Glow Clan'}</span>
+              </span>
+              <span className="text-[10px] ui-dim font-sans font-normal">
+                {useThemeGradient && isTier2OrHigher ? `${themeAngle}° Gradient (2 màu)` : (isEn ? 'Solid' : 'Đơn sắc')}
+              </span>
+            </div>
           </div>
 
           {/* Transfer Ownership (Leader or Web Owner only) */}

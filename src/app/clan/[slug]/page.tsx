@@ -1206,6 +1206,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
     clanThemeStyle['--accent'] = clan.themeColor;
   }
 
+  const isTier2Plus = tierInfo.tier >= 2;
   const hasCustomClanTheme = clanColors.length > 0;
   if (hasCustomClanTheme || isTier3) {
     const themeColors = clanColors.length > 0 ? clanColors : ['#a855f7', '#6366f1'];
@@ -1215,8 +1216,8 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
       clanAngle,
       undefined,
       true,
-      isTier3,
-      isTier3 ? themeColors : undefined,
+      isTier2Plus || isTier3,
+      themeColors,
       clanAngle
     );
     Object.assign(clanThemeStyle, themeVars);
@@ -1226,7 +1227,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
     <div
       className="relative min-h-[calc(100vh-8rem)] pb-16 transition-colors duration-300"
       style={clanThemeStyle}
-      data-tier3={isTier3 ? 'true' : undefined}
+      data-tier3={isTier3 || (isTier2Plus && hasCustomClanTheme) ? 'true' : undefined}
     >
       {/* Full-bleed Clan Theme Backdrop */}
       {hasCustomClanTheme && (

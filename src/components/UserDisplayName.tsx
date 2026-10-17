@@ -4,42 +4,42 @@ import React from 'react';
 import Link from 'next/link';
 import { Crown, ShieldCheck } from 'lucide-react';
 
-export const FONT_PRESETS: Record<string, { label: string; family: string; weight?: string }> = {
-  default: { label: 'Mặc định', family: 'inherit', weight: '700' },
-  pusab: { label: 'Pusab', family: "'Pusab', sans-serif", weight: '400' },
-  pixel: { label: 'Press Start 2P', family: "'Press Start 2P', monospace", weight: '400' },
-  glitch: { label: 'Katto', family: "'Katto', display, cursive", weight: '400' },
-  katto: { label: 'Katto', family: "'Katto', display, cursive", weight: '400' },
-  stencil: { label: 'Black Ops One', family: "'Black Ops One', display", weight: '400' },
-  graffiti: { label: 'Permanent Marker', family: "'Permanent Marker', cursive", weight: '400' },
-  arcade: { label: 'Righteous', family: "'Righteous', display", weight: '400' },
-  techno: { label: 'Audiowide', family: "'Audiowide', display", weight: '400' },
-  gothic: { label: 'Cinzel Decorative', family: "'Cinzel Decorative', serif", weight: '700' },
-  ornate: { label: 'Rasley Heights', family: "'Rasley Heights', cursive", weight: '400' },
-  rasley: { label: 'Rasley Heights', family: "'Rasley Heights', cursive", weight: '400' },
-  horror: { label: "Coraline's Cat", family: "\"Coraline's Cat\", cursive", weight: '400' },
-  coraline: { label: "Coraline's Cat", family: "\"Coraline's Cat\", cursive", weight: '400' },
-  neon: { label: 'Angels', family: "'Angels', display, sans-serif", weight: '400' },
-  angels: { label: 'Angels', family: "'Angels', display, sans-serif", weight: '400' },
-  terminal: { label: 'VT323', family: "'VT323', monospace", weight: '400' },
-  orbitron: { label: 'Orbitron', family: "'Orbitron', sans-serif", weight: '800' },
-  firacode: { label: 'Fira Code', family: "'Fira Code', monospace", weight: '700' },
-  unbounded: { label: 'Unbounded', family: "'Unbounded', sans-serif", weight: '800' },
-  exo2: { label: 'Exo 2', family: "'Exo 2', sans-serif", weight: '800' },
-  outfit: { label: 'Outfit', family: "'Outfit', sans-serif", weight: '700' },
-  montserrat: { label: 'Montserrat', family: "'Montserrat', sans-serif", weight: '800' },
+export const FONT_PRESETS: Record<string, { label: string; family: string; weight?: string; scale?: number }> = {
+  default: { label: 'Mặc định', family: 'inherit', weight: '700', scale: 1 },
+  pusab: { label: 'Pusab', family: "'Pusab', sans-serif", weight: '400', scale: 1.25 },
+  pixel: { label: 'Press Start 2P', family: "'Press Start 2P', monospace", weight: '400', scale: 0.92 },
+  glitch: { label: 'Katto', family: "'Katto', display, cursive", weight: '400', scale: 1.38 },
+  katto: { label: 'Katto', family: "'Katto', display, cursive", weight: '400', scale: 1.38 },
+  stencil: { label: 'Black Ops One', family: "'Black Ops One', display", weight: '400', scale: 1.26 },
+  graffiti: { label: 'Permanent Marker', family: "'Permanent Marker', cursive", weight: '400', scale: 1.26 },
+  arcade: { label: 'Righteous', family: "'Righteous', display", weight: '400', scale: 1.05 },
+  techno: { label: 'Audiowide', family: "'Audiowide', display", weight: '400', scale: 1.05 },
+  gothic: { label: 'Cinzel Decorative', family: "'Cinzel Decorative', serif", weight: '700', scale: 1.05 },
+  ornate: { label: 'Rasley Heights', family: "'Rasley Heights', cursive", weight: '400', scale: 0.74 },
+  rasley: { label: 'Rasley Heights', family: "'Rasley Heights', cursive", weight: '400', scale: 0.74 },
+  horror: { label: "Coraline's Cat", family: "\"Coraline's Cat\", cursive", weight: '400', scale: 0.76 },
+  coraline: { label: "Coraline's Cat", family: "\"Coraline's Cat\", cursive", weight: '400', scale: 0.76 },
+  neon: { label: 'Angels', family: "'Angels', display, sans-serif", weight: '400', scale: 1.08 },
+  angels: { label: 'Angels', family: "'Angels', display, sans-serif", weight: '400', scale: 1.08 },
+  terminal: { label: 'VT323', family: "'VT323', monospace", weight: '400', scale: 1.15 },
+  orbitron: { label: 'Orbitron', family: "'Orbitron', sans-serif", weight: '800', scale: 1.0 },
+  firacode: { label: 'Fira Code', family: "'Fira Code', monospace", weight: '700', scale: 1.0 },
+  unbounded: { label: 'Unbounded', family: "'Unbounded', sans-serif", weight: '800', scale: 0.95 },
+  exo2: { label: 'Exo 2', family: "'Exo 2', sans-serif", weight: '800', scale: 1.0 },
+  outfit: { label: 'Outfit', family: "'Outfit', sans-serif", weight: '700', scale: 1.0 },
+  montserrat: { label: 'Montserrat', family: "'Montserrat', sans-serif", weight: '800', scale: 1.0 },
 };
 
-export const SETTINGS_FONT_PRESETS: Record<string, { label: string; family: string; weight?: string }> = {
-  default: { label: 'Mặc định', family: 'inherit', weight: '700' },
-  pusab: { label: 'Pusab', family: "'Pusab', sans-serif", weight: '400' },
-  pixel: { label: 'Press Start 2P', family: "'Press Start 2P', monospace", weight: '400' },
-  glitch: { label: 'Katto', family: "'Katto', display, cursive", weight: '400' },
-  neon: { label: 'Angels', family: "'Angels', display, sans-serif", weight: '400' },
-  graffiti: { label: 'Permanent Marker', family: "'Permanent Marker', cursive", weight: '400' },
-  stencil: { label: 'Black Ops One', family: "'Black Ops One', display", weight: '400' },
-  ornate: { label: 'Rasley Heights', family: "'Rasley Heights', cursive", weight: '400' },
-  horror: { label: "Coraline's Cat", family: "\"Coraline's Cat\", cursive", weight: '400' },
+export const SETTINGS_FONT_PRESETS: Record<string, { label: string; family: string; weight?: string; scale?: number }> = {
+  default: { label: 'Mặc định', family: 'inherit', weight: '700', scale: 1 },
+  pusab: { label: 'Pusab', family: "'Pusab', sans-serif", weight: '400', scale: 1.25 },
+  pixel: { label: 'Press Start 2P', family: "'Press Start 2P', monospace", weight: '400', scale: 0.92 },
+  glitch: { label: 'Katto', family: "'Katto', display, cursive", weight: '400', scale: 1.38 },
+  neon: { label: 'Angels', family: "'Angels', display, sans-serif", weight: '400', scale: 1.08 },
+  graffiti: { label: 'Permanent Marker', family: "'Permanent Marker', cursive", weight: '400', scale: 1.26 },
+  stencil: { label: 'Black Ops One', family: "'Black Ops One', display", weight: '400', scale: 1.26 },
+  ornate: { label: 'Rasley Heights', family: "'Rasley Heights', cursive", weight: '400', scale: 0.74 },
+  horror: { label: "Coraline's Cat", family: "\"Coraline's Cat\", cursive", weight: '400', scale: 0.76 },
 };
 
 export interface UserDisplayNameProps {
@@ -110,12 +110,31 @@ export function UserDisplayName({
     clanTagStyle.WebkitTextFillColor = 'initial';
   }
 
+  // Helper tính toán Drop-shadow Glow (hỗ trợ cả đơn sắc lẫn 2 màu gradient kèm góc xoay)
+  const getGlowFilter = (glow: string) => {
+    const gradMatch = glow.match(
+      /linear-gradient\s*\(\s*(\d+)deg\s*,\s*(#[a-fA-F0-9]{3,8}|[^\s,]+)\s*,\s*(#[a-fA-F0-9]{3,8}|[^\s,]+)\s*\)/i
+    );
+    if (gradMatch) {
+      const angle = parseInt(gradMatch[1], 10) || 135;
+      const col1 = gradMatch[2].trim();
+      const col2 = gradMatch[3].trim();
+      const rad = (angle * Math.PI) / 180;
+      const ox = Math.round(Math.sin(rad) * 4);
+      const oy = Math.round(-Math.cos(rad) * 4);
+      return `drop-shadow(${ox}px ${oy}px 4px ${col2}) drop-shadow(${-ox}px ${-oy}px 4px ${col1}) drop-shadow(0 0 6px ${col1}88)`;
+    }
+    return `drop-shadow(0 0 3px ${glow}) drop-shadow(0 0 6px ${glow}88)`;
+  };
+
   // Style cho Tên Supporter (bảo đảm độc lập 100% với màu Clan tag)
   const nameStyle: React.CSSProperties = {};
-  if (user?.nameFont && FONT_PRESETS[user.nameFont]?.family) {
-    nameStyle.fontFamily = FONT_PRESETS[user.nameFont].family;
-    if (FONT_PRESETS[user.nameFont].weight) {
-      nameStyle.fontWeight = FONT_PRESETS[user.nameFont].weight;
+  if (user?.nameFont && FONT_PRESETS[user.nameFont]) {
+    const preset = FONT_PRESETS[user.nameFont];
+    if (preset.family) nameStyle.fontFamily = preset.family;
+    if (preset.weight) nameStyle.fontWeight = preset.weight;
+    if (preset.scale && preset.scale !== 1) {
+      nameStyle.fontSize = `${preset.scale}em`;
     }
   }
   if (user?.nameGradient) {
@@ -123,18 +142,18 @@ export function UserDisplayName({
     nameStyle.WebkitBackgroundClip = 'text';
     nameStyle.WebkitTextFillColor = 'transparent';
     if (user?.nameGlow) {
-      nameStyle.filter = `drop-shadow(0 0 3px ${user.nameGlow}) drop-shadow(0 0 6px ${user.nameGlow}88)`;
+      nameStyle.filter = getGlowFilter(user.nameGlow);
     }
   } else if (user?.nameColor) {
     nameStyle.color = user.nameColor;
     nameStyle.WebkitTextFillColor = 'initial';
     if (user?.nameGlow) {
-      nameStyle.filter = `drop-shadow(0 0 3px ${user.nameGlow}) drop-shadow(0 0 6px ${user.nameGlow}88)`;
+      nameStyle.filter = getGlowFilter(user.nameGlow);
     }
   } else {
     nameStyle.WebkitTextFillColor = 'initial';
     if (user?.nameGlow) {
-      nameStyle.filter = `drop-shadow(0 0 3px ${user.nameGlow}) drop-shadow(0 0 6px ${user.nameGlow}88)`;
+      nameStyle.filter = getGlowFilter(user.nameGlow);
     }
   }
 
