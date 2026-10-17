@@ -16,6 +16,7 @@ import {
   Upload,
   Crown,
   Sparkles,
+  Lock,
 } from 'lucide-react';
 import ColorPicker from '@/components/ColorPicker';
 import { CircularAnglePicker } from '@/components/CircularAnglePicker';
@@ -71,7 +72,7 @@ export default function ClanSettingsModal({
 
   // Gradient & Theme options for Tier 2+
   const isTier2OrHigher = Boolean(clan.tier >= 2 || (clan.totalSp || clan.effectiveSp || 0) >= 10);
-  const isTier3 = Boolean(clan.tier === 3 || (clan.totalSp || clan.effectiveSp || 0) >= 30);
+  const isTier3 = Boolean(clan.tier === 3 || (clan.totalSp || clan.effectiveSp || 0) >= 20);
   const [useTagGradient, setUseTagGradient] = useState(Boolean(clan.colorGradient));
   const [tagGrad1, setTagGrad1] = useState(() => {
     if (clan.colorGradient) {
@@ -189,7 +190,8 @@ export default function ClanSettingsModal({
         themeColor: themeColor || null,
       };
 
-      const glowSuffix = `/*glow:${glowEnabled ? 1 : 0}:${glowOpacity}*/`;
+      const effectiveGlow = isTier3 ? glowEnabled : false;
+      const glowSuffix = `/*glow:${effectiveGlow ? 1 : 0}:${glowOpacity}*/`;
 
       if (isTier2OrHigher) {
         payload.colorGradient = useTagGradient
@@ -558,37 +560,43 @@ export default function ClanSettingsModal({
               </div>
             )}
 
-            {/* Glow Controls */}
+            {/* Glow Controls (Tier 3 Only) */}
             <div className="pt-2 border-t space-y-3" style={{ borderColor: 'var(--border-subtle)' }}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-sky-400" />
+                  <Sparkles className="w-4 h-4 text-purple-400" />
                   <span className="text-xs font-semibold">
                     {isEn ? 'Clan Glow Aura' : 'Hiệu ứng Glow Clan'}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setGlowEnabled(!glowEnabled)}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
-                    glowEnabled
-                      ? 'bg-sky-500/20 text-sky-300 border-sky-500/40 hover:bg-sky-500/30'
-                      : 'bg-zinc-800/60 text-zinc-400 border-zinc-700/60 hover:text-zinc-200 hover:bg-zinc-800'
-                  }`}
-                >
-                  {glowEnabled
-                    ? (isEn ? 'Glow: ON' : 'Glow: Bật')
-                    : (isEn ? 'Glow: OFF' : 'Glow: Tắt')}
-                </button>
+                {isTier3 ? (
+                  <button
+                    type="button"
+                    onClick={() => setGlowEnabled(!glowEnabled)}
+                    className={`px-3 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                      glowEnabled
+                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 hover:bg-purple-500/30'
+                        : 'bg-zinc-800/60 text-zinc-400 border-zinc-700/60 hover:text-zinc-200 hover:bg-zinc-800'
+                    }`}
+                  >
+                    {glowEnabled
+                      ? (isEn ? 'Glow: ON' : 'Glow: Bật')
+                      : (isEn ? 'Glow: OFF' : 'Glow: Tắt')}
+                  </button>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center gap-1">
+                    <Lock className="w-3 h-3" /> {isEn ? 'Requires Tier 3' : 'Cần Cấp 3 (Tier 3)'}
+                  </span>
+                )}
               </div>
 
-              {glowEnabled && (
+              {isTier3 && glowEnabled ? (
                 <div className="space-y-1.5 bg-black/20 p-2.5 rounded-xl border" style={{ borderColor: 'var(--border-subtle)' }}>
                   <div className="flex items-center justify-between text-xs">
                     <span className="ui-dim text-[11px] font-medium">
                       {isEn ? 'Glow Brightness / Opacity' : 'Độ sáng / mờ của Glow'}
                     </span>
-                    <span className="font-mono text-xs font-bold text-sky-400">
+                    <span className="font-mono text-xs font-bold text-purple-400">
                       {glowOpacity}%
                     </span>
                   </div>
@@ -599,7 +607,7 @@ export default function ClanSettingsModal({
                     step="5"
                     value={glowOpacity}
                     onChange={(e) => setGlowOpacity(parseInt(e.target.value, 10))}
-                    className="w-full accent-sky-400 h-1.5 bg-zinc-700/60 rounded-lg cursor-pointer"
+                    className="w-full accent-purple-400 h-1.5 bg-zinc-700/60 rounded-lg cursor-pointer"
                   />
                   <div className="flex justify-between text-[10px] ui-dim font-mono">
                     <span>10% ({isEn ? 'Dim' : 'Mờ'})</span>
@@ -607,7 +615,11 @@ export default function ClanSettingsModal({
                     <span>100% ({isEn ? 'Bright' : 'Sáng rõ'})</span>
                   </div>
                 </div>
-              )}
+              ) : !isTier3 ? (
+                <p className="text-[11px] ui-dim italic">
+                  {isEn ? 'Reach Tier 3 (20 SP) to unlock ambient Clan Glow.' : 'Clan cần đạt Tier 3 (20 SP) để mở khóa hiệu ứng viền phát sáng Glow.'}
+                </p>
+              ) : null}
             </div>
 
             {/* Live Preview of Clan Theme & Glow */}

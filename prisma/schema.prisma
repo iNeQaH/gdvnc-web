@@ -97,6 +97,8 @@ model User {
   ledClans           Clan[]              @relation("ClanLeader")
   clanRequests       ClanJoinRequest[]
   clanSpContributed  ClanSpContribution?
+  clanBans           ClanBan[]           @relation("UserClanBans")
+  clanBansIssued     ClanBan[]           @relation("ClanBanIssuer")
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -531,6 +533,7 @@ model Clan {
   members         ClanMember[]
   requests        ClanJoinRequest[]
   contributions   ClanSpContribution[]
+  bans            ClanBan[]
 
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -581,4 +584,23 @@ model ClanSpContribution {
   @@index([clanId])
   @@index([userId])
 }
+
+model ClanBan {
+  id         String    @id @default(uuid())
+  clanId     String
+  clan       Clan      @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User      @relation("UserClanBans", fields: [userId], references: [id], onDelete: Cascade)
+  reason     String?   @db.Text
+  bannedById String?
+  bannedBy   User?     @relation("ClanBanIssuer", fields: [bannedById], references: [id], onDelete: SetNull)
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@unique([clanId, userId])
+  @@index([clanId])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
 

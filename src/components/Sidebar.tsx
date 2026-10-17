@@ -299,10 +299,12 @@ export const Sidebar = () => {
             <Link href="/" className={`flex items-center gap-2.5 px-3 py-1.5 rounded-2xl transition-all hover:bg-slate-100 dark:hover:bg-zinc-800 ${isLavender ? 'tsumiki-btn' : 'active:scale-95'}`}>
               <BrandMark size={36} />
               <div>
-                <div className="font-extrabold text-base tracking-tight ui-title leading-tight">
-                  GD<span style={{ color: 'var(--accent)' }}>VN</span>
+                <div className={`font-extrabold text-base tracking-tight leading-tight ${isLavender ? 'text-indigo-950 dark:text-white' : 'ui-title'}`}>
+                  GD<span style={{ color: isLavender ? '#4338ca' : 'var(--accent)' }}>VN</span>
                 </div>
-                <div className="text-[10px] ui-dim font-medium">Geometry Dash Vietnam</div>
+                <div className={`text-[10px] font-medium leading-none mt-0.5 ${isLavender ? 'text-indigo-900/85 dark:text-white/75 font-semibold' : 'ui-dim'}`}>
+                  Geometry Dash Vietnam
+                </div>
               </div>
             </Link>
 
@@ -377,8 +379,8 @@ export const Sidebar = () => {
                       href={`/clan/${myClan.slug}`}
                       className={`relative flex items-center justify-between ml-5 pl-3 pr-2.5 py-1.5 rounded-lg text-xs font-semibold border-l-2 transition-all group z-[2] ${
                         isMyClanActive
-                          ? 'bg-amber-500/10 text-amber-300 border-amber-400 shadow-xs'
-                          : 'text-slate-400 hover:text-white border-white/10 hover:border-amber-400/50 hover:bg-white/5'
+                          ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300 border-amber-500 shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border-slate-300 dark:border-white/10 hover:border-amber-500/60 hover:bg-black/5 dark:hover:bg-white/5'
                       }`}
                     >
                       <div className="flex items-center gap-1.5 min-w-0">

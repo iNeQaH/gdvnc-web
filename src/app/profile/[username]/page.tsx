@@ -706,7 +706,7 @@ export default function ProfilePage() {
     });
   }
 
-  const headerBadges = [...roleBadges, ...(data.badges || [])].slice(0, 5);
+  const headerBadges = [...roleBadges, ...(data.badges || [])].slice(0, 3);
   const allBadges = [...roleBadges, ...(data.badges || [])];
 
   return (

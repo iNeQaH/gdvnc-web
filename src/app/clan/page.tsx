@@ -20,6 +20,7 @@ import {
   Check,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
+import { useTheme } from '@/components/ThemeProvider';
 import CreateClanModal from '@/components/clan/CreateClanModal';
 import { calculateUserSp, getClanTier } from '@/lib/clanTypes';
 
@@ -46,6 +47,8 @@ const SORT_OPTIONS: { value: 'members' | 'sp' | 'newest' | 'oldest'; label: stri
 
 export default function ClanListPage() {
   const { t } = useLanguage();
+  const { resolvedMode } = useTheme();
+  const isDark = resolvedMode === 'dark';
 
   const [clans, setClans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,8 +135,14 @@ export default function ClanListPage() {
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
       {/* Header Banner */}
       <div
-        className="relative overflow-hidden rounded-2xl p-6 sm:p-8 border bg-gradient-to-br from-slate-900/90 via-slate-800/80 to-slate-900/90 shadow-xl"
-        style={{ borderColor: 'var(--border-ui)' }}
+        className="relative overflow-hidden rounded-2xl p-6 sm:p-8 border shadow-xl transition-colors duration-300"
+        style={{
+          borderColor: 'var(--border-ui)',
+          backgroundColor: 'var(--bg-card)',
+          backgroundImage: isDark
+            ? 'linear-gradient(to bottom right, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.95))'
+            : 'linear-gradient(to bottom right, rgba(255, 255, 255, 0.98), var(--bg-subtle), rgba(255, 255, 255, 0.98))',
+        }}
       >
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="space-y-1">
@@ -283,51 +292,47 @@ export default function ClanListPage() {
             const cleanThemeGradient = clan.themeGradient ? clan.themeGradient.replace(/\/\*.*?\*\//g, '').trim() : null;
             const cleanThemeColor = clan.themeColor ? (clan.themeColor.match(/#([0-9a-fA-F]{3,8})/) ? clan.themeColor.match(/#([0-9a-fA-F]{3,8})/)![0] : clan.themeColor.replace(/\/\*.*?\*\//g, '').trim()) : null;
 
-            const rawPrimary = cleanThemeColor || clan.color || (isTier3 ? '#a855f7' : '#0ea5e9');
+            const rawPrimary = cleanThemeColor || clan.color || (isTier3 ? '#c084fc' : isTier2Plus ? '#38bdf8' : '#fbbf24');
             const primaryThemeColor = rawPrimary.match(/#([0-9a-fA-F]{3,8})/) ? rawPrimary.match(/#([0-9a-fA-F]{3,8})/)![0] : rawPrimary;
+
+            const colMatch = cleanThemeGradient ? cleanThemeGradient.match(/#[a-fA-F0-9]{3,8}/g) : null;
+            const c1 = colMatch && colMatch[0] ? colMatch[0] : primaryThemeColor;
+            const c2 = colMatch && colMatch[1] ? colMatch[1] : (cleanThemeColor || clan.color || (isTier3 ? '#f472b6' : isTier2Plus ? '#34d399' : '#f59e0b'));
 
             const cardStyle: React.CSSProperties = {
               borderColor: 'var(--border-ui)',
             };
 
             if (isTier2Plus) {
-              if (cleanThemeGradient) {
-                cardStyle.backgroundImage = `linear-gradient(to bottom, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.94)), ${cleanThemeGradient}`;
-                const gMatch = cleanThemeGradient.match(/(\d+)deg/);
-                const colMatch = cleanThemeGradient.match(/#[a-fA-F0-9]{3,8}/g);
-                if (gMatch && colMatch && colMatch.length >= 2) {
-                  const angle = parseInt(gMatch[1], 10) || 135;
-                  const rad = (angle * Math.PI) / 180;
-                  const ox = Math.round(Math.sin(rad) * 8);
-                  const oy = Math.round(-Math.cos(rad) * 8);
-                  cardStyle.borderColor = colMatch[0];
-                  if (cardGlowEnabled) {
-                    const alpha = (cardGlowOpacity / 100) * 0.55;
-                    const blur = Math.round(14 + (cardGlowOpacity / 100) * 14);
-                    cardStyle.boxShadow = `${ox}px ${oy}px ${blur}px 2px ${hexToRgba(colMatch[1], alpha)}, ${-ox}px ${-oy}px ${blur}px 2px ${hexToRgba(colMatch[0], alpha)}, 0 0 ${Math.round(blur * 0.75)}px 2px ${hexToRgba(colMatch[0], alpha * 0.7)}`;
-                  } else {
-                    cardStyle.boxShadow = 'none';
-                  }
+              // Background đồng bộ mềm mại theo màu/viền/glow của Clan, không dùng nền đen cứng
+              cardStyle.backgroundImage = isDark
+                ? `radial-gradient(ellipse 110% 70% at 50% 0%, ${hexToRgba(c1, isTier3 ? 0.32 : 0.24)}, transparent 75%), linear-gradient(to bottom, color-mix(in srgb, ${c1} ${isTier3 ? '24%' : '18%'}, #0c0e18), color-mix(in srgb, ${c2} ${isTier3 ? '26%' : '20%'}, #060810))`
+                : `radial-gradient(ellipse 110% 70% at 50% 0%, ${hexToRgba(c1, isTier3 ? 0.18 : 0.14)}, transparent 75%), linear-gradient(to bottom, color-mix(in srgb, ${c1} ${isTier3 ? '12%' : '8%'}, #ffffff), color-mix(in srgb, ${c2} ${isTier3 ? '14%' : '10%'}, #f8fafc))`;
+
+              cardStyle.borderColor = isDark
+                ? `color-mix(in srgb, ${c1} ${isTier3 ? '85%' : '75%'}, #ffffff)`
+                : `color-mix(in srgb, ${c1} ${isTier3 ? '75%' : '65%'}, #000000)`;
+
+              if (cardGlowEnabled && (isTier3 || (isTier2Plus && clan.themeGradient))) {
+                const gMatch = cleanThemeGradient ? cleanThemeGradient.match(/(\d+)deg/) : null;
+                const angle = gMatch ? (parseInt(gMatch[1], 10) || 135) : 135;
+                const rad = (angle * Math.PI) / 180;
+                const ox = Math.round(Math.sin(rad) * 8);
+                const oy = Math.round(-Math.cos(rad) * 8);
+                const alpha = (cardGlowOpacity / 100) * (isDark ? (isTier3 ? 0.65 : 0.45) : (isTier3 ? 0.4 : 0.28));
+                const blur = Math.round(14 + (cardGlowOpacity / 100) * (isTier3 ? 16 : 10));
+
+                if (colMatch && colMatch.length >= 2) {
+                  cardStyle.boxShadow = `${ox}px ${oy}px ${blur}px 2px ${hexToRgba(c2, alpha)}, ${-ox}px ${-oy}px ${blur}px 2px ${hexToRgba(c1, alpha)}, 0 0 ${Math.round(blur * 0.75)}px 2px ${hexToRgba(c1, alpha * 0.75)}`;
                 } else {
-                  cardStyle.borderColor = `color-mix(in srgb, ${primaryThemeColor} 55%, var(--border-ui))`;
-                  if (cardGlowEnabled) {
-                    const alpha = (cardGlowOpacity / 100) * 0.45;
-                    const blur = Math.round(12 + (cardGlowOpacity / 100) * 12);
-                    cardStyle.boxShadow = `0 0 ${blur}px ${hexToRgba(primaryThemeColor, alpha)}`;
-                  } else {
-                    cardStyle.boxShadow = 'none';
-                  }
+                  cardStyle.boxShadow = `0 0 ${blur}px 2px ${hexToRgba(c1, alpha)}, 0 0 ${Math.round(blur * 0.6)}px ${hexToRgba(c2, alpha * 0.7)}`;
                 }
-              } else if (cleanThemeColor) {
-                cardStyle.backgroundColor = `color-mix(in srgb, ${cleanThemeColor} 12%, var(--bg-card))`;
-                cardStyle.borderColor = `color-mix(in srgb, ${primaryThemeColor} 55%, var(--border-ui))`;
-                if (cardGlowEnabled) {
-                  const alpha = (cardGlowOpacity / 100) * 0.45;
-                  const blur = Math.round(12 + (cardGlowOpacity / 100) * 12);
-                  cardStyle.boxShadow = `0 0 ${blur}px ${hexToRgba(primaryThemeColor, alpha)}`;
-                } else {
-                  cardStyle.boxShadow = 'none';
-                }
+              } else if (isTier2Plus) {
+                // Tier 2 ambient light
+                const alpha = isDark ? 0.35 : 0.2;
+                cardStyle.boxShadow = `0 0 14px ${hexToRgba(c1, alpha)}`;
+              } else {
+                cardStyle.boxShadow = 'none';
               }
             }
 
@@ -335,7 +340,7 @@ export default function ClanListPage() {
               <Link
                 key={clan.id}
                 href={`/clan/${clan.slug}`}
-                className="group ui-card rounded-2xl overflow-hidden border flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-xl"
+                className="group ui-card rounded-2xl overflow-hidden border flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl"
                 style={cardStyle}
               >
                 {/* Cover Banner */}
@@ -353,16 +358,16 @@ export default function ClanListPage() {
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-                  {/* Tier Badge on top-right */}
+                  {/* Tier Badge on top-right (Sáng và đẹp hơn) */}
                   <span
-                    className={`absolute top-3 right-3 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border backdrop-blur-md shadow-sm ${
+                    className={`absolute top-3 right-3 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border backdrop-blur-md shadow-md ${
                       tierInfo.tier === 3
-                        ? 'bg-purple-950/80 text-purple-300 border-purple-500/30'
+                        ? 'bg-purple-500/25 text-purple-200 border-purple-400/60 shadow-[0_0_14px_rgba(168,85,247,0.45)] dark:bg-purple-500/30 dark:text-purple-100 dark:border-purple-300/70'
                         : tierInfo.tier === 2
-                        ? 'bg-sky-950/80 text-sky-300 border-sky-500/30'
+                        ? 'bg-sky-500/25 text-sky-200 border-sky-400/60 shadow-[0_0_14px_rgba(14,165,233,0.45)] dark:bg-sky-500/30 dark:text-sky-100 dark:border-sky-300/70'
                         : tierInfo.tier === 1
-                        ? 'bg-amber-950/80 text-amber-300 border-amber-500/30'
-                        : 'bg-red-950/80 text-red-300 border-red-500/30'
+                        ? 'bg-amber-500/20 text-amber-200 border-amber-400/50 dark:bg-amber-500/25 dark:text-amber-100 dark:border-amber-400/60'
+                        : 'bg-red-500/20 text-red-200 border-red-400/50'
                     }`}
                   >
                     {tierInfo.name}
@@ -384,8 +389,8 @@ export default function ClanListPage() {
                       <span
                         className="inline-flex items-center px-2 py-0.5 rounded-lg border font-mono font-black text-xs shadow-2xs backdrop-blur-xs select-none"
                         style={{
-                          backgroundColor: 'rgba(0, 0, 0, 0.45)',
-                          borderColor: 'rgba(255, 255, 255, 0.12)',
+                          backgroundColor: isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(0, 0, 0, 0.05)',
+                          borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
                         }}
                       >
                         <span
@@ -454,19 +459,27 @@ export default function ClanListPage() {
             const tierInfo = getClanTier(sp);
             const isTier2Plus = tierInfo.tier >= 2;
             const isTier3 = tierInfo.tier === 3;
-            const primaryThemeColor = clan.themeColor || clan.color || (isTier3 ? '#a855f7' : '#0ea5e9');
+            const rawPrimary = clan.themeColor || clan.color || (isTier3 ? '#c084fc' : isTier2Plus ? '#38bdf8' : '#fbbf24');
+            const primaryThemeColor = rawPrimary.match(/#([0-9a-fA-F]{3,8})/) ? rawPrimary.match(/#([0-9a-fA-F]{3,8})/)![0] : rawPrimary;
 
             const rowStyle: React.CSSProperties = {};
             if (isTier2Plus) {
               if (clan.themeGradient) {
-                rowStyle.backgroundImage = `linear-gradient(to right, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.95)), ${clan.themeGradient}`;
+                const cleanThemeGrad = clan.themeGradient.replace(/\/\*.*?\*\//g, '').trim();
+                const colMatch = cleanThemeGrad.match(/#[a-fA-F0-9]{3,8}/g);
+                const c1 = colMatch && colMatch[0] ? colMatch[0] : primaryThemeColor;
+                const c2 = colMatch && colMatch[1] ? colMatch[1] : c1;
+                rowStyle.backgroundImage = isDark
+                  ? `linear-gradient(to right, color-mix(in srgb, ${c1} ${isTier3 ? '22%' : '14%'}, #0d0f1a), color-mix(in srgb, ${c2} ${isTier3 ? '20%' : '12%'}, #070912))`
+                  : `linear-gradient(to right, color-mix(in srgb, ${c1} ${isTier3 ? '12%' : '8%'}, #ffffff), color-mix(in srgb, ${c2} ${isTier3 ? '10%' : '6%'}, #f8fafc))`;
               } else if (clan.themeColor) {
-                rowStyle.backgroundColor = `color-mix(in srgb, ${clan.themeColor} 8%, var(--bg-card))`;
+                const cleanThemeCol = clan.themeColor.match(/#([0-9a-fA-F]{3,8})/) ? clan.themeColor.match(/#([0-9a-fA-F]{3,8})/)![0] : clan.themeColor.replace(/\/\*.*?\*\//g, '').trim();
+                rowStyle.backgroundColor = `color-mix(in srgb, ${cleanThemeCol} ${isDark ? (isTier3 ? '20%' : '14%') : (isTier3 ? '10%' : '6%')}, var(--bg-card))`;
               }
               if (isTier3) {
-                rowStyle.boxShadow = `inset 3px 0 0 ${primaryThemeColor}`;
+                rowStyle.boxShadow = `inset 4px 0 0 ${primaryThemeColor}`;
               } else {
-                rowStyle.boxShadow = `inset 2px 0 0 ${primaryThemeColor}`;
+                rowStyle.boxShadow = `inset 3px 0 0 ${primaryThemeColor}`;
               }
             }
 
@@ -534,12 +547,12 @@ export default function ClanListPage() {
                   </div>
 
                   <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                    className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${
                       tierInfo.tier === 3
-                        ? 'bg-purple-500/10 text-purple-400'
+                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 dark:bg-purple-500/30 dark:text-purple-200'
                         : tierInfo.tier === 2
-                        ? 'bg-sky-500/10 text-sky-400'
-                        : 'bg-amber-500/10 text-amber-400'
+                        ? 'bg-sky-500/20 text-sky-300 border-sky-500/40 dark:bg-sky-500/30 dark:text-sky-200'
+                        : 'bg-amber-500/20 text-amber-300 border-amber-500/40 dark:bg-amber-500/25 dark:text-amber-200'
                     }`}
                   >
                     {tierInfo.name}

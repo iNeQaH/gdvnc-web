@@ -18,11 +18,9 @@ import {
   LogOut,
   AlertTriangle,
   Loader2,
-  Check,
   X,
   Play,
   Hammer,
-  UserCheck,
   ArrowRight,
   FileText,
   ChevronLeft,
@@ -34,7 +32,6 @@ import {
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import { UserDisplayName } from '@/components/UserDisplayName';
-import ClanSettingsModal from '@/components/clan/ClanSettingsModal';
 import JoinClanModal from '@/components/clan/JoinClanModal';
 import ClanDiscordMemberSidebar from '@/components/clan/ClanDiscordMemberSidebar';
 import { calculateUserSp, getClanTier } from '@/lib/clanTypes';
@@ -254,19 +251,19 @@ function ClanHardestSlideshow({
     >
       {/* Header Row */}
       <div
-        className="px-4 py-2.5 border-b flex items-center justify-between gap-3 bg-black/15"
+        className="px-4 py-2.5 border-b flex items-center justify-between gap-3 bg-black/5 dark:bg-black/15"
         style={{ borderColor: 'var(--border-subtle)' }}
       >
         <div className="flex items-center gap-2">
-          <Trophy className="w-4 h-4 text-amber-400" />
+          <Trophy className="w-4 h-4 text-amber-500 dark:text-amber-400" />
           <h2 className="text-sm font-bold ui-title">Clan&apos;s Hardest</h2>
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
+          <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
             {topBeaten.length} {isEn ? 'Demons' : 'Demon'}
           </span>
         </div>
 
         {topBeaten.length > 1 && (
-          <span className="font-mono text-xs font-black px-2.5 py-0.5 rounded-lg bg-black/40 text-amber-400 border border-white/10">
+          <span className="font-mono text-xs font-black px-2.5 py-0.5 rounded-lg bg-black/5 dark:bg-black/40 text-amber-600 dark:text-amber-400 border border-black/10 dark:border-white/10">
             {String(currentIndex + 1).padStart(2, '0')} / {String(topBeaten.length).padStart(2, '0')}
           </span>
         )}
@@ -497,19 +494,19 @@ function CompactClanLevelsSlideshow({
     >
       {/* Header Row */}
       <div
-        className="px-4 py-2.5 border-b flex items-center justify-between gap-3 bg-black/15 shrink-0"
+        className="px-4 py-2.5 border-b flex items-center justify-between gap-3 bg-black/5 dark:bg-black/15 shrink-0"
         style={{ borderColor: 'var(--border-subtle)' }}
       >
         <div className="flex items-center gap-2">
-          <Hammer className="w-3.5 h-3.5 text-sky-400" />
+          <Hammer className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" />
           <h2 className="text-xs font-bold ui-title">Featured Creator Works</h2>
-          <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-sky-500/10 text-sky-400 border border-sky-500/20">
+          <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
             {works.length} {isEn ? 'Levels' : 'Màn chơi'}
           </span>
         </div>
 
         {works.length > 1 && (
-          <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-black/40 text-sky-400 border border-white/10">
+          <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-black/5 dark:bg-black/40 text-sky-600 dark:text-sky-400 border border-black/10 dark:border-white/10">
             {currentIndex + 1} / {works.length}
           </span>
         )}
@@ -747,13 +744,13 @@ function ClanPodiumLeaderboard({
       <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--border-subtle)' }}>
         <div>
           <h2 className="text-sm font-bold ui-title flex items-center gap-1.5">
-            <Trophy className="w-4 h-4 text-amber-400" /> Leaderboard
+            <Trophy className="w-4 h-4 text-amber-500 dark:text-amber-400" /> Leaderboard
           </h2>
           <p className="text-[11px] ui-dim mt-0.5">
             {isEn ? 'Member rankings by Classic Pt' : 'Bảng xếp hạng thành viên theo điểm Classic Pt'}
           </p>
         </div>
-        <span className="font-mono text-xs font-bold ui-dim px-2 py-0.5 rounded-lg bg-black/20 border border-white/5">
+        <span className="font-mono text-xs font-bold ui-dim px-2 py-0.5 rounded-lg bg-black/5 dark:bg-black/20 border border-black/10 dark:border-white/5 text-slate-700 dark:text-slate-300">
           {members.length} {isEn ? 'members' : 'thành viên'}
         </span>
       </div>
@@ -782,22 +779,22 @@ function ClanPodiumLeaderboard({
               : 'h-8 sm:h-10';
 
             const pedestalBorder = isRank1
-              ? 'border-t-4 border-amber-400 bg-gradient-to-t from-amber-500/25 via-amber-500/10 to-amber-500/5 shadow-[0_0_16px_rgba(245,158,11,0.2)]'
+              ? 'border-t-4 border-amber-500 dark:border-amber-400 bg-gradient-to-t from-amber-500/20 dark:from-amber-500/25 via-amber-500/10 to-transparent dark:to-amber-500/5 shadow-[0_0_16px_rgba(245,158,11,0.2)]'
               : isRank2
-              ? 'border-t-4 border-slate-300 bg-gradient-to-t from-slate-400/20 via-slate-400/10 to-slate-400/5'
+              ? 'border-t-4 border-slate-400 dark:border-slate-300 bg-gradient-to-t from-slate-300/30 dark:from-slate-400/20 via-slate-300/15 dark:via-slate-400/10 to-transparent dark:to-slate-400/5'
               : isRank3
-              ? 'border-t-4 border-amber-600 bg-gradient-to-t from-amber-700/20 via-amber-700/10 to-amber-700/5'
-              : 'border-t-2 border-white/20 bg-white/5';
+              ? 'border-t-4 border-amber-600 dark:border-amber-600 bg-gradient-to-t from-amber-600/20 dark:from-amber-700/20 via-amber-600/10 dark:via-amber-700/10 to-transparent dark:to-amber-700/5'
+              : 'border-t-2 border-slate-300 dark:border-white/20 bg-slate-200/60 dark:bg-white/5';
 
             const avatarSize = isRank1
-              ? 'w-13 h-13 sm:w-16 sm:h-16 ring-3 ring-amber-400 shadow-[0_0_16px_rgba(245,158,11,0.35)]'
+              ? 'w-13 h-13 sm:w-16 sm:h-16 ring-3 ring-amber-500 dark:ring-amber-400 shadow-[0_0_16px_rgba(245,158,11,0.35)]'
               : isRank2
-              ? 'w-11 h-11 sm:w-12 sm:h-12 ring-2 ring-slate-300 shadow-md'
+              ? 'w-11 h-11 sm:w-12 sm:h-12 ring-2 ring-slate-400 dark:ring-slate-300 shadow-md'
               : isRank3
               ? 'w-10 h-10 sm:w-11 sm:h-11 ring-2 ring-amber-600 shadow-md'
               : isRank4
-              ? 'w-8 h-8 sm:w-9 sm:h-9 ring-1 ring-white/20'
-              : 'w-7 h-7 sm:w-8 sm:h-8 ring-1 ring-white/20';
+              ? 'w-8 h-8 sm:w-9 sm:h-9 ring-1 ring-slate-300 dark:ring-white/20'
+              : 'w-7 h-7 sm:w-8 sm:h-8 ring-1 ring-slate-300 dark:ring-white/20';
 
             return (
               <div
@@ -809,17 +806,17 @@ function ClanPodiumLeaderboard({
                 {/* 1. ĐIỂM TRÊN AVATAR */}
                 <div className="flex flex-col items-center mb-1.5">
                   {isRank1 && (
-                    <Crown className="w-5 h-5 text-amber-400 drop-shadow mb-0.5 animate-bounce" />
+                    <Crown className="w-5 h-5 text-amber-500 dark:text-amber-400 drop-shadow mb-0.5 animate-bounce" />
                   )}
                   <span
                     className={`font-mono font-black text-[10px] sm:text-xs px-2 py-0.5 rounded-full border shadow-xs whitespace-nowrap ${
                       isRank1
-                        ? 'bg-amber-500/20 text-amber-300 border-amber-400/50'
+                        ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 dark:border-amber-400/50'
                         : isRank2
-                        ? 'bg-slate-400/20 text-slate-200 border-slate-300/40'
+                        ? 'bg-slate-300/40 dark:bg-slate-400/20 text-slate-800 dark:text-slate-200 border-slate-400/40 dark:border-slate-300/40'
                         : isRank3
-                        ? 'bg-amber-700/20 text-amber-400 border-amber-600/40'
-                        : 'bg-black/50 text-white/80 border-white/10 text-[9px]'
+                        ? 'bg-amber-700/15 dark:bg-amber-700/20 text-amber-800 dark:text-amber-400 border-amber-600/40'
+                        : 'bg-slate-200/80 dark:bg-black/50 text-slate-700 dark:text-white/80 border-slate-300/60 dark:border-white/10 text-[9px]'
                     }`}
                   >
                     {ptVal} Pt
@@ -831,7 +828,7 @@ function ClanPodiumLeaderboard({
                   href={`/profile/${item.user.username}`}
                   className="group relative block transition-transform hover:scale-105"
                 >
-                  <div className={`rounded-xl overflow-hidden bg-slate-900 shrink-0 ${avatarSize}`}>
+                  <div className={`rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-900 shrink-0 ${avatarSize}`}>
                     {item.user.avatarUrl ? (
                       <img src={item.user.avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -852,11 +849,11 @@ function ClanPodiumLeaderboard({
                   </Link>
 
                   {item.role === 'LEADER' ? (
-                    <span className="inline-block mt-0.5 px-1 py-0.2 rounded text-[8px] font-black bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase">
+                    <span className="inline-block mt-0.5 px-1 py-0.2 rounded text-[8px] font-black bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 uppercase">
                       Leader
                     </span>
                   ) : item.role === 'MODERATOR' ? (
-                    <span className="inline-block mt-0.5 px-1 py-0.2 rounded text-[8px] font-black bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 uppercase">
+                    <span className="inline-block mt-0.5 px-1 py-0.2 rounded text-[8px] font-black bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 uppercase">
                       Mod
                     </span>
                   ) : null}
@@ -869,12 +866,12 @@ function ClanPodiumLeaderboard({
                   <span
                     className={`font-black select-none ${
                       isRank1
-                        ? 'text-xl sm:text-2xl text-amber-400 drop-shadow'
+                        ? 'text-xl sm:text-2xl text-amber-600 dark:text-amber-400 drop-shadow'
                         : isRank2
-                        ? 'text-lg sm:text-xl text-slate-300'
+                        ? 'text-lg sm:text-xl text-slate-700 dark:text-slate-300'
                         : isRank3
-                        ? 'text-base sm:text-lg text-amber-600'
-                        : 'text-sm text-white/60'
+                        ? 'text-base sm:text-lg text-amber-700 dark:text-amber-600'
+                        : 'text-sm text-slate-600 dark:text-white/60'
                     }`}
                   >
                     #{rank}
@@ -882,12 +879,12 @@ function ClanPodiumLeaderboard({
                   <span
                     className={`text-[8px] sm:text-[9px] font-black uppercase tracking-wider mt-0.5 ${
                       isRank1
-                        ? 'text-amber-400/80'
+                        ? 'text-amber-700/80 dark:text-amber-400/80'
                         : isRank2
-                        ? 'text-slate-400'
+                        ? 'text-slate-600 dark:text-slate-400'
                         : isRank3
-                        ? 'text-amber-600/80'
-                        : 'text-white/40'
+                        ? 'text-amber-800/80 dark:text-amber-600/80'
+                        : 'text-slate-500 dark:text-white/40'
                     }`}
                   >
                     {isRank1 ? 'TOP 1' : `TOP ${rank}`}
@@ -917,12 +914,8 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
   const [userSp, setUserSp] = useState<number>(0);
 
   // Modals
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isDonateOpen, setIsDonateOpen] = useState(false);
-  const [isRequestsOpen, setIsRequestsOpen] = useState(false);
-  const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
-  const [transferTargetId, setTransferTargetId] = useState('');
   const [isRosterOpen, setIsRosterOpen] = useState(false);
 
   // Actions state
@@ -1054,31 +1047,6 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
     }
   };
 
-  // Process Join Request
-  const handleProcessRequest = async (requestId: string, action: 'approve' | 'reject') => {
-    try {
-      const res = await fetch(`/api/clans/${clan.slug}/requests/${requestId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        showToast(
-          action === 'approve'
-            ? (isEn ? 'Approved new member.' : 'Đã duyệt thành viên mới.')
-            : (isEn ? 'Declined request.' : 'Đã từ chối yêu cầu.'),
-          'success'
-        );
-        loadClanData();
-      } else {
-        showToast(data.error || (isEn ? 'Action failed.' : 'Lỗi thao tác.'), 'error');
-      }
-    } catch {
-      showToast(isEn ? 'Server connection error.' : 'Lỗi kết nối máy chủ.', 'error');
-    }
-  };
-
   // Member management: promote / demote
   const handleRoleChange = async (memberId: string, newRole: 'MODERATOR' | 'MEMBER') => {
     try {
@@ -1113,35 +1081,6 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           const data = await res.json();
           if (res.ok && data.success) {
             showToast(isEn ? 'Removed member from Clan.' : 'Đã xóa thành viên khỏi Clan.', 'success');
-            loadClanData();
-          } else {
-            showToast(data.error || (isEn ? 'Action failed.' : 'Lỗi thao tác.'), 'error');
-          }
-        } catch {
-          showToast(isEn ? 'Server connection error.' : 'Lỗi kết nối máy chủ.', 'error');
-        }
-      }
-    );
-  };
-
-  // Transfer Clan Ownership
-  const handleTransfer = () => {
-    if (!transferTargetId) return;
-    showConfirm(
-      isEn
-        ? 'You are transferring Clan Leadership to this member. This action cannot be undone!'
-        : 'Bạn sẽ chuyển quyền Leader tối cao cho thành viên này. Hành động này không thể hoàn tác!',
-      async () => {
-        try {
-          const res = await fetch(`/api/clans/${clan.slug}/transfer`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ newLeaderUserId: transferTargetId }),
-          });
-          const data = await res.json();
-          if (res.ok && data.success) {
-            showToast(isEn ? 'Transferred Clan Leadership successfully!' : 'Đã chuyển giao quyền Leader thành công!', 'success');
-            setIsTransferOpen(false);
             loadClanData();
           } else {
             showToast(data.error || (isEn ? 'Action failed.' : 'Lỗi thao tác.'), 'error');
@@ -1204,7 +1143,8 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
 
   const rawClanTheme = (clan.themeGradient || '') + ' ' + (clan.themeColor || '');
   const glowMatch = rawClanTheme.match(/\/\*glow:(\d+):(\d+)\*\//);
-  const clanGlowEnabled = glowMatch ? glowMatch[1] === '1' : true;
+  // Chỉ Clan Tier 3 mới có hiệu ứng Glow
+  const clanGlowEnabled = isTier3 ? (glowMatch ? glowMatch[1] === '1' : true) : false;
   const clanGlowOpacity = glowMatch ? Math.min(Math.max(parseInt(glowMatch[2], 10) || 70, 10), 100) : 70;
 
   const cleanThemeGradient = clan.themeGradient ? clan.themeGradient.replace(/\/\*.*?\*\//g, '').trim() : null;
@@ -1238,13 +1178,13 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
       clanAngle,
       undefined,
       true,
-      (isTier2Plus || isTier3) && clanGlowEnabled,
+      isTier3 && clanGlowEnabled,
       themeColors,
       clanAngle
     );
 
-    if (clanGlowEnabled) {
-      const alpha = (clanGlowOpacity / 100) * 0.55;
+    if (isTier3 && clanGlowEnabled) {
+      const alpha = (clanGlowOpacity / 100) * (isDark ? 0.55 : 0.35);
       const blur = Math.round(14 + (clanGlowOpacity / 100) * 16);
       if (themeColors.length >= 2) {
         const rad = (clanAngle * Math.PI) / 180;
@@ -1269,7 +1209,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
     <div
       className="relative min-h-[calc(100vh-8rem)] pb-16 transition-colors duration-300"
       style={clanThemeStyle}
-      data-tier3={clanGlowEnabled && (isTier3 || (isTier2Plus && hasCustomClanTheme)) ? 'true' : undefined}
+      data-tier3={isTier3 && clanGlowEnabled ? 'true' : undefined}
     >
       {/* Full-bleed Clan Theme Backdrop */}
       {hasCustomClanTheme && (
@@ -1284,7 +1224,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               className="absolute inset-0 transition-opacity duration-300"
               style={{
                 background: cleanThemeGradient,
-                opacity: clanGlowEnabled ? (clanGlowOpacity / 100) * 0.35 : 0.05,
+                opacity: clanGlowEnabled && isTier3 ? (clanGlowOpacity / 100) * (isDark ? 0.35 : 0.14) : (isDark ? 0.05 : 0.02),
               }}
             />
           ) : cleanThemeColor ? (
@@ -1292,11 +1232,13 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               className="absolute inset-0 transition-opacity duration-300"
               style={{
                 background: `radial-gradient(ellipse 80% 50% at 50% -10%, ${cleanThemeColor} 0%, transparent 75%)`,
-                opacity: clanGlowEnabled ? (clanGlowOpacity / 100) * 0.3 : 0.05,
+                opacity: clanGlowEnabled && isTier3 ? (clanGlowOpacity / 100) * (isDark ? 0.3 : 0.12) : (isDark ? 0.05 : 0.02),
               }}
             />
           ) : null}
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/15 to-black/50 pointer-events-none" />
+          {isDark && (
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/15 to-black/50 pointer-events-none" />
+          )}
         </div>
       )}
 
@@ -1330,7 +1272,10 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
             <div className="flex items-center gap-3 flex-wrap min-w-0">
               <span
                 className="inline-flex items-center px-3 py-1 rounded-xl border font-mono font-black text-sm shadow-xs shrink-0 backdrop-blur-xs select-none"
-                style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', borderColor: 'rgba(255, 255, 255, 0.15)' }}
+                style={{
+                  backgroundColor: isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(0, 0, 0, 0.05)',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
+                }}
               >
                 <span
                   style={
@@ -1352,12 +1297,12 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               </h1>
 
               <span
-                className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border backdrop-blur-md shrink-0 ${
+                className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border backdrop-blur-md shrink-0 shadow-sm ${
                   tierInfo.tier === 3
-                    ? 'bg-purple-950/80 text-purple-300 border-purple-500/40 shadow-[0_0_12px_rgba(168,85,247,0.3)]'
+                    ? 'bg-purple-500/25 text-purple-200 border-purple-400/60 shadow-[0_0_14px_rgba(168,85,247,0.45)] dark:bg-purple-500/30 dark:text-purple-100 dark:border-purple-300/70'
                     : tierInfo.tier === 2
-                    ? 'bg-sky-950/80 text-sky-300 border-sky-500/40 shadow-[0_0_12px_rgba(14,165,233,0.3)]'
-                    : 'bg-amber-950/80 text-amber-300 border-amber-500/40'
+                    ? 'bg-sky-500/25 text-sky-200 border-sky-400/60 shadow-[0_0_14px_rgba(14,165,233,0.45)] dark:bg-sky-500/30 dark:text-sky-100 dark:border-sky-300/70'
+                    : 'bg-amber-500/20 text-amber-200 border-amber-400/50 dark:bg-amber-500/25 dark:text-amber-100'
                 }`}
               >
                 {tierInfo.name}
@@ -1373,32 +1318,26 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   className="px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all cursor-pointer hover:border-amber-400/50 shadow-xs"
                   style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                 >
-                  <Coins className="w-3.5 h-3.5 text-amber-400" />
+                  <Coins className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                   <span>{isEn ? 'Upgrade Clan' : 'Nâng cấp Clan'}</span>
                 </button>
               )}
 
-              {canManageClan && clan.pendingRequests?.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setIsRequestsOpen(true)}
-                  className="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1.5 cursor-pointer hover:bg-amber-500/20 shadow-xs"
-                >
-                  <UserCheck className="w-3.5 h-3.5" />
-                  <span>{isEn ? `Requests (${clan.pendingRequests.length})` : `Đơn chờ (${clan.pendingRequests.length})`}</span>
-                </button>
-              )}
-
-              {(isLeader || isOwnerWeb) && (
-                <button
-                  type="button"
-                  onClick={() => setIsSettingsOpen(true)}
-                  className="px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all cursor-pointer hover:opacity-80 shadow-xs"
+              {canManageClan && (
+                <Link
+                  href={`/clan/${clan.slug}/settings`}
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all cursor-pointer hover:border-sky-400/50 shadow-xs relative"
                   style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  title={isEn ? 'Clan Settings' : 'Cài đặt Clan'}
                 >
-                  <Settings className="w-3.5 h-3.5 text-sky-400" />
+                  <Settings className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" />
                   <span>{isEn ? 'Settings' : 'Cài đặt'}</span>
-                </button>
+                  {clan.pendingRequests?.length > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-amber-500 text-black animate-pulse">
+                      {clan.pendingRequests.length}
+                    </span>
+                  )}
+                </Link>
               )}
 
               {!myMembership && (
@@ -1450,23 +1389,23 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           </div>
 
           {/* Integrated Clan Telemetry Bar */}
-          <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-black/10">
+          <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-black/5 dark:bg-black/20">
             {/* SP Progress (7 cols) */}
             <div className="md:col-span-7 space-y-2 min-w-0">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Coins className="w-4 h-4 text-amber-400" />
+                  <Coins className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                   <span className="font-bold ui-title">{isEn ? 'SP Coin Progress' : 'Tiến trình SP Coin'}</span>
-                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                     {clan.totalSp >= 20 ? (isEn ? 'Max Level (Tier 3)' : 'Cấp tối đa (Tier 3)') : (isEn ? `Target ${targetTierName}` : `Mục tiêu ${targetTierName}`)}
                   </span>
                 </div>
-                <div className="font-mono text-xs font-black text-amber-400">
+                <div className="font-mono text-xs font-black text-amber-600 dark:text-amber-400">
                   {clan.totalSp} / {targetSp} SP
                 </div>
               </div>
 
-              <div className="w-full h-2.5 rounded-full bg-black/30 dark:bg-black/50 border border-white/5 overflow-hidden p-0.5">
+              <div className="w-full h-2.5 rounded-full bg-slate-200/80 dark:bg-black/50 border border-slate-300/40 dark:border-white/5 overflow-hidden p-0.5">
                 <div
                   className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-amber-500 to-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.5)]"
                   style={{
@@ -1482,16 +1421,16 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                     ? (isEn ? 'Clan has reached the maximum tier!' : 'Clan đang ở cấp bậc cao nhất!')
                     : (isEn ? `Need ${Math.max(0, targetSp - clan.totalSp)} more SP to reach ${targetTierName}` : `Cần thêm ${Math.max(0, targetSp - clan.totalSp)} SP để lên ${targetTierName}`)}
                 </span>
-                <span className="font-mono font-bold text-amber-400/90">{progressPercentage}%</span>
+                <span className="font-mono font-bold text-amber-600 dark:text-amber-400/90">{progressPercentage}%</span>
               </div>
             </div>
 
             {/* Quick Metrics (5 cols) */}
-            <div className="md:col-span-5 flex items-center justify-between md:justify-end gap-6 pt-3 md:pt-0 border-t md:border-t-0 md:border-l border-white/10 md:pl-6">
+            <div className="md:col-span-5 flex items-center justify-between md:justify-end gap-6 pt-3 md:pt-0 border-t md:border-t-0 md:border-l border-slate-200 dark:border-white/10 md:pl-6">
               <div className="text-left md:text-right">
                 <span className="text-[11px] ui-dim block font-medium">{isEn ? 'Total Clan Pt' : 'Tổng Clan Pt'}</span>
-                <div className="flex items-center md:justify-end gap-1.5 font-mono text-base font-black text-amber-400">
-                  <Trophy className="w-4 h-4 text-amber-400" />
+                <div className="flex items-center md:justify-end gap-1.5 font-mono text-base font-black text-amber-600 dark:text-amber-400">
+                  <Trophy className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                   <span>{totalClanPt.toLocaleString()} Pt</span>
                 </div>
               </div>
@@ -1499,7 +1438,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               <div className="text-left md:text-right">
                 <span className="text-[11px] ui-dim block font-medium">{isEn ? 'Members' : 'Thành viên'}</span>
                 <div className="flex items-center md:justify-end gap-1.5 font-mono text-base font-black ui-title">
-                  <Users className="w-4 h-4 text-sky-400" />
+                  <Users className="w-4 h-4 text-sky-500 dark:text-sky-400" />
                   <span>
                     {clan.memberCount} <span className="text-xs ui-dim font-normal">/ {tierInfo.maxMembers}</span>
                   </span>
@@ -1537,13 +1476,13 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   href={`/profile/${leaderMember.user.username}`}
                   className="p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm relative transition-all cursor-pointer active:scale-95 border bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/15 group"
                 >
-                  <Crown className="w-5 h-5 mb-1.5 text-amber-400 drop-shadow group-hover:scale-110 transition-transform" />
-                  <div className="text-[10px] font-black uppercase tracking-wider text-amber-400">Leader</div>
-                  <div className="w-9 h-9 rounded-xl overflow-hidden border border-amber-500/40 bg-slate-900 my-1.5 shrink-0">
+                  <Crown className="w-5 h-5 mb-1.5 text-amber-500 dark:text-amber-400 drop-shadow group-hover:scale-110 transition-transform" />
+                  <div className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">Leader</div>
+                  <div className="w-9 h-9 rounded-xl overflow-hidden border border-amber-500/40 bg-amber-500/10 dark:bg-slate-900 my-1.5 shrink-0">
                     {leaderMember.user.avatarUrl ? (
                       <img src={leaderMember.user.avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center font-bold text-amber-400 text-xs">
+                      <div className="w-full h-full flex items-center justify-center font-bold text-amber-600 dark:text-amber-400 text-xs">
                         {leaderMember.user.username[0]}
                       </div>
                     )}
@@ -1551,13 +1490,13 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   <div className="font-bold text-xs ui-title truncate max-w-full group-hover:underline">
                     <UserDisplayName user={leaderMember.user} showClanTag={false} />
                   </div>
-                  <div className="text-[10px] font-semibold text-amber-400/90 mt-1 font-mono">
+                  <div className="text-[10px] font-semibold text-amber-600 dark:text-amber-400/90 mt-1 font-mono">
                     {(leaderMember.user?.classicPp || 0).toLocaleString()} Pt
                   </div>
                 </Link>
               ) : (
                 <div className="p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm border bg-amber-500/5 border-amber-500/20 ui-dim">
-                  <Crown className="w-5 h-5 mb-1.5 text-amber-400/50" />
+                  <Crown className="w-5 h-5 mb-1.5 text-amber-500/50 dark:text-amber-400/50" />
                   <div className="text-[10px] font-bold uppercase tracking-wider">Leader</div>
                   <div className="text-xs font-semibold mt-1">—</div>
                 </div>
@@ -1569,13 +1508,13 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   href={`/profile/${bestPlayer.user.username}`}
                   className="p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm relative transition-all cursor-pointer active:scale-95 border bg-sky-500/10 border-sky-500/30 hover:bg-sky-500/15 group"
                 >
-                  <Trophy className="w-5 h-5 mb-1.5 text-sky-400 drop-shadow group-hover:scale-110 transition-transform" />
-                  <div className="text-[10px] font-black uppercase tracking-wider text-sky-400">Best Player</div>
-                  <div className="w-9 h-9 rounded-xl overflow-hidden border border-sky-500/40 bg-slate-900 my-1.5 shrink-0">
+                  <Trophy className="w-5 h-5 mb-1.5 text-sky-500 dark:text-sky-400 drop-shadow group-hover:scale-110 transition-transform" />
+                  <div className="text-[10px] font-black uppercase tracking-wider text-sky-600 dark:text-sky-400">Best Player</div>
+                  <div className="w-9 h-9 rounded-xl overflow-hidden border border-sky-500/40 bg-sky-500/10 dark:bg-slate-900 my-1.5 shrink-0">
                     {bestPlayer.user.avatarUrl ? (
                       <img src={bestPlayer.user.avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center font-bold text-sky-400 text-xs">
+                      <div className="w-full h-full flex items-center justify-center font-bold text-sky-600 dark:text-sky-400 text-xs">
                         {bestPlayer.user.username[0]}
                       </div>
                     )}
@@ -1583,13 +1522,13 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   <div className="font-bold text-xs ui-title truncate max-w-full group-hover:underline">
                     <UserDisplayName user={bestPlayer.user} showClanTag={false} />
                   </div>
-                  <div className="text-[10px] font-semibold text-sky-400/90 mt-1 font-mono">
+                  <div className="text-[10px] font-semibold text-sky-600 dark:text-sky-400/90 mt-1 font-mono">
                     {(bestPlayer.user?.classicPp || 0).toLocaleString()} Pt
                   </div>
                 </Link>
               ) : (
                 <div className="p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm border bg-sky-500/5 border-sky-500/20 ui-dim">
-                  <Trophy className="w-5 h-5 mb-1.5 text-sky-400/50" />
+                  <Trophy className="w-5 h-5 mb-1.5 text-sky-500/50 dark:text-sky-400/50" />
                   <div className="text-[10px] font-bold uppercase tracking-wider">Best Player</div>
                   <div className="text-xs font-semibold mt-1">—</div>
                 </div>
@@ -1601,13 +1540,13 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   href={`/profile/${bestCreator.user.username}`}
                   className="p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm relative transition-all cursor-pointer active:scale-95 border bg-pink-500/10 border-pink-500/30 hover:bg-pink-500/15 group"
                 >
-                  <Hammer className="w-5 h-5 mb-1.5 text-pink-400 drop-shadow group-hover:scale-110 transition-transform" />
-                  <div className="text-[10px] font-black uppercase tracking-wider text-pink-400">Best Creator</div>
-                  <div className="w-9 h-9 rounded-xl overflow-hidden border border-pink-500/40 bg-slate-900 my-1.5 shrink-0">
+                  <Hammer className="w-5 h-5 mb-1.5 text-pink-500 dark:text-pink-400 drop-shadow group-hover:scale-110 transition-transform" />
+                  <div className="text-[10px] font-black uppercase tracking-wider text-pink-600 dark:text-pink-400">Best Creator</div>
+                  <div className="w-9 h-9 rounded-xl overflow-hidden border border-pink-500/40 bg-pink-500/10 dark:bg-slate-900 my-1.5 shrink-0">
                     {bestCreator.user.avatarUrl ? (
                       <img src={bestCreator.user.avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center font-bold text-pink-400 text-xs">
+                      <div className="w-full h-full flex items-center justify-center font-bold text-pink-600 dark:text-pink-400 text-xs">
                         {bestCreator.user.username[0]}
                       </div>
                     )}
@@ -1615,13 +1554,13 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   <div className="font-bold text-xs ui-title truncate max-w-full group-hover:underline">
                     <UserDisplayName user={bestCreator.user} showClanTag={false} />
                   </div>
-                  <div className="text-[10px] font-semibold text-pink-400/90 mt-1 font-mono">
+                  <div className="text-[10px] font-semibold text-pink-600 dark:text-pink-400/90 mt-1 font-mono">
                     {formatCp(bestCreator.user?.creatorPoints)} CP
                   </div>
                 </Link>
               ) : (
                 <div className="p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm border bg-pink-500/5 border-pink-500/20 ui-dim">
-                  <Hammer className="w-5 h-5 mb-1.5 text-pink-400/50" />
+                  <Hammer className="w-5 h-5 mb-1.5 text-pink-500/50 dark:text-pink-400/50" />
                   <div className="text-[10px] font-bold uppercase tracking-wider">Best Creator</div>
                   <div className="text-xs font-semibold mt-1">—</div>
                 </div>
@@ -1827,160 +1766,6 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               </form>
             </div>
           </div>
-        )}
-
-        {/* MODAL: PENDING JOIN REQUESTS */}
-        {isRequestsOpen && clan.pendingRequests && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div
-              className="w-full max-w-lg rounded-2xl border shadow-2xl p-6 space-y-4 max-h-[85vh] flex flex-col"
-              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
-            >
-              <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
-                <h3 className="text-base font-bold ui-title flex items-center gap-2">
-                  <UserCheck className="w-5 h-5 text-amber-400" /> {isEn ? `Join Applications (${clan.pendingRequests.length})` : `Đơn xin gia nhập (${clan.pendingRequests.length})`}
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setIsRequestsOpen(false)}
-                  className="p-1.5 rounded-lg ui-dim hover:text-red-500 transition-colors cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-2 overflow-y-auto flex-1">
-                {clan.pendingRequests.map((req: any) => (
-                  <div
-                    key={req.id}
-                    className="p-3 rounded-xl border flex items-center justify-between gap-3"
-                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-xl overflow-hidden border bg-slate-900 shrink-0" style={{ borderColor: 'var(--border-ui)' }}>
-                        {req.user.avatarUrl ? (
-                          <img src={req.user.avatarUrl} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center font-bold text-xs ui-dim">
-                            {req.user.username[0]}
-                          </div>
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <UserDisplayName user={req.user} showClanTag={false} />
-                        <span className="text-[10px] ui-dim block font-mono">
-                          {req.user.classicPp || 0} Pt • {new Date(req.createdAt).toLocaleDateString(isEn ? 'en-US' : 'vi-VN')}
-                        </span>
-                        {req.message && (
-                          <p className="text-xs ui-dim mt-1.5 p-2 rounded-lg bg-black/10 dark:bg-white/5 border border-dashed border-white/10 italic">
-                            &ldquo;{req.message}&rdquo;
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleProcessRequest(req.id, 'approve')}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 flex items-center gap-1 cursor-pointer"
-                      >
-                        <Check className="w-3.5 h-3.5" /> {isEn ? 'Approve' : 'Duyệt'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleProcessRequest(req.id, 'reject')}
-                        className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-red-400 hover:bg-red-500/10 border border-red-500/20 cursor-pointer"
-                        title={isEn ? 'Decline' : 'Từ chối'}
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* MODAL: TRANSFER LEADERSHIP */}
-        {isTransferOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div
-              className="w-full max-w-md rounded-2xl border shadow-2xl p-6 space-y-4"
-              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
-            >
-              <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
-                <h3 className="text-base font-bold ui-title flex items-center gap-2 text-amber-400">
-                  <Crown className="w-5 h-5" /> {isEn ? 'Transfer Clan Ownership' : 'Chuyển giao quyền sở hữu Clan'}
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setIsTransferOpen(false)}
-                  className="p-1.5 rounded-lg ui-dim hover:text-red-500 transition-colors cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-xs ui-dim leading-relaxed">
-                  {isEn
-                    ? 'Select a member to receive Clan Leader ownership. You will be set as a normal member.'
-                    : 'Chọn thành viên nhận chức vụ Leader tối cao của Clan. Bạn sẽ chuyển thành thành viên bình thường.'}
-                </p>
-
-                <select
-                  value={transferTargetId}
-                  onChange={(e) => setTransferTargetId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-xs ui-input font-bold cursor-pointer"
-                >
-                  <option value="">{isEn ? '-- Select member --' : '-- Chọn thành viên nhận quyền --'}</option>
-                  {allMembers
-                    .filter((m: any) => m.userId !== clan.leaderId)
-                    .map((m: any) => (
-                      <option key={m.userId} value={m.userId}>
-                        {m.user.username} ({m.role})
-                      </option>
-                    ))}
-                </select>
-
-                <div className="flex justify-end gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-                  <button
-                    type="button"
-                    onClick={() => setIsTransferOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border cursor-pointer"
-                    style={{ borderColor: 'var(--border-ui)' }}
-                  >
-                    {isEn ? 'Cancel' : 'Hủy'}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!transferTargetId}
-                    onClick={handleTransfer}
-                    className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  >
-                    <Crown className="w-4 h-4" /> {isEn ? 'Confirm Transfer' : 'Xác nhận chuyển giao'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* MODAL: CLAN SETTINGS */}
-        {isSettingsOpen && (
-          <ClanSettingsModal
-            isOpen={isSettingsOpen}
-            onClose={() => setIsSettingsOpen(false)}
-            clan={clan}
-            onUpdated={() => loadClanData()}
-            onDisbanded={() => router.push('/clan')}
-            isLeader={isLeader}
-            isAdminWeb={isAdminWeb}
-            isOwnerWeb={isOwnerWeb}
-            onOpenTransfer={() => setIsTransferOpen(true)}
-          />
         )}
 
         {/* MODAL: JOIN APPLICATION */}

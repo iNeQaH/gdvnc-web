@@ -381,6 +381,7 @@ export default function HomePage() {
                                 <div className="flex items-center gap-1 ml-1">
                                   {player.topBadges
                                     .filter((ub: any) => ub.id !== 'role-super-admin' || isStaff)
+                                    .slice(0, 3)
                                     .map((ub: any) => (
                                     <div 
                                       key={ub.id}

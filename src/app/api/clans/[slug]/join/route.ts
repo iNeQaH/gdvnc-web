@@ -50,6 +50,34 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       );
     }
 
+    // Kiểm tra người dùng có bị chặn (ban) khỏi clan này không
+    try {
+      const banRows = await prisma.$queryRaw<Array<{ id: string; expiresAt: Date | null; reason: string | null }>>`
+        SELECT id, "expiresAt", reason FROM "ClanBan"
+        WHERE "clanId" = ${clan.id} AND "userId" = ${auth.userId}
+        LIMIT 1
+      `;
+      if (banRows.length > 0) {
+        const ban = banRows[0];
+        if (!ban.expiresAt || new Date(ban.expiresAt) > new Date()) {
+          const timeStr = ban.expiresAt
+            ? `đến ${new Date(ban.expiresAt).toLocaleDateString('vi-VN')}`
+            : 'vĩnh viễn';
+          return NextResponse.json(
+            {
+              error: `Bạn đã bị chặn tham gia Clan này (${timeStr}).${ban.reason ? ` Lý do: ${ban.reason}` : ''}`,
+            },
+            { status: 403 }
+          );
+        } else {
+          // Ban đã hết hạn, tự động xóa
+          await prisma.$executeRaw`DELETE FROM "ClanBan" WHERE id = ${ban.id}`;
+        }
+      }
+    } catch (e) {
+      console.warn('ClanBan check warning:', e);
+    }
+
     const body = await req.json().catch(() => ({}));
     const message = clipText(body.message, 200)?.trim() || null;
 
@@ -71,6 +99,45 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
         status: 'PENDING',
       },
     });
+
+    // Thông báo vào mailbox cho mod và leader
+    try {
+      const applicant = await prisma.user.findUnique({
+        where: { id: auth.userId },
+        select: { username: true },
+      });
+      const applicantName = applicant?.username || 'Thành viên';
+
+      const staffMembers = await prisma.clanMember.findMany({
+        where: {
+          clanId: clan.id,
+          role: { in: ['LEADER', 'MODERATOR'] },
+        },
+        select: { userId: true },
+      });
+
+      const targetUserIds = new Set<string>();
+      if (clan.leaderId) targetUserIds.add(clan.leaderId);
+      for (const m of staffMembers) {
+        targetUserIds.add(m.userId);
+      }
+      targetUserIds.delete(auth.userId);
+
+      if (targetUserIds.size > 0) {
+        const notificationTitle = `Đơn xin gia nhập Clan [${clan.tag}]`;
+        const notificationMessage = `Người chơi ${applicantName} đã gửi đơn xin gia nhập Clan [${clan.tag}] ${clan.name}.${message ? ` Lời nhắn: "${message}"` : ''}`;
+
+        await prisma.notification.createMany({
+          data: Array.from(targetUserIds).map((uid) => ({
+            userId: uid,
+            title: notificationTitle,
+            message: notificationMessage,
+          })),
+        });
+      }
+    } catch (notifyErr) {
+      console.error('Lỗi khi gửi thông báo xin gia nhập clan:', notifyErr);
+    }
 
     return NextResponse.json({ success: true, request });
   } catch (error) {

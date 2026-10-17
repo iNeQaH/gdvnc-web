@@ -339,6 +339,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ slug: 
       if (body.themeGradient !== undefined) updateData.themeGradient = clipText(body.themeGradient, 160)?.trim() || null;
     }
 
+    // Yêu cầu: Clan phải lên Tier 3 mới có Glow trong settings
+    if (tierInfo.tier < 3) {
+      if (updateData.themeGradient) {
+        updateData.themeGradient = updateData.themeGradient.replace(/\/\*glow:\d+:\d+\*\//g, '/*glow:0:70*/');
+      }
+      if (updateData.themeColor) {
+        updateData.themeColor = updateData.themeColor.replace(/\/\*glow:\d+:\d+\*\//g, '/*glow:0:70*/');
+      }
+    }
+
     // Chỉ Leader hoặc Owner mới được đổi tên clan
     if (body.name !== undefined && (isClanLeader || isOwner)) {
       const nextName = clipText(body.name, 40).trim();

@@ -3,6 +3,24 @@
 import React from 'react';
 import Link from 'next/link';
 import { Crown, ShieldCheck } from 'lucide-react';
+import { useTheme } from '@/components/ThemeProvider';
+
+function hexToRgba(color: string, alpha: number): string {
+  if (!color) return `rgba(245, 158, 11, ${alpha})`;
+  const trimmed = color.trim();
+  if (trimmed.startsWith('rgba') || trimmed.startsWith('hsla')) return trimmed;
+  const m = trimmed.match(/^#?([0-9a-fA-F]{3,8})$/);
+  if (!m) return trimmed;
+  let h = m[1];
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  if (h.length >= 6) {
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`;
+  }
+  return `rgba(245, 158, 11, ${alpha})`;
+}
 
 export const FONT_PRESETS: Record<string, { label: string; family: string; weight?: string; scale?: number }> = {
   default: { label: 'Mặc định', family: 'inherit', weight: '700', scale: 1 },
@@ -86,7 +104,7 @@ export function UserDisplayName({
   showClanTag = true,
   linkClan = false,
   clanRole,
-  showClanRole = true,
+  showClanRole = false,
   className = '',
   tagClassName = '',
   tagPosition = 'left',
@@ -98,6 +116,14 @@ export function UserDisplayName({
   const clan = user?.clan || user?.clanMember?.clan;
   const isClanActive = clan && !clan.isSuspended && Boolean(clan.tag);
   const role = clanRole || user?.clanMember?.role;
+
+  let isDark = true;
+  try {
+    const themeCtx = useTheme();
+    isDark = themeCtx.resolvedMode === 'dark';
+  } catch {
+    isDark = true;
+  }
 
   // Style cho Tag Clan (hoàn toàn cô lập, chỉ áp dụng cho tag [TAG], không ảnh hưởng tên)
   const clanTagStyle: React.CSSProperties = {
@@ -112,8 +138,8 @@ export function UserDisplayName({
     clanTagStyle.WebkitTextFillColor = 'initial';
   }
 
-  // Helper tính toán Drop-shadow Glow (hỗ trợ cả đơn sắc lẫn 2 màu gradient kèm góc xoay)
-  const getGlowFilter = (glow: string) => {
+  // Helper tính toán Drop-shadow Glow (hỗ trợ cả đơn sắc lẫn 2 màu gradient kèm góc xoay, tối ưu tương phản cả Dark & Light Mode)
+  const getGlowFilter = (glow: string, dark: boolean) => {
     const gradMatch = glow.match(
       /linear-gradient\s*\(\s*(\d+)deg\s*,\s*(#[a-fA-F0-9]{3,8}|[^\s,]+)\s*,\s*(#[a-fA-F0-9]{3,8}|[^\s,]+)\s*\)/i
     );
@@ -122,11 +148,22 @@ export function UserDisplayName({
       const col1 = gradMatch[2].trim();
       const col2 = gradMatch[3].trim();
       const rad = (angle * Math.PI) / 180;
+      if (!dark) {
+        // LIGHT MODE: Soft, airy, translucent ambient aura (chống bẩn / thâm đen viền chữ)
+        const ox = Math.round(Math.sin(rad) * 3);
+        const oy = Math.round(-Math.cos(rad) * 3);
+        return `drop-shadow(${ox}px ${oy}px 6px ${hexToRgba(col2, 0.38)}) drop-shadow(${-ox}px ${-oy}px 6px ${hexToRgba(col1, 0.38)})`;
+      }
+      // DARK MODE: Rich vibrant neon glow
       const ox = Math.round(Math.sin(rad) * 4);
       const oy = Math.round(-Math.cos(rad) * 4);
-      return `drop-shadow(${ox}px ${oy}px 4px ${col2}) drop-shadow(${-ox}px ${-oy}px 4px ${col1}) drop-shadow(0 0 6px ${col1}88)`;
+      return `drop-shadow(${ox}px ${oy}px 4px ${hexToRgba(col2, 0.75)}) drop-shadow(${-ox}px ${-oy}px 4px ${hexToRgba(col1, 0.75)}) drop-shadow(0 0 8px ${hexToRgba(col1, 0.45)})`;
     }
-    return `drop-shadow(0 0 3px ${glow}) drop-shadow(0 0 6px ${glow}88)`;
+
+    if (!dark) {
+      return `drop-shadow(0 0 5px ${hexToRgba(glow, 0.38)})`;
+    }
+    return `drop-shadow(0 0 3px ${hexToRgba(glow, 0.75)}) drop-shadow(0 0 7px ${hexToRgba(glow, 0.45)})`;
   };
 
   // Style cho Tên Supporter (bảo đảm độc lập 100% với màu Clan tag)
@@ -144,18 +181,18 @@ export function UserDisplayName({
     nameStyle.WebkitBackgroundClip = 'text';
     nameStyle.WebkitTextFillColor = 'transparent';
     if (user?.nameGlow) {
-      nameStyle.filter = getGlowFilter(user.nameGlow);
+      nameStyle.filter = getGlowFilter(user.nameGlow, isDark);
     }
   } else if (user?.nameColor) {
     nameStyle.color = user.nameColor;
     nameStyle.WebkitTextFillColor = 'initial';
     if (user?.nameGlow) {
-      nameStyle.filter = getGlowFilter(user.nameGlow);
+      nameStyle.filter = getGlowFilter(user.nameGlow, isDark);
     }
   } else {
     nameStyle.WebkitTextFillColor = 'initial';
     if (user?.nameGlow) {
-      nameStyle.filter = getGlowFilter(user.nameGlow);
+      nameStyle.filter = getGlowFilter(user.nameGlow, isDark);
     }
   }
 

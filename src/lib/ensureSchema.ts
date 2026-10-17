@@ -20,6 +20,7 @@ async function columnSet(db: PrismaClient) {
         OR (table_name = 'ClanMember' AND column_name = 'id')
         OR (table_name = 'ClanJoinRequest' AND column_name = 'id')
         OR (table_name = 'ClanSpContribution' AND column_name = 'id')
+        OR (table_name = 'ClanBan' AND column_name = 'id')
       )
   `;
   return new Set(rows.map((row) => `${row.table_name}.${row.column_name}`));
@@ -214,11 +215,29 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
       )
     `);
   }
+  if (!have.has('ClanBan.id')) {
+    await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "ClanBan" (
+        "id" TEXT NOT NULL,
+        "clanId" TEXT NOT NULL,
+        "userId" TEXT NOT NULL,
+        "reason" TEXT,
+        "bannedById" TEXT,
+        "expiresAt" TIMESTAMP(3),
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "ClanBan_pkey" PRIMARY KEY ("id"),
+        CONSTRAINT "ClanBan_clanId_userId_key" UNIQUE ("clanId", "userId")
+      )
+    `);
+  }
 }
 
 /** Indexes/FKs — do not block the request that needed the new columns. */
 async function addIndexesInBackground(db: PrismaClient) {
   const statements = [
+    `CREATE INDEX IF NOT EXISTS "ClanBan_clanId_idx" ON "ClanBan"("clanId")`,
+    `CREATE INDEX IF NOT EXISTS "ClanBan_userId_idx" ON "ClanBan"("userId")`,
+    `CREATE INDEX IF NOT EXISTS "ClanBan_expiresAt_idx" ON "ClanBan"("expiresAt")`,
     `CREATE INDEX IF NOT EXISTS "Level_creatorId_idx" ON "Level"("creatorId")`,
     `CREATE INDEX IF NOT EXISTS "Record_reviewerId_idx" ON "Record"("reviewerId")`,
     `CREATE INDEX IF NOT EXISTS "Record_userId_status_idx" ON "Record"("userId", "status")`,
@@ -310,6 +329,7 @@ export async function applyPendingSchema(db: PrismaClient): Promise<void> {
     have.has('ClanMember.id') &&
     have.has('ClanJoinRequest.id') &&
     have.has('ClanSpContribution.id') &&
+    have.has('ClanBan.id') &&
     have.has('User.nameColor');
   if (complete) return;
   await addMissingColumns(db, have);
