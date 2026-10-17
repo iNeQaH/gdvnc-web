@@ -24,13 +24,22 @@ import {
   Palette,
   Type,
   RotateCcw,
+  Camera,
+  ExternalLink,
+  MapPin,
+  Shield,
+  Crown,
+  Flame,
+  AlertTriangle,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import { logoutClient } from '@/lib/sessionClient';
 import ImageEditorModal from '@/components/ImageEditorModal';
 import SmartCaptcha from '@/components/SmartCaptcha';
 import ColorPicker from '@/components/ColorPicker';
+import { AnimatedTabs } from '@/components/AnimatedTabs';
 import { UserDisplayName, FONT_PRESETS } from '@/components/UserDisplayName';
 
 export default function SettingsPage() {
@@ -41,6 +50,7 @@ export default function SettingsPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'name_style' | 'security'>('profile');
 
   // States
   const [gdUsername, setGdUsername] = useState('');
@@ -460,150 +470,265 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
-      <h1 className="text-2xl font-black flex items-center gap-2">
-        <Settings className="w-6 h-6 text-sky-500" />
-        {t('settings.title')}
-      </h1>
+      {/* Title */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-black flex items-center gap-2 ui-title">
+            <Settings className="w-6 h-6 text-sky-500" />
+            {t('settings.title')}
+          </h1>
+          <p className="text-xs ui-dim mt-1">
+            Quản lý hồ sơ cá nhân, giao diện, đặc quyền Supporter và bảo mật tài khoản
+          </p>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Left Column */}
-        <div className="space-y-6">
-          <div className="ui-card p-5 space-y-4">
-            <h2
-              className="text-sm font-bold flex items-center gap-2 border-b pb-2"
-              style={{ borderColor: 'var(--border-subtle)' }}
-            >
-              <UserIcon className="w-4 h-4" /> {t('settings.identity')}
-            </h2>
-            <div className="relative mb-8">
-              <div
-                className="w-full h-24 md:h-32 rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 border"
-                style={{ borderColor: 'var(--border-ui)' }}
-              >
-                {data.coverUrl && <img src={data.coverUrl} alt="Cover" className="w-full h-full object-cover" />}
+      {/* Top Profile Summary Card */}
+      <div className="ui-card overflow-hidden shadow-sm">
+        {/* Banner Cover with Overlay */}
+        <div className="relative w-full h-32 sm:h-40 bg-slate-100 dark:bg-zinc-800">
+          {data.coverUrl ? (
+            <img src={data.coverUrl} alt="Cover" className="w-full h-full object-cover" />
+          ) : (
+            <img src="/default-banner.svg" alt="Default Cover" className="w-full h-full object-cover opacity-50" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+          
+          <button
+            type="button"
+            onClick={() => setImageModal({ open: true, type: 'cover' })}
+            className="absolute top-3 right-3 px-3 py-1.5 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer border border-white/20"
+            title="Đổi ảnh bìa"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>{t('settings.change_banner')}</span>
+          </button>
+        </div>
+
+        {/* Identity Row */}
+        <div className="px-5 pb-5 pt-0">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-10 sm:-mt-12">
+            <div className="flex items-end gap-3.5">
+              {/* Avatar */}
+              <div className="relative shrink-0">
+                <div className="p-1 rounded-2xl shadow-xl bg-white dark:bg-zinc-900 border" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}>
+                  <div
+                    className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden shadow-inner cursor-pointer group"
+                    onClick={() => setImageModal({ open: true, type: 'avatar' })}
+                    title={t('settings.change_avatar')}
+                  >
+                    {data.avatarUrl ? (
+                      <img src={data.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-slate-200 dark:bg-zinc-800">
+                        <UserIcon className="w-10 h-10 text-slate-400" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold backdrop-blur-xs">
+                      <Camera className="w-3.5 h-3.5 mb-0.5" />
+                      <span>Sửa</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="absolute -bottom-5 left-4 p-1 rounded-2xl" style={{ backgroundColor: 'var(--bg-card)' }}>
-                <div
-                  className="w-14 h-14 md:w-16 md:h-16 rounded-xl overflow-hidden bg-slate-200 dark:bg-zinc-700 shadow-sm border"
-                  style={{ borderColor: 'var(--border-subtle)' }}
-                >
-                  {data.avatarUrl ? (
-                    <img src={data.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <UserIcon className="w-8 h-8 m-auto mt-3 md:mt-4 text-slate-400" />
+
+              {/* Names & Info */}
+              <div className="space-y-1 mb-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <UserDisplayName
+                    user={data}
+                    fallbackName={currentUser.username}
+                    linkClan
+                    className="text-lg sm:text-xl font-black ui-title drop-shadow-sm"
+                    tagClassName="text-xs sm:text-sm px-2 py-0.5 rounded-lg border border-black/10 dark:border-white/10"
+                  />
+                  {currentUser.role === 'ADMIN' && (
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-red-500/15 text-red-400 border border-red-500/30 flex items-center gap-1">
+                      <Crown className="w-3 h-3" /> Admin
+                    </span>
                   )}
+                  {currentUser.role === 'MODERATOR' && (
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                      <Shield className="w-3 h-3" /> Mod
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs ui-dim flex items-center gap-2">
+                  <span>@{currentUser.username}</span>
+                  <span>·</span>
+                  <Link
+                    href={`/profile/${currentUser.username}`}
+                    className="inline-flex items-center gap-1 text-sky-500 hover:underline font-semibold"
+                  >
+                    Xem trang cá nhân <ExternalLink className="w-3 h-3" />
+                  </Link>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => setImageModal({ open: true, type: 'avatar' })}
-                className="px-4 py-2 bg-sky-500/10 text-sky-500 rounded-xl text-xs font-bold hover:bg-sky-500/20 flex gap-2 items-center cursor-pointer transition-colors border border-sky-500/20"
-              >
-                <ImageIcon className="w-4 h-4" /> {t('settings.change_avatar')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setImageModal({ open: true, type: 'cover' })}
-                className="px-4 py-2 bg-sky-500/10 text-sky-500 rounded-xl text-xs font-bold hover:bg-sky-500/20 flex gap-2 items-center cursor-pointer transition-colors border border-sky-500/20"
-              >
-                <ImageIcon className="w-4 h-4" /> {t('settings.change_banner')}
-              </button>
+            {/* Supporter status badge */}
+            <div className="flex items-center gap-2 self-start sm:self-end">
+              {isSupporter ? (
+                <div className="px-3 py-1.5 rounded-xl text-xs font-bold bg-pink-500/15 text-pink-400 border border-pink-500/30 flex items-center gap-1.5 shadow-xs">
+                  <Heart className="w-3.5 h-3.5 fill-pink-500 text-pink-500" />
+                  <span>
+                    Supporter đến{' '}
+                    {new Date(data.supporterUntil || currentUser.supporterUntil).toLocaleDateString(
+                      language === 'en' ? 'en-US' : 'vi-VN'
+                    )}
+                  </span>
+                </div>
+              ) : (
+                <Link
+                  href="/support"
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-pink-500/10 hover:bg-pink-500/20 text-pink-500 border border-pink-500/30 flex items-center gap-1.5 transition-colors shadow-xs"
+                >
+                  <Heart className="w-3.5 h-3.5" />
+                  <span>Ủng hộ & Nhận Supporter</span>
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Category Tabs */}
+      <AnimatedTabs<'profile' | 'appearance' | 'name_style' | 'security'>
+        active={activeTab}
+        onChange={setActiveTab}
+        themeOverride={data?.profileTheme || undefined}
+        options={[
+          {
+            id: 'profile',
+            label: t('settings.identity') || 'Hồ Sơ',
+            icon: <UserIcon className="w-4 h-4" />,
+          },
+          {
+            id: 'appearance',
+            label: 'Giao Diện & Theme',
+            icon: <Sparkles className="w-4 h-4" />,
+          },
+          {
+            id: 'name_style',
+            label: 'Phong Cách Tên',
+            icon: <Palette className="w-4 h-4" />,
+          },
+          {
+            id: 'security',
+            label: 'Bảo Mật & Quà Tặng',
+            icon: <ShieldCheck className="w-4 h-4" />,
+          },
+        ]}
+      />
+
+      {/* Tab 1: Profile (Hồ Sơ & Nhận Diện) */}
+      {activeTab === 'profile' && (
+        <div className="space-y-6 animate-in fade-in-50 duration-200">
+          <div className="ui-card p-6 space-y-6">
+            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div>
+                <h2 className="text-sm font-bold flex items-center gap-2 ui-title">
+                  <UserIcon className="w-4 h-4 text-sky-500" /> Thông Tin Hồ Sơ & Mạng Xã Hội
+                </h2>
+                <p className="text-xs ui-dim mt-0.5">
+                  Cập nhật các liên kết tài khoản và mô tả ngắn hiển thị công khai trên GDVN
+                </p>
+              </div>
             </div>
 
-            <div className="space-y-3 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-[11px] font-bold ui-dim">{t('settings.gd_username')}</label>
-                <div className="flex items-center gap-2 mt-1">
-                  <Gamepad2 className="w-4 h-4 ui-dim" />
+                <label className="text-xs font-bold ui-dim block mb-1.5">{t('settings.gd_username')}</label>
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-sky-500/10 text-sky-500 shrink-0 border border-sky-500/20">
+                    <Gamepad2 className="w-4 h-4" />
+                  </div>
                   <input
                     type="text"
                     value={gdUsername}
                     onChange={(e) => setGdUsername(e.target.value)}
-                    className="flex-1 px-3 py-1.5 rounded-lg text-sm border focus:ring-1 focus:ring-sky-500"
-                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-[11px] font-bold ui-dim">{t('settings.discord_tag')}</label>
-                <div className="flex items-center gap-2 mt-1">
-                  <MessageSquare className="w-4 h-4 ui-dim" />
-                  <input
-                    type="text"
-                    value={discordTag}
-                    onChange={(e) => setDiscordTag(e.target.value)}
-                    className="flex-1 px-3 py-1.5 rounded-lg text-sm border focus:ring-1 focus:ring-sky-500"
-                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-[11px] font-bold ui-dim">{t('settings.country')}</label>
-                <div className="flex items-center gap-2 mt-1">
-                  <Globe className="w-4 h-4 ui-dim" />
-                  <input
-                    type="text"
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    className="flex-1 px-3 py-1.5 rounded-lg text-sm border focus:ring-1 focus:ring-sky-500"
-                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-[11px] font-bold ui-dim">{t('profile.bio') || 'Tiểu sử'}</label>
-                <div className="mt-1">
-                  <textarea
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    placeholder="Viết gì đó về bản thân..."
-                    rows={3}
-                    className="w-full px-3 py-2 rounded-lg text-sm border focus:ring-1 focus:ring-sky-500 resize-y"
+                    placeholder="VD: Player123"
+                    className="flex-1 px-3 py-2 rounded-xl text-xs font-semibold border focus:ring-1 focus:ring-sky-500 outline-none"
                     style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                   />
                 </div>
               </div>
+
+              <div>
+                <label className="text-xs font-bold ui-dim block mb-1.5">{t('settings.discord_tag')}</label>
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-500/10 text-indigo-500 shrink-0 border border-indigo-500/20">
+                    <MessageSquare className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={discordTag}
+                    onChange={(e) => setDiscordTag(e.target.value)}
+                    placeholder="VD: username#0000"
+                    className="flex-1 px-3 py-2 rounded-xl text-xs font-semibold border focus:ring-1 focus:ring-sky-500 outline-none"
+                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="text-xs font-bold ui-dim block mb-1.5">{t('settings.country')}</label>
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-rose-500/10 text-rose-500 shrink-0 border border-rose-500/20">
+                    <MapPin className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    placeholder="VD: Hà Nội, Việt Nam"
+                    className="flex-1 px-3 py-2 rounded-xl text-xs font-semibold border focus:ring-1 focus:ring-sky-500 outline-none"
+                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="text-xs font-bold ui-dim block mb-1.5">{t('profile.bio') || 'Tiểu sử cá nhân'}</label>
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Viết vài dòng giới thiệu về bản thân bạn..."
+                  rows={3}
+                  className="w-full px-3 py-2.5 rounded-xl text-xs font-medium border focus:ring-1 focus:ring-sky-500 outline-none resize-y"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
               <button
                 type="button"
                 onClick={handleSaveInfo}
                 disabled={savingInfo}
-                className="w-full mt-2 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors disabled:opacity-50"
+                className="px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
               >
-                {t('settings.save_info')}
+                <Check className="w-4 h-4" />
+                <span>{savingInfo ? t('common.saving') : t('settings.save_info')}</span>
               </button>
             </div>
           </div>
-
-          <div className="ui-card p-5 space-y-4 border-red-500/20 bg-red-500/5">
-            <h2 className="text-sm font-bold flex items-center gap-2 text-red-500 border-b border-red-500/20 pb-2">
-              <Trash2 className="w-4 h-4" /> {t('settings.delete_account')}
-            </h2>
-            <p className="text-xs ui-dim">{t('settings.delete_account_warn')}</p>
-            <button
-              type="button"
-              onClick={handleDeleteAccount}
-              className="px-4 py-2 bg-red-500/20 text-red-500 rounded-xl text-xs font-bold hover:bg-red-500/30 w-full cursor-pointer transition-colors border border-red-500/20 tsumiki-btn-red"
-            >
-              {t('settings.delete_account_btn')}
-            </button>
-          </div>
         </div>
+      )}
 
-        {/* Right Column */}
-        <div className="space-y-6">
-          {/* Profile Theme Selection */}
-          <div className="ui-card p-5 space-y-4" style={{ backgroundColor: 'var(--bg-card)' }}>
-            <h2
-              className="text-sm font-bold flex items-center gap-2 border-b pb-2 text-purple-500"
-              style={{ borderColor: 'var(--border-subtle)' }}
-            >
-              <Sparkles className="w-4 h-4" /> {t('settings.profile_theme')}
-            </h2>
-            <p className="text-xs ui-dim">{t('settings.profile_theme_desc')}</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
+      {/* Tab 2: Appearance (Giao Diện & Theme) */}
+      {activeTab === 'appearance' && (
+        <div className="space-y-6 animate-in fade-in-50 duration-200">
+          {/* Profile Theme Card */}
+          <div className="ui-card p-6 space-y-4">
+            <div className="border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+              <h2 className="text-sm font-bold flex items-center gap-2 text-purple-500">
+                <Sparkles className="w-4 h-4" /> {t('settings.profile_theme')}
+              </h2>
+              <p className="text-xs ui-dim mt-0.5">{t('settings.profile_theme_desc')}</p>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
               {[
                 { id: 'sky', label: t('theme.sky') || 'Sky', color: 'bg-sky-500' },
                 { id: 'sakura', label: t('theme.sakura') || 'Sakura', color: 'bg-pink-400' },
@@ -638,15 +763,15 @@ export default function SettingsPage() {
                       showToast(t('settings.profile_theme_saved'), 'success');
                       window.dispatchEvent(new Event('gdvnc_user_update'));
                     }}
-                    className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                    className={`flex items-center gap-2.5 p-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
                       isSelected
-                        ? 'ring-2 ring-purple-500 bg-purple-500/10 text-purple-600 dark:text-purple-300 border-purple-500/30'
-                        : 'hover:bg-slate-50 dark:hover:bg-zinc-800'
+                        ? 'ring-2 ring-purple-500 bg-purple-500/10 text-purple-600 dark:text-purple-300 border-purple-500/30 shadow-xs'
+                        : 'hover:bg-slate-50 dark:hover:bg-zinc-800/60'
                     }`}
                     style={!isSelected ? { borderColor: 'var(--border-ui)' } : {}}
                   >
                     <span
-                      className={`w-3 h-3 rounded-full shrink-0 ${th.color}`}
+                      className={`w-3.5 h-3.5 rounded-full shrink-0 ${th.color}`}
                       style={th.style}
                     />
                     <span className="truncate">{th.label}</span>
@@ -657,75 +782,36 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Redeem Code */}
-          <div className="ui-card p-5 space-y-4 border-amber-500/20" style={{ backgroundColor: 'var(--bg-card)' }}>
-            <h2
-              className="text-sm font-bold flex items-center gap-2 border-b pb-2 text-amber-500"
-              style={{ borderColor: 'var(--border-subtle)' }}
-            >
-              <Gift className="w-4 h-4" /> {t('settings.redeem_title')}
-            </h2>
-            <p className="text-xs ui-dim">{t('settings.redeem_desc')}</p>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Ticket className="w-4 h-4 ui-dim absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  value={redeemCode}
-                  onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleRedeem();
-                  }}
-                  placeholder={t('settings.redeem_placeholder')}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl text-xs font-mono font-bold tracking-wider border focus:ring-1 focus:ring-amber-500 outline-none uppercase"
-                  style={{
-                    backgroundColor: 'var(--bg-subtle)',
-                    borderColor: 'var(--border-ui)',
-                    color: 'var(--text-title)',
-                  }}
-                />
+          {/* Supporter Theme Perks */}
+          {canAccessSupporter ? (
+            <div className="ui-card p-6 space-y-6 border-pink-500/20">
+              <div className="border-b pb-3 flex items-center justify-between" style={{ borderColor: 'var(--border-subtle)' }}>
+                <div>
+                  <h2 className="text-sm font-bold flex items-center gap-2 text-pink-500">
+                    <Heart className="w-4 h-4" /> {t('settings.supporter_perks')} — Màu Sắc & Hiệu Ứng
+                  </h2>
+                  <p className="text-xs ui-dim mt-0.5">
+                    Tùy biến dải màu chủ đạo, góc xoay gradient, hiệu ứng phát sáng viền và ảnh nền cho theme Custom
+                  </p>
+                </div>
+                {themeColors.length >= 2 && (
+                  <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-lg bg-pink-500/10 text-pink-500 border border-pink-500/20">
+                    {themeAngle}°
+                  </span>
+                )}
               </div>
-              <button
-                type="button"
-                onClick={handleRedeem}
-                disabled={redeeming || !redeemCode.trim()}
-                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors disabled:opacity-50 shrink-0 flex items-center gap-1.5 shadow-xs"
-              >
-                <Gift className="w-3.5 h-3.5" />
-                {redeeming ? t('settings.redeem_checking') : t('settings.redeem_btn')}
-              </button>
-            </div>
-          </div>
-
-          {/* Supporter Perks & Theme Color Box */}
-          {canAccessSupporter && (
-            <div className="ui-card p-5 space-y-5 border-pink-500/20" style={{ backgroundColor: 'var(--bg-card)' }}>
-              <h2
-                className="text-sm font-bold flex items-center gap-2 border-b pb-2 text-pink-500"
-                style={{ borderColor: 'var(--border-subtle)' }}
-              >
-                <Heart className="w-4 h-4" /> {t('settings.supporter_perks')}
-              </h2>
 
               {/* Theme Colors & Gradient Section */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold ui-title flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-pink-500" />
-                    {t('settings.custom_colors')}
-                  </label>
-                  {themeColors.length >= 2 && (
-                    <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-pink-500/10 text-pink-500 border border-pink-500/20">
-                      {themeAngle}°
-                    </span>
-                  )}
-                </div>
-
+                <label className="text-xs font-bold ui-title flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-pink-500" />
+                  {t('settings.custom_colors')}
+                </label>
                 <p className="text-xs ui-dim leading-relaxed">
                   {t('settings.custom_colors_desc')}
                 </p>
 
-                {/* Color swatches with custom ColorPicker */}
+                {/* Color swatches */}
                 <div className="flex flex-wrap items-center gap-2.5 pt-1">
                   {themeColors.map((col, idx) => (
                     <div
@@ -815,7 +901,6 @@ export default function SettingsPage() {
                       className="w-full accent-pink-500 cursor-pointer"
                     />
 
-                    {/* Live gradient preview bar */}
                     <div
                       className="w-full h-5 rounded-lg border shadow-inner transition-all duration-300"
                       style={{
@@ -825,197 +910,195 @@ export default function SettingsPage() {
                     />
                   </div>
                 )}
+              </div>
 
-                {/* Border Customization Section */}
-                <div className="pt-3 border-t space-y-3" style={{ borderColor: 'var(--border-subtle)' }}>
-                  <div className="flex items-center justify-between">
+              {/* Border Customization Section */}
+              <div className="pt-4 border-t space-y-4" style={{ borderColor: 'var(--border-subtle)' }}>
+                <div className="flex items-center justify-between">
+                  <div>
                     <label className="text-xs font-bold ui-title flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-pink-500" />
                       {t('settings.custom_border_title')}
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer text-xs font-bold ui-dim hover:text-pink-500 transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={customBorderMode}
-                        onChange={(e) => {
-                          const nextMode = e.target.checked;
-                          updateThemeConfig(themeColors, themeAngle, nextMode, borderColors, borderAnimation);
-                        }}
-                        className="rounded accent-pink-500 cursor-pointer"
-                      />
-                      <span>{t('settings.custom_border_toggle')}</span>
-                    </label>
+                    <p className="text-xs ui-dim mt-0.5">{t('settings.custom_border_desc')}</p>
                   </div>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold ui-dim hover:text-pink-500 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={customBorderMode}
+                      onChange={(e) => {
+                        const nextMode = e.target.checked;
+                        updateThemeConfig(themeColors, themeAngle, nextMode, borderColors, borderAnimation);
+                      }}
+                      className="rounded accent-pink-500 cursor-pointer"
+                    />
+                    <span>{t('settings.custom_border_toggle')}</span>
+                  </label>
+                </div>
 
-                  <p className="text-xs ui-dim leading-relaxed">
-                    {t('settings.custom_border_desc')}
-                  </p>
-
-                  {customBorderMode && (
-                    <div className="space-y-3 animate-in fade-in duration-200">
-                      {/* Border Color Swatches */}
-                      <div className="flex flex-wrap items-center gap-2.5">
-                        {borderColors.map((col, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-2 p-1.5 pr-2.5 rounded-2xl border bg-slate-500/5 transition-all shadow-xs"
-                            style={{ borderColor: 'var(--border-ui)' }}
-                          >
-                            <ColorPicker
-                              value={col}
-                              onChange={(nextHex) => {
-                                const next = [...borderColors];
-                                next[idx] = nextHex;
-                                updateThemeConfig(themeColors, themeAngle, customBorderMode, next, borderAnimation);
-                              }}
-                              size={32}
-                              round
-                              ariaLabel={`${t('settings.border_color')} ${idx + 1}`}
-                            />
-                            <span className="font-mono text-xs font-bold uppercase">{col}</span>
-                            {borderColors.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const next = borderColors.filter((_, i) => i !== idx);
-                                  updateThemeConfig(themeColors, themeAngle, customBorderMode, next, borderAnimation);
-                                }}
-                                className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
-                                title={t('settings.remove_color')}
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        ))}
-
-                        {borderColors.length < 4 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const PRESET_BORDER = ['#38bdf8', '#ec4899', '#a855f7', '#10b981'];
-                              const nextColor = PRESET_BORDER[borderColors.length] || '#ec4899';
-                              const next = [...borderColors, nextColor];
+                {customBorderMode && (
+                  <div className="space-y-3 animate-in fade-in duration-200">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      {borderColors.map((col, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-2 p-1.5 pr-2.5 rounded-2xl border bg-slate-500/5 transition-all shadow-xs"
+                          style={{ borderColor: 'var(--border-ui)' }}
+                        >
+                          <ColorPicker
+                            value={col}
+                            onChange={(nextHex) => {
+                              const next = [...borderColors];
+                              next[idx] = nextHex;
                               updateThemeConfig(themeColors, themeAngle, customBorderMode, next, borderAnimation);
                             }}
-                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-dashed text-xs font-bold ui-dim hover:text-pink-500 hover:border-pink-500/40 transition-colors cursor-pointer"
-                            style={{ borderColor: 'var(--border-ui)' }}
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                            {t('settings.add_border_color')}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Border Animation Toggle */}
-                  <div className="flex items-center justify-between p-2.5 rounded-xl border bg-slate-500/5" style={{ borderColor: 'var(--border-subtle)' }}>
-                    <span className="text-xs font-bold ui-dim">{t('settings.custom_border_anim')}</span>
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={borderAnimation}
-                        onChange={(e) => {
-                          const nextAnim = e.target.checked;
-                          updateThemeConfig(themeColors, themeAngle, customBorderMode, borderColors, nextAnim, borderGlowEnabled, borderGlowColor);
-                        }}
-                        className="cursor-pointer"
-                      />
-                    </label>
-                  </div>
-
-                  {/* Border Glow Toggle */}
-                  <div className="flex items-center justify-between p-2.5 rounded-xl border bg-slate-500/5" style={{ borderColor: 'var(--border-subtle)' }}>
-                    <span className="text-xs font-bold ui-dim">{t('settings.custom_border_glow')}</span>
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={borderGlowEnabled}
-                        onChange={(e) => {
-                          const nextGlow = e.target.checked;
-                          updateThemeConfig(themeColors, themeAngle, customBorderMode, borderColors, borderAnimation, nextGlow, borderGlowColor);
-                        }}
-                        className="cursor-pointer"
-                      />
-                    </label>
-                  </div>
-
-                  {/* Glow Color Picker (when glow enabled) */}
-                  {borderGlowEnabled && (
-                    <div className="p-3 rounded-xl border bg-slate-500/5 space-y-2 animate-in fade-in duration-200" style={{ borderColor: 'var(--border-subtle)' }}>
-                      <div className="text-xs font-bold ui-dim flex items-center justify-between">
-                        <span>{t('settings.custom_border_glow_color')}</span>
-                        <span className="font-mono text-[11px] font-bold uppercase">{borderGlowColor}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <ColorPicker
-                          value={borderGlowColor}
-                          onChange={(nextHex) => {
-                            updateThemeConfig(themeColors, themeAngle, customBorderMode, borderColors, borderAnimation, borderGlowEnabled, nextHex);
-                          }}
-                          size={32}
-                          round
-                          ariaLabel={t('settings.custom_border_glow_color')}
-                        />
-                        <div
-                          className="flex-1 h-8 rounded-xl border flex items-center px-3 text-xs font-mono font-bold transition-all"
-                          style={{
-                            borderColor: 'var(--border-ui)',
-                            backgroundColor: 'var(--bg-card)',
-                            boxShadow: `0 0 16px 2px ${borderGlowColor}55`,
-                          }}
-                        >
-                          <span className="ui-dim text-[11px]">Preview Glow</span>
+                            size={32}
+                            round
+                            ariaLabel={`${t('settings.border_color')} ${idx + 1}`}
+                          />
+                          <span className="font-mono text-xs font-bold uppercase">{col}</span>
+                          {borderColors.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = borderColors.filter((_, i) => i !== idx);
+                                updateThemeConfig(themeColors, themeAngle, customBorderMode, next, borderAnimation);
+                              }}
+                              className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+                              title={t('settings.remove_color')}
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
+                      ))}
+
+                      {borderColors.length < 4 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const PRESET_BORDER = ['#38bdf8', '#ec4899', '#a855f7', '#10b981'];
+                            const nextColor = PRESET_BORDER[borderColors.length] || '#ec4899';
+                            const next = [...borderColors, nextColor];
+                            updateThemeConfig(themeColors, themeAngle, customBorderMode, next, borderAnimation);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-dashed text-xs font-bold ui-dim hover:text-pink-500 hover:border-pink-500/40 transition-colors cursor-pointer"
+                          style={{ borderColor: 'var(--border-ui)' }}
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          {t('settings.add_border_color')}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex items-center justify-between p-3 rounded-xl border bg-slate-500/5" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <span className="text-xs font-bold ui-dim">{t('settings.custom_border_anim')}</span>
+                    <input
+                      type="checkbox"
+                      checked={borderAnimation}
+                      onChange={(e) => {
+                        const nextAnim = e.target.checked;
+                        updateThemeConfig(themeColors, themeAngle, customBorderMode, borderColors, nextAnim, borderGlowEnabled, borderGlowColor);
+                      }}
+                      className="cursor-pointer accent-pink-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 rounded-xl border bg-slate-500/5" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <span className="text-xs font-bold ui-dim">{t('settings.custom_border_glow')}</span>
+                    <input
+                      type="checkbox"
+                      checked={borderGlowEnabled}
+                      onChange={(e) => {
+                        const nextGlow = e.target.checked;
+                        updateThemeConfig(themeColors, themeAngle, customBorderMode, borderColors, borderAnimation, nextGlow, borderGlowColor);
+                      }}
+                      className="cursor-pointer accent-pink-500"
+                    />
+                  </div>
+                </div>
+
+                {borderGlowEnabled && (
+                  <div className="p-3.5 rounded-xl border bg-slate-500/5 space-y-2 animate-in fade-in duration-200" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <div className="text-xs font-bold ui-dim flex items-center justify-between">
+                      <span>{t('settings.custom_border_glow_color')}</span>
+                      <span className="font-mono text-[11px] font-bold uppercase">{borderGlowColor}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <ColorPicker
+                        value={borderGlowColor}
+                        onChange={(nextHex) => {
+                          updateThemeConfig(themeColors, themeAngle, customBorderMode, borderColors, borderAnimation, borderGlowEnabled, nextHex);
+                        }}
+                        size={32}
+                        round
+                        ariaLabel={t('settings.custom_border_glow_color')}
+                      />
+                      <div
+                        className="flex-1 h-8 rounded-xl border flex items-center px-3 text-xs font-mono font-bold transition-all"
+                        style={{
+                          borderColor: 'var(--border-ui)',
+                          backgroundColor: 'var(--bg-card)',
+                          boxShadow: `0 0 16px 2px ${borderGlowColor}55`,
+                        }}
+                      >
+                        <span className="ui-dim text-[11px]">Xem thử Glow</span>
                       </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
-              {/* Background image section relocated inside this box */}
-              <div className="pt-3 border-t space-y-3" style={{ borderColor: 'var(--border-subtle)' }}>
+              {/* Background Image Section */}
+              <div className="pt-4 border-t space-y-3" style={{ borderColor: 'var(--border-subtle)' }}>
                 <div className="flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => setImageModal({ open: true, type: 'background' })}
-                    className="px-4 py-2 bg-pink-500/10 text-pink-500 rounded-xl text-xs font-bold hover:bg-pink-500/20 flex gap-2 items-center cursor-pointer transition-colors border border-pink-500/20"
-                  >
-                    <ImageIcon className="w-4 h-4" /> {t('settings.change_bg')}
-                  </button>
-
-                  {data.profileConfig?.backgroundUrl && (
+                  <div>
+                    <label className="text-xs font-bold ui-title block">Ảnh Nền Trang Cá Nhân</label>
+                    <p className="text-xs ui-dim mt-0.5">Đặt hình nền riêng tư cho hồ sơ cá nhân của bạn</p>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={async () => {
-                        const newConfig = { ...(data.profileConfig || {}), backgroundUrl: null };
-                        setData({ ...data, profileConfig: newConfig });
-                        await fetch('/api/profile/' + currentUser.username, {
-                          method: 'PATCH',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ profileConfig: newConfig }),
-                        });
-                        const updatedUser = { ...currentUser, profileConfig: newConfig };
-                        setCurrentUser(updatedUser);
-                        localStorage.setItem('gdvnc_user', JSON.stringify(updatedUser));
-                        window.dispatchEvent(new Event('gdvnc_user_update'));
-                        showToast(t('settings.bg_removed'), 'success');
-                      }}
-                      className="px-3 py-1.5 bg-red-500/10 text-red-500 rounded-lg text-xs font-bold hover:bg-red-500/20 flex gap-1 items-center cursor-pointer border border-red-500/20"
+                      onClick={() => setImageModal({ open: true, type: 'background' })}
+                      className="px-3.5 py-1.5 bg-pink-500/10 text-pink-500 rounded-xl text-xs font-bold hover:bg-pink-500/20 flex gap-1.5 items-center cursor-pointer transition-colors border border-pink-500/20"
                     >
-                      <X className="w-3.5 h-3.5" /> {t('settings.remove_bg')}
+                      <ImageIcon className="w-3.5 h-3.5" /> {t('settings.change_bg')}
                     </button>
-                  )}
+                    {data.profileConfig?.backgroundUrl && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const newConfig = { ...(data.profileConfig || {}), backgroundUrl: null };
+                          setData({ ...data, profileConfig: newConfig });
+                          await fetch('/api/profile/' + currentUser.username, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ profileConfig: newConfig }),
+                          });
+                          const updatedUser = { ...currentUser, profileConfig: newConfig };
+                          setCurrentUser(updatedUser);
+                          localStorage.setItem('gdvnc_user', JSON.stringify(updatedUser));
+                          window.dispatchEvent(new Event('gdvnc_user_update'));
+                          showToast(t('settings.bg_removed'), 'success');
+                        }}
+                        className="px-3 py-1.5 bg-red-500/10 text-red-500 rounded-xl text-xs font-bold hover:bg-red-500/20 flex gap-1 items-center cursor-pointer border border-red-500/20"
+                      >
+                        <X className="w-3.5 h-3.5" /> {t('settings.remove_bg')}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {data.profileConfig?.backgroundUrl && (
                   <div
-                    className="flex items-center gap-3 p-2 rounded-xl border bg-slate-500/5"
+                    className="flex items-center gap-3 p-2.5 rounded-xl border bg-slate-500/5"
                     style={{ borderColor: 'var(--border-ui)' }}
                   >
                     <div
-                      className="w-16 h-10 rounded-lg overflow-hidden border shrink-0"
+                      className="w-20 h-12 rounded-lg overflow-hidden border shrink-0"
                       style={{ borderColor: 'var(--border-subtle)' }}
                     >
                       <img
@@ -1029,33 +1112,58 @@ export default function SettingsPage() {
                 )}
               </div>
             </div>
+          ) : (
+            <div className="ui-card p-6 border-dashed border-pink-500/30 text-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-pink-500/10 text-pink-500 flex items-center justify-center mx-auto border border-pink-500/20">
+                <Heart className="w-6 h-6" />
+              </div>
+              <h3 className="font-bold text-sm ui-title">Đặc Quyền Theme Dành Cho Supporter</h3>
+              <p className="text-xs ui-dim max-w-md mx-auto leading-relaxed">
+                Nâng cấp Supporter để mở khóa toàn bộ tùy biến màu sắc theme động, dải màu gradient tự chọn, viền xoay phát sáng và ảnh nền riêng tư cho hồ sơ cá nhân.
+              </p>
+              <Link
+                href="/support"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+              >
+                <Heart className="w-3.5 h-3.5" /> Khám Phá Các Gói Supporter
+              </Link>
+            </div>
           )}
+        </div>
+      )}
 
-          {/* Supporter Name Styling Box */}
-          {canAccessSupporter && (
-            <div className="ui-card p-5 space-y-5 border-purple-500/20" style={{ backgroundColor: 'var(--bg-card)' }}>
-              <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
-                <h2 className="text-sm font-bold flex items-center gap-2 text-purple-400">
-                  <Palette className="w-4 h-4" /> Tùy biến phong cách Tên (Supporter)
-                </h2>
+      {/* Tab 3: Name Style (Phong Cách Tên) */}
+      {activeTab === 'name_style' && (
+        <div className="space-y-6 animate-in fade-in-50 duration-200">
+          {canAccessSupporter ? (
+            <div className="ui-card p-6 space-y-6 border-purple-500/20">
+              <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+                <div>
+                  <h2 className="text-sm font-bold flex items-center gap-2 text-purple-400">
+                    <Palette className="w-4 h-4" /> Tùy Biến Phong Cách Tên (Supporter)
+                  </h2>
+                  <p className="text-xs ui-dim mt-0.5">
+                    Tùy chỉnh phông chữ, màu đơn sắc, dải gradient và viền phát sáng (Glow) hiển thị trên Bảng Xếp Hạng & Profile
+                  </p>
+                </div>
                 <button
                   type="button"
                   onClick={() => handleSaveNameStyle(true)}
                   disabled={savingNameStyle}
-                  className="px-2.5 py-1 text-[11px] font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg border border-red-500/20 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                  className="px-3 py-1.5 text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl border border-red-500/20 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   title="Đặt lại về mặc định"
                 >
-                  <RotateCcw className="w-3 h-3" /> Đặt lại
+                  <RotateCcw className="w-3.5 h-3.5" /> Đặt Lại
                 </button>
               </div>
 
               {/* Live Preview Box */}
               <div
-                className="p-4 rounded-xl border flex flex-col items-center justify-center gap-2.5 bg-slate-900/60 shadow-inner"
+                className="p-5 rounded-2xl border flex flex-col items-center justify-center gap-3 bg-slate-900/60 shadow-inner"
                 style={{ borderColor: 'var(--border-ui)' }}
               >
-                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Xem trước hiển thị</span>
-                <div className="text-base font-bold py-1 px-3 rounded-lg bg-black/30 border border-white/5">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400 font-bold">Xem Trước Hiển Thị Thời Gian Thực</span>
+                <div className="text-lg font-bold py-2 px-5 rounded-xl bg-black/40 border border-white/10 shadow-sm">
                   <UserDisplayName
                     user={{
                       username: currentUser.username,
@@ -1069,17 +1177,17 @@ export default function SettingsPage() {
                       clan: data?.clanMember?.clan || data?.clan || null,
                       clanMember: data?.clanMember || null,
                     }}
-                    className="text-base"
+                    className="text-lg"
                   />
                 </div>
               </div>
 
               {/* Font Selector */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label className="text-xs font-bold ui-title flex items-center gap-1.5">
-                  <Type className="w-3.5 h-3.5 text-purple-400" /> Phông chữ hiển thị
+                  <Type className="w-4 h-4 text-purple-400" /> Phông Chữ Hiển Thị
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   {Object.entries(FONT_PRESETS).map(([key, f]) => {
                     const active = nameFont === key;
                     return (
@@ -1087,15 +1195,15 @@ export default function SettingsPage() {
                         key={key}
                         type="button"
                         onClick={() => setNameFont(key)}
-                        className={`p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer flex flex-col gap-1 ${
+                        className={`p-3 rounded-2xl border text-left text-xs transition-all cursor-pointer flex flex-col gap-1 ${
                           active
                             ? 'border-purple-500 bg-purple-500/15 font-bold shadow-xs'
                             : 'ui-subtle hover:border-purple-500/40'
                         }`}
                         style={{ borderColor: active ? undefined : 'var(--border-ui)' }}
                       >
-                        <span className="text-[10px] ui-dim font-sans">{f.label}</span>
-                        <span className="truncate text-sm" style={{ fontFamily: f.family }}>
+                        <span className="text-[10px] ui-dim font-sans font-bold">{f.label}</span>
+                        <span className="truncate text-base" style={{ fontFamily: f.family }}>
                           {currentUser.username}
                         </span>
                       </button>
@@ -1105,23 +1213,23 @@ export default function SettingsPage() {
               </div>
 
               {/* Color Mode: Solid or Gradient */}
-              <div className="pt-2 border-t space-y-3" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div className="pt-3 border-t space-y-4" style={{ borderColor: 'var(--border-subtle)' }}>
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold ui-title">Chế độ màu tên</label>
-                  <div className="flex rounded-lg border p-0.5 bg-slate-500/5 text-xs font-bold" style={{ borderColor: 'var(--border-ui)' }}>
+                  <label className="text-xs font-bold ui-title">Chế Độ Màu Tên</label>
+                  <div className="flex rounded-xl border p-0.5 bg-slate-500/5 text-xs font-bold" style={{ borderColor: 'var(--border-ui)' }}>
                     <button
                       type="button"
                       onClick={() => setNameUseGradient(false)}
-                      className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                         !nameUseGradient ? 'bg-purple-500 text-white shadow-xs' : 'ui-dim hover:text-purple-400'
                       }`}
                     >
-                      Đơn sắc
+                      Đơn Sắc
                     </button>
                     <button
                       type="button"
                       onClick={() => setNameUseGradient(true)}
-                      className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                         nameUseGradient ? 'bg-purple-500 text-white shadow-xs' : 'ui-dim hover:text-purple-400'
                       }`}
                     >
@@ -1131,11 +1239,11 @@ export default function SettingsPage() {
                 </div>
 
                 {!nameUseGradient ? (
-                  <div className="flex items-center gap-3 p-2.5 rounded-xl border bg-slate-500/5" style={{ borderColor: 'var(--border-ui)' }}>
+                  <div className="flex items-center gap-3 p-3 rounded-xl border bg-slate-500/5" style={{ borderColor: 'var(--border-ui)' }}>
                     <ColorPicker
                       value={nameColor}
                       onChange={setNameColor}
-                      size={32}
+                      size={34}
                       round
                       ariaLabel="Màu chữ"
                     />
@@ -1145,13 +1253,13 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="p-3.5 rounded-xl border bg-slate-500/5 space-y-3" style={{ borderColor: 'var(--border-ui)' }}>
+                  <div className="p-4 rounded-xl border bg-slate-500/5 space-y-3" style={{ borderColor: 'var(--border-ui)' }}>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="flex items-center gap-2.5 p-2 rounded-lg border bg-slate-500/5" style={{ borderColor: 'var(--border-subtle)' }}>
+                      <div className="flex items-center gap-2.5 p-2 rounded-xl border bg-slate-500/5" style={{ borderColor: 'var(--border-subtle)' }}>
                         <ColorPicker
                           value={nameGradColor1}
                           onChange={setNameGradColor1}
-                          size={28}
+                          size={30}
                           round
                           ariaLabel="Màu 1"
                         />
@@ -1160,11 +1268,11 @@ export default function SettingsPage() {
                           <span className="font-mono text-[11px] uppercase truncate block">{nameGradColor1}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2.5 p-2 rounded-lg border bg-slate-500/5" style={{ borderColor: 'var(--border-subtle)' }}>
+                      <div className="flex items-center gap-2.5 p-2 rounded-xl border bg-slate-500/5" style={{ borderColor: 'var(--border-subtle)' }}>
                         <ColorPicker
                           value={nameGradColor2}
                           onChange={setNameGradColor2}
-                          size={28}
+                          size={30}
                           round
                           ariaLabel="Màu 2"
                         />
@@ -1176,14 +1284,14 @@ export default function SettingsPage() {
                     </div>
 
                     <div className="flex items-center justify-between text-xs font-bold pt-1">
-                      <span className="ui-dim">Góc nghiêng Gradient</span>
+                      <span className="ui-dim">Góc Nghiêng Gradient</span>
                       <div className="flex items-center gap-1 text-[11px]">
                         {[0, 45, 90, 135, 180].map((deg) => (
                           <button
                             key={deg}
                             type="button"
                             onClick={() => setNameGradAngle(deg)}
-                            className={`px-1.5 py-0.5 rounded-md font-mono cursor-pointer transition-colors ${
+                            className={`px-2 py-0.5 rounded-md font-mono cursor-pointer transition-colors ${
                               nameGradAngle === deg ? 'bg-purple-500 text-white font-bold' : 'ui-subtle hover:text-purple-400'
                             }`}
                           >
@@ -1197,16 +1305,16 @@ export default function SettingsPage() {
               </div>
 
               {/* Glow Customization */}
-              <div className="pt-2 border-t space-y-3" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div className="pt-3 border-t space-y-3" style={{ borderColor: 'var(--border-subtle)' }}>
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold ui-title flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400" /> Hiệu ứng phát sáng (Glow)
+                    <Sparkles className="w-3.5 h-3.5 text-purple-400" /> Hiệu Ứng Phát Sáng (Glow)
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer text-xs font-bold ui-dim hover:text-purple-400 transition-colors">
                     <input
                       type="checkbox"
                       checked={nameUseGlow}
-                      onChange={(e) => setNameUseGlow(e.target.checked)}
+                      onChange={(e) => setNameUseGlow(e.target.value === 'true' || e.target.checked)}
                       className="rounded accent-purple-500 cursor-pointer"
                     />
                     <span>Bật phát sáng</span>
@@ -1214,7 +1322,7 @@ export default function SettingsPage() {
                 </div>
 
                 {nameUseGlow && (
-                  <div className="p-3 rounded-xl border bg-slate-500/5 space-y-2 animate-in fade-in duration-200" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <div className="p-3.5 rounded-xl border bg-slate-500/5 space-y-2 animate-in fade-in duration-200" style={{ borderColor: 'var(--border-subtle)' }}>
                     <div className="flex items-center gap-3">
                       <ColorPicker
                         value={nameGlowColor}
@@ -1233,91 +1341,185 @@ export default function SettingsPage() {
               </div>
 
               {/* Save Button */}
-              <div className="pt-2">
+              <div className="pt-3 border-t flex items-center justify-end" style={{ borderColor: 'var(--border-subtle)' }}>
                 <button
                   type="button"
                   onClick={() => handleSaveNameStyle(false)}
                   disabled={savingNameStyle}
-                  className="w-full py-2.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
+                  className="px-6 py-2.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
                 >
-                  <Check className="w-4 h-4" /> {savingNameStyle ? 'Đang lưu...' : 'Lưu phong cách tên'}
+                  <Check className="w-4 h-4" />
+                  <span>{savingNameStyle ? 'Đang lưu...' : 'Lưu Phong Cách Tên'}</span>
                 </button>
               </div>
+            </div>
+          ) : (
+            <div className="ui-card p-6 border-dashed border-purple-500/30 text-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center mx-auto border border-purple-500/20">
+                <Palette className="w-6 h-6" />
+              </div>
+              <h3 className="font-bold text-sm ui-title">Tùy Biến Tên Độc Quyền Cho Supporter</h3>
+              <p className="text-xs ui-dim max-w-md mx-auto leading-relaxed">
+                Nâng cấp Supporter để sở hữu phông chữ độc đáo, hiệu ứng dải màu gradient và hào quang phát sáng (glow) quanh tên bạn trên toàn bộ website.
+              </p>
+              <Link
+                href="/support"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+              >
+                <Heart className="w-3.5 h-3.5" /> Nâng Cấp Supporter Ngay
+              </Link>
             </div>
           )}
+        </div>
+      )}
 
-          {/* Security & 2FA */}
-          <div className="ui-card p-5 space-y-4">
-            <h2
-              className="text-sm font-bold flex items-center gap-2 border-b pb-2"
-              style={{ borderColor: 'var(--border-subtle)' }}
-            >
-              <ShieldCheck className="w-4 h-4" /> {t('settings.security')}
-            </h2>
-
-            <div className="flex items-center justify-between p-3 rounded-xl border bg-emerald-500/5 border-emerald-500/20">
-              <div>
-                <div className="font-bold text-sm">{t('settings.two_factor')}</div>
-                <div className="text-xs ui-dim mt-0.5">{t('settings.two_factor_desc')}</div>
+      {/* Tab 4: Security (Bảo Mật & Quà Tặng) */}
+      {activeTab === 'security' && (
+        <div className="space-y-6 animate-in fade-in-50 duration-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left Sub-column */}
+            <div className="space-y-6">
+              {/* Redeem Gift Code */}
+              <div className="ui-card p-5 space-y-4 border-amber-500/20">
+                <div className="border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <h2 className="text-sm font-bold flex items-center gap-2 text-amber-500">
+                    <Gift className="w-4 h-4" /> {t('settings.redeem_title')}
+                  </h2>
+                  <p className="text-xs ui-dim mt-0.5">{t('settings.redeem_desc')}</p>
+                </div>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Ticket className="w-4 h-4 ui-dim absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={redeemCode}
+                      onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleRedeem();
+                      }}
+                      placeholder={t('settings.redeem_placeholder')}
+                      className="w-full pl-9 pr-3 py-2 rounded-xl text-xs font-mono font-bold tracking-wider border focus:ring-1 focus:ring-amber-500 outline-none uppercase"
+                      style={{
+                        backgroundColor: 'var(--bg-subtle)',
+                        borderColor: 'var(--border-ui)',
+                        color: 'var(--text-title)',
+                      }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRedeem}
+                    disabled={redeeming || !redeemCode.trim()}
+                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors disabled:opacity-50 shrink-0 flex items-center gap-1.5 shadow-xs"
+                  >
+                    <Gift className="w-3.5 h-3.5" />
+                    {redeeming ? t('settings.redeem_checking') : t('settings.redeem_btn')}
+                  </button>
+                </div>
               </div>
-              {data.totpEnabled ? (
-                <button
-                  type="button"
-                  onClick={handleDisable2FA}
-                  className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold text-xs rounded-lg cursor-pointer transition-colors border border-red-500/20 tsumiki-btn-red"
-                >
-                  {t('settings.disable_2fa')}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleSetup2FA}
-                  className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 font-bold text-xs rounded-lg cursor-pointer transition-colors border border-emerald-500/20 tsumiki-btn-green"
-                >
-                  {t('settings.enable_2fa')}
-                </button>
-              )}
+
+              {/* 2FA Card */}
+              <div className="ui-card p-5 space-y-4">
+                <div className="border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <h2 className="text-sm font-bold flex items-center gap-2 ui-title">
+                    <ShieldCheck className="w-4 h-4 text-emerald-500" /> {t('settings.security')}
+                  </h2>
+                  <p className="text-xs ui-dim mt-0.5">Xác thực 2 bước tăng cường bảo mật cho tài khoản</p>
+                </div>
+
+                <div className="flex items-center justify-between p-3.5 rounded-xl border bg-emerald-500/5 border-emerald-500/20">
+                  <div>
+                    <div className="font-bold text-xs ui-title flex items-center gap-2">
+                      <span>{t('settings.two_factor')}</span>
+                      {data.totpEnabled ? (
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          Đã Bật
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-zinc-500/20 text-zinc-400 border border-zinc-500/30">
+                          Chưa Bật
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] ui-dim mt-0.5">{t('settings.two_factor_desc')}</div>
+                  </div>
+                  {data.totpEnabled ? (
+                    <button
+                      type="button"
+                      onClick={handleDisable2FA}
+                      className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold text-xs rounded-xl cursor-pointer transition-colors border border-red-500/20"
+                    >
+                      {t('settings.disable_2fa')}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSetup2FA}
+                      className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 font-bold text-xs rounded-xl cursor-pointer transition-colors border border-emerald-500/20"
+                    >
+                      {t('settings.enable_2fa')}
+                    </button>
+                  )}
+                </div>
+
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordModal(true)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                    style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  >
+                    <Lock className="w-4 h-4 text-sky-500" /> {t('settings.change_password')}
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => setShowPasswordModal(true)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors tsumiki-btn"
-                style={{ borderColor: 'var(--border-ui)' }}
-              >
-                <Lock className="w-4 h-4" /> {t('settings.change_password')}
-              </button>
+            {/* Right Sub-column */}
+            <div className="space-y-6">
+              {/* Support & Logout Card */}
+              <div className="ui-card p-5 space-y-3">
+                <div className="border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <h2 className="text-sm font-bold flex items-center gap-2 ui-title">
+                    <HelpCircle className="w-4 h-4 text-pink-500" /> Liên Kết & Phiên Đăng Nhập
+                  </h2>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => router.push('/support')}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-pink-50 dark:hover:bg-pink-950/30 text-pink-500 border-pink-500/20 transition-colors"
+                >
+                  <Heart className="w-4 h-4" /> {t('settings.support_gdvn')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-red-50 hover:text-red-500 hover:border-red-500/30 dark:hover:bg-red-950/30 text-slate-500 transition-colors"
+                  style={{ borderColor: 'var(--border-ui)' }}
+                >
+                  <LogOut className="w-4 h-4" /> {t('settings.logout')}
+                </button>
+              </div>
+
+              {/* Danger Zone: Delete Account */}
+              <div className="ui-card p-5 space-y-3 border-red-500/25 bg-red-500/5">
+                <h2 className="text-sm font-bold flex items-center gap-2 text-red-500 border-b border-red-500/20 pb-2">
+                  <Trash2 className="w-4 h-4" /> {t('settings.delete_account')}
+                </h2>
+                <p className="text-xs ui-dim leading-relaxed">{t('settings.delete_account_warn')}</p>
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  className="px-4 py-2.5 bg-red-500/15 hover:bg-red-500/25 text-red-500 rounded-xl text-xs font-bold w-full cursor-pointer transition-colors border border-red-500/30"
+                >
+                  {t('settings.delete_account_btn')}
+                </button>
+              </div>
             </div>
-          </div>
-
-          {/* Other */}
-          <div className="ui-card p-5 space-y-4">
-            <h2
-              className="text-sm font-bold flex items-center gap-2 border-b pb-2"
-              style={{ borderColor: 'var(--border-subtle)' }}
-            >
-              <HelpCircle className="w-4 h-4" /> {t('settings.other')}
-            </h2>
-
-            <button
-              type="button"
-              onClick={() => router.push('/support')}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-pink-50 dark:hover:bg-pink-950/30 text-pink-500 border-pink-500/20 transition-colors tsumiki-btn-pink"
-            >
-              <Heart className="w-4 h-4" /> {t('settings.support_gdvn')}
-            </button>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-red-50 hover:text-red-500 hover:border-red-500/30 dark:hover:bg-red-950/30 text-slate-500 transition-colors tsumiki-btn"
-              style={{ borderColor: 'var(--border-ui)' }}
-            >
-              <LogOut className="w-4 h-4" /> {t('settings.logout')}
-            </button>
           </div>
         </div>
-      </div>
+      )}
 
       <ImageEditorModal
         isOpen={imageModal.open}
