@@ -35,12 +35,18 @@ function mimeToExt(mime: string, fallback = 'jpg') {
   return fallback;
 }
 
+const MAX_LOCAL_FILE_SIZE = 16 * 1024 * 1024; // 16 MB max limit
+
 export async function uploadBufferToLocal(
   buffer: Buffer,
   mime = 'image/jpeg',
   originalFilename?: string,
   ownerUserId?: string
 ): Promise<{ url: string; key: string }> {
+  if (buffer.length > MAX_LOCAL_FILE_SIZE) {
+    throw new Error(`File size exceeds maximum limit (${MAX_LOCAL_FILE_SIZE / (1024 * 1024)}MB)`);
+  }
+
   const { uploads } = ensureLocalDirs();
   const ext = mimeToExt(mime);
   const uuid = crypto.randomUUID().split('-')[0];
@@ -65,6 +71,9 @@ export async function uploadDataUrlToLocal(
 ): Promise<string> {
   const parts = dataUrl.split(',');
   if (parts.length !== 2) throw new Error('Invalid image data');
+  if (parts[1].length > MAX_LOCAL_FILE_SIZE * 1.35) {
+    throw new Error('Image data exceeds maximum allowed limit');
+  }
   const mimeMatch = parts[0].match(/:(.*?);/);
   const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
   const buffer = Buffer.from(parts[1], 'base64');

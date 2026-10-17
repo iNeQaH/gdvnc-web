@@ -91,18 +91,34 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Không thể tạo file sao lưu.' }, { status: 500 });
     }
 
-    const fileBuffer = fs.readFileSync(outArchive);
-    // Remove the temporary archive after reading to buffer
-    try {
-      fs.unlinkSync(outArchive);
-    } catch {}
+    const stat = fs.statSync(outArchive);
+    const nodeStream = fs.createReadStream(outArchive);
+    nodeStream.on('close', () => {
+      try {
+        if (fs.existsSync(outArchive)) fs.unlinkSync(outArchive);
+      } catch {}
+    });
 
-    return new NextResponse(fileBuffer, {
+    const webStream = new ReadableStream({
+      start(controller) {
+        nodeStream.on('data', (chunk) => controller.enqueue(chunk));
+        nodeStream.on('end', () => controller.close());
+        nodeStream.on('error', (err) => controller.error(err));
+      },
+      cancel() {
+        nodeStream.destroy();
+        try {
+          if (fs.existsSync(outArchive)) fs.unlinkSync(outArchive);
+        } catch {}
+      },
+    });
+
+    return new Response(webStream, {
       status: 200,
       headers: {
         'Content-Type': 'application/gzip',
         'Content-Disposition': `attachment; filename="${backupTag}.tar.gz"`,
-        'Content-Length': String(fileBuffer.length),
+        'Content-Length': String(stat.size),
       },
     });
   } catch (err: any) {

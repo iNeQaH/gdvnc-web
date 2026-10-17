@@ -161,6 +161,15 @@ export const Sidebar = () => {
     void refreshSessionUser();
     window.addEventListener('gdvnc_user_update', loadUserFromStorage);
 
+    return () => {
+      window.removeEventListener('gdvnc_user_update', loadUserFromStorage);
+    };
+  }, []);
+
+  // Connect real-time SSE stream only for logged-in users to save server sockets/memory
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
     let es: EventSource | null = null;
     try {
       es = new EventSource('/api/stream');
@@ -177,10 +186,9 @@ export const Sidebar = () => {
     }
 
     return () => {
-      window.removeEventListener('gdvnc_user_update', loadUserFromStorage);
       if (es) es.close();
     };
-  }, []);
+  }, [currentUser?.id]);
 
   // Close mobile drawer on route change
   useEffect(() => {

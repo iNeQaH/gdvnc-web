@@ -42,7 +42,7 @@ export function middleware(request: NextRequest) {
   if (['POST', 'PATCH', 'DELETE', 'PUT'].includes(method)) {
     const pathname = request.nextUrl.pathname;
 
-    if (pathname.startsWith('/api/cron/')) {
+    if (pathname.startsWith('/api/cron/') || pathname.startsWith('/api/webhooks/')) {
       return NextResponse.next();
     }
 

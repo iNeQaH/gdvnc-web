@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
 
@@ -8,17 +8,23 @@ export async function POST(req: Request) {
     const signature = req.headers.get('x-sepay-signature');
     
     const secret = process.env.SEPAY_WEBHOOK_SECRET;
-    if (secret) {
-      if (!signature) {
-        return NextResponse.json({ error: 'Missing signature' }, { status: 401 });
-      }
-      const hmac = crypto.createHmac('sha256', secret);
-      hmac.update(rawBody);
-      const expectedSignature = hmac.digest('hex');
-      
-      if (signature !== expectedSignature) {
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-      }
+    if (!secret) {
+      console.error('SePay Webhook Error: SEPAY_WEBHOOK_SECRET is not configured on server.');
+      return NextResponse.json({ error: 'Webhook secret not configured on server' }, { status: 500 });
+    }
+
+    if (!signature) {
+      return NextResponse.json({ error: 'Missing signature' }, { status: 401 });
+    }
+
+    const hmac = crypto.createHmac('sha256', secret);
+    hmac.update(rawBody);
+    const expectedSignature = hmac.digest('hex');
+
+    const sigBuf = Buffer.from(signature);
+    const expBuf = Buffer.from(expectedSignature);
+    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
     const body = JSON.parse(rawBody);

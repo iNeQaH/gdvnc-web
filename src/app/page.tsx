@@ -29,14 +29,14 @@ export default function HomePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
+  const [deviceFilter, setDeviceFilter] = useState<'ALL' | 'PC' | 'MOBILE'>('ALL');
+
   useEffect(() => {
     const userStr = localStorage.getItem('gdvnc_user');
     if (userStr) {
       try { setCurrentUser(JSON.parse(userStr)); } catch {}
     }
-    fetchLeaderboard(mode);
-    setCurrentPage(1); // Reset page on mode change
-  }, [mode]);
+  }, []);
 
   useEffect(() => {
     fetch('/api/leaderboard/highlights')
@@ -47,14 +47,13 @@ export default function HomePage() {
       .catch(() => {});
   }, []);
 
-  const [deviceFilter, setDeviceFilter] = useState<'ALL' | 'PC' | 'MOBILE'>('ALL');
-
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, deviceFilter]);
+  }, [search]);
 
   useEffect(() => {
     fetchLeaderboard(mode, deviceFilter);
+    setCurrentPage(1); // Reset page on mode or device change
   }, [mode, deviceFilter]);
 
   const fetchLeaderboard = async (currentMode: string, currentDevice: string = 'ALL') => {
