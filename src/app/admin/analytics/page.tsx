@@ -355,7 +355,7 @@ export default function AnalyticsPage() {
           </div>
 
           <div className="bg-[var(--bg-card)] border border-[var(--border-ui)] rounded-xl p-4 shadow-sm">
-            <div className="text-xs text-[var(--text-dim)] font-semibold uppercase mb-1">Active Connections</div>
+            <div className="text-xs text-[var(--text-dim)] font-semibold uppercase mb-1">DB Connections (Postgres)</div>
             <div className="text-2xl font-bold font-mono ui-title">{database.connections}</div>
           </div>
 

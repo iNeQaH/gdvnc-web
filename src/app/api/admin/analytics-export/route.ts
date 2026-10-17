@@ -60,7 +60,10 @@ export async function GET(req: Request) {
     const allUniqueVisitors = new Set<string>();
 
     visits.forEach(v => {
-      totalViews++;
+      const isHeartbeat = v.path.startsWith('__heartbeat');
+      if (!isHeartbeat) {
+        totalViews++;
+      }
       allUniqueVisitors.add(v.ipHash);
       
       const timeStr = isHourly 
@@ -71,13 +74,17 @@ export async function GET(req: Request) {
         viewsByTime[timeStr] = 0;
         visitorsByTime[timeStr] = new Set();
       }
-      viewsByTime[timeStr]++;
+      if (!isHeartbeat) {
+        viewsByTime[timeStr]++;
+        pathCounts[v.path] = (pathCounts[v.path] || 0) + 1;
+      }
       visitorsByTime[timeStr].add(v.ipHash);
       
-      pathCounts[v.path] = (pathCounts[v.path] || 0) + 1;
-      const { os: osName, device } = parseUserAgent(v.userAgent || '');
-      osCounts[osName] = (osCounts[osName] || 0) + 1;
-      deviceCounts[device] = (deviceCounts[device] || 0) + 1;
+      if (!isHeartbeat) {
+        const { os: osName, device } = parseUserAgent(v.userAgent || '');
+        osCounts[osName] = (osCounts[osName] || 0) + 1;
+        deviceCounts[device] = (deviceCounts[device] || 0) + 1;
+      }
     });
 
     const daily = Object.keys(viewsByTime).map(time => ({

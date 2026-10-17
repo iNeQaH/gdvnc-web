@@ -113,14 +113,7 @@ export default function AdminClientWrapper({ children, initialUser }: { children
               <NavLink href="/admin/functions" icon={Wrench} label={t('admin.tab_levels')} />
             )}
             {isSuperAdmin && (
-              <Link
-                href="/admin/analytics"
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all hover:bg-black/5 dark:hover:bg-white/5"
-                style={{ color: 'var(--text-dim)' }}
-              >
-                <Activity className="w-3.5 h-3.5" />
-                Analytics
-              </Link>
+              <NavLink href="/admin/analytics" icon={Activity} label="Analytics" />
             )}
           </div>
         </div>

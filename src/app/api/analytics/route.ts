@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import prisma from '@/lib/prisma';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit } from '@/lib/rateLimit';
+import { getAuthUser } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
@@ -12,22 +13,44 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false }, { status: 429 });
     }
 
-    const { path } = await req.json();
-    if (!path || typeof path !== 'string') {
-      return NextResponse.json({ error: 'Invalid path' }, { status: 400 });
-    }
+    const body = await req.json().catch(() => ({}));
+    const rawPath = typeof body?.path === 'string' ? body.path : '/';
+    const isHeartbeat = Boolean(body?.heartbeat);
     const userAgent = req.headers.get('user-agent') || '';
-    
-    // Anonymize IP by hashing it with a daily salt to respect privacy while allowing unique visitor counts
-    const today = new Date().toISOString().split('T')[0];
-    const ipHash = crypto.createHash('sha256').update(ip + today).digest('hex').substring(0, 16);
+
+    // Identify visitor: by logged-in user if authenticated, otherwise by anonymized IP
+    const authUser = await getAuthUser().catch(() => null);
+    let ipHash: string;
+    if (authUser?.userId) {
+      ipHash = `usr_${authUser.userId}`;
+    } else {
+      const salt = process.env.JWT_SECRET || 'gdvn_visitor_salt';
+      ipHash = `ip_${crypto.createHash('sha256').update(ip + salt).digest('hex').substring(0, 16)}`;
+    }
+
+    // If it's a heartbeat, throttle to avoid DB bloat: only record if user hasn't been active in the last 2 minutes
+    if (isHeartbeat) {
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+      const recentActivity = await prisma.pageVisit.findFirst({
+        where: {
+          ipHash,
+          createdAt: { gte: twoMinutesAgo },
+        },
+        select: { id: true },
+      });
+      if (recentActivity) {
+        return NextResponse.json({ success: true, throttled: true });
+      }
+    }
+
+    const recordPath = isHeartbeat ? '__heartbeat__' : rawPath.substring(0, 200);
 
     await prisma.pageVisit.create({
       data: {
-        path: path.substring(0, 200),
+        path: recordPath,
         ipHash,
         userAgent: userAgent.substring(0, 255),
-      }
+      },
     });
 
     return NextResponse.json({ success: true });

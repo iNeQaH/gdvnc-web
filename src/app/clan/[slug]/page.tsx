@@ -15,6 +15,7 @@ import {
   Trophy,
   ExternalLink,
   UserPlus,
+  UserX,
   LogOut,
   AlertTriangle,
   Loader2,
@@ -1064,6 +1065,36 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
     );
   };
 
+  // Cancel Join Request
+  const handleCancelJoinRequest = () => {
+    const confirmMsg = isEn
+      ? 'Are you sure you want to cancel your join request to this Clan?'
+      : 'Bạn có chắc chắn muốn hủy yêu cầu xin gia nhập Clan này không?';
+
+    showConfirm(
+      confirmMsg,
+      async () => {
+        setActionLoading(true);
+        try {
+          const res = await fetch(`/api/clans/${clan.slug}/join`, {
+            method: 'DELETE',
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            showToast(data.message || (isEn ? 'Join request canceled.' : 'Đã hủy yêu cầu xin gia nhập Clan.'), 'success');
+            loadClanData();
+          } else {
+            showToast(data.error || (isEn ? 'Could not cancel request.' : 'Không thể hủy yêu cầu.'), 'error');
+          }
+        } catch {
+          showToast(isEn ? 'Server connection error.' : 'Lỗi kết nối máy chủ.', 'error');
+        } finally {
+          setActionLoading(false);
+        }
+      }
+    );
+  };
+
   // Donate / Pledge SP Coin
   const handleDonate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1437,10 +1468,16 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
 
               {!myMembership && (
                 clan.myPendingRequest ? (
-                  <div className="px-4 py-2 rounded-xl text-xs font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center gap-1.5">
-                    <UserPlus className="w-3.5 h-3.5" />
-                    <span>{isEn ? 'Requested (Pending)' : 'Đã xin vào (Chờ duyệt)'}</span>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCancelJoinRequest}
+                    disabled={actionLoading}
+                    className="px-4 py-2 rounded-xl text-xs font-bold border border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/50 flex items-center gap-1.5 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                    title={isEn ? 'Cancel your join request' : 'Hủy yêu cầu xin gia nhập Clan'}
+                  >
+                    {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
+                    <span>{isEn ? 'Cancel Request' : 'Hủy yêu cầu'}</span>
+                  </button>
                 ) : clan.isSuspended ? (
                   <div className="px-4 py-2 rounded-xl text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">
                     {isEn ? 'Clan Suspended' : 'Clan đang tạm dừng'}

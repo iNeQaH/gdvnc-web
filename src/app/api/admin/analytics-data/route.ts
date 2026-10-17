@@ -82,7 +82,9 @@ export async function GET(req: Request) {
     const isHourly = diffDays <= 1;
     
     const totalsRaw = await prisma.$queryRaw<Array<{ total_views: bigint; total_visitors: bigint }>>`
-      SELECT COUNT(*)::bigint AS total_views, COUNT(DISTINCT "ipHash")::bigint AS total_visitors
+      SELECT 
+        COUNT(CASE WHEN "path" NOT LIKE '__heartbeat%' THEN 1 END)::bigint AS total_views, 
+        COUNT(DISTINCT "ipHash")::bigint AS total_visitors
       FROM "PageVisit"
       WHERE "createdAt" >= ${startDate} AND "createdAt" <= ${endDate}
     `;
@@ -93,7 +95,7 @@ export async function GET(req: Request) {
     const bucketRows = isHourly
       ? await prisma.$queryRaw<BucketRow[]>`
           SELECT date_trunc('hour', "createdAt") AS bucket,
-                 COUNT(*)::int AS views,
+                 COUNT(CASE WHEN "path" NOT LIKE '__heartbeat%' THEN 1 END)::int AS views,
                  COUNT(DISTINCT "ipHash")::int AS visitors
           FROM "PageVisit"
           WHERE "createdAt" >= ${startDate} AND "createdAt" <= ${endDate}
@@ -102,7 +104,7 @@ export async function GET(req: Request) {
         `
       : await prisma.$queryRaw<BucketRow[]>`
           SELECT date_trunc('day', "createdAt") AS bucket,
-                 COUNT(*)::int AS views,
+                 COUNT(CASE WHEN "path" NOT LIKE '__heartbeat%' THEN 1 END)::int AS views,
                  COUNT(DISTINCT "ipHash")::int AS visitors
           FROM "PageVisit"
           WHERE "createdAt" >= ${startDate} AND "createdAt" <= ${endDate}
@@ -114,6 +116,8 @@ export async function GET(req: Request) {
       SELECT path, COUNT(*)::int AS count
       FROM "PageVisit"
       WHERE "createdAt" >= ${startDate} AND "createdAt" <= ${endDate}
+        AND "path" NOT LIKE '__heartbeat%'
+        AND "path" NOT LIKE '/admin%'
       GROUP BY path
       ORDER BY count DESC
       LIMIT 5
@@ -123,6 +127,7 @@ export async function GET(req: Request) {
       SELECT "userAgent", COUNT(*)::int AS count
       FROM "PageVisit"
       WHERE "createdAt" >= ${startDate} AND "createdAt" <= ${endDate}
+        AND "path" NOT LIKE '__heartbeat%'
       GROUP BY "userAgent"
     `;
 
@@ -133,7 +138,7 @@ export async function GET(req: Request) {
           date.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true })
         : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-    // Get Online Users (last 5 minutes) directly in DB
+    // Get Online Users (last 5 minutes) directly in DB (by logged in users or guest IP)
     const fiveMinsAgo = new Date();
     fiveMinsAgo.setMinutes(fiveMinsAgo.getMinutes() - 5);
     const onlineResult = await prisma.$queryRaw<Array<{ count: bigint }>>`

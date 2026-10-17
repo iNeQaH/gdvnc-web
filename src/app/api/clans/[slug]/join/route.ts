@@ -144,3 +144,42 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     return publicApiError(error, 'Lỗi khi gửi đơn xin gia nhập.');
   }
 }
+
+export async function DELETE(req: Request, { params }: { params: Promise<{ slug: string }> }) {
+  let auth;
+  try {
+    auth = await requireAuth();
+  } catch {
+    return NextResponse.json({ error: 'Vui lòng đăng nhập.' }, { status: 401 });
+  }
+
+  try {
+    const { slug } = await params;
+    const clan = await prisma.clan.findUnique({
+      where: { slug: slug.toLowerCase() },
+      select: { id: true, name: true, tag: true },
+    });
+    if (!clan) return NextResponse.json({ error: 'Không tìm thấy Clan.' }, { status: 404 });
+
+    const deleted = await prisma.clanJoinRequest.deleteMany({
+      where: {
+        clanId: clan.id,
+        userId: auth.userId,
+      },
+    });
+
+    if (deleted.count === 0) {
+      return NextResponse.json(
+        { error: 'Bạn không có đơn xin gia nhập nào đang chờ duyệt tại Clan này.' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Đã hủy yêu cầu xin gia nhập Clan thành công.',
+    });
+  } catch (error) {
+    return publicApiError(error, 'Lỗi khi hủy đơn xin gia nhập.');
+  }
+}

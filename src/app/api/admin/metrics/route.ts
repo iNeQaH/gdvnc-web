@@ -52,7 +52,10 @@ export async function GET() {
   let uniqueVisitors = 0;
   try {
     pageViews = await prisma.pageVisit.count({
-      where: { createdAt: { gte: today } }
+      where: { 
+        createdAt: { gte: today },
+        path: { not: { startsWith: '__heartbeat' } },
+      }
     });
     
     // Group by unique IP hash
