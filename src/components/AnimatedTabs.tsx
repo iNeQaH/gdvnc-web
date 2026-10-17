@@ -27,7 +27,7 @@ export function AnimatedTabs<T extends string>({
   themeOverride,
 }: AnimatedTabsProps<T>) {
   const { theme } = useTheme();
-  const isLavender = (themeOverride || theme) === 'lavender' || (typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'lavender');
+  const isLavender = (themeOverride || theme) === 'lavender';
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, top: 0, width: 0, height: 0 });
   const [isAnimating, setIsAnimating] = useState(false);
   
@@ -150,7 +150,8 @@ export function AnimatedTabs<T extends string>({
           top: `${indicatorStyle.top}px`,
           width: `${indicatorStyle.width}px`,
           height: `${indicatorStyle.height}px`,
-          backgroundColor: 'transparent'
+          backgroundColor: 'transparent',
+          opacity: indicatorStyle.width > 0 ? 1 : 0
         }}
       >
         <span className="tsumiki-front" />

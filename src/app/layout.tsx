@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -47,10 +46,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" suppressHydrationWarning>
+      <head>
+        <script
+          id="gdvnc-theme"
+          dangerouslySetInnerHTML={{ __html: THEME_BOOT }}
+        />
+      </head>
       <body className={`${inter.className} antialiased min-h-screen flex flex-col`} suppressHydrationWarning>
-        <Script id="gdvnc-theme" strategy="beforeInteractive">
-          {THEME_BOOT}
-        </Script>
         <ThemeProvider>
           <LanguageProvider>
             <ToastProvider>
