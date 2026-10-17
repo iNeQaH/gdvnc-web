@@ -17,6 +17,7 @@ interface ThemeContextProps {
   setMode: (mode: ModeType) => void;
   resolvedMode: 'light' | 'dark';
   setOverrideTheme: (theme: ThemeType | null) => void;
+  setOverrideMode: (mode: ModeType | null) => void;
 }
 
 const THEMES: ThemeType[] = ['sky', 'mint', 'peach', 'lavender', 'mono', 'sakura', 'custom'];
@@ -29,6 +30,7 @@ const ThemeContext = createContext<ThemeContextProps>({
   mode: 'system',
   setMode: () => {},
   setOverrideTheme: () => {},
+  setOverrideMode: () => {},
   resolvedMode: 'light',
 });
 
@@ -71,6 +73,8 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [overrideTheme, setOverrideTheme] = useState<ThemeType | null>(null);
   const effectiveTheme = overrideTheme || theme;
   const [mode, setModeState] = useState<ModeType>('system');
+  const [overrideMode, setOverrideMode] = useState<ModeType | null>(null);
+  const effectiveMode = overrideMode || mode;
   const [resolvedMode, setResolvedMode] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
@@ -84,16 +88,16 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    if (mode !== 'system') return;
+    if (effectiveMode !== 'system') return;
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = () => setResolvedMode(applyTheme(effectiveTheme, 'system'));
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [mode, effectiveTheme]);
+  }, [effectiveMode, effectiveTheme]);
 
   useEffect(() => {
-    setResolvedMode(applyTheme(effectiveTheme, mode));
-  }, [effectiveTheme, mode]);
+    setResolvedMode(applyTheme(effectiveTheme, effectiveMode));
+  }, [effectiveTheme, effectiveMode]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -191,7 +195,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme: effectiveTheme, setTheme, mode, setMode, resolvedMode, setOverrideTheme }}>
+    <ThemeContext.Provider value={{ theme: effectiveTheme, setTheme, mode, setMode, resolvedMode, setOverrideTheme, setOverrideMode }}>
       {children}
     </ThemeContext.Provider>
   );

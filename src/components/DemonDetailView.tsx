@@ -12,6 +12,8 @@ import { awardedPpForProgress } from '@/lib/ScoringEngine';
 import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
 import LevelFormModal from '@/components/LevelFormModal';
 import { UserDisplayName } from '@/components/UserDisplayName';
+import { useTheme } from '@/components/ThemeProvider';
+import { getUserListRowStyle } from '@/lib/userListRowStyle';
 
 const PAGE_SIZE = 5;
 
@@ -31,6 +33,8 @@ export default function DemonDetailView({
   const { t } = useLanguage();
   const { showConfirm, showToast } = useToast();
   const router = useRouter();
+  const { resolvedMode } = useTheme();
+  const isDark = resolvedMode === 'dark';
   const [currentPage, setCurrentPage] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
@@ -210,9 +214,10 @@ export default function DemonDetailView({
                         const displayName = rec.user
                           ? (rec.user.gdUsername || rec.user.username)
                           : (rec.legacyPlayerName || t('levelslist.legacy_player'));
+                        const customRow = getUserListRowStyle(rec.user, isDark);
                         return (
-                        <tr key={rec.id} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                          <td className="px-5 py-3 text-center font-black" style={{ color: rank <= 3 ? 'var(--accent)' : 'var(--text-dim)' }}>
+                        <tr key={rec.id} className={`transition-colors ${customRow.hasCustomBg ? 'hover:brightness-110 shadow-xs' : 'hover:bg-black/5 dark:hover:bg-white/5'}`} style={customRow.style}>
+                          <td className="px-5 py-3 text-center font-black" style={{ borderLeft: customRow.hasCustomBg ? `4px solid ${customRow.color}` : undefined, color: rank <= 3 ? 'var(--accent)' : customRow.hasCustomBg ? '#e2e8f0' : 'var(--text-dim)' }}>
                             #{rank}
                           </td>
                           <td className="px-5 py-3 font-bold ui-title">

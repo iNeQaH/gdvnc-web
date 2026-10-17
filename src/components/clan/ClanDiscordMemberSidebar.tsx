@@ -14,6 +14,8 @@ import {
   LogOut,
 } from 'lucide-react';
 import { UserDisplayName } from '@/components/UserDisplayName';
+import { useTheme } from '@/components/ThemeProvider';
+import { getUserListRowStyle } from '@/lib/userListRowStyle';
 
 interface ClanDiscordMemberSidebarProps {
   clan: any;
@@ -47,6 +49,8 @@ export default function ClanDiscordMemberSidebar({
   const leader = clan.membersGrouped?.leader;
   const mods: any[] = clan.membersGrouped?.mods || [];
   const members: any[] = clan.membersGrouped?.members || [];
+  const { resolvedMode } = useTheme();
+  const isDark = resolvedMode === 'dark';
   const canManage = isLeader || isOwnerWeb;
   const canKick = isLeader || isOwnerWeb || isClanMod;
 
@@ -148,11 +152,13 @@ export default function ClanDiscordMemberSidebar({
                 <span>{isEn ? 'Moderators' : 'Mod Clan'} — {mods.length}</span>
               </div>
 
-              {mods.map((m: any) => (
+              {mods.map((m: any) => {
+                const customRow = getUserListRowStyle(m.user, isDark);
+                return (
                 <div
                   key={m.id}
-                  className="group flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl border transition-colors hover:bg-black/5 dark:hover:bg-white/5"
-                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
+                  className={`group flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl border transition-colors ${customRow.hasCustomBg ? 'hover:brightness-110 shadow-xs' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                  style={customRow.hasCustomBg ? { ...customRow.style, borderLeft: `3px solid ${customRow.color}` } : { backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
                 >
                   <Link
                     href={`/profile/${m.user.username}`}
@@ -193,7 +199,8 @@ export default function ClanDiscordMemberSidebar({
                     )}
                   </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
           )}
 
@@ -204,11 +211,13 @@ export default function ClanDiscordMemberSidebar({
             </div>
 
             {members.length > 0 ? (
-              members.map((m: any) => (
+              members.map((m: any) => {
+                const customRow = getUserListRowStyle(m.user, isDark);
+                return (
                 <div
                   key={m.id}
-                  className="group flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl border transition-colors hover:bg-black/5 dark:hover:bg-white/5"
-                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
+                  className={`group flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl border transition-colors ${customRow.hasCustomBg ? 'hover:brightness-110 shadow-xs' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                  style={customRow.hasCustomBg ? { ...customRow.style, borderLeft: `3px solid ${customRow.color}` } : { backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
                 >
                   <Link
                     href={`/profile/${m.user.username}`}
@@ -257,7 +266,8 @@ export default function ClanDiscordMemberSidebar({
                     </div>
                   )}
                 </div>
-              ))
+              );
+              })
             ) : (
               <p className="text-[11px] ui-dim px-2 py-2 italic">
                 {isEn ? 'No other members yet.' : 'Chưa có thành viên nào khác.'}

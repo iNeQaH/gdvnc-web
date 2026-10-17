@@ -10,12 +10,16 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/GlobalToast';
 import BadgeIcon from '@/components/BadgeIcon';
 import { UserDisplayName } from '@/components/UserDisplayName';
+import { useTheme } from '@/components/ThemeProvider';
+import { getUserListRowStyle } from '@/lib/userListRowStyle';
 
 import FloatingNav from '@/components/FloatingNav';
 import { AnimatedTabs } from '@/components/AnimatedTabs';
 
 export default function HomePage() {
   const { t } = useLanguage();
+  const { resolvedMode } = useTheme();
+  const isDark = resolvedMode === 'dark';
   const { showConfirm, showToast } = useToast();
   const router = useRouter();
   const [mode, setMode] = useState<'CLASSIC' | 'PLATFORMER' | 'CHALLENGE' | 'CREATOR'>('CLASSIC');
@@ -348,6 +352,8 @@ export default function HomePage() {
                     }
                   };
 
+                  const customRow = getUserListRowStyle(player, isDark);
+
                   return (
                     <tr
                       key={player.id}
@@ -355,10 +361,11 @@ export default function HomePage() {
                       tabIndex={profileHref ? 0 : undefined}
                       onClick={profileHref ? goProfile : undefined}
                       onKeyDown={onRowKey}
-                      className={`transition-colors hover:opacity-90 ${profileHref ? 'cursor-pointer' : ''}`}
+                      className={`transition-colors ${customRow.hasCustomBg ? 'hover:brightness-110 shadow-xs' : 'hover:opacity-90'} ${profileHref ? 'cursor-pointer' : ''}`}
+                      style={customRow.style}
                     >
-                      <td className="px-5 py-3.5 text-center">
-                        <span className="font-extrabold text-xs" style={{ color: rank <= 3 ? 'var(--accent)' : 'var(--text-dim)' }}>
+                      <td className="px-5 py-3.5 text-center" style={{ borderLeft: customRow.hasCustomBg ? `4px solid ${customRow.color}` : undefined }}>
+                        <span className="font-extrabold text-xs" style={{ color: rank <= 3 ? 'var(--accent)' : customRow.hasCustomBg ? '#e2e8f0' : 'var(--text-dim)' }}>
                           #{rank}
                         </span>
                       </td>
@@ -418,7 +425,7 @@ export default function HomePage() {
                                 </button>
                               )}
                             </div>
-                            <div className="text-[10px] ui-dim">{player.isLegacy ? '—' : (player.country || t('common.vietnam'))}</div>
+                            <div className={`text-[10px] ${customRow.hasCustomBg ? 'text-slate-300' : 'ui-dim'}`}>{player.isLegacy ? '—' : (player.country || t('common.vietnam'))}</div>
                           </div>
                         </div>
                       </td>
@@ -474,8 +481,8 @@ export default function HomePage() {
                               <span className="text-[11px] ui-dim italic">{t('leaderboard.no_quality')}</span>
                             )}
                           </td>
-                          <td className="px-5 py-3.5 text-right font-black text-sm" style={{ color: 'var(--accent)' }}>
-                            {formatCp(player.creatorPoints)} <span className="text-[10px] font-normal ui-dim">CP</span>
+                          <td className="px-5 py-3.5 text-right font-black text-sm" style={{ color: customRow.hasCustomBg ? '#38bdf8' : 'var(--accent)' }}>
+                            {formatCp(player.creatorPoints)} <span className={`text-[10px] font-normal ${customRow.hasCustomBg ? 'text-slate-300' : 'ui-dim'}`}>CP</span>
                           </td>
                         </>
                       ) : (
@@ -492,13 +499,13 @@ export default function HomePage() {
                                     #{hardest.placement}
                                   </span>
                                 )}
-                                <span className="font-medium ui-title">{hardest.name}</span>
+                                <span className={`font-medium ${customRow.hasCustomBg ? 'text-slate-100 font-bold' : 'ui-title'}`}>{hardest.name}</span>
                               </Link>
                             ) : (
                               <span className="text-[11px] ui-dim italic">-</span>
                             )}
                           </td>
-                          <td className="px-5 py-3.5 text-right font-black text-sm" style={{ color: 'var(--accent)' }}>
+                          <td className="px-5 py-3.5 text-right font-black text-sm" style={{ color: customRow.hasCustomBg ? '#38bdf8' : 'var(--accent)' }}>
                             {(mode === 'PLATFORMER' ? (player.platformerPp || 0) : mode === 'CHALLENGE' ? (player.challengePp || 0) : (player.classicPp || 0)).toFixed(2)}
                           </td>
                         </>

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Star, Sparkles, Moon, Medal, Play, Globe, MessageSquare, Gamepad2, ArrowLeft, Camera, Check, X, Pencil, ShieldCheck, Heart, Trash2, Hammer, User as UserIcon, Shield, Crown, Trophy, Award, Zap, Flame, Diamond, StarHalf, CheckCircle, ChevronDown, RotateCcw, UserCheck, MapPin, Edit, ShieldAlert, RefreshCw, Ban, Unlock, Lock } from 'lucide-react';
+import { Star, Sparkles, Moon, Sun, Medal, Play, Globe, MessageSquare, Gamepad2, ArrowLeft, Camera, Check, X, Pencil, ShieldCheck, Heart, Trash2, Hammer, User as UserIcon, Shield, Crown, Trophy, Award, Zap, Flame, Diamond, StarHalf, CheckCircle, ChevronDown, RotateCcw, UserCheck, MapPin, Edit, ShieldAlert, RefreshCw, Ban, Unlock, Lock, FileText, Save } from 'lucide-react';
 
 import BadgePickerModal from '@/components/BadgePickerModal';
 import BadgeIcon from '@/components/BadgeIcon';
@@ -99,6 +99,7 @@ export default function ProfilePage() {
   const params = useParams();
   const username = params?.username as string;
   const { t, language } = useLanguage();
+  const isEn = language === 'en';
   const { showConfirm, showToast } = useToast();
 
   const [data, setData] = useState<any>(null);
@@ -106,34 +107,40 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<'classic' | 'platformer' | 'creator'>('classic');
   const [recordPage, setRecordPage] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const { theme, setOverrideTheme, resolvedMode } = useTheme();
+  const { theme, setOverrideTheme, setOverrideMode, resolvedMode } = useTheme();
   const isDark = resolvedMode === 'dark';
   const isLavender = (data?.profileTheme ? data.profileTheme === 'lavender' : theme === 'lavender');
 
   useEffect(() => {
-    if (data?.profileTheme) {
-      if (setOverrideTheme) setOverrideTheme(data.profileTheme);
+    if (data?.profileTheme && setOverrideTheme) {
+      setOverrideTheme(data.profileTheme);
       document.documentElement.setAttribute('data-theme', data.profileTheme);
+    }
+    const profileMode = data?.profileConfig?.profileMode;
+    if (profileMode && setOverrideMode) {
+      setOverrideMode(profileMode);
     }
     if (typeof window !== 'undefined' && data) {
       const overrideObj: any = {};
       if (data.profileTheme) overrideObj.theme = data.profileTheme;
+      if (profileMode) overrideObj.mode = profileMode;
       if (data.profileConfig?.backgroundUrl) overrideObj.backgroundUrl = data.profileConfig.backgroundUrl;
       if (data.profileConfig?.customThemeColor) overrideObj.customThemeColor = data.profileConfig.customThemeColor;
       (window as any).__profileOverride = overrideObj;
       window.dispatchEvent(new Event('gdvnc_user_update'));
     }
-  }, [data?.profileTheme, data?.profileConfig?.backgroundUrl, data?.profileConfig?.customThemeColor, setOverrideTheme]);
+  }, [data?.profileTheme, data?.profileConfig?.profileMode, data?.profileConfig?.backgroundUrl, data?.profileConfig?.customThemeColor, setOverrideTheme, setOverrideMode]);
 
   useEffect(() => {
     return () => {
       if (setOverrideTheme) setOverrideTheme(null);
+      if (setOverrideMode) setOverrideMode(null);
       if (typeof window !== 'undefined') {
         delete (window as any).__profileOverride;
         window.dispatchEvent(new Event('gdvnc_user_update'));
       }
     };
-  }, [setOverrideTheme]);
+  }, [setOverrideTheme, setOverrideMode]);
   const isOwner = !!(currentUser && currentUser.username === username);
   const isStaff = isStaffRole(currentUser?.role);
   const isFullAdmin = isFullAdminRole(currentUser?.role);
@@ -801,100 +808,172 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              {/* Bio */}
-              {data.bio ? (
-                <div className="text-xs sm:text-sm ui-dim max-w-3xl whitespace-pre-line break-words leading-relaxed pl-3 border-l-2 border-slate-500/30 dark:border-white/20 italic py-0.5 mt-1">
-                  {data.bio}
+            </div>
+          </div>
+
+          {/* Main Info & Bio Split Grid: Left = Info & Badges, Right = Dedicated Bio Box */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 pt-4 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+            {/* Left 7 Cols: Info Pills & All Badges */}
+            <div className="md:col-span-7 space-y-3 flex flex-col justify-between">
+              {/* Metadata Pills Row (GD, Discord, Location, Clan) */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* GD Username */}
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                  <Gamepad2 className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                  <span className="ui-dim font-bold text-[11px] uppercase">GD:</span>
+                  <span className="ui-title font-semibold">{data.gdUsername || 'Chưa liên kết'}</span>
+                  {data.gdVerified && <span title="Đã xác minh"><CheckCircle className="w-3 h-3 text-emerald-500" /></span>}
                 </div>
-              ) : (
-                <div className="text-xs ui-dim opacity-60 italic">Chưa có tiểu sử.</div>
+
+                {/* Discord */}
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                  <MessageSquare className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                  <span className="ui-dim font-bold text-[11px] uppercase">Discord:</span>
+                  <span className="ui-title font-semibold">{data.discordTag || 'Chưa liên kết'}</span>
+                </div>
+
+                {/* Location */}
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                  <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                  <span className="ui-dim font-bold text-[11px] uppercase">Vị trí:</span>
+                  <span className="ui-title font-semibold">{data.country || 'Việt Nam'}</span>
+                </div>
+
+                {/* Clan */}
+                {data.clanMember?.clan && (
+                  <Link
+                    href={`/clan/${data.clanMember.clan.slug}`}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border hover:opacity-80 transition-opacity"
+                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+                  >
+                    <Shield className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span className="ui-dim font-bold text-[11px] uppercase">Clan:</span>
+                    <span
+                      className="font-bold font-mono inline-block"
+                      style={
+                        data.clanMember.clan.colorGradient
+                          ? {
+                              backgroundImage: data.clanMember.clan.colorGradient,
+                              WebkitBackgroundClip: 'text',
+                              WebkitTextFillColor: 'transparent',
+                            }
+                          : { color: data.clanMember.clan.color || 'var(--accent)' }
+                      }
+                    >
+                      [{data.clanMember.clan.tag}]
+                    </span>
+                    <span className="font-bold ui-title">
+                      {data.clanMember.clan.name}
+                    </span>
+                  </Link>
+                )}
+              </div>
+
+              {/* All Badges Showcase (if any) */}
+              {allBadges.length > 0 && (
+                <div className="pt-2 border-t flex flex-col gap-1.5" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <span className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-amber-500" /> {t('profile.all_badges')} ({allBadges.length}):
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {allBadges.map((b: any) => (
+                      <div
+                        key={b.id}
+                        className={
+                          isLavender
+                            ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl tsumiki-btn tsumiki-badge-btn !m-0 !mb-0 shadow-sm cursor-default"
+                            : "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-black text-white border border-zinc-800/80 shadow-xs cursor-default"
+                        }
+                        title={b.description || b.name}
+                      >
+                        <BadgeIcon
+                          icon={b.icon || 'Star'}
+                          color={b.color}
+                          glow={b.glowColor}
+                          className={isLavender ? "w-3.5 h-3.5 shrink-0" : "w-3 h-3 shrink-0"}
+                        />
+                        <span className="text-[11px] font-bold text-white drop-shadow-sm">{b.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
-          </div>
 
-          {/* Metadata Pills Row (GD, Discord, Location, Clan) */}
-          <div className="flex items-center gap-2 flex-wrap pt-3 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-            {/* GD Username */}
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-              <Gamepad2 className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-              <span className="ui-dim font-bold text-[11px] uppercase">GD:</span>
-              <span className="ui-title font-semibold">{data.gdUsername || 'Chưa liên kết'}</span>
-              {data.gdVerified && <span title="Đã xác minh"><CheckCircle className="w-3 h-3 text-emerald-500" /></span>}
-            </div>
-
-            {/* Discord */}
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-              <MessageSquare className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-              <span className="ui-dim font-bold text-[11px] uppercase">Discord:</span>
-              <span className="ui-title font-semibold">{data.discordTag || 'Chưa liên kết'}</span>
-            </div>
-
-            {/* Location */}
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-              <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-              <span className="ui-dim font-bold text-[11px] uppercase">Vị trí:</span>
-              <span className="ui-title font-semibold">{data.country || 'Việt Nam'}</span>
-            </div>
-
-            {/* Clan */}
-            {data.clanMember?.clan && (
-              <Link
-                href={`/clan/${data.clanMember.clan.slug}`}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border hover:opacity-80 transition-opacity"
-                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+            {/* Right 5 Cols: Dedicated Bio / Description Box */}
+            <div className="md:col-span-5 flex flex-col">
+              <div
+                className="rounded-2xl p-3.5 sm:p-4 border flex flex-col justify-between h-full min-h-[110px] shadow-2xs transition-all relative"
+                style={{
+                  backgroundColor: isDark
+                    ? 'rgba(0, 0, 0, 0.25)'
+                    : 'color-mix(in srgb, var(--accent) 5%, var(--bg-subtle))',
+                  borderColor: 'var(--border-ui)',
+                }}
               >
-                <Shield className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span className="ui-dim font-bold text-[11px] uppercase">Clan:</span>
-                <span
-                  className="font-bold font-mono inline-block"
-                  style={
-                    data.clanMember.clan.colorGradient
-                      ? {
-                          backgroundImage: data.clanMember.clan.colorGradient,
-                          WebkitBackgroundClip: 'text',
-                          WebkitTextFillColor: 'transparent',
-                        }
-                      : { color: data.clanMember.clan.color || 'var(--accent)' }
-                  }
-                >
-                  [{data.clanMember.clan.tag}]
-                </span>
-                <span className="font-bold ui-title">
-                  {data.clanMember.clan.name}
-                </span>
-              </Link>
-            )}
-          </div>
-
-          {/* All Badges Showcase (if any) */}
-          {allBadges.length > 0 && (
-            <div className="mt-3 pt-3 border-t flex items-center gap-2 flex-wrap" style={{ borderColor: 'var(--border-subtle)' }}>
-              <span className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1.5 mr-1">
-                <Shield className="w-3.5 h-3.5" /> {t('profile.all_badges')} ({allBadges.length}):
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {allBadges.map((b: any) => (
-                  <div
-                    key={b.id}
-                    className={
-                      isLavender
-                        ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl tsumiki-btn tsumiki-badge-btn !m-0 !mb-0 shadow-sm cursor-default"
-                        : "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-black text-white border border-zinc-800/80 shadow-xs cursor-default"
-                    }
-                    title={b.description || b.name}
-                  >
-                    <BadgeIcon
-                      icon={b.icon || 'Star'}
-                      color={b.color}
-                      glow={b.glowColor}
-                      className={isLavender ? "w-3.5 h-3.5 shrink-0" : "w-3 h-3 shrink-0"}
-                    />
-                    <span className="text-[11px] font-bold text-white drop-shadow-sm">{b.name}</span>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between border-b pb-1.5" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <span className="text-[11px] font-black uppercase tracking-wider ui-dim flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-sky-500" />
+                      {t('profile.bio') || 'Mô tả'}
+                    </span>
+                    {isOwner && !isEditingBio && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingBio(true)}
+                        className="text-[10px] font-bold text-sky-500 hover:text-sky-400 cursor-pointer flex items-center gap-1"
+                      >
+                        <Edit className="w-3 h-3" /> {isEn ? 'Edit' : 'Sửa'}
+                      </button>
+                    )}
                   </div>
-                ))}
+
+                  {isEditingBio ? (
+                    <div className="space-y-2 pt-1">
+                      <textarea
+                        value={bioInput}
+                        onChange={(e) => setBioInput(e.target.value)}
+                        placeholder={isEn ? 'Write something about yourself...' : 'Viết gì đó về bản thân...'}
+                        rows={3}
+                        maxLength={2000}
+                        className="w-full text-xs p-2.5 rounded-xl border focus:outline-none leading-relaxed transition-all resize-none ui-input"
+                        style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+                      />
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsEditingBio(false);
+                            setBioInput(data.bio || '');
+                          }}
+                          className="px-2.5 py-1 text-xs font-semibold ui-dim hover:text-white cursor-pointer"
+                        >
+                          {isEn ? 'Cancel' : 'Hủy'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveBio}
+                          disabled={saving}
+                          className="px-3 py-1 text-xs font-bold bg-sky-500 hover:bg-sky-400 text-white rounded-lg shadow-xs cursor-pointer flex items-center gap-1"
+                        >
+                          <Save className="w-3 h-3" />
+                          {saving ? '...' : (isEn ? 'Save' : 'Lưu')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : data.bio ? (
+                    <div className="text-xs ui-dim max-h-40 overflow-y-auto whitespace-pre-line break-words leading-relaxed pr-1 select-text">
+                      {data.bio}
+                    </div>
+                  ) : (
+                    <div className="text-xs ui-dim opacity-60 italic py-2">
+                      {isEn ? 'No bio written yet.' : 'Chưa có tiểu sử.'}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
@@ -1974,7 +2053,50 @@ export default function ProfilePage() {
               <button onClick={() => setShowThemeModal(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800"><X className="w-4 h-4" /></button>
             </div>
             <p className="text-xs ui-dim">{t('profile.theme_modal_desc')}</p>
-            <div className="grid grid-cols-1 gap-2">
+            {/* Profile Mode Option (Light / Dark) */}
+            <div className="pt-1 pb-1 border-b space-y-1.5" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div className="text-xs font-bold ui-title flex items-center justify-between">
+                <span>{isEn ? 'Profile View Mode' : 'Chế độ Sáng / Tối khi xem'}</span>
+                <span className="text-[10px] ui-dim">{isEn ? 'Capped for visitors' : 'Khóa chế độ này'}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {[
+                  { id: null, label: isEn ? 'Auto' : 'Theo khách', icon: Sparkles },
+                  { id: 'dark', label: isEn ? 'Dark' : 'Tối', icon: Moon },
+                  { id: 'light', label: isEn ? 'Light' : 'Sáng', icon: Sun },
+                ].map((m) => {
+                  const isModeSelected = (data.profileConfig?.profileMode || null) === m.id;
+                  return (
+                    <button
+                      key={String(m.id)}
+                      type="button"
+                      onClick={async () => {
+                        const nextConfig = { ...(data.profileConfig || {}), profileMode: m.id };
+                        setData((prev: any) => ({ ...prev, profileConfig: nextConfig }));
+                        if (setOverrideMode) setOverrideMode(m.id as any);
+                        await updateProfileField({ profileConfig: nextConfig });
+                        showToast(isEn ? 'Profile mode updated' : 'Đã cập nhật chế độ sáng/tối cho trang cá nhân', 'success');
+                      }}
+                      className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                        isModeSelected
+                          ? 'ring-2 ring-purple-500 bg-purple-500/15 border-purple-500 text-purple-600 dark:text-purple-300'
+                          : 'hover:bg-black/5 dark:hover:bg-white/5 ui-dim'
+                      }`}
+                      style={!isModeSelected ? { borderColor: 'var(--border-ui)' } : {}}
+                    >
+                      <m.icon className="w-3.5 h-3.5" />
+                      <span>{m.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="text-xs font-bold ui-title pt-1">
+              {isEn ? 'Profile Palette' : 'Bảng màu giao diện'}
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 max-h-56 overflow-y-auto pr-1">
               {[
                 { id: 'sky', label: t('theme.sky') || 'Sky', color: 'bg-sky-500', desc: 'Classic sky blue' },
                 { id: 'sakura', label: t('theme.sakura') || 'Sakura', color: 'bg-pink-400', desc: 'Cherry blossom pink' },

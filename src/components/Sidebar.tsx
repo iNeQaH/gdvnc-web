@@ -393,7 +393,12 @@ export const Sidebar = () => {
                         >
                           {myClan.tag}
                         </span>
-                        <span className="text-xs truncate font-black tracking-tight text-slate-900 dark:text-white drop-shadow-xs">
+                        <span
+                          className={`text-xs truncate font-black tracking-tight drop-shadow-xs ${
+                            isDark ? 'text-white' : 'text-slate-950'
+                          }`}
+                          style={{ color: isDark ? '#ffffff' : '#020617' }}
+                        >
                           {myClan.name}
                         </span>
                       </div>

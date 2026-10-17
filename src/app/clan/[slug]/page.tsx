@@ -770,12 +770,12 @@ function ClanPodiumLeaderboard({
               : 'h-8 sm:h-10';
 
             const pedestalBorder = isRank1
-              ? 'border-t-4 border-amber-500 dark:border-amber-400 bg-gradient-to-t from-amber-500/25 via-amber-500/10 to-transparent shadow-[0_0_16px_rgba(245,158,11,0.2)]'
+              ? 'border-t-4 border-amber-300 dark:border-amber-400 bg-gradient-to-b from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 shadow-md'
               : isRank2
-              ? 'border-t-4 border-slate-400 dark:border-slate-300 bg-gradient-to-b from-slate-500 to-slate-600 dark:from-slate-600 dark:to-slate-700 shadow-md'
+              ? 'border-t-4 border-slate-300 dark:border-slate-300 bg-gradient-to-b from-slate-500 to-slate-600 dark:from-slate-600 dark:to-slate-700 shadow-md'
               : isRank3
-              ? 'border-t-4 border-amber-600 dark:border-amber-600 bg-gradient-to-t from-amber-600/30 dark:from-amber-700/20 via-amber-600/15 dark:via-amber-700/10 to-transparent shadow-xs'
-              : 'border-t-2 border-slate-400 dark:border-white/20 bg-slate-200/80 dark:bg-white/5';
+              ? 'border-t-4 border-amber-500 dark:border-amber-600 bg-gradient-to-b from-amber-700 to-amber-800 dark:from-amber-800 dark:to-amber-900 shadow-md'
+              : 'border-t-2 border-slate-400 dark:border-slate-500 bg-gradient-to-b from-slate-600 to-slate-700 dark:from-slate-700 dark:to-slate-800 shadow-sm';
 
             const avatarSize = isRank1
               ? 'w-13 h-13 sm:w-16 sm:h-16 ring-3 ring-amber-500 dark:ring-amber-400 shadow-[0_0_16px_rgba(245,158,11,0.35)]'
@@ -783,9 +783,7 @@ function ClanPodiumLeaderboard({
               ? 'w-11 h-11 sm:w-12 sm:h-12 ring-2 ring-slate-500 dark:ring-slate-300 shadow-md'
               : isRank3
               ? 'w-10 h-10 sm:w-11 sm:h-11 ring-2 ring-amber-600 shadow-md'
-              : isRank4
-              ? 'w-8 h-8 sm:w-9 sm:h-9 ring-1 ring-slate-400 dark:ring-white/20'
-              : 'w-7 h-7 sm:w-8 sm:h-8 ring-1 ring-slate-400 dark:ring-white/20';
+              : 'w-8 h-8 sm:w-9 sm:h-9 ring-1 ring-slate-400 dark:ring-white/20';
 
             return (
               <div
@@ -800,14 +798,14 @@ function ClanPodiumLeaderboard({
                     <Crown className="w-5 h-5 text-amber-500 dark:text-amber-400 drop-shadow mb-0.5 animate-bounce" />
                   )}
                   <span
-                    className={`font-mono font-black text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full border shadow-sm whitespace-nowrap ${
+                    className={`font-mono font-black text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full border shadow-sm whitespace-nowrap text-white ${
                       isRank1
-                        ? 'bg-amber-500/20 text-amber-800 dark:text-amber-300 border-amber-500/50 dark:border-amber-400/50'
+                        ? 'bg-amber-600 border-amber-400'
                         : isRank2
-                        ? 'bg-slate-200 text-slate-900 border-slate-400 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600 font-black'
+                        ? 'bg-slate-600 border-slate-400'
                         : isRank3
-                        ? 'bg-amber-100 text-amber-950 border-amber-400 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700 font-black'
-                        : 'bg-slate-100 text-slate-800 border-slate-300 dark:bg-black/60 dark:text-white/80 dark:border-white/10 text-[9px]'
+                        ? 'bg-amber-800 border-amber-600'
+                        : 'bg-slate-700 border-slate-500 text-[9px]'
                     }`}
                   >
                     {ptVal} Pt
@@ -855,28 +853,20 @@ function ClanPodiumLeaderboard({
                   className={`w-full rounded-t-xl flex flex-col items-center justify-start pt-2 transition-all ${pedestalHeight} ${pedestalBorder}`}
                 >
                   <span
-                    className={`font-black select-none ${
+                    className={`font-black select-none text-white drop-shadow-xs ${
                       isRank1
-                        ? 'text-xl sm:text-2xl text-amber-600 dark:text-amber-400 drop-shadow'
+                        ? 'text-xl sm:text-2xl'
                         : isRank2
-                        ? 'text-lg sm:text-xl text-white drop-shadow-xs'
+                        ? 'text-lg sm:text-xl'
                         : isRank3
-                        ? 'text-base sm:text-lg text-amber-900 dark:text-amber-300'
-                        : 'text-sm text-slate-700 dark:text-white/70'
+                        ? 'text-base sm:text-lg'
+                        : 'text-sm'
                     }`}
                   >
                     #{rank}
                   </span>
                   <span
-                    className={`text-[8px] sm:text-[9px] font-black uppercase tracking-wider mt-0.5 ${
-                      isRank1
-                        ? 'text-amber-700 dark:text-amber-400/90'
-                        : isRank2
-                        ? 'text-white/95 drop-shadow-xs font-black'
-                        : isRank3
-                        ? 'text-amber-900 dark:text-amber-400 font-extrabold'
-                        : 'text-slate-600 dark:text-white/50'
-                    }`}
+                    className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider mt-0.5 text-white/95 drop-shadow-xs"
                   >
                     {isRank1 ? 'TOP 1' : `TOP ${rank}`}
                   </span>
@@ -1288,25 +1278,36 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                 </span>
               </span>
 
-              <h1 className="text-xl sm:text-2xl font-black tracking-tight truncate text-slate-950 dark:text-white drop-shadow-xs">
+              <h1
+                className={`text-xl sm:text-2xl font-black tracking-tight truncate drop-shadow-xs ${
+                  isDark ? 'text-white' : 'text-slate-950'
+                }`}
+                style={{ color: isDark ? '#ffffff' : '#020617' }}
+              >
                 {clan.name}
               </h1>
 
               <span
                 className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border-2 backdrop-blur-md shrink-0 shadow-lg ${
                   tierInfo.tier === 3
-                    ? 'text-white'
+                    ? ''
                     : tierInfo.tier === 2
-                    ? 'bg-sky-500/25 text-sky-200 border-sky-400/60 shadow-[0_0_14px_rgba(14,165,233,0.45)] dark:bg-sky-500/30 dark:text-sky-100 dark:border-sky-300/70'
-                    : 'bg-amber-500/20 text-amber-200 border-amber-400/50 dark:bg-amber-500/25 dark:text-amber-100'
+                    ? 'bg-sky-500/20 text-sky-800 border-sky-400/60 shadow-[0_0_14px_rgba(14,165,233,0.45)] dark:bg-sky-500/30 dark:text-sky-100 dark:border-sky-300/70'
+                    : 'bg-amber-500/15 text-amber-800 border-amber-400/50 dark:bg-amber-500/25 dark:text-amber-100'
                 }`}
                 style={
                   tierInfo.tier === 3
                     ? {
                         borderColor: cleanThemeColor || 'var(--accent)',
-                        backgroundColor: 'rgba(0, 0, 0, 0.75)',
-                        boxShadow: `0 0 12px ${cleanThemeColor || 'var(--accent)'}, inset 0 0 6px ${hexToRgba(cleanThemeColor || '#a855f7', 0.4)}`,
-                        color: '#ffffff',
+                        backgroundColor: isDark
+                          ? 'rgba(0, 0, 0, 0.75)'
+                          : `color-mix(in srgb, ${cleanThemeColor || 'var(--accent)'} 16%, #ffffff)`,
+                        boxShadow: isDark
+                          ? `0 0 12px ${cleanThemeColor || 'var(--accent)'}, inset 0 0 6px ${hexToRgba(cleanThemeColor || '#a855f7', 0.4)}`
+                          : `0 0 10px ${hexToRgba(cleanThemeColor || '#a855f7', 0.4)}`,
+                        color: isDark
+                          ? '#ffffff'
+                          : `color-mix(in srgb, ${cleanThemeColor || 'var(--accent)'} 85%, #000000)`,
                       }
                     : undefined
                 }
