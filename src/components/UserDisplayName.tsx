@@ -15,8 +15,8 @@ export const FONT_PRESETS: Record<string, { label: string; family: string; weigh
   arcade: { label: 'Righteous', family: "'Righteous', display", weight: '400', scale: 1.05 },
   techno: { label: 'Audiowide', family: "'Audiowide', display", weight: '400', scale: 1.05 },
   gothic: { label: 'Cinzel Decorative', family: "'Cinzel Decorative', serif", weight: '700', scale: 1.05 },
-  ornate: { label: 'Rasley Heights', family: "'Rasley Heights', cursive", weight: '400', scale: 0.58 },
-  rasley: { label: 'Rasley Heights', family: "'Rasley Heights', cursive", weight: '400', scale: 0.58 },
+  ornate: { label: 'Rasley Heights', family: "'Rasley Heights', cursive", weight: '400', scale: 0.70 },
+  rasley: { label: 'Rasley Heights', family: "'Rasley Heights', cursive", weight: '400', scale: 0.70 },
   horror: { label: "Coraline's Cat", family: "\"Coraline's Cat\", cursive", weight: '400', scale: 0.60 },
   coraline: { label: "Coraline's Cat", family: "\"Coraline's Cat\", cursive", weight: '400', scale: 0.60 },
   neon: { label: 'Angels', family: "'Angels', display, sans-serif", weight: '400', scale: 1.08 },
@@ -38,7 +38,7 @@ export const SETTINGS_FONT_PRESETS: Record<string, { label: string; family: stri
   neon: { label: 'Angels', family: "'Angels', display, sans-serif", weight: '400', scale: 1.08 },
   graffiti: { label: 'Permanent Marker', family: "'Permanent Marker', cursive", weight: '400', scale: 1.26 },
   stencil: { label: 'Black Ops One', family: "'Black Ops One', display", weight: '400', scale: 1.26 },
-  ornate: { label: 'Rasley Heights', family: "'Rasley Heights', cursive", weight: '400', scale: 0.58 },
+  ornate: { label: 'Rasley Heights', family: "'Rasley Heights', cursive", weight: '400', scale: 0.70 },
   horror: { label: "Coraline's Cat", family: "\"Coraline's Cat\", cursive", weight: '400', scale: 0.60 },
 };
 
