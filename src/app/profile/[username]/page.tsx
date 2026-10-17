@@ -906,19 +906,18 @@ export default function ProfilePage() {
             <button 
               type="button"
               onClick={() => setShowClassicPoints(!showClassicPoints)}
-              className={`p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm relative transition-all cursor-pointer active:scale-95 ${
-                isLavender
-                  ? 'tsumiki-btn-yellow text-white'
-                  : 'bg-slate-50 dark:bg-zinc-850 border hover:opacity-90'
-              }`}
-              style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
+              className="p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md relative transition-all cursor-pointer active:scale-95 border group"
+              style={{
+                backgroundColor: 'var(--bg-card)',
+                borderColor: 'color-mix(in srgb, #f59e0b 35%, var(--border-ui))',
+              }}
             >
-              <Star className={`w-5 h-5 mb-1.5 ${isLavender ? 'text-white drop-shadow' : 'text-amber-500'}`} />
-              <div className={`text-[11px] font-bold uppercase tracking-wider ${isLavender ? 'text-white/90' : 'ui-dim'}`}>Classic</div>
-              <div className={`text-xl font-black mt-0.5 transition-all ${isLavender ? 'text-white drop-shadow-sm' : 'text-amber-500'}`}>
+              <Star className="w-5 h-5 mb-1.5 text-amber-500 dark:text-amber-400 group-hover:scale-110 transition-transform" />
+              <div className="text-[11px] font-bold uppercase tracking-wider ui-dim">Classic</div>
+              <div className="text-xl font-black mt-0.5 transition-all text-amber-600 dark:text-amber-400">
                 {showClassicPoints ? (data.classicPp?.toFixed(2) || '0.00') : ((data.classicPp || 0) > 0.005 && data.classicRank ? "#" + data.classicRank : '#-')}
               </div>
-              <div className={`text-[10px] font-semibold mt-1 ${isLavender ? 'text-white/70' : 'ui-dim'}`}>
+              <div className="text-[10px] font-semibold mt-1 ui-dim">
                 {showClassicPoints ? 'Points (Pt)' : 'Xếp hạng'}
               </div>
             </button>
@@ -927,19 +926,18 @@ export default function ProfilePage() {
             <button 
               type="button"
               onClick={() => setShowPlatformerPoints(!showPlatformerPoints)}
-              className={`p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm relative transition-all cursor-pointer active:scale-95 ${
-                isLavender
-                  ? 'tsumiki-btn-blue text-white'
-                  : 'bg-slate-50 dark:bg-zinc-850 border hover:opacity-90'
-              }`}
-              style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
+              className="p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md relative transition-all cursor-pointer active:scale-95 border group"
+              style={{
+                backgroundColor: 'var(--bg-card)',
+                borderColor: 'color-mix(in srgb, #0ea5e9 35%, var(--border-ui))',
+              }}
             >
-              <Moon className={`w-5 h-5 mb-1.5 ${isLavender ? 'text-white drop-shadow' : 'text-sky-500'}`} />
-              <div className={`text-[11px] font-bold uppercase tracking-wider ${isLavender ? 'text-white/90' : 'ui-dim'}`}>Platformer</div>
-              <div className={`text-xl font-black mt-0.5 transition-all ${isLavender ? 'text-white drop-shadow-sm' : 'text-sky-500'}`}>
+              <Moon className="w-5 h-5 mb-1.5 text-sky-500 dark:text-sky-400 group-hover:scale-110 transition-transform" />
+              <div className="text-[11px] font-bold uppercase tracking-wider ui-dim">Platformer</div>
+              <div className="text-xl font-black mt-0.5 transition-all text-sky-600 dark:text-sky-400">
                 {showPlatformerPoints ? (data.platformerPp?.toFixed(2) || '0.00') : ((data.platformerPp || 0) > 0.005 && data.platformerRank ? "#" + data.platformerRank : '#-')}
               </div>
-              <div className={`text-[10px] font-semibold mt-1 ${isLavender ? 'text-white/70' : 'ui-dim'}`}>
+              <div className="text-[10px] font-semibold mt-1 ui-dim">
                 {showPlatformerPoints ? 'Points (Pt)' : 'Xếp hạng'}
               </div>
             </button>
@@ -948,21 +946,20 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={() => !isEditingCp && setShowCreatorRank(!showCreatorRank)}
-              className={`col-span-2 sm:col-span-1 p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm relative transition-all cursor-pointer active:scale-95 ${
-                isLavender
-                  ? 'tsumiki-btn-pink-cyan text-white'
-                  : 'bg-slate-50 dark:bg-zinc-850 border hover:opacity-90'
-              }`}
-              style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
+              className="col-span-2 sm:col-span-1 p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md relative transition-all cursor-pointer active:scale-95 border group"
+              style={{
+                backgroundColor: 'var(--bg-card)',
+                borderColor: 'color-mix(in srgb, #ec4899 35%, var(--border-ui))',
+              }}
             >
-              <Hammer className={`w-5 h-5 mb-1.5 ${isLavender ? 'text-white drop-shadow' : 'text-pink-500'}`} />
-              <div className={`text-[11px] font-bold uppercase tracking-wider ${isLavender ? 'text-white/90' : 'ui-dim'}`}>Creator Points</div>
-              <div className={`text-xl font-black mt-0.5 transition-all ${isLavender ? 'text-white drop-shadow-sm' : 'text-pink-500'}`}>
+              <Hammer className="w-5 h-5 mb-1.5 text-pink-500 dark:text-pink-400 group-hover:scale-110 transition-transform" />
+              <div className="text-[11px] font-bold uppercase tracking-wider ui-dim">Creator Points</div>
+              <div className="text-xl font-black mt-0.5 transition-all text-pink-600 dark:text-pink-400">
                 {showCreatorRank
                   ? (data.creatorRank ? `#${data.creatorRank}` : '#-')
                   : formatCp(data.creatorPoints)}
               </div>
-              <div className={`text-[10px] font-semibold mt-1 ${isLavender ? 'text-white/70' : 'ui-dim'}`}>
+              <div className="text-[10px] font-semibold mt-1 ui-dim">
                 {showCreatorRank ? 'Xếp hạng CP' : `${data.createdLevels?.length || 0} tác phẩm`}
               </div>
             </button>

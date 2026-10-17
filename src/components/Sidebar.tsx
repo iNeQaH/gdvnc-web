@@ -16,7 +16,6 @@ import {
   Heart, 
   Menu, 
   X,
-  ZoomIn,
   History,
   Mail,
   Bell,
@@ -207,30 +206,14 @@ export const Sidebar = () => {
     window.location.href = '/';
   };
 
-  const [uiScale, setUiScale] = useState<number>(100);
-
   useEffect(() => {
-    const savedScale = localStorage.getItem('gdvnc_ui_scale');
-    if (savedScale) {
-      const s = parseInt(savedScale);
-      if (!isNaN(s)) {
-        setUiScale(s);
-        // Only apply zoom on desktop
-        if (window.innerWidth >= 768) {
-          (document.documentElement.style as any).zoom = `${s}%`;
-        }
-      }
+    try {
+      localStorage.removeItem('gdvnc_ui_scale');
+      (document.documentElement.style as any).zoom = '';
+    } catch {
+      /* ignore */
     }
   }, []);
-
-  const handleScaleChange = (val: number) => {
-    setUiScale(val);
-    // Only apply zoom on larger screens; mobile uses normal layout
-    if (window.innerWidth >= 768) {
-      (document.documentElement.style as any).zoom = `${val}%`;
-    }
-    localStorage.setItem('gdvnc_ui_scale', val.toString());
-  };
 
   const navLinks = [
     { href: '/announcements', label: t('nav.announcements'), icon: Bell },
@@ -302,7 +285,10 @@ export const Sidebar = () => {
                 <div className={`font-extrabold text-base tracking-tight leading-tight ${isLavender ? 'text-indigo-950 dark:text-white' : 'ui-title'}`}>
                   GD<span style={{ color: isLavender ? '#4338ca' : 'var(--accent)' }}>VN</span>
                 </div>
-                <div className={`text-[10px] font-medium leading-none mt-0.5 ${isLavender ? 'text-indigo-900/85 dark:text-white/75 font-semibold' : 'ui-dim'}`}>
+                <div
+                  className="text-[10px] font-bold leading-none mt-0.5 tracking-tight"
+                  style={{ color: isLavender ? '#4338ca' : 'var(--accent)' }}
+                >
                   Geometry Dash Vietnam
                 </div>
               </div>
@@ -377,16 +363,16 @@ export const Sidebar = () => {
                   {item.href === '/clan' && myClan && (
                     <Link
                       href={`/clan/${myClan.slug}`}
-                      className={`relative flex items-center justify-between ml-5 pl-3 pr-2.5 py-1.5 rounded-lg text-xs font-semibold border-l-2 transition-all group z-[2] ${
+                      className={`relative flex items-center justify-between ml-5 pl-3 pr-2.5 py-1.5 rounded-lg text-xs font-bold border-l-2 transition-all group z-[2] ${
                         isMyClanActive
-                          ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300 border-amber-500 shadow-xs'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border-slate-300 dark:border-white/10 hover:border-amber-500/60 hover:bg-black/5 dark:hover:bg-white/5'
+                          ? 'bg-amber-500/15 text-amber-900 dark:text-amber-300 border-amber-500 shadow-xs'
+                          : 'text-slate-800 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white border-amber-400/80 dark:border-amber-500/40 hover:border-amber-500 hover:bg-black/5 dark:hover:bg-white/5'
                       }`}
                     >
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="text-amber-400 font-bold text-xs">+</span>
+                        <span className="text-amber-500 dark:text-amber-400 font-black text-xs shrink-0">+</span>
                         <span
-                          className="font-mono font-bold text-xs"
+                          className="font-mono font-black text-xs shrink-0"
                           style={
                             myClan.colorGradient
                               ? {
@@ -394,12 +380,12 @@ export const Sidebar = () => {
                                   WebkitBackgroundClip: 'text',
                                   WebkitTextFillColor: 'transparent',
                                 }
-                              : { color: myClan.color || undefined }
+                              : { color: myClan.color || '#f59e0b' }
                           }
                         >
                           {myClan.tag}
                         </span>
-                        <span className="text-[11px] truncate opacity-75 font-normal">
+                        <span className="text-[11px] truncate font-bold text-slate-800 dark:text-slate-300 group-hover:text-slate-950 dark:group-hover:text-white transition-colors">
                           {myClan.name}
                         </span>
                       </div>
@@ -448,30 +434,6 @@ export const Sidebar = () => {
             )}
           </div>
 
-          <div className="hidden md:flex items-center justify-between px-1 text-xs">
-            <span className="text-[11px] font-medium ui-dim flex items-center gap-1">
-              <ZoomIn className="w-3.5 h-3.5" />
-              {t('sidebar.zoom')}
-            </span>
-            <select
-              value={uiScale}
-              onChange={(e) => handleScaleChange(parseInt(e.target.value))}
-              className={`px-2 h-7 rounded-lg border text-[11px] font-bold font-sans cursor-pointer focus:outline-none appearance-none ${isLavender ? "tsumiki-btn-blue" : ""}`} style={{ WebkitAppearance: "none", backgroundImage: "url(\"data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ffffff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 0.5rem center", backgroundSize: "0.65em auto", paddingRight: "1.5rem", backgroundColor: isLavender ? undefined : "var(--bg-subtle)",
-                borderColor: isLavender ? undefined : "var(--border-ui)",
-                color: isLavender ? undefined : "var(--text-title)",
-              }}
-            >
-              <option value="50">50%</option>
-              <option value="75">75%</option>
-              <option value="90">90%</option>
-              <option value="100">100% ({t('sidebar.zoom.default')})</option>
-              <option value="110">110%</option>
-              <option value="125">125%</option>
-              <option value="150">150%</option>
-              <option value="175">175%</option>
-              <option value="200">200%</option>
-            </select>
-          </div>
 
           <div className="flex items-center gap-2 px-1 pb-1">
             <span className="text-[11px] font-medium ui-dim shrink-0 leading-none">{t('sidebar.theme')}</span>

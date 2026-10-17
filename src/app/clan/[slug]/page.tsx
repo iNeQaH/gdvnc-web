@@ -1383,11 +1383,11 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   type="button"
                   onClick={handleLeave}
                   disabled={actionLoading}
-                  className="p-2 rounded-xl border text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition-colors cursor-pointer shadow-xs"
+                  className="px-3 py-2 rounded-xl border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10 hover:border-red-500/50 font-bold text-xs transition-colors cursor-pointer shadow-xs flex items-center gap-1.5"
                   title={isEn ? 'Leave Clan' : 'Rời khỏi Clan'}
-                  style={{ borderColor: 'var(--border-ui)' }}
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>{isEn ? 'Leave Clan' : 'Rời Clan'}</span>
                 </button>
               )}
             </div>
@@ -1827,6 +1827,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
         onClose={() => setIsRosterOpen(false)}
         onRoleChange={handleRoleChange}
         onKick={handleKick}
+        onLeave={myMembership && !isLeader ? handleLeave : undefined}
       />
     </div>
   );

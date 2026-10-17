@@ -151,7 +151,9 @@ export default function SupportPage() {
             <div className="space-y-4 pt-2">
               <label className="block text-xs font-bold uppercase ui-dim flex justify-between items-center">
                 <span>{t('support.duration_months')}</span>
-                <span className="text-pink-500 text-sm">{t('support.n_months', { n: months })}</span>
+                <span className="text-pink-600 dark:text-pink-400 text-sm font-black uppercase">
+                  {t('support.n_months', { n: months })} + {months} SP COIN
+                </span>
               </label>
               <input 
                 type="range" 
@@ -159,11 +161,12 @@ export default function SupportPage() {
                 max="36" 
                 value={months} 
                 onChange={(e) => setMonths(parseInt(e.target.value))}
-                className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-black/10 dark:bg-white/10"
+                className="w-full h-2.5 rounded-lg cursor-pointer bg-slate-200 dark:bg-zinc-800 border border-slate-300 dark:border-white/10 accent-pink-500"
+                style={{ accentColor: '#ec4899' }}
               />
               <div className="flex justify-between text-[10px] ui-dim font-medium">
-                <span>{t('support.1_month')}</span>
-                <span>{t('support.36_months')}</span>
+                <span>{t('support.1_month')} (+1 SP)</span>
+                <span>{t('support.36_months')} (+36 SP)</span>
               </div>
             </div>
 

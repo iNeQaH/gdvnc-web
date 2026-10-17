@@ -11,6 +11,7 @@ import {
   ArrowDownCircle,
   ChevronLeft,
   ChevronRight,
+  LogOut,
 } from 'lucide-react';
 import { UserDisplayName } from '@/components/UserDisplayName';
 
@@ -26,6 +27,7 @@ interface ClanDiscordMemberSidebarProps {
   onClose: () => void;
   onRoleChange: (memberId: string, newRole: 'MODERATOR' | 'MEMBER') => void;
   onKick: (memberId: string, username: string) => void;
+  onLeave?: () => void;
 }
 
 export default function ClanDiscordMemberSidebar({
@@ -40,6 +42,7 @@ export default function ClanDiscordMemberSidebar({
   onClose,
   onRoleChange,
   onKick,
+  onLeave,
 }: ClanDiscordMemberSidebarProps) {
   const leader = clan.membersGrouped?.leader;
   const mods: any[] = clan.membersGrouped?.mods || [];
@@ -268,10 +271,24 @@ export default function ClanDiscordMemberSidebar({
           className="p-3 border-t shrink-0 flex items-center justify-between text-[11px] ui-dim bg-black/5"
           style={{ borderColor: 'var(--border-subtle)' }}
         >
-          <span className="font-bold">{tierInfo.name}</span>
-          <span className="font-mono font-bold text-sky-400">
-            {clan.memberCount} / {tierInfo.maxMembers}
-          </span>
+          <div className="flex flex-col min-w-0">
+            <span className="font-bold truncate">{tierInfo.name}</span>
+            <span className="font-mono font-bold text-sky-400 text-[10px]">
+              {clan.memberCount} / {tierInfo.maxMembers}
+            </span>
+          </div>
+
+          {onLeave && (
+            <button
+              type="button"
+              onClick={onLeave}
+              className="px-2.5 py-1 rounded-lg border border-red-500/30 text-red-500 hover:bg-red-500/10 hover:border-red-500/60 font-bold text-[11px] transition-colors flex items-center gap-1 cursor-pointer shrink-0"
+              title={isEn ? 'Leave Clan' : 'Rời khỏi Clan'}
+            >
+              <LogOut className="w-3 h-3" />
+              <span>{isEn ? 'Leave' : 'Rời'}</span>
+            </button>
+          )}
         </div>
       </aside>
 
