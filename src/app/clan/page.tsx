@@ -358,17 +358,27 @@ export default function ClanListPage() {
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-                  {/* Tier Badge on top-right (Sáng và đẹp hơn) */}
+                  {/* Tier Badge on top-right */}
                   <span
-                    className={`absolute top-3 right-3 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border backdrop-blur-md shadow-md ${
+                    className={`absolute top-3 right-3 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border-2 backdrop-blur-md shadow-lg ${
                       tierInfo.tier === 3
-                        ? 'bg-purple-500/25 text-purple-200 border-purple-400/60 shadow-[0_0_14px_rgba(168,85,247,0.45)] dark:bg-purple-500/30 dark:text-purple-100 dark:border-purple-300/70'
+                        ? 'text-white'
                         : tierInfo.tier === 2
                         ? 'bg-sky-500/25 text-sky-200 border-sky-400/60 shadow-[0_0_14px_rgba(14,165,233,0.45)] dark:bg-sky-500/30 dark:text-sky-100 dark:border-sky-300/70'
                         : tierInfo.tier === 1
                         ? 'bg-amber-500/20 text-amber-200 border-amber-400/50 dark:bg-amber-500/25 dark:text-amber-100 dark:border-amber-400/60'
                         : 'bg-red-500/20 text-red-200 border-red-400/50'
                     }`}
+                    style={
+                      tierInfo.tier === 3
+                        ? {
+                            borderColor: cardStyle.borderColor || primaryThemeColor,
+                            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                            boxShadow: `0 0 10px ${c1 || primaryThemeColor}, inset 0 0 6px ${hexToRgba(c1 || primaryThemeColor, 0.4)}`,
+                            color: '#ffffff',
+                          }
+                        : undefined
+                    }
                   >
                     {tierInfo.name}
                   </span>
@@ -549,11 +559,21 @@ export default function ClanListPage() {
                   <span
                     className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${
                       tierInfo.tier === 3
-                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 dark:bg-purple-500/30 dark:text-purple-200'
+                        ? 'text-white border-2'
                         : tierInfo.tier === 2
                         ? 'bg-sky-500/20 text-sky-300 border-sky-500/40 dark:bg-sky-500/30 dark:text-sky-200'
                         : 'bg-amber-500/20 text-amber-300 border-amber-500/40 dark:bg-amber-500/25 dark:text-amber-200'
                     }`}
+                    style={
+                      tierInfo.tier === 3
+                        ? {
+                            borderColor: primaryThemeColor,
+                            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                            boxShadow: `0 0 10px ${primaryThemeColor}`,
+                            color: '#ffffff',
+                          }
+                        : undefined
+                    }
                   >
                     {tierInfo.name}
                   </span>

@@ -35,7 +35,8 @@ import { refreshSessionUser, logoutClient } from '@/lib/sessionClient';
 
 export const Sidebar = () => {
   const pathname = usePathname();
-  const { theme } = useTheme();
+  const { theme, resolvedMode } = useTheme();
+  const isDark = resolvedMode === 'dark';
   const isLavender = theme === 'lavender';
   const { language, setLanguage, t } = useLanguage();
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -363,16 +364,23 @@ export const Sidebar = () => {
                   {item.href === '/clan' && myClan && (
                     <Link
                       href={`/clan/${myClan.slug}`}
-                      className={`relative flex items-center justify-between ml-5 pl-3 pr-2.5 py-1.5 rounded-lg text-xs font-bold border-l-2 transition-all group z-[2] ${
+                      className={`relative flex items-center justify-between ml-5 pl-3 pr-2.5 py-2 rounded-xl text-xs font-black border-l-4 transition-all group z-[2] shadow-xs ${
                         isMyClanActive
-                          ? 'bg-amber-500/15 text-amber-900 dark:text-amber-300 border-amber-500 shadow-xs'
-                          : 'text-slate-800 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white border-amber-400/80 dark:border-amber-500/40 hover:border-amber-500 hover:bg-black/5 dark:hover:bg-white/5'
+                          ? 'border-amber-500 shadow-sm'
+                          : 'border-amber-500/80 hover:border-amber-400'
                       }`}
+                      style={{
+                        backgroundColor: isDark
+                          ? 'rgba(255, 255, 255, 0.08)'
+                          : isLavender
+                          ? 'rgba(67, 56, 202, 0.12)'
+                          : 'color-mix(in srgb, var(--accent) 15%, var(--bg-card))',
+                      }}
                     >
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className="text-amber-500 dark:text-amber-400 font-black text-xs shrink-0">+</span>
                         <span
-                          className="font-mono font-black text-xs shrink-0"
+                          className="font-mono font-black text-xs shrink-0 px-1 py-0.2 rounded bg-black/10 dark:bg-black/30"
                           style={
                             myClan.colorGradient
                               ? {
@@ -385,7 +393,7 @@ export const Sidebar = () => {
                         >
                           {myClan.tag}
                         </span>
-                        <span className="text-[11px] truncate font-bold text-slate-800 dark:text-slate-300 group-hover:text-slate-950 dark:group-hover:text-white transition-colors">
+                        <span className="text-xs truncate font-black tracking-tight text-slate-900 dark:text-white drop-shadow-xs">
                           {myClan.name}
                         </span>
                       </div>

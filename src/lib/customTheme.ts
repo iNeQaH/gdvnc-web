@@ -234,9 +234,9 @@ export function getCustomThemeVars(
   }
 
   // LIGHT MODE:
-  // Background gradient at 90-91% lightness so it is clearly colorful & distinct, NOT washed out white!
-  const pageLightness = 91;
-  const pageSat = 40;
+  // Background gradient at 87% lightness so it is clearly colorful & distinct, NOT washed out white!
+  const pageLightness = 87;
+  const pageSat = 45;
 
   const pageStops = hslList
     .map(({ h, s }) => `hsl(${h}, ${Math.round(Math.min(s, pageSat))}%, ${pageLightness}%)`)

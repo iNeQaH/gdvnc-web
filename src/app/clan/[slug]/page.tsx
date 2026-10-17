@@ -251,8 +251,11 @@ function ClanHardestSlideshow({
     >
       {/* Header Row */}
       <div
-        className="px-4 py-2.5 border-b flex items-center justify-between gap-3 bg-black/5 dark:bg-black/15"
-        style={{ borderColor: 'var(--border-subtle)' }}
+        className="px-4 py-2.5 border-b flex items-center justify-between gap-3"
+        style={{
+          backgroundColor: 'color-mix(in srgb, var(--accent) 15%, var(--bg-card))',
+          borderColor: 'var(--border-subtle)',
+        }}
       >
         <div className="flex items-center gap-2">
           <Trophy className="w-4 h-4 text-amber-500 dark:text-amber-400" />
@@ -261,12 +264,6 @@ function ClanHardestSlideshow({
             {topBeaten.length} {isEn ? 'Demons' : 'Demon'}
           </span>
         </div>
-
-        {topBeaten.length > 1 && (
-          <span className="font-mono text-xs font-black px-2.5 py-0.5 rounded-lg bg-black/5 dark:bg-black/40 text-amber-600 dark:text-amber-400 border border-black/10 dark:border-white/10">
-            {String(currentIndex + 1).padStart(2, '0')} / {String(topBeaten.length).padStart(2, '0')}
-          </span>
-        )}
       </div>
 
       {/* Main Slide Canvas */}
@@ -494,8 +491,11 @@ function CompactClanLevelsSlideshow({
     >
       {/* Header Row */}
       <div
-        className="px-4 py-2.5 border-b flex items-center justify-between gap-3 bg-black/5 dark:bg-black/15 shrink-0"
-        style={{ borderColor: 'var(--border-subtle)' }}
+        className="px-4 py-2.5 border-b flex items-center justify-between gap-3 shrink-0"
+        style={{
+          backgroundColor: 'color-mix(in srgb, var(--accent) 15%, var(--bg-card))',
+          borderColor: 'var(--border-subtle)',
+        }}
       >
         <div className="flex items-center gap-2">
           <Hammer className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" />
@@ -504,12 +504,6 @@ function CompactClanLevelsSlideshow({
             {works.length} {isEn ? 'Levels' : 'Màn chơi'}
           </span>
         </div>
-
-        {works.length > 1 && (
-          <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-black/5 dark:bg-black/40 text-sky-600 dark:text-sky-400 border border-black/10 dark:border-white/10">
-            {currentIndex + 1} / {works.length}
-          </span>
-        )}
       </div>
 
       {/* Main Slide Canvas */}
@@ -750,9 +744,6 @@ function ClanPodiumLeaderboard({
             {isEn ? 'Member rankings by Classic Pt' : 'Bảng xếp hạng thành viên theo điểm Classic Pt'}
           </p>
         </div>
-        <span className="font-mono text-xs font-bold ui-dim px-2 py-0.5 rounded-lg bg-black/5 dark:bg-black/20 border border-black/10 dark:border-white/5 text-slate-700 dark:text-slate-300">
-          {members.length} {isEn ? 'members' : 'thành viên'}
-        </span>
       </div>
 
       {/* Podium Stage Container */}
@@ -781,7 +772,7 @@ function ClanPodiumLeaderboard({
             const pedestalBorder = isRank1
               ? 'border-t-4 border-amber-500 dark:border-amber-400 bg-gradient-to-t from-amber-500/25 via-amber-500/10 to-transparent shadow-[0_0_16px_rgba(245,158,11,0.2)]'
               : isRank2
-              ? 'border-t-4 border-slate-500 dark:border-slate-300 bg-gradient-to-t from-slate-400/35 dark:from-slate-400/20 via-slate-300/20 dark:via-slate-400/10 to-transparent shadow-xs'
+              ? 'border-t-4 border-slate-400 dark:border-slate-300 bg-gradient-to-b from-slate-500 to-slate-600 dark:from-slate-600 dark:to-slate-700 shadow-md'
               : isRank3
               ? 'border-t-4 border-amber-600 dark:border-amber-600 bg-gradient-to-t from-amber-600/30 dark:from-amber-700/20 via-amber-600/15 dark:via-amber-700/10 to-transparent shadow-xs'
               : 'border-t-2 border-slate-400 dark:border-white/20 bg-slate-200/80 dark:bg-white/5';
@@ -868,7 +859,7 @@ function ClanPodiumLeaderboard({
                       isRank1
                         ? 'text-xl sm:text-2xl text-amber-600 dark:text-amber-400 drop-shadow'
                         : isRank2
-                        ? 'text-lg sm:text-xl text-slate-900 dark:text-slate-100'
+                        ? 'text-lg sm:text-xl text-white drop-shadow-xs'
                         : isRank3
                         ? 'text-base sm:text-lg text-amber-900 dark:text-amber-300'
                         : 'text-sm text-slate-700 dark:text-white/70'
@@ -881,7 +872,7 @@ function ClanPodiumLeaderboard({
                       isRank1
                         ? 'text-amber-700 dark:text-amber-400/90'
                         : isRank2
-                        ? 'text-slate-800 dark:text-slate-300 font-extrabold'
+                        ? 'text-white/95 drop-shadow-xs font-black'
                         : isRank3
                         ? 'text-amber-900 dark:text-amber-400 font-extrabold'
                         : 'text-slate-600 dark:text-white/50'
@@ -1224,7 +1215,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               className="absolute inset-0 transition-opacity duration-300"
               style={{
                 background: cleanThemeGradient,
-                opacity: clanGlowEnabled && isTier3 ? (clanGlowOpacity / 100) * (isDark ? 0.35 : 0.14) : (isDark ? 0.05 : 0.02),
+                opacity: clanGlowEnabled && isTier3 ? (clanGlowOpacity / 100) * (isDark ? 0.35 : 0.22) : (isDark ? 0.05 : 0.04),
               }}
             />
           ) : cleanThemeColor ? (
@@ -1232,7 +1223,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               className="absolute inset-0 transition-opacity duration-300"
               style={{
                 background: `radial-gradient(ellipse 80% 50% at 50% -10%, ${cleanThemeColor} 0%, transparent 75%)`,
-                opacity: clanGlowEnabled && isTier3 ? (clanGlowOpacity / 100) * (isDark ? 0.3 : 0.12) : (isDark ? 0.05 : 0.02),
+                opacity: clanGlowEnabled && isTier3 ? (clanGlowOpacity / 100) * (isDark ? 0.3 : 0.2) : (isDark ? 0.05 : 0.04),
               }}
             />
           ) : null}
@@ -1270,7 +1261,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               borderColor: 'var(--border-subtle)',
               backgroundColor: isDark
                 ? 'var(--bg-card)'
-                : 'color-mix(in srgb, var(--accent) 3%, #ffffff)',
+                : 'color-mix(in srgb, var(--accent) 14%, var(--bg-subtle))',
             }}
           >
             {/* Tag, Name & Tier Badge */}
@@ -1297,18 +1288,28 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                 </span>
               </span>
 
-              <h1 className="text-xl sm:text-2xl font-black ui-title tracking-tight truncate">
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight truncate text-slate-950 dark:text-white drop-shadow-xs">
                 {clan.name}
               </h1>
 
               <span
-                className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border backdrop-blur-md shrink-0 shadow-sm ${
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border-2 backdrop-blur-md shrink-0 shadow-lg ${
                   tierInfo.tier === 3
-                    ? 'bg-purple-500/25 text-purple-200 border-purple-400/60 shadow-[0_0_14px_rgba(168,85,247,0.45)] dark:bg-purple-500/30 dark:text-purple-100 dark:border-purple-300/70'
+                    ? 'text-white'
                     : tierInfo.tier === 2
                     ? 'bg-sky-500/25 text-sky-200 border-sky-400/60 shadow-[0_0_14px_rgba(14,165,233,0.45)] dark:bg-sky-500/30 dark:text-sky-100 dark:border-sky-300/70'
                     : 'bg-amber-500/20 text-amber-200 border-amber-400/50 dark:bg-amber-500/25 dark:text-amber-100'
                 }`}
+                style={
+                  tierInfo.tier === 3
+                    ? {
+                        borderColor: cleanThemeColor || 'var(--accent)',
+                        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                        boxShadow: `0 0 12px ${cleanThemeColor || 'var(--accent)'}, inset 0 0 6px ${hexToRgba(cleanThemeColor || '#a855f7', 0.4)}`,
+                        color: '#ffffff',
+                      }
+                    : undefined
+                }
               >
                 {tierInfo.name}
               </span>

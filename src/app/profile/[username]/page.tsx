@@ -106,7 +106,8 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<'classic' | 'platformer' | 'creator'>('classic');
   const [recordPage, setRecordPage] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const { theme, setOverrideTheme } = useTheme();
+  const { theme, setOverrideTheme, resolvedMode } = useTheme();
+  const isDark = resolvedMode === 'dark';
   const isLavender = (data?.profileTheme ? data.profileTheme === 'lavender' : theme === 'lavender');
 
   useEffect(() => {
@@ -906,18 +907,28 @@ export default function ProfilePage() {
             <button 
               type="button"
               onClick={() => setShowClassicPoints(!showClassicPoints)}
-              className="p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md relative transition-all cursor-pointer active:scale-95 border group"
-              style={{
-                backgroundColor: 'var(--bg-card)',
-                borderColor: 'color-mix(in srgb, #f59e0b 35%, var(--border-ui))',
-              }}
+              className={
+                isLavender
+                  ? 'p-4 rounded-2xl flex flex-col items-center justify-center text-center relative transition-all cursor-pointer active:scale-95 tsumiki-btn-yellow text-white'
+                  : 'p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md relative transition-all cursor-pointer active:scale-95 border group'
+              }
+              style={
+                !isLavender
+                  ? {
+                      backgroundColor: isDark
+                        ? 'var(--bg-card)'
+                        : 'color-mix(in srgb, var(--accent) 8%, var(--bg-subtle))',
+                      borderColor: 'color-mix(in srgb, #f59e0b 35%, var(--border-ui))',
+                    }
+                  : undefined
+              }
             >
-              <Star className="w-5 h-5 mb-1.5 text-amber-500 dark:text-amber-400 group-hover:scale-110 transition-transform" />
-              <div className="text-[11px] font-bold uppercase tracking-wider ui-dim">Classic</div>
-              <div className="text-xl font-black mt-0.5 transition-all text-amber-600 dark:text-amber-400">
+              <Star className={`w-5 h-5 mb-1.5 ${isLavender ? 'text-white drop-shadow' : 'text-amber-500 dark:text-amber-400 group-hover:scale-110 transition-transform'}`} />
+              <div className={`text-[11px] font-bold uppercase tracking-wider ${isLavender ? 'text-white/95 drop-shadow-xs' : 'ui-dim'}`}>Classic</div>
+              <div className={`text-xl font-black mt-0.5 transition-all ${isLavender ? 'text-white drop-shadow-sm' : 'text-amber-600 dark:text-amber-400'}`}>
                 {showClassicPoints ? (data.classicPp?.toFixed(2) || '0.00') : ((data.classicPp || 0) > 0.005 && data.classicRank ? "#" + data.classicRank : '#-')}
               </div>
-              <div className="text-[10px] font-semibold mt-1 ui-dim">
+              <div className={`text-[10px] font-semibold mt-1 ${isLavender ? 'text-white/90 drop-shadow-xs' : 'ui-dim'}`}>
                 {showClassicPoints ? 'Points (Pt)' : 'Xếp hạng'}
               </div>
             </button>
@@ -926,18 +937,28 @@ export default function ProfilePage() {
             <button 
               type="button"
               onClick={() => setShowPlatformerPoints(!showPlatformerPoints)}
-              className="p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md relative transition-all cursor-pointer active:scale-95 border group"
-              style={{
-                backgroundColor: 'var(--bg-card)',
-                borderColor: 'color-mix(in srgb, #0ea5e9 35%, var(--border-ui))',
-              }}
+              className={
+                isLavender
+                  ? 'p-4 rounded-2xl flex flex-col items-center justify-center text-center relative transition-all cursor-pointer active:scale-95 tsumiki-btn-blue text-white'
+                  : 'p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md relative transition-all cursor-pointer active:scale-95 border group'
+              }
+              style={
+                !isLavender
+                  ? {
+                      backgroundColor: isDark
+                        ? 'var(--bg-card)'
+                        : 'color-mix(in srgb, var(--accent) 8%, var(--bg-subtle))',
+                      borderColor: 'color-mix(in srgb, #0ea5e9 35%, var(--border-ui))',
+                    }
+                  : undefined
+              }
             >
-              <Moon className="w-5 h-5 mb-1.5 text-sky-500 dark:text-sky-400 group-hover:scale-110 transition-transform" />
-              <div className="text-[11px] font-bold uppercase tracking-wider ui-dim">Platformer</div>
-              <div className="text-xl font-black mt-0.5 transition-all text-sky-600 dark:text-sky-400">
+              <Moon className={`w-5 h-5 mb-1.5 ${isLavender ? 'text-white drop-shadow' : 'text-sky-500 dark:text-sky-400 group-hover:scale-110 transition-transform'}`} />
+              <div className={`text-[11px] font-bold uppercase tracking-wider ${isLavender ? 'text-white/95 drop-shadow-xs' : 'ui-dim'}`}>Platformer</div>
+              <div className={`text-xl font-black mt-0.5 transition-all ${isLavender ? 'text-white drop-shadow-sm' : 'text-sky-600 dark:text-sky-400'}`}>
                 {showPlatformerPoints ? (data.platformerPp?.toFixed(2) || '0.00') : ((data.platformerPp || 0) > 0.005 && data.platformerRank ? "#" + data.platformerRank : '#-')}
               </div>
-              <div className="text-[10px] font-semibold mt-1 ui-dim">
+              <div className={`text-[10px] font-semibold mt-1 ${isLavender ? 'text-white/90 drop-shadow-xs' : 'ui-dim'}`}>
                 {showPlatformerPoints ? 'Points (Pt)' : 'Xếp hạng'}
               </div>
             </button>
@@ -946,20 +967,30 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={() => !isEditingCp && setShowCreatorRank(!showCreatorRank)}
-              className="col-span-2 sm:col-span-1 p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md relative transition-all cursor-pointer active:scale-95 border group"
-              style={{
-                backgroundColor: 'var(--bg-card)',
-                borderColor: 'color-mix(in srgb, #ec4899 35%, var(--border-ui))',
-              }}
+              className={
+                isLavender
+                  ? 'col-span-2 sm:col-span-1 p-4 rounded-2xl flex flex-col items-center justify-center text-center relative transition-all cursor-pointer active:scale-95 tsumiki-btn-pink-cyan text-white'
+                  : 'col-span-2 sm:col-span-1 p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md relative transition-all cursor-pointer active:scale-95 border group'
+              }
+              style={
+                !isLavender
+                  ? {
+                      backgroundColor: isDark
+                        ? 'var(--bg-card)'
+                        : 'color-mix(in srgb, var(--accent) 8%, var(--bg-subtle))',
+                      borderColor: 'color-mix(in srgb, #ec4899 35%, var(--border-ui))',
+                    }
+                  : undefined
+              }
             >
-              <Hammer className="w-5 h-5 mb-1.5 text-pink-500 dark:text-pink-400 group-hover:scale-110 transition-transform" />
-              <div className="text-[11px] font-bold uppercase tracking-wider ui-dim">Creator Points</div>
-              <div className="text-xl font-black mt-0.5 transition-all text-pink-600 dark:text-pink-400">
+              <Hammer className={`w-5 h-5 mb-1.5 ${isLavender ? 'text-white drop-shadow' : 'text-pink-500 dark:text-pink-400 group-hover:scale-110 transition-transform'}`} />
+              <div className={`text-[11px] font-bold uppercase tracking-wider ${isLavender ? 'text-white/95 drop-shadow-xs' : 'ui-dim'}`}>Creator Points</div>
+              <div className={`text-xl font-black mt-0.5 transition-all ${isLavender ? 'text-white drop-shadow-sm' : 'text-pink-600 dark:text-pink-400'}`}>
                 {showCreatorRank
                   ? (data.creatorRank ? `#${data.creatorRank}` : '#-')
                   : formatCp(data.creatorPoints)}
               </div>
-              <div className="text-[10px] font-semibold mt-1 ui-dim">
+              <div className={`text-[10px] font-semibold mt-1 ${isLavender ? 'text-white/90 drop-shadow-xs' : 'ui-dim'}`}>
                 {showCreatorRank ? 'Xếp hạng CP' : `${data.createdLevels?.length || 0} tác phẩm`}
               </div>
             </button>
