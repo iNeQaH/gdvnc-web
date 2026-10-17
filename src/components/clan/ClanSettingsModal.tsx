@@ -41,7 +41,6 @@ export default function ClanSettingsModal({
   const { showToast, showConfirm } = useToast();
 
   const [description, setDescription] = useState(clan.description || '');
-  const [avatarUrl, setAvatarUrl] = useState(clan.avatarUrl || '');
   const [coverUrl, setCoverUrl] = useState(clan.coverUrl || '');
   const [videoUrl, setVideoUrl] = useState(clan.videoUrl || '');
   const [favoriteLevelId, setFavoriteLevelId] = useState(clan.favoriteLevelId || '');
@@ -73,7 +72,7 @@ export default function ClanSettingsModal({
     try {
       const payload: any = {
         description: description.trim() || null,
-        avatarUrl: avatarUrl.trim() || null,
+        avatarUrl: null,
         coverUrl: coverUrl.trim() || null,
         videoUrl: videoUrl.trim() || null,
         favoriteLevelId: favoriteLevelId.trim() || null,
@@ -264,39 +263,26 @@ export default function ClanSettingsModal({
           <div className="space-y-3">
             <div className="space-y-1">
               <label className="text-xs font-bold ui-title flex items-center gap-1.5">
-                <ImageIcon className="w-3.5 h-3.5 text-sky-400" /> Ảnh đại diện (URL / GIF)
-              </label>
-              <input
-                type="url"
-                value={avatarUrl}
-                onChange={(e) => setAvatarUrl(e.target.value)}
-                placeholder="https://... (Hỗ trợ GIF)"
-                className="w-full px-3 py-2 rounded-xl text-xs ui-input"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold ui-title flex items-center gap-1.5">
-                <ImageIcon className="w-3.5 h-3.5 text-sky-400" /> Ảnh bìa Banner (URL / GIF)
+                <ImageIcon className="w-3.5 h-3.5 text-sky-400" /> Ảnh bìa Clan (URL / GIF)
               </label>
               <input
                 type="url"
                 value={coverUrl}
                 onChange={(e) => setCoverUrl(e.target.value)}
-                placeholder="https://... (Hỗ trợ GIF)"
+                placeholder="URL ảnh bìa hoặc GIF"
                 className="w-full px-3 py-2 rounded-xl text-xs ui-input"
               />
             </div>
 
             <div className="space-y-1">
               <label className="text-xs font-bold ui-title flex items-center gap-1.5">
-                <Video className="w-3.5 h-3.5 text-red-400" /> Video giới thiệu / Trailer (YouTube Link)
+                <Video className="w-3.5 h-3.5 text-red-400" /> Video giới thiệu (YouTube)
               </label>
               <input
                 type="url"
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
-                placeholder="https://www.youtube.com/watch?v=..."
+                placeholder="URL video YouTube"
                 className="w-full px-3 py-2 rounded-xl text-xs ui-input"
               />
             </div>
@@ -309,7 +295,7 @@ export default function ClanSettingsModal({
                 type="text"
                 value={favoriteLevelId}
                 onChange={(e) => setFavoriteLevelId(e.target.value)}
-                placeholder="GD Level ID (vd: 105928421)"
+                placeholder="ID màn chơi"
                 className="w-full px-3 py-2 rounded-xl text-xs ui-input"
               />
             </div>
@@ -321,7 +307,7 @@ export default function ClanSettingsModal({
                 maxLength={500}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Giới thiệu đôi nét về Clan của bạn..."
+                placeholder="Nội dung mô tả Clan"
                 className="w-full px-3 py-2 rounded-xl text-xs resize-y ui-input"
               />
             </div>

@@ -23,10 +23,6 @@ export default function CreateClanModal({
 
   const [name, setName] = useState('');
   const [tag, setTag] = useState('');
-  const [description, setDescription] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState('');
-  const [coverUrl, setCoverUrl] = useState('');
-  const [spContribution, setSpContribution] = useState<number>(3);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -50,11 +46,7 @@ export default function CreateClanModal({
       return;
     }
     if (userSp < 3) {
-      setError('Bạn cần tối thiểu 3 SP coin để thành lập Clan (3 tháng Supporter hoạt động).');
-      return;
-    }
-    if (spContribution < 3 || spContribution > userSp) {
-      setError(`Số SP đóng góp phải từ 3 đến ${userSp} SP coin.`);
+      setError('Bạn cần tối thiểu 3 SP coin để tạo Clan (tương đương 3 tháng Supporter hoạt động).');
       return;
     }
 
@@ -66,20 +58,17 @@ export default function CreateClanModal({
         body: JSON.stringify({
           name: name.trim(),
           tag: tag.trim(),
-          description: description.trim() || null,
-          avatarUrl: avatarUrl.trim() || null,
-          coverUrl: coverUrl.trim() || null,
-          initialContribution: spContribution,
+          initialContribution: 3,
         }),
       });
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setError(data.error || 'Thành lập Clan thất bại.');
+        setError(data.error || 'Tạo Clan thất bại.');
         return;
       }
 
-      showToast('Đã thành lập Clan thành công!', 'success');
+      showToast('Đã tạo Clan thành công!', 'success');
       onCreated(data.clan);
       onClose();
     } catch {
@@ -92,7 +81,7 @@ export default function CreateClanModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div
-        className="w-full max-w-lg rounded-2xl border shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
+        className="w-full max-w-md rounded-2xl border shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
         style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
       >
         {/* Header */}
@@ -105,14 +94,14 @@ export default function CreateClanModal({
               <Shield className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold ui-title">Thành lập Clan mới</h2>
+              <h2 className="text-base font-bold ui-title">Tạo Clan mới</h2>
               <p className="text-xs ui-dim">Yêu cầu tối thiểu 3 SP coin để duy trì</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg ui-dim hover:text-red-500 hover:bg-red-500/10 transition-colors"
+            className="p-1.5 rounded-lg ui-dim hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -139,8 +128,8 @@ export default function CreateClanModal({
           </div>
 
           {/* Name & Tag */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="sm:col-span-2 space-y-1">
+          <div className="space-y-3">
+            <div className="space-y-1">
               <label className="text-xs font-bold ui-title">Tên Clan *</label>
               <input
                 type="text"
@@ -148,7 +137,7 @@ export default function CreateClanModal({
                 maxLength={40}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="VD: Geo Dat Viet"
+                placeholder="Nhập tên Clan"
                 className="w-full px-3 py-2 rounded-xl text-xs ui-input"
               />
             </div>
@@ -160,7 +149,7 @@ export default function CreateClanModal({
                 maxLength={4}
                 value={tag}
                 onChange={handleTagChange}
-                placeholder="VD: GDV"
+                placeholder="Nhập tag"
                 className="w-full px-3 py-2 rounded-xl text-xs font-mono font-bold uppercase ui-input"
               />
               <span className="text-[10px] ui-dim">Tối đa 4 ký tự</span>
@@ -173,7 +162,7 @@ export default function CreateClanModal({
               className="p-3 rounded-xl border flex items-center justify-between"
               style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
             >
-              <span className="text-[11px] ui-dim">Xem trước Tag trong game & web:</span>
+              <span className="text-[11px] ui-dim">Xem trước hiển thị:</span>
               <span className="text-sm font-bold">
                 <span className="text-amber-400 font-black mr-1.5 font-mono">[{tag}]</span>
                 <span className="ui-title">{name || 'Clan Name'}</span>
@@ -181,64 +170,17 @@ export default function CreateClanModal({
             </div>
           )}
 
-          {/* Initial Contribution */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold ui-title flex items-center gap-1.5">
-              <Coins className="w-3.5 h-3.5 text-amber-400" /> Quyên góp SP ban đầu (Tối thiểu 3) *
-            </label>
-            <div className="flex items-center gap-3">
-              <input
-                type="range"
-                min={3}
-                max={Math.max(3, userSp)}
-                value={spContribution}
-                onChange={(e) => setSpContribution(parseInt(e.target.value, 10) || 3)}
-                className="flex-1 accent-amber-500 cursor-pointer"
-              />
-              <span className="font-mono text-xs font-bold px-3 py-1 rounded-lg border bg-amber-500/10 border-amber-500/20 text-amber-400">
-                {spContribution} SP
-              </span>
+          <div
+            className="p-3 rounded-xl border text-xs ui-dim space-y-1"
+            style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
+          >
+            <div className="flex items-center justify-between font-semibold ui-title">
+              <span>Phí duy trì mặc định:</span>
+              <span className="text-amber-400 font-mono font-bold">3 SP</span>
             </div>
-            <span className="text-[10px] ui-dim">
-              SP coin đóng góp được tính dựa trên số tháng Supporter còn hạn và sẽ tự động thu hồi khi hết hạn.
-            </span>
-          </div>
-
-          {/* Avatar & Cover URL */}
-          <div className="space-y-3 pt-1">
-            <div className="space-y-1">
-              <label className="text-xs font-bold ui-title">Ảnh đại diện Clan (URL / GIF)</label>
-              <input
-                type="url"
-                value={avatarUrl}
-                onChange={(e) => setAvatarUrl(e.target.value)}
-                placeholder="https://... (Hỗ trợ GIF)"
-                className="w-full px-3 py-2 rounded-xl text-xs ui-input"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold ui-title">Ảnh bìa Clan (URL / GIF)</label>
-              <input
-                type="url"
-                value={coverUrl}
-                onChange={(e) => setCoverUrl(e.target.value)}
-                placeholder="https://... (Hỗ trợ GIF)"
-                className="w-full px-3 py-2 rounded-xl text-xs ui-input"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold ui-title">Mô tả Clan</label>
-              <textarea
-                rows={3}
-                maxLength={500}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Giới thiệu đôi nét về Clan của bạn..."
-                className="w-full px-3 py-2 rounded-xl text-xs resize-y ui-input"
-              />
-            </div>
+            <p className="text-[11px]">
+              Ảnh bìa, mô tả và màu sắc Clan có thể cập nhật trong phần Cài đặt sau khi tạo.
+            </p>
           </div>
 
           {/* Footer Actions */}
@@ -247,7 +189,7 @@ export default function CreateClanModal({
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border hover:opacity-80 transition-opacity"
+              className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border hover:opacity-80 transition-opacity cursor-pointer"
               style={{ borderColor: 'var(--border-ui)' }}
             >
               Hủy
@@ -259,7 +201,7 @@ export default function CreateClanModal({
               style={{ backgroundColor: 'var(--accent)' }}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              {loading ? 'Đang tạo...' : 'Thành lập Clan'}
+              {loading ? 'Đang tạo...' : 'Tạo Clan (-3 xu SP)'}
             </button>
           </div>
         </form>

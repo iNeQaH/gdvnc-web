@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import {
   Users,
@@ -15,10 +15,20 @@ import {
   AlertTriangle,
   ArrowRight,
   Sparkles,
+  Clock,
+  ChevronDown,
+  Check,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import CreateClanModal from '@/components/clan/CreateClanModal';
 import { calculateUserSp, getClanTier } from '@/lib/clanTypes';
+
+const SORT_OPTIONS: { value: 'members' | 'sp' | 'newest' | 'oldest'; label: string; icon: any }[] = [
+  { value: 'members', label: 'Đông thành viên nhất', icon: Users },
+  { value: 'sp', label: 'SP Coin cao nhất', icon: Coins },
+  { value: 'newest', label: 'Mới nhất', icon: Sparkles },
+  { value: 'oldest', label: 'Cũ nhất', icon: Clock },
+];
 
 export default function ClanListPage() {
   const { t } = useLanguage();
@@ -33,6 +43,8 @@ export default function ClanListPage() {
   const [sort, setSort] = useState<'members' | 'sp' | 'newest' | 'oldest'>('members');
   const [order, setOrder] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const sortRef = useRef<HTMLDivElement>(null);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
@@ -55,10 +67,22 @@ export default function ClanListPage() {
     }
   }, []);
 
+  // Click outside to close sort dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
+        setIsSortOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Search debounce: 1000ms (1s)
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearch(searchInput.trim());
-    }, 400);
+    }, 1000);
     return () => clearTimeout(timer);
   }, [searchInput]);
 
@@ -87,23 +111,20 @@ export default function ClanListPage() {
   }, [search, sort, order]);
 
   const userClan = currentUser?.clanMember?.clan || currentUser?.clan;
+  const currentSortOption = SORT_OPTIONS.find((o) => o.value === sort) || SORT_OPTIONS[0];
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
       {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl p-6 sm:p-8 border bg-gradient-to-br from-slate-900/90 via-slate-800/80 to-slate-900/90 shadow-xl" style={{ borderColor: 'var(--border-ui)' }}>
+      <div
+        className="relative overflow-hidden rounded-2xl p-6 sm:p-8 border bg-gradient-to-br from-slate-900/90 via-slate-800/80 to-slate-900/90 shadow-xl"
+        style={{ borderColor: 'var(--border-ui)' }}
+      >
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              <Shield className="w-3.5 h-3.5" />
-              <span>Hệ thống Clan GDVN</span>
-            </div>
+          <div className="space-y-1">
             <h1 className="text-2xl sm:text-3xl font-black ui-title tracking-tight">
               Danh Sách Clan
             </h1>
-            <p className="text-xs sm:text-sm ui-dim leading-relaxed">
-              Tập hợp các hội nhóm Geometry Dash tại Việt Nam. Tham gia cùng đồng đội hoặc thành lập Clan riêng để cùng nhau chinh phục bảng xếp hạng.
-            </p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
@@ -125,7 +146,7 @@ export default function ClanListPage() {
                 style={{ backgroundColor: 'var(--accent)' }}
               >
                 <Plus className="w-4 h-4" />
-                <span>Thành lập Clan</span>
+                <span>Tạo Clan</span>
               </button>
             )}
           </div>
@@ -141,24 +162,59 @@ export default function ClanListPage() {
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Tìm theo tên hoặc tag Clan..."
+            placeholder="Tìm theo tên hoặc tag Clan"
             className="w-full pl-9 pr-4 py-2 rounded-xl text-xs ui-input"
           />
         </div>
 
         {/* Sort, Order & View Toggle */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Sort Dropdown */}
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as any)}
-            className="px-3 py-2 rounded-xl text-xs font-bold border ui-input cursor-pointer"
-          >
-            <option value="members">Đông thành viên nhất</option>
-            <option value="sp">SP Coin cao nhất</option>
-            <option value="newest">Mới thành lập</option>
-            <option value="oldest">Lâu năm nhất</option>
-          </select>
+          {/* Custom Styled Sort Dropdown */}
+          <div ref={sortRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setIsSortOpen(!isSortOpen)}
+              className="px-3 py-2 rounded-xl text-xs font-bold border flex items-center gap-2 cursor-pointer transition-colors"
+              style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+            >
+              {currentSortOption.icon && <currentSortOption.icon className="w-3.5 h-3.5 text-amber-400" />}
+              <span>{currentSortOption.label}</span>
+              <ChevronDown className={`w-3.5 h-3.5 ui-dim transition-transform duration-200 ${isSortOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isSortOpen && (
+              <div
+                className="absolute right-0 sm:left-0 top-full mt-1.5 z-40 w-52 rounded-xl border shadow-xl py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+                style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+              >
+                {SORT_OPTIONS.map((opt) => {
+                  const Icon = opt.icon;
+                  const isSelected = sort === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        setSort(opt.value);
+                        setIsSortOpen(false);
+                      }}
+                      className={`w-full px-3 py-2 text-xs font-semibold flex items-center justify-between transition-colors text-left cursor-pointer ${
+                        isSelected
+                          ? 'bg-amber-500/10 text-amber-400 font-bold'
+                          : 'hover:bg-black/5 dark:hover:bg-white/5 ui-title'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Icon className="w-3.5 h-3.5 text-amber-400" />
+                        <span>{opt.label}</span>
+                      </div>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-amber-400" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {/* Asc / Desc Button */}
           <button
@@ -193,7 +249,7 @@ export default function ClanListPage() {
           <Shield className="w-12 h-12 text-slate-500 mx-auto" />
           <h3 className="text-sm font-bold ui-title">Chưa tìm thấy Clan nào</h3>
           <p className="text-xs ui-dim">
-            {search ? 'Không có Clan phù hợp với từ khóa tìm kiếm.' : 'Hãy là người tiên phong thành lập Clan đầu tiên!'}
+            {search ? 'Không có Clan phù hợp với từ khóa tìm kiếm.' : 'Hãy là người tiên phong tạo Clan đầu tiên!'}
           </p>
         </div>
       ) : viewMode === 'grid' ? (
@@ -207,56 +263,47 @@ export default function ClanListPage() {
                 className="group ui-card rounded-2xl overflow-hidden border flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-xl"
                 style={{ borderColor: 'var(--border-ui)' }}
               >
-                {/* Banner */}
-                <div className="h-28 w-full relative bg-slate-800 overflow-hidden">
+                {/* Cover Banner */}
+                <div className="h-36 w-full relative bg-slate-900 overflow-hidden">
                   {clan.coverUrl ? (
-                    <img src={clan.coverUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <img
+                      src={clan.coverUrl}
+                      alt=""
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-r from-slate-900 to-slate-800" />
+                    <div className="w-full h-full bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+                      <span className="font-mono font-black text-2xl text-white/20">[{clan.tag}]</span>
+                    </div>
                   )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+                  {/* Tier Badge on top-right */}
+                  <span
+                    className={`absolute top-3 right-3 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border backdrop-blur-md shadow-sm ${
+                      tierInfo.tier === 3
+                        ? 'bg-purple-950/80 text-purple-300 border-purple-500/30'
+                        : tierInfo.tier === 2
+                        ? 'bg-sky-950/80 text-sky-300 border-sky-500/30'
+                        : 'bg-amber-950/80 text-amber-300 border-amber-500/30'
+                    }`}
+                  >
+                    {tierInfo.name}
+                  </span>
+
                   {/* Status Overlay if Suspended */}
                   {clan.isSuspended && (
-                    <div className="absolute inset-0 bg-red-950/70 backdrop-blur-xs flex items-center justify-center gap-1.5 text-red-300 text-xs font-bold">
+                    <div className="absolute inset-0 bg-red-950/80 backdrop-blur-xs flex items-center justify-center gap-1.5 text-red-300 text-xs font-bold">
                       <AlertTriangle className="w-4 h-4" />
                       <span>Tạm dừng hoạt động</span>
                     </div>
                   )}
                 </div>
 
-                {/* Avatar & Content */}
-                <div className="p-4 pt-0 relative flex-1 flex flex-col">
-                  {/* Overlapping Avatar */}
-                  <div className="flex items-end justify-between -mt-8 mb-3">
-                    <div
-                      className="w-16 h-16 rounded-2xl overflow-hidden border-2 bg-slate-900 shadow-lg shrink-0"
-                      style={{ borderColor: 'var(--bg-card)' }}
-                    >
-                      {clan.avatarUrl ? (
-                        <img src={clan.avatarUrl} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center font-black text-lg text-amber-400">
-                          {clan.tag[0]}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Tier Badge */}
-                    <span
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${
-                        tierInfo.tier === 3
-                          ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
-                          : tierInfo.tier === 2
-                          ? 'bg-sky-500/10 text-sky-400 border-sky-500/20'
-                          : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                      }`}
-                    >
-                      {tierInfo.name}
-                    </span>
-                  </div>
-
-                  {/* Title & Tag */}
-                  <div className="space-y-1 mb-3">
-                    <div className="flex items-center gap-1.5 flex-wrap">
+                {/* Card Content */}
+                <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span
                         className="font-mono font-black text-xs px-2 py-0.5 rounded-md border"
                         style={{
@@ -286,10 +333,15 @@ export default function ClanListPage() {
                   </div>
 
                   {/* Meta Stats Bar */}
-                  <div className="mt-auto pt-3 border-t flex items-center justify-between text-xs font-semibold ui-dim" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <div
+                    className="pt-3 border-t flex items-center justify-between text-xs font-semibold ui-dim"
+                    style={{ borderColor: 'var(--border-subtle)' }}
+                  >
                     <div className="flex items-center gap-1.5" title="Thành viên">
                       <Users className="w-3.5 h-3.5 text-sky-400" />
-                      <span>{clan._count?.members || clan.members?.length || 0} / {tierInfo.maxMembers}</span>
+                      <span>
+                        {clan._count?.members || clan.members?.length || 0} / {tierInfo.maxMembers}
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-1.5" title="Tổng SP Coin duy trì">
@@ -300,7 +352,9 @@ export default function ClanListPage() {
                     {clan.leader && (
                       <div className="flex items-center gap-1 text-[11px]" title={`Leader: ${clan.leader.username}`}>
                         <Crown className="w-3.5 h-3.5 text-amber-400" />
-                        <span className="truncate max-w-[90px]">{clan.leader.displayName || clan.leader.username}</span>
+                        <span className="truncate max-w-[90px]">
+                          {clan.leader.displayName || clan.leader.username}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -321,12 +375,15 @@ export default function ClanListPage() {
                 className="p-4 flex items-center justify-between gap-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
               >
                 <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-12 h-12 rounded-xl overflow-hidden border bg-slate-900 shrink-0" style={{ borderColor: 'var(--border-ui)' }}>
-                    {clan.avatarUrl ? (
-                      <img src={clan.avatarUrl} alt="" className="w-full h-full object-cover" />
+                  <div
+                    className="w-16 h-12 rounded-xl overflow-hidden border bg-slate-900 shrink-0 relative"
+                    style={{ borderColor: 'var(--border-ui)' }}
+                  >
+                    {clan.coverUrl ? (
+                      <img src={clan.coverUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center font-bold text-amber-400">
-                        {clan.tag[0]}
+                      <div className="w-full h-full flex items-center justify-center font-bold text-amber-400 text-xs font-mono">
+                        [{clan.tag}]
                       </div>
                     )}
                   </div>

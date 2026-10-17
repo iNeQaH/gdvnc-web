@@ -30,6 +30,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import { UserDisplayName } from '@/components/UserDisplayName';
 import ClanSettingsModal from '@/components/clan/ClanSettingsModal';
+import JoinClanModal from '@/components/clan/JoinClanModal';
 import { calculateUserSp, getClanTier } from '@/lib/clanTypes';
 import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
 import { levelPath } from '@/lib/levelUrl';
@@ -58,6 +59,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
   const [isDonateOpen, setIsDonateOpen] = useState(false);
   const [isRequestsOpen, setIsRequestsOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [transferTargetId, setTransferTargetId] = useState('');
 
   // Actions state
@@ -311,36 +313,22 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
             <img src={clan.coverUrl} alt="" className="w-full h-full object-cover" />
           ) : (
             <div
-              className="w-full h-full bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950"
+              className="w-full h-full bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center"
               style={clan.themeGradient ? { background: clan.themeGradient } : undefined}
-            />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-        </div>
-
-        {/* Hero Info Header */}
-        <div className="px-6 pb-6 pt-0 relative flex flex-col sm:flex-row sm:items-end justify-between gap-5 -mt-14 sm:-mt-16">
-          {/* Avatar & Title */}
-          <div className="flex items-end gap-4 min-w-0">
-            <div
-              className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-4 bg-slate-900 shadow-2xl shrink-0"
-              style={{ borderColor: 'var(--bg-card)' }}
             >
-              {clan.avatarUrl ? (
-                <img src={clan.avatarUrl} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center font-black text-3xl text-amber-400">
-                  {clan.tag[0]}
-                </div>
-              )}
+              <span className="font-mono font-black text-4xl text-white/10">[{clan.tag}]</span>
             </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
 
-            <div className="space-y-1 min-w-0 pb-1">
+          {/* Title & Tag overlaid on banner */}
+          <div className="absolute bottom-4 left-6 right-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div className="space-y-1.5 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span
                   className="font-mono font-black text-sm px-2.5 py-0.5 rounded-lg border shadow-xs"
                   style={{
-                    backgroundColor: 'var(--bg-subtle)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.6)',
                     borderColor: 'var(--border-subtle)',
                     ...(clan.colorGradient
                       ? {
@@ -353,14 +341,16 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                 >
                   [{clan.tag}]
                 </span>
-                <h1 className="text-xl sm:text-2xl font-black ui-title truncate">{clan.name}</h1>
+                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight truncate drop-shadow-md">
+                  {clan.name}
+                </h1>
                 <span
-                  className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border backdrop-blur-md ${
                     tierInfo.tier === 3
-                      ? 'bg-purple-500/15 text-purple-400 border-purple-500/30'
+                      ? 'bg-purple-950/80 text-purple-300 border-purple-500/40'
                       : tierInfo.tier === 2
-                      ? 'bg-sky-500/15 text-sky-400 border-sky-500/30'
-                      : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                      ? 'bg-sky-950/80 text-sky-300 border-sky-500/40'
+                      : 'bg-amber-950/80 text-amber-300 border-amber-500/40'
                   }`}
                 >
                   {tierInfo.name}
@@ -368,24 +358,39 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               </div>
 
               {clan.description && (
-                <p className="text-xs ui-dim max-w-xl line-clamp-2 leading-relaxed">
+                <p className="text-xs text-slate-300 max-w-2xl line-clamp-2 leading-relaxed drop-shadow-sm">
                   {clan.description}
                 </p>
               )}
             </div>
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2.5 flex-wrap shrink-0 pb-1">
-            {/* SP Coin Stats Badge */}
+        {/* Hero Actions & Stats Bar */}
+        <div className="px-6 py-3.5 border-t flex flex-wrap items-center justify-between gap-3" style={{ borderColor: 'var(--border-subtle)' }}>
+          {/* SP Coin & Members Info */}
+          <div className="flex items-center gap-3 text-xs font-semibold">
             <div
-              className="px-3 py-2 rounded-xl border flex items-center gap-1.5 text-xs font-bold"
+              className="px-3 py-1.5 rounded-xl border flex items-center gap-1.5 font-bold"
               style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
             >
               <Coins className="w-4 h-4 text-amber-400" />
               <span className="font-mono text-amber-400">{clan.totalSp} SP</span>
             </div>
 
+            <div
+              className="px-3 py-1.5 rounded-xl border flex items-center gap-1.5 ui-dim"
+              style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+            >
+              <Users className="w-3.5 h-3.5 text-sky-400" />
+              <span>
+                {clan.memberCount} / {tierInfo.maxMembers} thành viên
+              </span>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
             {/* If Member: Donate SP */}
             {myMembership && (
               <button
@@ -442,9 +447,14 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               ) : (
                 <button
                   type="button"
-                  onClick={handleJoin}
-                  disabled={actionLoading}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] flex items-center gap-1.5 transition-transform hover:scale-105 cursor-pointer disabled:opacity-50 shadow-md"
+                  onClick={() => {
+                    if (!currentUser) {
+                      router.push('/login');
+                      return;
+                    }
+                    setIsJoinModalOpen(true);
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] flex items-center gap-1.5 transition-transform hover:scale-105 cursor-pointer shadow-md"
                   style={{ backgroundColor: 'var(--accent)' }}
                 >
                   <UserPlus className="w-4 h-4" />
@@ -984,6 +994,11 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                       <span className="text-[10px] ui-dim block font-mono">
                         {req.user.classicPp || 0} PP • {new Date(req.createdAt).toLocaleDateString('vi-VN')}
                       </span>
+                      {req.message && (
+                        <p className="text-xs ui-dim mt-1.5 p-2 rounded-lg bg-black/10 dark:bg-white/5 border border-dashed border-white/10 italic">
+                          &ldquo;{req.message}&rdquo;
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -1085,6 +1100,29 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           isLeader={isLeader}
           isAdminWeb={isAdminWeb}
           isOwnerWeb={isOwnerWeb}
+        />
+      )}
+
+      {/* Join Clan Application Modal */}
+      {isJoinModalOpen && (
+        <JoinClanModal
+          isOpen={isJoinModalOpen}
+          onClose={() => setIsJoinModalOpen(false)}
+          clan={{
+            id: clan.id,
+            slug: clan.slug,
+            name: clan.name,
+            tag: clan.tag,
+            coverUrl: clan.coverUrl,
+            description: clan.description,
+            color: clan.color,
+            colorGradient: clan.colorGradient,
+            totalSp: clan.totalSp,
+            memberCount: clan.memberCount,
+            maxMembers: tierInfo.maxMembers,
+            leader: clan.leader,
+          }}
+          onSuccess={() => loadClanData()}
         />
       )}
     </div>
