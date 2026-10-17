@@ -56,6 +56,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
+      url: uploadedUrls[0] || null,
       urls: uploadedUrls,
       files: uploadedData,
     });

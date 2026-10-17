@@ -33,6 +33,8 @@ import { UserDisplayName } from '@/components/UserDisplayName';
 import ClanSettingsModal from '@/components/clan/ClanSettingsModal';
 import JoinClanModal from '@/components/clan/JoinClanModal';
 import { calculateUserSp, getClanTier } from '@/lib/clanTypes';
+import { useTheme } from '@/components/ThemeProvider';
+import { getCustomThemeVars } from '@/lib/customTheme';
 import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
 import { levelPath } from '@/lib/levelUrl';
 
@@ -153,6 +155,8 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
   const router = useRouter();
   const { t } = useLanguage();
   const { showToast, showConfirm } = useToast();
+  const { resolvedMode } = useTheme();
+  const isDark = resolvedMode === 'dark';
 
   const [clan, setClan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -405,32 +409,57 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
     ...(clan.membersGrouped?.members || []),
   ];
 
-  // Theme tùy chỉnh toàn trang Clan (chỉ ảnh hưởng trong trang clan, không ảnh hưởng sidebar)
+  // Theme tùy chỉnh toàn trang Clan (áp dụng toàn bộ màu box, border, text của trang clan, hoàn toàn không ảnh hưởng sidebar)
   const clanThemeStyle: React.CSSProperties & Record<string, string> = {};
+
+  let clanColors: string[] = [];
+  let clanAngle = 135;
+
   if (clan.themeGradient) {
+    const hexMatches = clan.themeGradient.match(/#([0-9a-fA-F]{3,8})/g);
+    if (hexMatches && hexMatches.length > 0) {
+      clanColors = hexMatches;
+    }
+    const angleMatch = clan.themeGradient.match(/(\d+)deg/);
+    if (angleMatch) {
+      clanAngle = parseInt(angleMatch[1], 10);
+    }
     clanThemeStyle['--accent-gradient'] = clan.themeGradient;
-  } else if (clan.themeColor) {
+  } else if (clan.themeColor && /^#([0-9a-fA-F]{3,8})$/.test(clan.themeColor.trim())) {
+    clanColors = [clan.themeColor.trim()];
     clanThemeStyle['--accent'] = clan.themeColor;
   }
 
+  const hasCustomClanTheme = clanColors.length > 0;
+  if (hasCustomClanTheme) {
+    const themeVars = getCustomThemeVars(clanColors, isDark, clanAngle);
+    Object.assign(clanThemeStyle, themeVars);
+  }
+
   return (
-    <div className="relative min-h-[calc(100vh-5rem)] -mt-4 -mx-4 px-4 pt-4 pb-16 transition-colors duration-300" style={clanThemeStyle}>
-      {/* Ambient background glow for clan theme */}
+    <div
+      className="relative min-h-[calc(100vh-5rem)] -mt-4 -mx-4 px-4 pt-4 pb-16 transition-colors duration-300"
+      style={{
+        ...clanThemeStyle,
+        ...(hasCustomClanTheme ? { background: 'var(--bg-page)', color: 'var(--text-body)' } : {}),
+      }}
+    >
+      {/* Ambient background glow for clan theme (chỉ nằm trọn trong trang Clan, không đè hay ảnh hưởng Sidebar) */}
       {clan.themeGradient ? (
         <div
-          className="fixed inset-0 z-[-1] pointer-events-none opacity-20 dark:opacity-25"
+          className="absolute inset-0 pointer-events-none opacity-20 dark:opacity-25 overflow-hidden"
           style={{ background: clan.themeGradient }}
         />
       ) : clan.themeColor ? (
         <div
-          className="fixed inset-0 z-[-1] pointer-events-none opacity-15 dark:opacity-20"
+          className="absolute inset-0 pointer-events-none opacity-15 dark:opacity-20 overflow-hidden"
           style={{
             background: `radial-gradient(ellipse at 50% 15%, ${clan.themeColor} 0%, transparent 65%)`
           }}
         />
       ) : null}
 
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="relative z-1 max-w-6xl mx-auto space-y-6">
         {/* Clan Hero Banner */}
         <div
           className="rounded-3xl border overflow-hidden shadow-2xl relative"
@@ -490,7 +519,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           </div>
 
         {/* Hero Actions & Stats Bar */}
-        <div className="px-6 py-3.5 border-t flex flex-wrap items-center justify-between gap-3" style={{ borderColor: 'var(--border-subtle)' }}>
+        <div className="px-6 py-3.5 border-t flex flex-wrap items-center justify-between gap-3" style={{ borderColor: 'var(--border-subtle)', backgroundColor: 'var(--bg-card)' }}>
           {/* SP Coin & Members Info */}
           <div className="flex items-center gap-3 text-xs font-semibold">
             <div
@@ -627,13 +656,13 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           {clan.description && (
             <div
               className="ui-card rounded-2xl border p-5 space-y-3"
-              style={{ borderColor: 'var(--border-ui)' }}
+              style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
             >
               <div className="flex items-center gap-2 pb-2.5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-                <FileText className="w-4 h-4 text-sky-400" />
+                <FileText className="w-4 h-4 text-[color:var(--accent)]" />
                 <h2 className="text-sm font-bold ui-title">Mô tả & Giới thiệu Clan</h2>
               </div>
-              <div className="text-xs sm:text-sm text-slate-300 space-y-1.5 leading-relaxed break-words font-sans">
+              <div className="text-xs sm:text-sm text-[color:var(--text-body)] space-y-1.5 leading-relaxed break-words font-sans">
                 {parseDiscordMarkdown(clan.description)}
               </div>
             </div>
@@ -643,7 +672,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           {videoEmbedUrl && (
             <div
               className="ui-card rounded-2xl border p-4 space-y-3"
-              style={{ borderColor: 'var(--border-ui)' }}
+              style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
             >
               <h2 className="text-sm font-bold ui-title flex items-center gap-2">
                 <Video className="w-4 h-4 text-red-400" /> Video giới thiệu Clan
@@ -664,7 +693,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           {clan.favoriteLevel && (
             <div
               className="ui-card rounded-2xl border p-4 space-y-3"
-              style={{ borderColor: 'var(--border-ui)' }}
+              style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
             >
               <h2 className="text-sm font-bold ui-title flex items-center gap-2 text-pink-400">
                 <Heart className="w-4 h-4 fill-pink-500" /> Màn chơi yêu thích của Clan
@@ -702,7 +731,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           {clan.top5Beaten?.length > 0 && (
             <div
               className="ui-card rounded-2xl border p-4 sm:p-5 space-y-3"
-              style={{ borderColor: 'var(--border-ui)' }}
+              style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
             >
               <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--border-subtle)' }}>
                 <h2 className="text-sm font-bold ui-title flex items-center gap-2">
@@ -770,7 +799,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           {clan.creatorWorks?.length > 0 && (
             <div
               className="ui-card rounded-2xl border p-4 sm:p-5 space-y-3.5"
-              style={{ borderColor: 'var(--border-ui)' }}
+              style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
             >
               <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--border-subtle)' }}>
                 <h2 className="text-sm font-bold ui-title flex items-center gap-2">
@@ -854,7 +883,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           {/* Prominent Clan Staff Box (Leader & Mods, max 3) */}
           <div
             className="ui-card rounded-2xl border p-4 space-y-3"
-            style={{ borderColor: 'var(--border-ui)' }}
+            style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
           >
             <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
               <h3 className="text-xs font-bold ui-title flex items-center gap-1.5">
@@ -922,7 +951,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           {/* Full Discord-Style Member Roster */}
           <div
             className="ui-card rounded-2xl border p-4 space-y-4"
-            style={{ borderColor: 'var(--border-ui)' }}
+            style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
           >
             <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
               <h3 className="text-xs font-bold ui-title flex items-center gap-1.5">

@@ -50,15 +50,45 @@ export default function ClanSettingsModal({
   // Gradient & Theme options for Tier 2+
   const isTier2OrHigher = Boolean(clan.tier >= 2 || (clan.totalSp || clan.effectiveSp || 0) >= 10);
   const [useTagGradient, setUseTagGradient] = useState(Boolean(clan.colorGradient));
-  const [tagGrad1, setTagGrad1] = useState('#f59e0b');
-  const [tagGrad2, setTagGrad2] = useState('#ec4899');
-  const [tagAngle, setTagAngle] = useState(90);
+  const [tagGrad1, setTagGrad1] = useState(() => {
+    if (clan.colorGradient) {
+      const hexes = clan.colorGradient.match(/#([0-9a-fA-F]{3,8})/g);
+      if (hexes && hexes[0]) return hexes[0];
+    }
+    return '#f59e0b';
+  });
+  const [tagGrad2, setTagGrad2] = useState(() => {
+    if (clan.colorGradient) {
+      const hexes = clan.colorGradient.match(/#([0-9a-fA-F]{3,8})/g);
+      if (hexes && hexes[1]) return hexes[1];
+    }
+    return '#ec4899';
+  });
+  const [tagAngle, setTagAngle] = useState(() => {
+    if (clan.colorGradient) {
+      const match = clan.colorGradient.match(/(\d+)deg/);
+      if (match) return parseInt(match[1], 10);
+    }
+    return 90;
+  });
 
   // Theme page
   const [themeColor, setThemeColor] = useState(clan.themeColor || '#0ea5e9');
   const [useThemeGradient, setUseThemeGradient] = useState(Boolean(clan.themeGradient));
-  const [themeGrad1, setThemeGrad1] = useState('#0ea5e9');
-  const [themeGrad2, setThemeGrad2] = useState('#8b5cf6');
+  const [themeGrad1, setThemeGrad1] = useState(() => {
+    if (clan.themeGradient) {
+      const hexes = clan.themeGradient.match(/#([0-9a-fA-F]{3,8})/g);
+      if (hexes && hexes[0]) return hexes[0];
+    }
+    return '#0ea5e9';
+  });
+  const [themeGrad2, setThemeGrad2] = useState(() => {
+    if (clan.themeGradient) {
+      const hexes = clan.themeGradient.match(/#([0-9a-fA-F]{3,8})/g);
+      if (hexes && hexes[1]) return hexes[1];
+    }
+    return '#8b5cf6';
+  });
 
   const [saving, setSaving] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -78,8 +108,9 @@ export default function ClanSettingsModal({
         body: formData,
       });
       const data = await res.json();
-      if (res.ok && data.url) {
-        setCoverUrl(data.url);
+      const uploadedUrl = data.url || data.urls?.[0];
+      if (res.ok && uploadedUrl) {
+        setCoverUrl(uploadedUrl);
         showToast('Tải ảnh bìa thành công!', 'success');
       } else {
         showToast(data.error || 'Tải ảnh thất bại.', 'error');
@@ -272,21 +303,24 @@ export default function ClanSettingsModal({
 
             {/* Live Tag Preview */}
             <div className="pt-2 border-t flex items-center justify-between" style={{ borderColor: 'var(--border-subtle)' }}>
-              <span className="text-[11px] ui-dim">Xem trước Tag:</span>
-              <span
-                className="font-black text-sm font-mono tracking-wider"
-                style={
-                  useTagGradient && isTier2OrHigher
-                    ? {
-                        backgroundImage: `linear-gradient(${tagAngle}deg, ${tagGrad1}, ${tagGrad2})`,
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                      }
-                    : { color }
-                }
-              >
-                [{clan.tag}] PlayerName
-              </span>
+              <span className="text-[11px] ui-dim">Xem trước Tag & Tên thành viên:</span>
+              <div className="flex items-center gap-1.5 font-bold text-sm">
+                <span
+                  className="font-black text-sm font-mono tracking-wider inline-block"
+                  style={
+                    useTagGradient && isTier2OrHigher
+                      ? {
+                          backgroundImage: `linear-gradient(${tagAngle}deg, ${tagGrad1}, ${tagGrad2})`,
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                        }
+                      : { color }
+                  }
+                >
+                  [{clan.tag}]
+                </span>
+                <span className="text-sm font-bold text-slate-100">PlayerName</span>
+              </div>
             </div>
           </div>
 

@@ -887,8 +887,22 @@ export default function ProfilePage() {
               >
                 <Shield className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                 <span className="ui-dim font-bold text-[11px] uppercase">Clan:</span>
-                <span className="font-bold" style={{ color: data.clanMember.clan.color || 'var(--accent)' }}>
-                  [{data.clanMember.clan.tag}] {data.clanMember.clan.name}
+                <span
+                  className="font-bold font-mono inline-block"
+                  style={
+                    data.clanMember.clan.colorGradient
+                      ? {
+                          backgroundImage: data.clanMember.clan.colorGradient,
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                        }
+                      : { color: data.clanMember.clan.color || 'var(--accent)' }
+                  }
+                >
+                  [{data.clanMember.clan.tag}]
+                </span>
+                <span className="font-bold ui-title">
+                  {data.clanMember.clan.name}
                 </span>
               </Link>
             )}

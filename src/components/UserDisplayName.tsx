@@ -65,17 +65,20 @@ export function UserDisplayName({
   const isClanActive = clan && !clan.isSuspended && Boolean(clan.tag);
   const role = clanRole || user?.clanMember?.role;
 
-  // Style cho Tag Clan
-  const clanTagStyle: React.CSSProperties = {};
+  // Style cho Tag Clan (hoàn toàn cô lập, chỉ áp dụng cho tag [TAG], không ảnh hưởng tên)
+  const clanTagStyle: React.CSSProperties = {
+    display: 'inline-block',
+  };
   if (clan?.colorGradient) {
     clanTagStyle.backgroundImage = clan.colorGradient;
     clanTagStyle.WebkitBackgroundClip = 'text';
     clanTagStyle.WebkitTextFillColor = 'transparent';
   } else if (clan?.color) {
     clanTagStyle.color = clan.color;
+    clanTagStyle.WebkitTextFillColor = 'initial';
   }
 
-  // Style cho Tên Supporter
+  // Style cho Tên Supporter (bảo đảm độc lập 100% với màu Clan tag)
   const nameStyle: React.CSSProperties = {};
   if (user?.nameFont && FONT_PRESETS[user.nameFont]?.family) {
     nameStyle.fontFamily = FONT_PRESETS[user.nameFont].family;
@@ -92,11 +95,15 @@ export function UserDisplayName({
     }
   } else if (user?.nameColor) {
     nameStyle.color = user.nameColor;
+    nameStyle.WebkitTextFillColor = 'initial';
     if (user?.nameGlow) {
       nameStyle.filter = `drop-shadow(0 0 3px ${user.nameGlow}) drop-shadow(0 0 6px ${user.nameGlow}88)`;
     }
-  } else if (user?.nameGlow) {
-    nameStyle.filter = `drop-shadow(0 0 3px ${user.nameGlow}) drop-shadow(0 0 6px ${user.nameGlow}88)`;
+  } else {
+    nameStyle.WebkitTextFillColor = 'initial';
+    if (user?.nameGlow) {
+      nameStyle.filter = `drop-shadow(0 0 3px ${user.nameGlow}) drop-shadow(0 0 6px ${user.nameGlow}88)`;
+    }
   }
 
   const renderTag = () => {
