@@ -15,9 +15,10 @@ import { useToast } from '@/components/GlobalToast';
 import { formatCp } from '@/lib/creatorPoints';
 import { levelPath } from '@/lib/levelUrl';
 import { type DictKey } from '@/lib/dictionaries';
-import GdUnverifiedNotice from '@/components/GdUnverifiedNotice';
 import { isFullAdminRole, isStaffRole, isSuperAdminUser } from '@/lib/roles';
+import GdUnverifiedNotice from '@/components/GdUnverifiedNotice';
 import { logoutClient } from '@/lib/sessionClient';
+import { calculateUserSp } from '@/lib/clanTypes';
 
 const RECORD_PAGE_SIZE = 10;
 
@@ -150,8 +151,6 @@ export default function ProfilePage() {
 
   // Direct editing states
   const [showThemeModal, setShowThemeModal] = useState(false);
-  const [isEditingBio, setIsEditingBio] = useState(false);
-  const [bioInput, setBioInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [verifyingGd, setVerifyingGd] = useState(false);
 
@@ -227,7 +226,6 @@ export default function ProfilePage() {
       const json = await res.json();
       if (json.success) {
         setData(json.user);
-        setBioInput(json.user.bio || '');
       }
     } catch (e) {
       console.error(e);
@@ -251,7 +249,6 @@ export default function ProfilePage() {
       if (resData.success) {
         const merged = resData.updated ? { ...data, ...resData.updated } : { ...data, ...fields };
         setData(merged);
-        setIsEditingBio(false);
         // Also update local storage if it's the current logged in user
         if (currentUser.username === username) {
           const updatedLocalUser = { ...currentUser, ...merged };
@@ -323,10 +320,6 @@ export default function ProfilePage() {
     } finally {
       setSettingUp2fa(false);
     }
-  };
-
-  const handleSaveBio = () => {
-    updateProfileField({ bio: bioInput.trim() });
   };
 
   const handleDeleteRecord = async (recordId: string, levelName: string) => {
@@ -641,6 +634,7 @@ export default function ProfilePage() {
 
   const isTargetSuperAdmin = Boolean(data?.isSuperAdmin || isSuperAdminUser(data));
   const isSupporter = Boolean(data?.supporterUntil && new Date(data.supporterUntil) > new Date());
+  const supporterMonths = isSupporter ? calculateUserSp(data) : 0;
 
   const roleBadges: Array<{
     id: string;
@@ -767,47 +761,64 @@ export default function ProfilePage() {
 
             {/* Primary Details (Name, Badges, Roles) */}
             <div className="flex-1 min-w-0 space-y-1.5 pt-2 sm:pt-3.5">
-              <div className="flex items-center gap-2 flex-wrap">
-                <UserDisplayName
-                  user={data}
-                  fallbackName={data.username}
-                  linkClan
-                  tagPosition="left"
-                  showClanRole={false}
-                  className="text-xl sm:text-2xl font-black ui-title drop-shadow-sm"
-                />
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap min-w-0">
+                  <UserDisplayName
+                    user={data}
+                    fallbackName={data.username}
+                    linkClan
+                    tagPosition="left"
+                    showClanRole={false}
+                    className="text-xl sm:text-2xl font-black ui-title drop-shadow-sm"
+                  />
 
-                {/* Header Badges */}
-                {headerBadges.length > 0 && (
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {headerBadges.map((b: any) => (
-                      <div
-                        key={b.id}
-                        className={
-                          isLavender
-                            ? "inline-flex items-center justify-center p-1.5 rounded-xl tsumiki-btn tsumiki-badge-btn !m-0 !mb-0 shadow-sm cursor-default"
-                            : "inline-flex items-center justify-center p-1.5 rounded-lg bg-black text-white border border-zinc-800/80 shadow-xs cursor-default"
-                        }
-                        title={b.name + (b.description ? `: ${b.description}` : '')}
-                      >
-                        <BadgeIcon
-                          icon={b.icon || 'Star'}
-                          color={b.color}
-                          glow={b.glowColor}
-                          className={isLavender ? "w-4 h-4" : "w-3.5 h-3.5"}
-                        />
-                      </div>
-                    ))}
+                  {/* Header Badges */}
+                  {headerBadges.length > 0 && (
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {headerBadges.map((b: any) => (
+                        <div
+                          key={b.id}
+                          className={
+                            isLavender
+                              ? "inline-flex items-center justify-center p-1.5 rounded-xl tsumiki-btn tsumiki-badge-btn !m-0 !mb-0 shadow-sm cursor-default"
+                              : "inline-flex items-center justify-center p-1.5 rounded-lg bg-black text-white border border-zinc-800/80 shadow-xs cursor-default"
+                          }
+                          title={b.name + (b.description ? `: ${b.description}` : '')}
+                        >
+                          <BadgeIcon
+                            icon={b.icon || 'Star'}
+                            color={b.color}
+                            glow={b.glowColor}
+                            className={isLavender ? "w-4 h-4" : "w-3.5 h-3.5"}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {data.isBanned && (
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/30 flex items-center gap-1">
+                      <Flame className="w-3 h-3" /> Bị đình chỉ
+                    </span>
+                  )}
+                </div>
+
+                {/* Supporter Duration Badge */}
+                {isSupporter && supporterMonths > 0 && (
+                  <div
+                    className="ml-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider border shadow-xs"
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, #f59e0b 14%, var(--bg-card))',
+                      borderColor: 'color-mix(in srgb, #f59e0b 35%, var(--border-ui))',
+                      color: '#f59e0b',
+                    }}
+                    title={isEn ? `Supporter: ${supporterMonths} month(s) remaining` : `Supporter: Còn lại ${supporterMonths} tháng`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span>Supporter {supporterMonths}{isEn ? 'M' : 'T'}</span>
                   </div>
                 )}
-
-                {data.isBanned && (
-                  <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/30 flex items-center gap-1">
-                    <Flame className="w-3 h-3" /> Bị đình chỉ
-                  </span>
-                )}
               </div>
-
             </div>
           </div>
 
@@ -917,51 +928,9 @@ export default function ProfilePage() {
                       <FileText className="w-3.5 h-3.5 text-sky-500" />
                       {t('profile.bio') || 'Mô tả'}
                     </span>
-                    {isOwner && !isEditingBio && (
-                      <button
-                        type="button"
-                        onClick={() => setIsEditingBio(true)}
-                        className="text-[10px] font-bold text-sky-500 hover:text-sky-400 cursor-pointer flex items-center gap-1"
-                      >
-                        <Edit className="w-3 h-3" /> {isEn ? 'Edit' : 'Sửa'}
-                      </button>
-                    )}
                   </div>
 
-                  {isEditingBio ? (
-                    <div className="space-y-2 pt-1">
-                      <textarea
-                        value={bioInput}
-                        onChange={(e) => setBioInput(e.target.value)}
-                        placeholder={isEn ? 'Write something about yourself...' : 'Viết gì đó về bản thân...'}
-                        rows={3}
-                        maxLength={2000}
-                        className="w-full text-xs p-2.5 rounded-xl border focus:outline-none leading-relaxed transition-all resize-none ui-input"
-                        style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
-                      />
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsEditingBio(false);
-                            setBioInput(data.bio || '');
-                          }}
-                          className="px-2.5 py-1 text-xs font-semibold ui-dim hover:text-white cursor-pointer"
-                        >
-                          {isEn ? 'Cancel' : 'Hủy'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleSaveBio}
-                          disabled={saving}
-                          className="px-3 py-1 text-xs font-bold bg-sky-500 hover:bg-sky-400 text-white rounded-lg shadow-xs cursor-pointer flex items-center gap-1"
-                        >
-                          <Save className="w-3 h-3" />
-                          {saving ? '...' : (isEn ? 'Save' : 'Lưu')}
-                        </button>
-                      </div>
-                    </div>
-                  ) : data.bio ? (
+                  {data.bio ? (
                     <div className="text-xs ui-dim max-h-40 overflow-y-auto whitespace-pre-line break-words leading-relaxed pr-1 select-text">
                       {data.bio}
                     </div>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatedTabs } from '@/components/AnimatedTabs';
-import { KeyRound, User, Mail, ArrowRight, AlertCircle, CheckCircle2, ShieldCheck, RefreshCw, Send, Lock } from 'lucide-react';
+import { KeyRound, User, Mail, ArrowRight, AlertCircle, CheckCircle2, ShieldCheck, RefreshCw, Send, Lock, Eye, EyeOff } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import SmartCaptcha from '@/components/SmartCaptcha';
 import { isStaffRole } from '@/lib/roles';
@@ -17,6 +17,7 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
   // Login state
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [requires2fa, setRequires2fa] = useState(false);
   const [totpToken, setTotpToken] = useState('');
@@ -26,12 +27,14 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
   const [regEmail, setRegEmail] = useState('');
   const [regOtp, setRegOtp] = useState('');
   const [regPassword, setRegPassword] = useState('');
-  const [regGdUsername, setRegGdUsername] = useState('');
-  const [regDiscord, setRegDiscord] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
 
   const [resetEmail, setResetEmail] = useState('');
   const [resetOtp, setResetOtp] = useState('');
   const [resetPassword, setResetPassword] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetCooldown, setResetCooldown] = useState(0);
   const [sendingResetOtp, setSendingResetOtp] = useState(false);
   const [resetOtpSentMsg, setResetOtpSentMsg] = useState<string | null>(null);
@@ -265,6 +268,16 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
       return;
     }
 
+    if (!regPassword || regPassword.length < 6) {
+      setError(language === 'en' ? 'Password must be at least 6 characters.' : 'Mật khẩu phải có ít nhất 6 ký tự.');
+      return;
+    }
+
+    if (regPassword !== regConfirmPassword) {
+      setError(t('auth.password_mismatch'));
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -276,8 +289,6 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
           email: regEmail,
           otp: regOtp,
           password: regPassword,
-          gdUsername: regGdUsername,
-          discordTag: regDiscord,
           locale: language,
           website: honeypot,
         }),
@@ -370,20 +381,29 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
             <div className="space-y-1">
               <label className="text-xs font-bold ui-title">{t('auth.password')}</label>
               <div className="relative">
-                <Lock className="w-4 h-4 ui-dim absolute left-3 top-1/2 -translate-y-1/2" />
+                <Lock className="w-4 h-4 ui-dim absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
-                  type="password"
+                  type={showLoginPassword ? 'text' : 'password'}
                   required
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl text-xs border focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  className="w-full pl-9 pr-10 py-2.5 rounded-xl text-xs border focus:outline-none focus:ring-1 focus:ring-sky-500"
                   style={{
                     backgroundColor: 'var(--bg-subtle)',
                     borderColor: 'var(--border-ui)',
                     color: 'var(--text-title)',
                   }}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1 cursor-pointer transition-colors"
+                  title={showLoginPassword ? t('auth.hide_password') : t('auth.show_password')}
+                  aria-label={showLoginPassword ? t('auth.hide_password') : t('auth.show_password')}
+                >
+                  {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -545,19 +565,31 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
 
             <div className="space-y-1">
               <label className="text-xs font-bold ui-title">{t('auth.new_password')} *</label>
-              <input
-                type="password"
-                required
-                value={resetPassword}
-                onChange={(e) => setResetPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-1 focus:ring-sky-500"
-                style={{
-                  backgroundColor: 'var(--bg-subtle)',
-                  borderColor: 'var(--border-ui)',
-                  color: 'var(--text-title)',
-                }}
-              />
+              <div className="relative">
+                <Lock className="w-4 h-4 ui-dim absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type={showResetPassword ? 'text' : 'password'}
+                  required
+                  value={resetPassword}
+                  onChange={(e) => setResetPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-9 pr-10 py-2.5 rounded-xl text-xs border focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  style={{
+                    backgroundColor: 'var(--bg-subtle)',
+                    borderColor: 'var(--border-ui)',
+                    color: 'var(--text-title)',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowResetPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1 cursor-pointer transition-colors"
+                  title={showResetPassword ? t('auth.hide_password') : t('auth.show_password')}
+                  aria-label={showResetPassword ? t('auth.hide_password') : t('auth.show_password')}
+                >
+                  {showResetPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <button
@@ -676,54 +708,60 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
             {/* Password */}
             <div className="space-y-1">
               <label className="text-xs font-bold ui-title">{t('auth.password_min')} *</label>
-              <input
-                type="password"
-                required
-                value={regPassword}
-                onChange={(e) => setRegPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-1 focus:ring-sky-500"
-                style={{
-                  backgroundColor: 'var(--bg-subtle)',
-                  borderColor: 'var(--border-ui)',
-                  color: 'var(--text-title)',
-                }}
-              />
+              <div className="relative">
+                <Lock className="w-4 h-4 ui-dim absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type={showRegPassword ? 'text' : 'password'}
+                  required
+                  value={regPassword}
+                  onChange={(e) => setRegPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-9 pr-10 py-2.5 rounded-xl text-xs border focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  style={{
+                    backgroundColor: 'var(--bg-subtle)',
+                    borderColor: 'var(--border-ui)',
+                    color: 'var(--text-title)',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowRegPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1 cursor-pointer transition-colors"
+                  title={showRegPassword ? t('auth.hide_password') : t('auth.show_password')}
+                  aria-label={showRegPassword ? t('auth.hide_password') : t('auth.show_password')}
+                >
+                  {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
-            {/* Optional Fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold ui-dim">{t('auth.gd_optional')}</label>
+            {/* Confirm Password */}
+            <div className="space-y-1">
+              <label className="text-xs font-bold ui-title">{t('auth.confirm_password')} *</label>
+              <div className="relative">
+                <Lock className="w-4 h-4 ui-dim absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
-                  type="text"
-                  value={regGdUsername}
-                  onChange={(e) => setRegGdUsername(e.target.value)}
-                  placeholder="Ingame name..."
-                  className="w-full px-2.5 py-1.5 rounded-xl text-xs border focus:outline-none"
+                  type={showRegConfirmPassword ? 'text' : 'password'}
+                  required
+                  value={regConfirmPassword}
+                  onChange={(e) => setRegConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-9 pr-10 py-2.5 rounded-xl text-xs border focus:outline-none focus:ring-1 focus:ring-sky-500"
                   style={{
                     backgroundColor: 'var(--bg-subtle)',
                     borderColor: 'var(--border-ui)',
                     color: 'var(--text-title)',
                   }}
                 />
-                <p className="text-[10px] ui-dim leading-snug">{t('auth.gd_verify_hint')}</p>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold ui-dim">{t('auth.discord_optional')}</label>
-                <input
-                  type="text"
-                  value={regDiscord}
-                  onChange={(e) => setRegDiscord(e.target.value)}
-                  placeholder="user#1234"
-                  className="w-full px-2.5 py-1.5 rounded-xl text-xs border focus:outline-none"
-                  style={{
-                    backgroundColor: 'var(--bg-subtle)',
-                    borderColor: 'var(--border-ui)',
-                    color: 'var(--text-title)',
-                  }}
-                />
+                <button
+                  type="button"
+                  onClick={() => setShowRegConfirmPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1 cursor-pointer transition-colors"
+                  title={showRegConfirmPassword ? t('auth.hide_password') : t('auth.show_password')}
+                  aria-label={showRegConfirmPassword ? t('auth.hide_password') : t('auth.show_password')}
+                >
+                  {showRegConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
