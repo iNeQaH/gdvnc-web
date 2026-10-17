@@ -61,6 +61,7 @@ export const CUSTOM_THEME_KEYS = [
   '--border-subtle',
   '--border-glow',
   '--border-glow-shadow',
+  '--border-glow-gradient',
   '--border-gradient-stops',
   '--border-animation-play-state',
   '--text-title',
@@ -81,6 +82,8 @@ export interface CustomThemeStoredConfig {
   borderAnimation?: boolean;
   borderGlowEnabled?: boolean;
   borderGlowColor?: string;
+  borderGlowColors?: string[];
+  borderGlowAngle?: number;
 }
 
 export function getCustomThemeVars(
@@ -90,7 +93,8 @@ export function getCustomThemeVars(
   borderColorsInput?: string | string[],
   borderAnimation: boolean = true,
   borderGlowEnabled: boolean = true,
-  borderGlowColorInput?: string
+  borderGlowColorInput?: string | string[],
+  borderGlowAngleInput: number = 135
 ): Record<string, string> {
   const rawList = Array.isArray(colorsInput) ? colorsInput : [colorsInput];
   const cleanColors = rawList
@@ -156,16 +160,49 @@ export function getCustomThemeVars(
     // Border in Dark Mode: Refined, tasteful contrast with subtle accent tint
     const borderUiColor = `hsl(${primaryBorderHsl.h}, ${Math.round(Math.min(primaryBorderHsl.s, 42))}%, 26%)`;
     const borderSubtleColor = `hsl(${primaryBorderHsl.h}, ${Math.round(Math.min(primaryBorderHsl.s, 32))}%, 18%)`;
-    const glowHsl =
-      borderGlowColorInput && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(borderGlowColorInput.trim())
-        ? hexToHsl(borderGlowColorInput)
-        : primaryBorderHsl;
-    const borderGlow = borderGlowEnabled
-      ? `hsla(${glowHsl.h}, ${Math.max(glowHsl.s, 75)}%, 65%, 0.35)`
-      : 'transparent';
-    const borderGlowShadow = borderGlowEnabled
-      ? `0 0 18px 1px ${borderGlow}`
-      : 'none';
+
+    // Glow calculation (Supports Single Color OR Multi-color Gradient Glow!)
+    const rawGlowList = borderGlowColorInput
+      ? Array.isArray(borderGlowColorInput)
+        ? borderGlowColorInput
+        : [borderGlowColorInput]
+      : [];
+    const cleanGlowColors = rawGlowList
+      .map((c) => (c ? c.trim() : ''))
+      .filter((c) => /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c));
+
+    const glowColors =
+      cleanGlowColors.length > 0
+        ? cleanGlowColors
+        : borderColors.length > 0
+        ? borderColors
+        : colors;
+    const glowAngle = ((borderGlowAngleInput % 360) + 360) % 360;
+
+    let borderGlow = 'transparent';
+    let borderGlowShadow = 'none';
+
+    if (borderGlowEnabled) {
+      if (glowColors.length >= 2) {
+        const glowRad = (glowAngle * Math.PI) / 180;
+        const ox = Math.round(Math.sin(glowRad) * 8);
+        const oy = Math.round(-Math.cos(glowRad) * 8);
+
+        const gHsl1 = hexToHsl(glowColors[0]);
+        const gHsl2 = hexToHsl(glowColors[1]);
+
+        const col1 = `hsla(${gHsl1.h}, ${Math.max(gHsl1.s, 75)}%, 65%, 0.45)`;
+        const col2 = `hsla(${gHsl2.h}, ${Math.max(gHsl2.s, 75)}%, 65%, 0.45)`;
+
+        borderGlow = col1;
+        borderGlowShadow = `${ox}px ${oy}px 22px 1px ${col2}, ${-ox}px ${-oy}px 22px 1px ${col1}, 0 0 16px 2px ${col1}`;
+      } else {
+        const gHsl = hexToHsl(glowColors[0]);
+        const col = `hsla(${gHsl.h}, ${Math.max(gHsl.s, 75)}%, 65%, 0.38)`;
+        borderGlow = col;
+        borderGlowShadow = `0 0 18px 2px ${col}`;
+      }
+    }
 
     // Conic gradient stops for rotating border:
     const borderStops =
@@ -181,6 +218,7 @@ export function getCustomThemeVars(
       '--border-subtle': borderSubtleColor,
       '--border-glow': borderGlow,
       '--border-glow-shadow': borderGlowShadow,
+      '--border-glow-gradient': `linear-gradient(${glowAngle}deg, ${glowColors.join(', ')})`,
       '--border-gradient-stops': borderStops,
       '--border-animation-play-state': borderAnimation ? 'running' : 'paused',
       '--text-title': `hsl(${primaryHsl.h}, 15%, 98%)`,
@@ -233,16 +271,48 @@ export function getCustomThemeVars(
   // Border in Light Mode: Clean subtle UI borders
   const borderUiColor = `hsl(${primaryBorderHsl.h}, ${Math.round(Math.min(primaryBorderHsl.s, 35))}%, 78%)`;
   const borderSubtleColor = `hsl(${primaryBorderHsl.h}, ${Math.round(Math.min(primaryBorderHsl.s, 25))}%, 86%)`;
-  const lightGlowHsl =
-    borderGlowColorInput && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(borderGlowColorInput.trim())
-      ? hexToHsl(borderGlowColorInput)
-      : primaryBorderHsl;
-  const borderGlow = borderGlowEnabled
-    ? `hsla(${lightGlowHsl.h}, ${Math.max(lightGlowHsl.s, 60)}%, 35%, 0.22)`
-    : 'transparent';
-  const borderGlowShadow = borderGlowEnabled
-    ? `0 0 16px 2px ${borderGlow}`
-    : 'none';
+
+  const rawLightGlowList = borderGlowColorInput
+    ? Array.isArray(borderGlowColorInput)
+      ? borderGlowColorInput
+      : [borderGlowColorInput]
+    : [];
+  const cleanLightGlowColors = rawLightGlowList
+    .map((c) => (c ? c.trim() : ''))
+    .filter((c) => /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c));
+
+  const lightGlowColors =
+    cleanLightGlowColors.length > 0
+      ? cleanLightGlowColors
+      : borderColors.length > 0
+      ? borderColors
+      : colors;
+  const lightGlowAngle = ((borderGlowAngleInput % 360) + 360) % 360;
+
+  let lightBorderGlow = 'transparent';
+  let lightBorderGlowShadow = 'none';
+
+  if (borderGlowEnabled) {
+    if (lightGlowColors.length >= 2) {
+      const glowRad = (lightGlowAngle * Math.PI) / 180;
+      const ox = Math.round(Math.sin(glowRad) * 6);
+      const oy = Math.round(-Math.cos(glowRad) * 6);
+
+      const gHsl1 = hexToHsl(lightGlowColors[0]);
+      const gHsl2 = hexToHsl(lightGlowColors[1]);
+
+      const col1 = `hsla(${gHsl1.h}, ${Math.max(gHsl1.s, 60)}%, 45%, 0.28)`;
+      const col2 = `hsla(${gHsl2.h}, ${Math.max(gHsl2.s, 60)}%, 45%, 0.28)`;
+
+      lightBorderGlow = col1;
+      lightBorderGlowShadow = `${ox}px ${oy}px 18px 1px ${col2}, ${-ox}px ${-oy}px 18px 1px ${col1}, 0 0 14px 1px ${col1}`;
+    } else {
+      const gHsl = hexToHsl(lightGlowColors[0]);
+      const col = `hsla(${gHsl.h}, ${Math.max(gHsl.s, 60)}%, 45%, 0.25)`;
+      lightBorderGlow = col;
+      lightBorderGlowShadow = `0 0 16px 2px ${col}`;
+    }
+  }
 
   const borderStops =
     borderColors.length > 1
@@ -255,8 +325,9 @@ export function getCustomThemeVars(
     '--bg-subtle': bgSubtle,
     '--border-ui': borderUiColor,
     '--border-subtle': borderSubtleColor,
-    '--border-glow': borderGlow,
-    '--border-glow-shadow': borderGlowShadow,
+    '--border-glow': lightBorderGlow,
+    '--border-glow-shadow': lightBorderGlowShadow,
+    '--border-glow-gradient': `linear-gradient(${lightGlowAngle}deg, ${lightGlowColors.join(', ')})`,
     '--border-gradient-stops': borderStops,
     '--border-animation-play-state': borderAnimation ? 'running' : 'paused',
     '--text-title': `hsl(${primaryHsl.h}, 45%, 12%)`,
@@ -282,6 +353,8 @@ export function applyCustomThemeVars(
   let borderAnimation = true;
   let borderGlowEnabled = true;
   let borderGlowColor: string | undefined = undefined;
+  let borderGlowColors: string[] | undefined = undefined;
+  let borderGlowAngle = 135;
 
   if (typeof config === 'string') {
     colors = [config];
@@ -295,6 +368,13 @@ export function applyCustomThemeVars(
     borderAnimation = config.borderAnimation !== undefined ? Boolean(config.borderAnimation) : true;
     borderGlowEnabled = config.borderGlowEnabled !== undefined ? Boolean(config.borderGlowEnabled) : true;
     borderGlowColor = config.borderGlowColor || undefined;
+    borderGlowColors =
+      Array.isArray(config.borderGlowColors) && config.borderGlowColors.length > 0
+        ? config.borderGlowColors
+        : borderGlowColor
+        ? [borderGlowColor]
+        : undefined;
+    borderGlowAngle = typeof config.borderGlowAngle === 'number' ? config.borderGlowAngle : 135;
   }
 
   const vars = getCustomThemeVars(
@@ -304,7 +384,8 @@ export function applyCustomThemeVars(
     borderColors,
     borderAnimation,
     borderGlowEnabled,
-    borderGlowColor
+    borderGlowColors || borderGlowColor,
+    borderGlowAngle
   );
   for (const [key, val] of Object.entries(vars)) {
     root.style.setProperty(key, val);
@@ -330,6 +411,8 @@ export function getStoredCustomThemeConfig(): CustomThemeStoredConfig {
       borderAnimation: override.customBorderAnimation !== undefined ? Boolean(override.customBorderAnimation) : true,
       borderGlowEnabled: override.customBorderGlowEnabled !== undefined ? Boolean(override.customBorderGlowEnabled) : true,
       borderGlowColor: override.customBorderGlowColor || undefined,
+      borderGlowColors: override.customBorderGlowColors || (override.customBorderGlowColor ? [override.customBorderGlowColor] : undefined),
+      borderGlowAngle: typeof override.customBorderGlowAngle === 'number' ? override.customBorderGlowAngle : 135,
     };
   }
   if (override?.customThemeColor) {
@@ -340,6 +423,8 @@ export function getStoredCustomThemeConfig(): CustomThemeStoredConfig {
       borderAnimation: override.customBorderAnimation !== undefined ? Boolean(override.customBorderAnimation) : true,
       borderGlowEnabled: override.customBorderGlowEnabled !== undefined ? Boolean(override.customBorderGlowEnabled) : true,
       borderGlowColor: override.customBorderGlowColor || undefined,
+      borderGlowColors: override.customBorderGlowColors || (override.customBorderGlowColor ? [override.customBorderGlowColor] : undefined),
+      borderGlowAngle: typeof override.customBorderGlowAngle === 'number' ? override.customBorderGlowAngle : 135,
     };
   }
   try {
@@ -355,6 +440,8 @@ export function getStoredCustomThemeConfig(): CustomThemeStoredConfig {
           borderAnimation: cfg.customBorderAnimation !== undefined ? Boolean(cfg.customBorderAnimation) : true,
           borderGlowEnabled: cfg.customBorderGlowEnabled !== undefined ? Boolean(cfg.customBorderGlowEnabled) : true,
           borderGlowColor: cfg.customBorderGlowColor || undefined,
+          borderGlowColors: cfg.customBorderGlowColors || (cfg.customBorderGlowColor ? [cfg.customBorderGlowColor] : undefined),
+          borderGlowAngle: typeof cfg.customBorderGlowAngle === 'number' ? cfg.customBorderGlowAngle : 135,
         };
       }
       if (cfg?.customThemeColor) {
@@ -365,6 +452,8 @@ export function getStoredCustomThemeConfig(): CustomThemeStoredConfig {
           borderAnimation: cfg.customBorderAnimation !== undefined ? Boolean(cfg.customBorderAnimation) : true,
           borderGlowEnabled: cfg.customBorderGlowEnabled !== undefined ? Boolean(cfg.customBorderGlowEnabled) : true,
           borderGlowColor: cfg.customBorderGlowColor || undefined,
+          borderGlowColors: cfg.customBorderGlowColors || (cfg.customBorderGlowColor ? [cfg.customBorderGlowColor] : undefined),
+          borderGlowAngle: typeof cfg.customBorderGlowAngle === 'number' ? cfg.customBorderGlowAngle : 135,
         };
       }
     }

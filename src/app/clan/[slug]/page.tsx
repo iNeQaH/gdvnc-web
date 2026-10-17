@@ -289,11 +289,11 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        showToast('Đã cập nhật số SP Coin đóng góp cho Clan!', 'success');
+        showToast('Đã đóng góp SP nâng cấp Clan thành công!', 'success');
         setIsDonateOpen(false);
         loadClanData();
       } else {
-        showToast(data.error || 'Không thể quyên góp SP.', 'error');
+        showToast(data.error || 'Không thể nâng cấp Clan.', 'error');
       }
     } catch {
       showToast('Lỗi kết nối máy chủ.', 'error');
@@ -409,6 +409,35 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
     ...(clan.membersGrouped?.members || []),
   ];
 
+  const leaderboardMembers = [...allMembers].sort((a, b) => {
+    const ppA = a.user?.classicPp ?? 0;
+    const ppB = b.user?.classicPp ?? 0;
+    return ppB - ppA;
+  });
+
+  const isTier3 = tierInfo.tier === 3;
+
+  let targetSp = 3;
+  let targetTierName = 'Tier 1';
+  if (clan.totalSp >= 20) {
+    targetSp = clan.totalSp;
+    targetTierName = 'Tier 3';
+  } else if (clan.totalSp >= 10) {
+    targetSp = 20;
+    targetTierName = 'Tier 3';
+  } else if (clan.totalSp >= 3) {
+    targetSp = 10;
+    targetTierName = 'Tier 2';
+  } else {
+    targetSp = 3;
+    targetTierName = 'Tier 1';
+  }
+
+  const progressPercentage =
+    clan.totalSp >= 20
+      ? 100
+      : Math.min(100, Math.max(0, Math.round((clan.totalSp / targetSp) * 100)));
+
   // Theme tùy chỉnh toàn trang Clan (áp dụng toàn bộ màu box, border, text của trang clan, hoàn toàn không ảnh hưởng sidebar)
   const clanThemeStyle: React.CSSProperties & Record<string, string> = {};
 
@@ -431,8 +460,18 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
   }
 
   const hasCustomClanTheme = clanColors.length > 0;
-  if (hasCustomClanTheme) {
-    const themeVars = getCustomThemeVars(clanColors, isDark, clanAngle);
+  if (hasCustomClanTheme || isTier3) {
+    const themeColors = clanColors.length > 0 ? clanColors : ['#a855f7', '#6366f1'];
+    const themeVars = getCustomThemeVars(
+      themeColors,
+      isDark,
+      clanAngle,
+      undefined,
+      true,
+      isTier3,
+      isTier3 ? themeColors : undefined,
+      clanAngle
+    );
     Object.assign(clanThemeStyle, themeVars);
   }
 
@@ -440,6 +479,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
     <div
       className="relative min-h-[calc(100vh-8rem)] pb-16 transition-colors duration-300"
       style={clanThemeStyle}
+      data-tier3={isTier3 ? 'true' : undefined}
     >
       {/* Full-bleed Clan Theme Backdrop (covers entire content pane to the right of the sidebar) */}
       {hasCustomClanTheme && (
@@ -474,7 +514,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
         >
           {/* Cover */}
-          <div className="h-44 sm:h-56 w-full relative bg-slate-900 overflow-hidden">
+          <div className="h-44 sm:h-64 w-full relative bg-slate-900 overflow-hidden">
             {clan.coverUrl ? (
               <img src={clan.coverUrl} alt="" className="w-full h-full object-cover" />
             ) : (
@@ -485,176 +525,220 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                 <span className="font-mono font-black text-4xl text-white/10">[{clan.tag}]</span>
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
-
-            {/* Title & Tag overlaid on banner */}
-            <div className="absolute bottom-4 left-6 right-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-              <div className="space-y-1.5 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span
-                    className="font-mono font-black text-sm px-2.5 py-0.5 rounded-lg border shadow-xs"
-                    style={{
-                      backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                      borderColor: 'var(--border-subtle)',
-                      ...(clan.colorGradient
-                        ? {
-                            backgroundImage: clan.colorGradient,
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                          }
-                        : { color: clan.color || '#f59e0b' }),
-                    }}
-                  >
-                    [{clan.tag}]
-                  </span>
-                  <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight truncate drop-shadow-md">
-                    {clan.name}
-                  </h1>
-                  <span
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border backdrop-blur-md ${
-                      tierInfo.tier === 3
-                        ? 'bg-purple-950/80 text-purple-300 border-purple-500/40'
-                        : tierInfo.tier === 2
-                        ? 'bg-sky-950/80 text-sky-300 border-sky-500/40'
-                        : 'bg-amber-950/80 text-amber-300 border-amber-500/40'
-                    }`}
-                  >
-                    {tierInfo.name}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
           </div>
 
-        {/* Hero Actions & Stats Bar */}
-        <div className="px-6 py-3.5 border-t flex flex-wrap items-center justify-between gap-3" style={{ borderColor: 'var(--border-subtle)', backgroundColor: 'var(--bg-card)' }}>
-          {/* SP Coin & Members Info */}
-          <div className="flex items-center gap-3 text-xs font-semibold">
-            <div
-              className="px-3 py-1.5 rounded-xl border flex items-center gap-1.5 font-bold"
-              style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
-            >
-              <Coins className="w-4 h-4 text-amber-400" />
-              <span className="font-mono text-amber-400">{clan.totalSp} SP</span>
-            </div>
+          {/* Clan Identity & Actions Bar (Below Cover) */}
+          <div
+            className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b"
+            style={{ borderColor: 'var(--border-subtle)', backgroundColor: 'var(--bg-card)' }}
+          >
+            {/* Tag, Name & Tier Badge */}
+            <div className="flex items-center gap-3 flex-wrap min-w-0">
+              {/* Isolated Tag container so backgroundClip does not cause black box glitch */}
+              <span
+                className="inline-flex items-center px-3 py-1 rounded-xl border font-mono font-black text-sm shadow-xs shrink-0"
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+              >
+                <span
+                  style={
+                    clan.colorGradient
+                      ? {
+                          backgroundImage: clan.colorGradient,
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                        }
+                      : { color: clan.color || 'var(--accent)' }
+                  }
+                >
+                  [{clan.tag}]
+                </span>
+              </span>
 
-            <div
-              className="px-3 py-1.5 rounded-xl border flex items-center gap-1.5 ui-dim"
-              style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
-            >
-              <Users className="w-3.5 h-3.5 text-sky-400" />
-              <span>
-                {clan.memberCount} / {tierInfo.maxMembers} thành viên
+              <h1 className="text-xl sm:text-2xl font-black ui-title tracking-tight truncate">
+                {clan.name}
+              </h1>
+
+              <span
+                className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border backdrop-blur-md shrink-0 ${
+                  tierInfo.tier === 3
+                    ? 'bg-purple-950/80 text-purple-300 border-purple-500/40 shadow-[0_0_12px_rgba(168,85,247,0.3)]'
+                    : tierInfo.tier === 2
+                    ? 'bg-sky-950/80 text-sky-300 border-sky-500/40 shadow-[0_0_12px_rgba(14,165,233,0.3)]'
+                    : 'bg-amber-950/80 text-amber-300 border-amber-500/40'
+                }`}
+              >
+                {tierInfo.name}
               </span>
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
-            {/* If Member: Donate SP */}
-            {myMembership && (
-              <button
-                type="button"
-                onClick={() => setIsDonateOpen(true)}
-                className="px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all cursor-pointer hover:border-amber-400/50"
-                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-              >
-                <Coins className="w-3.5 h-3.5 text-amber-400" />
-                <span>Quyên góp SP</span>
-              </button>
-            )}
-
-            {/* If Leader / Mod: Pending Requests */}
-            {canManageClan && clan.pendingRequests?.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setIsRequestsOpen(true)}
-                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1.5 cursor-pointer hover:bg-amber-500/20"
-              >
-                <UserCheck className="w-3.5 h-3.5" />
-                <span>Đơn chờ ({clan.pendingRequests.length})</span>
-              </button>
-            )}
-
-            {/* If Leader / Mod / Owner: Clan Settings */}
-            {canManageClan && (
-              <button
-                type="button"
-                onClick={() => setIsSettingsOpen(true)}
-                className="px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all cursor-pointer hover:opacity-80"
-                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-              >
-                <Settings className="w-3.5 h-3.5 text-sky-400" />
-                <span>Cài đặt</span>
-              </button>
-            )}
-
-            {/* If Non-Member: Join Clan */}
-            {!myMembership && (
-              clan.myPendingRequest ? (
-                <div className="px-4 py-2 rounded-xl text-xs font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center gap-1.5">
-                  <UserPlus className="w-3.5 h-3.5" />
-                  <span>Đã xin vào (Chờ duyệt)</span>
-                </div>
-              ) : clan.isSuspended ? (
-                <div className="px-4 py-2 rounded-xl text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">
-                  Clan đang tạm dừng
-                </div>
-              ) : clan.memberCount >= tierInfo.maxMembers ? (
-                <div className="px-4 py-2 rounded-xl text-xs font-bold ui-subtle border ui-border ui-dim">
-                  Clan đã đủ thành viên ({clan.memberCount}/{tierInfo.maxMembers})
-                </div>
-              ) : (
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+              {/* If Member: Nâng cấp Clan */}
+              {myMembership && (
                 <button
                   type="button"
-                  onClick={() => {
-                    if (!currentUser) {
-                      router.push('/login');
-                      return;
-                    }
-                    setIsJoinModalOpen(true);
-                  }}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] flex items-center gap-1.5 transition-transform hover:scale-105 cursor-pointer shadow-md"
-                  style={{ backgroundColor: 'var(--accent)' }}
+                  onClick={() => setIsDonateOpen(true)}
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all cursor-pointer hover:border-amber-400/50 shadow-xs"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                 >
-                  <UserPlus className="w-4 h-4" />
-                  <span>Xin gia nhập</span>
+                  <Coins className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Nâng cấp Clan</span>
                 </button>
-              )
-            )}
+              )}
 
-            {/* If Member (not Leader): Leave Clan */}
-            {myMembership && !isLeader && (
-              <button
-                type="button"
-                onClick={handleLeave}
-                disabled={actionLoading}
-                className="p-2 rounded-xl border text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition-colors cursor-pointer"
-                title="Rời khỏi Clan"
-                style={{ borderColor: 'var(--border-ui)' }}
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            )}
+              {/* If Leader / Mod: Pending Requests */}
+              {canManageClan && clan.pendingRequests?.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setIsRequestsOpen(true)}
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1.5 cursor-pointer hover:bg-amber-500/20 shadow-xs"
+                >
+                  <UserCheck className="w-3.5 h-3.5" />
+                  <span>Đơn chờ ({clan.pendingRequests.length})</span>
+                </button>
+              )}
+
+              {/* If Leader / Mod / Owner: Clan Settings */}
+              {canManageClan && (
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all cursor-pointer hover:opacity-80 shadow-xs"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                >
+                  <Settings className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Cài đặt</span>
+                </button>
+              )}
+
+              {/* If Non-Member: Join Clan */}
+              {!myMembership && (
+                clan.myPendingRequest ? (
+                  <div className="px-4 py-2 rounded-xl text-xs font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center gap-1.5">
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>Đã xin vào (Chờ duyệt)</span>
+                  </div>
+                ) : clan.isSuspended ? (
+                  <div className="px-4 py-2 rounded-xl text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">
+                    Clan đang tạm dừng
+                  </div>
+                ) : clan.memberCount >= tierInfo.maxMembers ? (
+                  <div className="px-4 py-2 rounded-xl text-xs font-bold ui-subtle border ui-border ui-dim">
+                    Clan đã đủ thành viên ({clan.memberCount}/{tierInfo.maxMembers})
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!currentUser) {
+                        router.push('/login');
+                        return;
+                      }
+                      setIsJoinModalOpen(true);
+                    }}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] flex items-center gap-1.5 transition-transform hover:scale-105 cursor-pointer shadow-md"
+                    style={{ backgroundColor: 'var(--accent)' }}
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>Xin gia nhập</span>
+                  </button>
+                )
+              )}
+
+              {/* If Member (not Leader): Leave Clan */}
+              {myMembership && !isLeader && (
+                <button
+                  type="button"
+                  onClick={handleLeave}
+                  disabled={actionLoading}
+                  className="p-2 rounded-xl border text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition-colors cursor-pointer shadow-xs"
+                  title="Rời khỏi Clan"
+                  style={{ borderColor: 'var(--border-ui)' }}
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Warning Notices for Grace Period or Suspended */}
+          {clan.isSuspended ? (
+            <div className="px-6 py-3 bg-red-500/15 border-t border-red-500/20 flex items-center gap-2 text-xs font-semibold text-red-300">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-red-400" />
+              <span>Clan đang bị tạm ngưng do tổng SP coin dưới 3. Đóng góp thêm SP để mở lại hoạt động!</span>
+            </div>
+          ) : clan.gracePeriodUntil ? (
+            <div className="px-6 py-3 bg-amber-500/15 border-t border-amber-500/20 flex items-center gap-2 text-xs font-semibold text-amber-300">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+              <span>
+                Thời gian ân hạn: Clan sẽ tạm ngưng vào{' '}
+                {new Date(clan.gracePeriodUntil).toLocaleDateString('vi-VN')} nếu không đủ 3 SP coin.
+              </span>
+            </div>
+          ) : null}
         </div>
 
-        {/* Warning Notices for Grace Period or Suspended */}
-        {clan.isSuspended ? (
-          <div className="px-6 py-3 bg-red-500/15 border-t border-red-500/20 flex items-center gap-2 text-xs font-semibold text-red-300">
-            <AlertTriangle className="w-4 h-4 shrink-0 text-red-400" />
-            <span>Clan đang bị tạm ngưng do tổng SP coin dưới 3. Đóng góp thêm SP để mở lại hoạt động!</span>
+        {/* Dedicated Clan SP Progress & Member Box */}
+        <div
+          className="ui-card rounded-2xl border p-4 sm:p-5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-5 shadow-xs"
+          style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+        >
+          {/* Left: SP Progress */}
+          <div className="flex-1 space-y-2.5 min-w-0">
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Coins className="w-4 h-4 text-amber-400" />
+                <span className="font-bold ui-title">Tiến trình SP Clan</span>
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                  {clan.totalSp >= 20 ? 'Cấp tối đa (Tier 3)' : `Mục tiêu ${targetTierName}`}
+                </span>
+              </div>
+              <div className="font-mono text-xs font-black text-amber-400">
+                {clan.totalSp} / {targetSp} SP
+              </div>
+            </div>
+
+            {/* Progress Bar Track */}
+            <div className="w-full h-3 rounded-full bg-black/20 dark:bg-black/40 border border-white/5 overflow-hidden p-0.5">
+              <div
+                className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-amber-500 to-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.5)]"
+                style={{
+                  width: `${progressPercentage}%`,
+                  ...(clan.themeGradient ? { background: clan.themeGradient } : {}),
+                }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] ui-dim">
+              <span>
+                {clan.totalSp >= 20
+                  ? 'Clan đã đạt cấp bậc cao nhất!'
+                  : `Cần thêm ${Math.max(0, targetSp - clan.totalSp)} SP để lên ${targetTierName}`}
+              </span>
+              <span className="font-mono font-bold text-amber-400/90">{progressPercentage}%</span>
+            </div>
           </div>
-        ) : clan.gracePeriodUntil ? (
-          <div className="px-6 py-3 bg-amber-500/15 border-t border-amber-500/20 flex items-center gap-2 text-xs font-semibold text-amber-300">
-            <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
-            <span>
-              Thời gian ân hạn: Clan sẽ tạm ngưng vào{' '}
-              {new Date(clan.gracePeriodUntil).toLocaleDateString('vi-VN')} nếu không đủ 3 SP coin.
-            </span>
+
+          {/* Divider */}
+          <div className="hidden md:block w-px h-12 bg-white/10 shrink-0" style={{ backgroundColor: 'var(--border-subtle)' }} />
+
+          {/* Right: Member Capacity */}
+          <div className="md:w-56 shrink-0 flex items-center justify-between md:justify-end gap-3.5">
+            <div className="text-left md:text-right">
+              <span className="text-[11px] ui-dim block font-medium">Số thành viên</span>
+              <div className="flex items-center md:justify-end gap-1.5 font-mono text-base font-black ui-title">
+                <Users className="w-4 h-4 text-sky-400" />
+                <span>
+                  {clan.memberCount} <span className="text-xs ui-dim font-normal">/ {tierInfo.maxMembers}</span>
+                </span>
+              </div>
+            </div>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center border bg-sky-500/10 border-sky-500/20 text-sky-400 shrink-0">
+              <Users className="w-5 h-5" />
+            </div>
           </div>
-        ) : null}
-      </div>
+        </div>
 
       {/* Main Grid: Left Content (8 cols) & Right Discord-style Sidebar (4 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -668,7 +752,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
             >
               <div className="flex items-center gap-2 pb-2.5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
                 <FileText className="w-4 h-4 text-[color:var(--accent)]" />
-                <h2 className="text-sm font-bold ui-title">Mô tả & Giới thiệu Clan</h2>
+                <h2 className="text-sm font-bold ui-title">Giới thiệu</h2>
               </div>
               <div className="text-xs sm:text-sm text-[color:var(--text-body)] space-y-1.5 leading-relaxed break-words font-sans">
                 {parseDiscordMarkdown(clan.description)}
@@ -743,7 +827,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
             >
               <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--border-subtle)' }}>
                 <h2 className="text-sm font-bold ui-title flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-amber-400" /> Top 5 Demon khó nhất đã chinh phục
+                  <Trophy className="w-4 h-4 text-amber-400" /> Clan&apos;s Hardest
                 </h2>
                 <span className="text-[11px] ui-dim">Bởi thành viên Clan</span>
               </div>
@@ -803,6 +887,86 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
             </div>
           )}
 
+          {/* Bảng xếp hạng thành viên trong Clan (Xếp theo Classic PP, nằm trên Levels) */}
+          {allMembers.length > 0 && (
+            <div
+              className="ui-card rounded-2xl border p-4 sm:p-5 space-y-3"
+              style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+            >
+              <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--border-subtle)' }}>
+                <h2 className="text-sm font-bold ui-title flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-amber-400" /> Bảng xếp hạng thành viên
+                </h2>
+                <span className="text-[11px] ui-dim font-mono">{allMembers.length} thành viên</span>
+              </div>
+
+              <div className="space-y-2">
+                {leaderboardMembers.map((m: any, idx: number) => {
+                  const rankNum = idx + 1;
+                  return (
+                    <div
+                      key={m.id || m.userId}
+                      className="p-3 rounded-xl border flex items-center justify-between gap-3 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                      style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span
+                          className={`w-6 text-center font-black text-xs shrink-0 ${
+                            rankNum === 1
+                              ? 'text-amber-400'
+                              : rankNum === 2
+                              ? 'text-slate-300'
+                              : rankNum === 3
+                              ? 'text-amber-600'
+                              : 'ui-dim'
+                          }`}
+                        >
+                          #{rankNum}
+                        </span>
+
+                        <div
+                          className="w-8 h-8 rounded-xl overflow-hidden border bg-slate-900 shrink-0"
+                          style={{ borderColor: 'var(--border-subtle)' }}
+                        >
+                          {m.user?.avatarUrl ? (
+                            <img src={m.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center font-bold text-xs ui-dim">
+                              {m.user?.username ? m.user.username[0] : '?'}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="min-w-0 flex items-center gap-2 flex-wrap">
+                          <Link href={`/profile/${m.user?.username}`} className="hover:underline">
+                            <UserDisplayName user={m.user} showClanTag={false} />
+                          </Link>
+
+                          {m.role === 'LEADER' && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                              Leader
+                            </span>
+                          )}
+                          {m.role === 'MODERATOR' && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                              Mod
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <span className="font-mono text-xs font-bold text-amber-400 block">
+                          {(m.user?.classicPp || 0).toLocaleString()} PP
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Reviewed Creator Works (Hidden if empty) */}
           {clan.creatorWorks?.length > 0 && (
             <div
@@ -811,7 +975,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
             >
               <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--border-subtle)' }}>
                 <h2 className="text-sm font-bold ui-title flex items-center gap-2">
-                  <Hammer className="w-4 h-4 text-sky-400" /> Tác phẩm Creator của Clan
+                  <Hammer className="w-4 h-4 text-sky-400" /> Levels
                 </h2>
                 <span className="text-[11px] ui-dim">{clan.creatorWorks.length} màn chơi</span>
               </div>
@@ -1094,7 +1258,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           >
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
               <h3 className="text-base font-bold ui-title flex items-center gap-2 text-amber-400">
-                <Coins className="w-5 h-5" /> Quyên góp SP duy trì Clan
+                <Coins className="w-5 h-5" /> Nâng cấp Clan bằng SP
               </h3>
               <button
                 type="button"
@@ -1115,7 +1279,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold ui-title">Số điểm SP đóng góp</label>
+                <label className="text-xs font-bold ui-title">Số điểm SP đóng góp nâng cấp</label>
                 <div className="flex items-center gap-3">
                   <input
                     type="range"
@@ -1150,7 +1314,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   style={{ backgroundColor: 'var(--accent)' }}
                 >
                   {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Coins className="w-4 h-4" />}
-                  {actionLoading ? 'Đang lưu...' : 'Xác nhận quyên góp'}
+                  {actionLoading ? 'Đang lưu...' : 'Xác nhận nâng cấp'}
                 </button>
               </div>
             </form>

@@ -69,6 +69,10 @@ export default function SettingsPage() {
   const [borderAnimation, setBorderAnimation] = useState<boolean>(true);
   const [borderGlowEnabled, setBorderGlowEnabled] = useState<boolean>(true);
   const [borderGlowColor, setBorderGlowColor] = useState<string>('#38bdf8');
+  const [borderGlowMode, setBorderGlowMode] = useState<boolean>(false);
+  const [borderGlowColor1, setBorderGlowColor1] = useState<string>('#38bdf8');
+  const [borderGlowColor2, setBorderGlowColor2] = useState<string>('#ec4899');
+  const [borderGlowAngle, setBorderGlowAngle] = useState<number>(135);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Supporter custom name styles
@@ -141,7 +145,13 @@ export default function SettingsPage() {
         const initBorderColors = hasCustomBorders ? cfg.customBorderColors : ['#38bdf8'];
         const initBorderAnim = cfg.customBorderAnimation !== undefined ? Boolean(cfg.customBorderAnimation) : true;
         const initBorderGlowEnabled = cfg.customBorderGlowEnabled !== undefined ? Boolean(cfg.customBorderGlowEnabled) : true;
-        const initBorderGlowColor = cfg.customBorderGlowColor || (hasCustomBorders ? initBorderColors[0] : initColors[0]);
+        const rawGlowColors = Array.isArray(cfg.customBorderGlowColors) && cfg.customBorderGlowColors.length > 0
+          ? cfg.customBorderGlowColors
+          : (cfg.customBorderGlowColor ? [cfg.customBorderGlowColor] : [hasCustomBorders ? initBorderColors[0] : initColors[0]]);
+        const initGlowMode = rawGlowColors.length >= 2;
+        const initGlowCol1 = rawGlowColors[0] || '#38bdf8';
+        const initGlowCol2 = rawGlowColors[1] || '#ec4899';
+        const initGlowAngle = typeof cfg.customBorderGlowAngle === 'number' ? cfg.customBorderGlowAngle : 135;
 
         setThemeColors(initColors);
         setThemeAngle(initAngle);
@@ -149,7 +159,11 @@ export default function SettingsPage() {
         setBorderColors(initBorderColors);
         setBorderAnimation(initBorderAnim);
         setBorderGlowEnabled(initBorderGlowEnabled);
-        setBorderGlowColor(initBorderGlowColor);
+        setBorderGlowMode(initGlowMode);
+        setBorderGlowColor(initGlowCol1);
+        setBorderGlowColor1(initGlowCol1);
+        setBorderGlowColor2(initGlowCol2);
+        setBorderGlowAngle(initGlowAngle);
 
         // Load supporter name styles
         if (json.user.nameFont) setNameFont(json.user.nameFont);
@@ -237,14 +251,21 @@ export default function SettingsPage() {
     newBorderColors?: string[],
     newBorderAnim?: boolean,
     newGlowEnabled?: boolean,
-    newGlowColor?: string
+    newGlowColor?: string,
+    newGlowMode?: boolean,
+    newGlowColors?: string[],
+    newGlowAngle?: number
   ) => {
     const safeColors = newColors.length > 0 ? newColors : ['#0ea5e9'];
     const safeBorderMode = newBorderMode !== undefined ? newBorderMode : customBorderMode;
     const safeBorderColors = newBorderColors && newBorderColors.length > 0 ? newBorderColors : borderColors;
     const safeBorderAnim = newBorderAnim !== undefined ? newBorderAnim : borderAnimation;
     const safeGlowEnabled = newGlowEnabled !== undefined ? newGlowEnabled : borderGlowEnabled;
-    const safeGlowColor = newGlowColor !== undefined ? newGlowColor : borderGlowColor;
+    const safeGlowMode = newGlowMode !== undefined ? newGlowMode : borderGlowMode;
+    const safeGlowColor1 = newGlowColors && newGlowColors[0] ? newGlowColors[0] : (newGlowColor !== undefined ? newGlowColor : borderGlowColor1);
+    const safeGlowColor2 = newGlowColors && newGlowColors[1] ? newGlowColors[1] : borderGlowColor2;
+    const safeGlowAngle = newGlowAngle !== undefined ? newGlowAngle : borderGlowAngle;
+    const safeGlowColors = safeGlowMode ? [safeGlowColor1, safeGlowColor2] : [safeGlowColor1];
 
     setThemeColors(safeColors);
     setThemeAngle(newAngle);
@@ -252,7 +273,11 @@ export default function SettingsPage() {
     setBorderColors(safeBorderColors);
     setBorderAnimation(safeBorderAnim);
     setBorderGlowEnabled(safeGlowEnabled);
-    setBorderGlowColor(safeGlowColor);
+    setBorderGlowMode(safeGlowMode);
+    setBorderGlowColor(safeGlowColor1);
+    setBorderGlowColor1(safeGlowColor1);
+    setBorderGlowColor2(safeGlowColor2);
+    setBorderGlowAngle(safeGlowAngle);
 
     const newConfig = {
       ...(data?.profileConfig || {}),
@@ -262,7 +287,9 @@ export default function SettingsPage() {
       customBorderColors: safeBorderMode ? safeBorderColors : null,
       customBorderAnimation: safeBorderAnim,
       customBorderGlowEnabled: safeGlowEnabled,
-      customBorderGlowColor: safeGlowColor,
+      customBorderGlowColor: safeGlowColor1,
+      customBorderGlowColors: safeGlowColors,
+      customBorderGlowAngle: safeGlowAngle,
     };
 
     setData((prev: any) => ({ ...prev, profileConfig: newConfig }));
@@ -1066,31 +1093,105 @@ export default function SettingsPage() {
                 </div>
 
                 {borderGlowEnabled && (
-                  <div className="p-3.5 rounded-xl border bg-slate-500/5 space-y-2 animate-in fade-in duration-200" style={{ borderColor: 'var(--border-subtle)' }}>
-                    <div className="text-xs font-bold ui-dim flex items-center justify-between">
-                      <span>{t('settings.custom_border_glow_color')}</span>
-                      <span className="font-mono text-[11px] font-bold uppercase">{borderGlowColor}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <ColorPicker
-                        value={borderGlowColor}
-                        onChange={(nextHex) => {
-                          updateThemeConfig(themeColors, themeAngle, customBorderMode, borderColors, borderAnimation, borderGlowEnabled, nextHex);
-                        }}
-                        size={32}
-                        round
-                        ariaLabel={t('settings.custom_border_glow_color')}
-                      />
-                      <div
-                        className="flex-1 h-8 rounded-xl border flex items-center px-3 text-xs font-mono font-bold transition-all"
-                        style={{
-                          borderColor: 'var(--border-ui)',
-                          backgroundColor: 'var(--bg-card)',
-                          boxShadow: `0 0 16px 2px ${borderGlowColor}55`,
-                        }}
-                      >
-                        <span className="ui-dim text-[11px]">Xem thử Glow</span>
+                  <div className="p-3.5 rounded-xl border bg-slate-500/5 space-y-3 animate-in fade-in duration-200" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold ui-dim">{t('settings.custom_border_glow_color')}</span>
+                      <div className="flex rounded-lg border p-0.5 bg-black/20 text-xs font-bold" style={{ borderColor: 'var(--border-subtle)' }}>
+                        <button
+                          type="button"
+                          onClick={() => updateThemeConfig(themeColors, themeAngle, customBorderMode, borderColors, borderAnimation, borderGlowEnabled, borderGlowColor1, false, [borderGlowColor1], borderGlowAngle)}
+                          className={`px-2.5 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                            !borderGlowMode ? 'bg-pink-500 text-white' : 'ui-dim hover:text-pink-400'
+                          }`}
+                        >
+                          Đơn sắc
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateThemeConfig(themeColors, themeAngle, customBorderMode, borderColors, borderAnimation, borderGlowEnabled, borderGlowColor1, true, [borderGlowColor1, borderGlowColor2], borderGlowAngle)}
+                          className={`px-2.5 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                            borderGlowMode ? 'bg-pink-500 text-white' : 'ui-dim hover:text-pink-400'
+                          }`}
+                        >
+                          Gradient
+                        </button>
                       </div>
+                    </div>
+
+                    {!borderGlowMode ? (
+                      <div className="flex items-center gap-3">
+                        <ColorPicker
+                          value={borderGlowColor1}
+                          onChange={(nextHex) => {
+                            updateThemeConfig(themeColors, themeAngle, customBorderMode, borderColors, borderAnimation, borderGlowEnabled, nextHex, false, [nextHex], borderGlowAngle);
+                          }}
+                          size={32}
+                          round
+                          ariaLabel={t('settings.custom_border_glow_color')}
+                        />
+                        <span className="font-mono text-xs font-bold uppercase">{borderGlowColor1}</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="flex items-center gap-2.5 p-2 rounded-xl border bg-black/20" style={{ borderColor: 'var(--border-subtle)' }}>
+                            <ColorPicker
+                              value={borderGlowColor1}
+                              onChange={(nextHex) => {
+                                updateThemeConfig(themeColors, themeAngle, customBorderMode, borderColors, borderAnimation, borderGlowEnabled, nextHex, true, [nextHex, borderGlowColor2], borderGlowAngle);
+                              }}
+                              size={28}
+                              round
+                              ariaLabel="Màu Glow 1"
+                            />
+                            <div className="min-w-0">
+                              <span className="text-[10px] ui-dim block font-bold">Màu 1</span>
+                              <span className="font-mono text-[11px] uppercase truncate block">{borderGlowColor1}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2.5 p-2 rounded-xl border bg-black/20" style={{ borderColor: 'var(--border-subtle)' }}>
+                            <ColorPicker
+                              value={borderGlowColor2}
+                              onChange={(nextHex) => {
+                                updateThemeConfig(themeColors, themeAngle, customBorderMode, borderColors, borderAnimation, borderGlowEnabled, borderGlowColor1, true, [borderGlowColor1, nextHex], borderGlowAngle);
+                              }}
+                              size={28}
+                              round
+                              ariaLabel="Màu Glow 2"
+                            />
+                            <div className="min-w-0">
+                              <span className="text-[10px] ui-dim block font-bold">Màu 2</span>
+                              <span className="font-mono text-[11px] uppercase truncate block">{borderGlowColor2}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <CircularAnglePicker
+                          value={borderGlowAngle}
+                          onChange={(deg) => {
+                            updateThemeConfig(themeColors, themeAngle, customBorderMode, borderColors, borderAnimation, borderGlowEnabled, borderGlowColor1, true, [borderGlowColor1, borderGlowColor2], deg);
+                          }}
+                          label="Góc xoay Glow"
+                          accentColor="#ec4899"
+                        />
+                      </div>
+                    )}
+
+                    {/* Live Preview Box */}
+                    <div
+                      className="w-full h-9 rounded-xl border flex items-center justify-between px-3 text-xs font-mono font-bold transition-all"
+                      style={{
+                        borderColor: 'var(--border-ui)',
+                        backgroundColor: 'var(--bg-card)',
+                        boxShadow: borderGlowMode
+                          ? `${Math.round(Math.sin((borderGlowAngle * Math.PI) / 180) * 8)}px ${Math.round(-Math.cos((borderGlowAngle * Math.PI) / 180) * 8)}px 22px 1px ${borderGlowColor2}66, ${-Math.round(Math.sin((borderGlowAngle * Math.PI) / 180) * 8)}px ${-Math.round(-Math.cos((borderGlowAngle * Math.PI) / 180) * 8)}px 22px 1px ${borderGlowColor1}66, 0 0 16px 2px ${borderGlowColor1}44`
+                          : `0 0 16px 2px ${borderGlowColor1}66`,
+                      }}
+                    >
+                      <span className="ui-dim text-[11px]">Xem thử Glow viền</span>
+                      <span className="text-[10px] ui-dim font-sans font-normal">
+                        {borderGlowMode ? `${borderGlowAngle}° Gradient` : 'Đơn sắc'}
+                      </span>
                     </div>
                   </div>
                 )}
