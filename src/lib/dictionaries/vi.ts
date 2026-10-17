@@ -912,6 +912,8 @@ const vi: Record<DictKey, string> = {
   'settings.custom_border_anim': 'Hiệu ứng viền xoay',
   'settings.custom_border_glow': 'Hiệu ứng phát sáng viền (Glow)',
   'settings.custom_border_glow_color': 'Màu phát sáng cho viền',
+  'settings.custom_border_glow_sync': 'Dùng cùng màu với viền',
+  'settings.custom_border_glow_opacity': 'Độ mờ Glow',
   'settings.border_color': 'Màu Viền',
   'settings.add_border_color': 'Thêm Màu Viền',
 

@@ -126,12 +126,13 @@ export default function ProfilePage() {
       const overrideObj: any = {};
       if (data.profileTheme) overrideObj.theme = data.profileTheme;
       overrideObj.mode = profileMode;
-      if (data.profileConfig?.backgroundUrl) overrideObj.backgroundUrl = data.profileConfig.backgroundUrl;
-      if (data.profileConfig?.customThemeColor) overrideObj.customThemeColor = data.profileConfig.customThemeColor;
+      if (data.profileConfig) {
+        Object.assign(overrideObj, data.profileConfig);
+      }
       (window as any).__profileOverride = overrideObj;
       window.dispatchEvent(new Event('gdvnc_user_update'));
     }
-  }, [data?.profileTheme, data?.profileConfig?.profileMode, data?.profileConfig?.backgroundUrl, data?.profileConfig?.customThemeColor, setOverrideTheme, setOverrideMode]);
+  }, [data?.profileTheme, data?.profileConfig, setOverrideTheme, setOverrideMode]);
 
   useEffect(() => {
     return () => {

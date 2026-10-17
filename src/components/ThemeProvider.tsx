@@ -133,6 +133,8 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     if (effectiveTheme !== 'custom') {
       removeCustomThemeVars(root);
       root.style.removeProperty('--border-angle');
+      root.style.removeProperty('--glow-ox');
+      root.style.removeProperty('--glow-oy');
       return;
     }
 
@@ -153,6 +155,10 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       const config = getStoredCustomThemeConfig();
       if (config.borderAnimation === false) {
         root.style.setProperty('--border-angle', '0deg');
+        const staticAngle = (config.syncGlowWithBorder ? config.angle : config.borderGlowAngle) ?? 135;
+        const staticRad = (staticAngle * Math.PI) / 180;
+        root.style.setProperty('--glow-ox', `${(Math.sin(staticRad) * 8).toFixed(1)}px`);
+        root.style.setProperty('--glow-oy', `${(-Math.cos(staticRad) * 8).toFixed(1)}px`);
         return;
       }
       last = performance.now();
@@ -161,6 +167,13 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         last = now;
         angle = (angle + speed * dt) % 360;
         root.style.setProperty('--border-angle', `${angle.toFixed(1)}deg`);
+
+        const rad = (angle * Math.PI) / 180;
+        const ox = (Math.sin(rad) * 8).toFixed(2);
+        const oy = (-Math.cos(rad) * 8).toFixed(2);
+        root.style.setProperty('--glow-ox', `${ox}px`);
+        root.style.setProperty('--glow-oy', `${oy}px`);
+
         rafId = requestAnimationFrame(tick);
       };
       rafId = requestAnimationFrame(tick);
@@ -169,6 +182,16 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     startBorderLoop();
 
     const handleUserUpdate = () => {
+      try {
+        const raw = localStorage.getItem('gdvnc_user');
+        if (raw) {
+          const u = JSON.parse(raw);
+          if (u?.profileTheme && THEMES.includes(u.profileTheme) && u.profileTheme !== theme) {
+            setThemeState(u.profileTheme);
+            localStorage.setItem('gdvnc_theme', u.profileTheme);
+          }
+        }
+      } catch {}
       updateCustomTheme();
       startBorderLoop();
     };
@@ -179,6 +202,8 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       window.removeEventListener('gdvnc_user_update', handleUserUpdate);
       removeCustomThemeVars(root);
       root.style.removeProperty('--border-angle');
+      root.style.removeProperty('--glow-ox');
+      root.style.removeProperty('--glow-oy');
     };
   }, [effectiveTheme, resolvedMode]);
 

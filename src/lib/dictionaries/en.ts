@@ -921,6 +921,8 @@ const en = {
   'settings.custom_border_anim': 'Animated rotating border',
   'settings.custom_border_glow': 'Border glow effect',
   'settings.custom_border_glow_color': 'Border glow color',
+  'settings.custom_border_glow_sync': 'Use same color as border',
+  'settings.custom_border_glow_opacity': 'Glow Opacity',
   'settings.border_color': 'Border Color',
   'settings.add_border_color': 'Add Border Color',
 

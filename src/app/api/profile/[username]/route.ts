@@ -356,6 +356,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         'customBorderGlowColor',
         'customBorderGlowColors',
         'customBorderGlowAngle',
+        'customBorderGlowOpacity',
+        'customBorderGlowSync',
       ];
 
       const hasUnauthorizedPerk = supporterKeys.some((k) => {
