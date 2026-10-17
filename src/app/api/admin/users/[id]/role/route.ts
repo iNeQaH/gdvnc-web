@@ -11,9 +11,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   try {
     const { id } = await params;
-    const { newRole, grantSupporterMonths } = await req.json();
+    const { newRole, grantSupporterMonths, setSupporterMonths } = await req.json();
 
-    if (!grantSupporterMonths && !['USER', 'MODERATOR', 'ADMIN'].includes(newRole)) {
+    const isSupporterUpdate = grantSupporterMonths !== undefined || setSupporterMonths !== undefined;
+    if (!isSupporterUpdate && !['USER', 'MODERATOR', 'ADMIN'].includes(newRole)) {
       return NextResponse.json({ error: 'Quyền (Role) không hợp lệ.' }, { status: 400 });
     }
 
@@ -41,7 +42,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     // Rule 2: If target is currently an ADMIN, ONLY iNeQaH can change/demote them
-    if (!grantSupporterMonths && target.role === Role.ADMIN && target.id !== actor.id) {
+    if (newRole && target.role === Role.ADMIN && target.id !== actor.id) {
       if (!isSuperAdminUser(actor)) {
         return NextResponse.json({
           error: 'Admin không thể gỡ quyền của một Admin khác. Chỉ Super Admin mới có quyền này.',
@@ -50,7 +51,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     // Rule 3: Promoting a user to ADMIN requires Super Admin
-    if (!grantSupporterMonths && newRole === 'ADMIN' && target.role !== Role.ADMIN) {
+    if (newRole === 'ADMIN' && target.role !== Role.ADMIN) {
       if (!isSuperAdminUser(actor)) {
         return NextResponse.json({
           error: 'Chỉ Super Admin mới có quyền phong vị trí Admin.',
@@ -58,13 +59,32 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
     }
 
-    // Update role
+    // Update role and supporter
     let updatedData: { role?: Role; supporterUntil?: Date | null; tokenVersion?: { increment: number } } = {};
-    if (grantSupporterMonths) {
-      const months = parseInt(String(grantSupporterMonths), 10);
-      if (!Number.isFinite(months) || months === 0) {
+    let supporterMonthsVal: number | null = null;
+    let isSupporterChanged = false;
+
+    if (setSupporterMonths !== undefined) {
+      const months = parseInt(String(setSupporterMonths), 10);
+      if (!Number.isFinite(months) || months < 0) {
         return NextResponse.json({ error: 'Số tháng Supporter không hợp lệ.' }, { status: 400 });
       }
+      isSupporterChanged = true;
+      supporterMonthsVal = months;
+      if (months === 0) {
+        updatedData.supporterUntil = null;
+      } else {
+        const next = new Date();
+        next.setMonth(next.getMonth() + months);
+        updatedData.supporterUntil = next;
+      }
+    } else if (grantSupporterMonths !== undefined && grantSupporterMonths !== 0 && grantSupporterMonths !== '0') {
+      const months = parseInt(String(grantSupporterMonths), 10);
+      if (!Number.isFinite(months)) {
+        return NextResponse.json({ error: 'Số tháng Supporter không hợp lệ.' }, { status: 400 });
+      }
+      isSupporterChanged = true;
+      supporterMonthsVal = months;
       if (months < 0) {
         updatedData.supporterUntil = null;
       } else {
@@ -75,7 +95,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         next.setMonth(next.getMonth() + months);
         updatedData.supporterUntil = next;
       }
-    } else {
+    }
+
+    if (newRole && ['USER', 'MODERATOR', 'ADMIN'].includes(newRole)) {
       updatedData.role = newRole as Role;
       if (newRole !== target.role) {
         updatedData.tokenVersion = { increment: 1 };
@@ -94,26 +116,27 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
 
     // Create notification for target user
-    if (grantSupporterMonths) {
-      const months = parseInt(grantSupporterMonths);
-      if (months > 0) {
+    if (isSupporterChanged) {
+      if (supporterMonthsVal && supporterMonthsVal > 0) {
         await prisma.notification.create({
           data: {
             userId: target.id,
             title: 'Cấp Quyền Supporter',
-            message: `Bạn vừa được Admin "${actor.username}" cấp ${months} tháng Supporter! Cảm ơn bạn đã đồng hành cùng cộng đồng GDVN.`,
+            message: `Bạn vừa được Admin "${actor.username}" cập nhật ${supporterMonthsVal} tháng Supporter! Cảm ơn bạn đã đồng hành cùng cộng đồng GDVN.`,
           },
         });
       } else {
         await prisma.notification.create({
           data: {
             userId: target.id,
-            title: 'Hết Hạn Supporter',
-            message: `Quyền Supporter của bạn đã được cập nhật bởi Admin "${actor.username}".`,
+            title: 'Cập Nhật Supporter',
+            message: `Quyền Supporter của bạn đã được cập nhật hoặc kết thúc bởi Admin "${actor.username}".`,
           },
         });
       }
-    } else if (newRole && newRole !== target.role) {
+    }
+
+    if (newRole && newRole !== target.role) {
       const roleName = newRole === 'ADMIN' ? 'Quản Trị Viên (Admin)' : newRole === 'MODERATOR' ? 'Kiểm Duyệt Viên (Moderator)' : 'Thành Viên (User)';
       await prisma.notification.create({
         data: {

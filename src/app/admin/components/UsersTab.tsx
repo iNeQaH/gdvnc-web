@@ -16,6 +16,7 @@ import {
   List,
   FolderPlus,
   Plus,
+  Minus,
   MoreVertical,
   ExternalLink,
   Ban,
@@ -120,7 +121,8 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
   // Manage Role & Badges Modal state
   const [manageRoleTarget, setManageRoleTarget] = useState<any | null>(null);
   const [selectedRole, setSelectedRole] = useState<'USER' | 'MODERATOR' | 'ADMIN'>('USER');
-  const [supporterMonthsToAdd, setSupporterMonthsToAdd] = useState<string>('0');
+  const [supporterMode, setSupporterMode] = useState<'keep' | 'modify'>('keep');
+  const [supporterMonthsInput, setSupporterMonthsInput] = useState<number>(0);
   const [badgesList, setBadgesList] = useState<any[]>([]);
   const [selectedBadgeIds, setSelectedBadgeIds] = useState<string[]>([]);
   const [showBadgePicker, setShowBadgePicker] = useState(false);
@@ -159,7 +161,11 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
   const handleOpenManageRole = async (user: any) => {
     setManageRoleTarget(user);
     setSelectedRole(user.role === 'ADMIN' ? 'ADMIN' : (user.role === 'MODERATOR' ? 'MODERATOR' : 'USER'));
-    setSupporterMonthsToAdd('0');
+    const remaining = user.supporterUntil && new Date(user.supporterUntil) > new Date()
+      ? Math.max(1, Math.round((new Date(user.supporterUntil).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)))
+      : 0;
+    setSupporterMonthsInput(remaining);
+    setSupporterMode('keep');
     setSavingRoleChanges(false);
 
     if (badgesList.length === 0) {
@@ -190,11 +196,10 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
     setSavingRoleChanges(true);
     try {
       const roleChanged = selectedRole !== manageRoleTarget.role;
-      const monthsToAdd = parseInt(supporterMonthsToAdd, 10);
-      if (roleChanged || monthsToAdd > 0) {
+      if (roleChanged || supporterMode === 'modify') {
         const payload: any = {};
         if (roleChanged) payload.newRole = selectedRole;
-        if (monthsToAdd > 0) payload.grantSupporterMonths = monthsToAdd;
+        if (supporterMode === 'modify') payload.setSupporterMonths = supporterMonthsInput;
         const resRole = await fetch(`/api/admin/users/${manageRoleTarget.id}/role`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -1086,9 +1091,14 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
             {/* Section 2: Supporter Duration */}
             {isFullAdmin && (
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider ui-dim flex items-center gap-1.5">
-                  <Heart className="w-3.5 h-3.5 text-pink-500" />
-                  Gia hạn Supporter
+                <label className="text-xs font-bold uppercase tracking-wider ui-dim flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Heart className="w-3.5 h-3.5 text-pink-500" />
+                    Thời hạn Supporter
+                  </span>
+                  {supporterMode === 'modify' && (
+                    <span className="text-[10px] font-bold text-amber-500">Đang chỉnh sửa</span>
+                  )}
                 </label>
 
                 {manageRoleTarget.supporterUntil && new Date(manageRoleTarget.supporterUntil) > new Date() ? (
@@ -1098,34 +1108,136 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
                   </div>
                 ) : (
                   <div className="p-2.5 rounded-xl border text-[11px] ui-dim" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-                    Chưa có hạn Supporter
+                    Chưa có hạn Supporter (0 tháng)
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-1">
-                  {[
-                    { val: '0', label: 'Giữ nguyên' },
-                    { val: '1', label: '+1 tháng' },
-                    { val: '3', label: '+3 tháng' },
-                    { val: '6', label: '+6 tháng' },
-                    { val: '12', label: '+1 năm' },
-                  ].map((item) => (
+                {/* Manual Input with +/- controls */}
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center gap-2">
                     <button
-                      key={item.val}
                       type="button"
-                      onClick={() => setSupporterMonthsToAdd(item.val)}
-                      className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
-                        supporterMonthsToAdd === item.val ? 'ring-2' : 'hover:opacity-80'
-                      }`}
-                      style={{
-                        backgroundColor: supporterMonthsToAdd === item.val ? 'var(--accent)' : 'var(--bg-subtle)',
-                        borderColor: supporterMonthsToAdd === item.val ? 'var(--accent)' : 'var(--border-ui)',
-                        color: supporterMonthsToAdd === item.val ? '#fff' : 'var(--text-title)',
+                      disabled={supporterMonthsInput <= 0}
+                      onClick={() => {
+                        setSupporterMode('modify');
+                        setSupporterMonthsInput((prev) => Math.max(0, prev - 1));
                       }}
+                      className="w-10 h-10 rounded-xl border flex items-center justify-center font-bold text-base cursor-pointer hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                      style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-subtle)', color: 'var(--text-title)' }}
+                      title="Trừ 1 tháng (tới 0)"
                     >
-                      {item.label}
+                      <Minus className="w-4 h-4" />
                     </button>
-                  ))}
+
+                    <div className="relative flex-1">
+                      <input
+                        type="number"
+                        min={0}
+                        max={120}
+                        value={supporterMonthsInput}
+                        onChange={(e) => {
+                          setSupporterMode('modify');
+                          const val = parseInt(e.target.value, 10);
+                          setSupporterMonthsInput(isNaN(val) || val < 0 ? 0 : val);
+                        }}
+                        placeholder="0"
+                        className="w-full text-center py-2 px-3 rounded-xl border text-sm font-black focus:outline-none focus:ring-2 focus:ring-pink-500/50"
+                        style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold ui-dim pointer-events-none">
+                        tháng
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSupporterMode('modify');
+                        setSupporterMonthsInput((prev) => prev + 1);
+                      }}
+                      className="w-10 h-10 rounded-xl border flex items-center justify-center font-bold text-base cursor-pointer hover:bg-white/10 transition-all"
+                      style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-subtle)', color: 'var(--text-title)' }}
+                      title="Cộng 1 tháng"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Status Preview */}
+                  <div className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border flex items-center justify-between" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}>
+                    <span className="ui-dim">Trạng thái áp dụng:</span>
+                    {supporterMode === 'keep' ? (
+                      <span className="ui-title">Giữ nguyên hạn hiện tại</span>
+                    ) : supporterMonthsInput === 0 ? (
+                      <span className="text-red-500 font-bold">Gỡ bỏ đặc quyền Supporter (0 tháng)</span>
+                    ) : (
+                      <span className="text-pink-500 font-bold">
+                        {supporterMonthsInput} tháng từ hôm nay (~{new Date(Date.now() + supporterMonthsInput * 30 * 24 * 60 * 60 * 1000).toLocaleDateString()})
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Quick Preset Buttons */}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const remaining = manageRoleTarget.supporterUntil && new Date(manageRoleTarget.supporterUntil) > new Date()
+                          ? Math.max(1, Math.round((new Date(manageRoleTarget.supporterUntil).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)))
+                          : 0;
+                        setSupporterMonthsInput(remaining);
+                        setSupporterMode('keep');
+                      }}
+                      className={`py-1.5 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        supporterMode === 'keep' ? 'ring-2 ring-pink-500 bg-pink-500/15 text-pink-500' : 'hover:opacity-80'
+                      }`}
+                      style={{ borderColor: supporterMode === 'keep' ? 'var(--accent)' : 'var(--border-ui)', backgroundColor: supporterMode === 'keep' ? undefined : 'var(--bg-subtle)', color: supporterMode === 'keep' ? undefined : 'var(--text-title)' }}
+                    >
+                      Giữ nguyên
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSupporterMode('modify');
+                        setSupporterMonthsInput(0);
+                      }}
+                      className={`py-1.5 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer text-red-500 ${
+                        supporterMode === 'modify' && supporterMonthsInput === 0 ? 'ring-2 ring-red-500 bg-red-500/15' : 'hover:opacity-80'
+                      }`}
+                      style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-subtle)' }}
+                    >
+                      0 (Gỡ bỏ)
+                    </button>
+
+                    {[
+                      { val: 1, label: '+1 tháng' },
+                      { val: 3, label: '+3 tháng' },
+                      { val: 6, label: '+6 tháng' },
+                      { val: 12, label: '+1 năm' },
+                    ].map((item) => (
+                      <button
+                        key={item.val}
+                        type="button"
+                        onClick={() => {
+                          const remaining = manageRoleTarget.supporterUntil && new Date(manageRoleTarget.supporterUntil) > new Date()
+                            ? Math.max(1, Math.round((new Date(manageRoleTarget.supporterUntil).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)))
+                            : 0;
+                          const base = supporterMode === 'keep' ? remaining : supporterMonthsInput;
+                          setSupporterMode('modify');
+                          setSupporterMonthsInput(base + item.val);
+                        }}
+                        className="py-1.5 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer hover:opacity-80"
+                        style={{
+                          backgroundColor: 'var(--bg-subtle)',
+                          borderColor: 'var(--border-ui)',
+                          color: 'var(--text-title)',
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

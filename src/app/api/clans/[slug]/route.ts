@@ -206,8 +206,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     let myMembership = null;
     let myPendingRequest = null;
     let pendingRequests: any[] = [];
+    let myPledge = 0;
     if (sessionUser) {
       myMembership = rawClan.members.find((m) => m.userId === sessionUser.userId) || null;
+      const myContrib = rawClan.contributions.find((c) => c.userId === sessionUser.userId);
+      myPledge = myContrib ? myContrib.spPledged : 0;
       if (!myMembership) {
         myPendingRequest = await prisma.clanJoinRequest.findUnique({
           where: {
@@ -277,6 +280,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         myMembership,
         myPendingRequest,
         pendingRequests,
+        myPledge,
         createdAt: rawClan.createdAt,
       },
     });

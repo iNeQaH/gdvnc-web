@@ -58,7 +58,13 @@ export async function DELETE(
       }
     }
 
-    // Xoá thành viên và xoá phần đóng góp SP coin của họ khỏi Clan
+    // Kiểm tra số SP coin thành viên đã đóng góp để hoàn lại
+    const targetContrib = await prisma.clanSpContribution.findFirst({
+      where: { clanId: clan.id, userId: target.userId },
+    });
+    const refundedSp = targetContrib?.spPledged || 0;
+
+    // Xoá thành viên và xoá phần đóng góp SP coin của họ khỏi Clan (tự động rút toàn bộ SP)
     await prisma.$transaction(async (tx) => {
       await tx.clanMember.delete({
         where: { id: targetMemberId },
@@ -74,9 +80,29 @@ export async function DELETE(
     // Cập nhật lại SP của Clan sau khi thành viên rời
     await syncAndGetClanSp(clan.id);
 
+    // Gửi thông báo nếu có SP coin được hoàn lại
+    if (refundedSp > 0) {
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: target.userId,
+            title: isSelf ? 'Rời Clan & Hoàn SP Coin' : 'Rút SP Coin Khi Rời Clan',
+            message: `Bạn đã rời khỏi Clan "${clan.name}". Toàn bộ ${refundedSp} SP Coin bạn từng đóng góp đã được tự động hoàn trả về tài khoản của bạn.`,
+          },
+        });
+      } catch {}
+    }
+
     return NextResponse.json({
       success: true,
-      message: isSelf ? 'Đã rời khỏi Clan.' : 'Đã trục xuất thành viên.',
+      message: isSelf
+        ? (refundedSp > 0
+            ? `Đã rời khỏi Clan và tự động hoàn trả ${refundedSp} SP Coin về tài khoản.`
+            : 'Đã rời khỏi Clan.')
+        : (refundedSp > 0
+            ? `Đã trục xuất thành viên và tự động hoàn trả ${refundedSp} SP Coin cho họ.`
+            : 'Đã trục xuất thành viên.'),
+      refundedSp,
     });
   } catch (error) {
     return publicApiError(error, 'Lỗi khi rời hoặc trục xuất thành viên.');
