@@ -138,7 +138,7 @@ export default function ProfilePage() {
   const isFullAdmin = isFullAdminRole(currentUser?.role);
   const isAdmin = isFullAdmin;
   const isSuperAdmin = isSuperAdminUser(currentUser);
-  const canEditInfo = isOwner || isStaff;
+  const canEditInfo = isOwner || isSuperAdmin;
 
   // Direct editing states
   const [showThemeModal, setShowThemeModal] = useState(false);
@@ -746,330 +746,317 @@ export default function ProfilePage() {
         }}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Box 1 (Left Column) */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className="ui-card p-5 space-y-6">
-            
-            
-            <div className="relative mb-6">
-              <div 
-                className={"w-full h-32 md:h-48 rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 border " + (canEditInfo ? 'cursor-pointer group' : '')} 
-                style={{ borderColor: 'var(--border-ui)' }}
-                onClick={canEditInfo ? handleOpenCoverModal : undefined}
-                title={canEditInfo ? "Đổi Banner" : undefined}
+      {/* Unified Hero Card */}
+      <div className="ui-card overflow-hidden shadow-sm">
+        {/* Banner Cover */}
+        <div className="relative w-full h-36 sm:h-48 md:h-56 bg-slate-100 dark:bg-zinc-800">
+          {data.coverUrl ? (
+            <img src={data.coverUrl} alt="Cover" className="w-full h-full object-cover" />
+          ) : (
+            <img src="/default-banner.svg" alt="Default Cover" className="w-full h-full object-cover opacity-50" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+          
+          {canEditInfo && (
+            <button
+              type="button"
+              onClick={handleOpenCoverModal}
+              className="absolute top-3 right-3 px-3 py-1.5 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer border border-white/20"
+              title="Đổi ảnh bìa"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>Đổi Banner</span>
+            </button>
+          )}
+        </div>
+
+        {/* Info Bar */}
+        <div className="px-5 pb-5 pt-0">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12 sm:-mt-14 mb-4">
+            {/* Avatar */}
+            <div className="relative shrink-0">
+              <div
+                className={`p-1 rounded-2xl shadow-xl ${isLavender ? 'tsumiki-btn !m-0 !p-1' : 'bg-white dark:bg-zinc-900 border'}`}
+                style={!isLavender ? { backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' } : {}}
               >
-                {data.coverUrl ? (
-                  <img src={data.coverUrl} alt="Cover" className="w-full h-full object-cover" />
-                ) : (
-                  <img src="/default-banner.svg" alt="Default Cover" className="w-full h-full object-cover opacity-50" />
-                )}
-                {canEditInfo && (
-                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold backdrop-blur-xs">
-                    <Camera className="w-4 h-4" /> Đổi Banner
-                  </div>
-                )}
-              </div>
-              <div className="absolute -bottom-10 left-6 z-10">
-                <div 
-                  className={`p-1.5 rounded-2xl shadow-xl transition-transform ${isLavender ? 'tsumiki-btn !m-0 !p-1.5' : 'bg-slate-100 dark:bg-zinc-800 border'}`}
-                  style={!isLavender ? { backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' } : {}}
+                <div
+                  className={`relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden shadow-inner ${canEditInfo ? 'cursor-pointer group' : ''}`}
+                  onClick={canEditInfo ? handleOpenAvatarModal : undefined}
+                  title={canEditInfo ? "Đổi Avatar" : undefined}
                 >
-                  <div 
-                    className={"relative w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden shadow-inner " + (canEditInfo ? 'cursor-pointer group' : '')} 
-                    onClick={canEditInfo ? handleOpenAvatarModal : undefined}
-                    title={canEditInfo ? "Đổi Avatar" : undefined}
-                  >
-                    {data.avatarUrl ? <img src={data.avatarUrl} alt="Avatar" className="w-full h-full object-cover" /> : <UserIcon className="w-10 h-10 m-auto mt-5 md:mt-7 text-slate-400" />}
-                    {canEditInfo && (
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold">
-                        <Camera className="w-3.5 h-3.5 mb-0.5" /> Sửa
-                      </div>
-                    )}
-                  </div>
+                  {data.avatarUrl ? (
+                    <img src={data.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-slate-200 dark:bg-zinc-800">
+                      <UserIcon className="w-12 h-12 text-slate-400" />
+                    </div>
+                  )}
+                  {canEditInfo && (
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold backdrop-blur-xs">
+                      <Camera className="w-4 h-4 mb-0.5" />
+                      <span>Sửa Avatar</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Name & Badges BELOW avatar */}
-            <div className="pt-12 px-2 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 flex-wrap">
-              <div className="flex items-center gap-2">
+            {/* Primary Details (Name, Badges, Roles) */}
+            <div className="flex-1 min-w-0 space-y-1 sm:mb-1">
+              <div className="flex items-center gap-2 flex-wrap">
                 <UserDisplayName
                   user={data}
                   fallbackName={data.username}
                   linkClan
-                  className="text-xl md:text-2xl font-black ui-title drop-shadow-md"
-                  tagClassName="text-sm md:text-base px-2 py-0.5 rounded-lg border border-black/10 dark:border-white/10"
+                  className="text-xl sm:text-2xl font-black ui-title drop-shadow-sm"
+                  tagClassName="text-sm sm:text-base px-2 py-0.5 rounded-lg border border-black/10 dark:border-white/10"
                 />
+
+                {/* Header Badges */}
+                {headerBadges.length > 0 && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {headerBadges.map((b: any) => (
+                      <div
+                        key={b.id}
+                        className={
+                          isLavender
+                            ? "inline-flex items-center justify-center p-1.5 rounded-xl tsumiki-btn tsumiki-badge-btn !m-0 !mb-0 shadow-sm cursor-default"
+                            : "inline-flex items-center justify-center p-1.5 rounded-lg bg-black text-white border border-zinc-800/80 shadow-xs cursor-default"
+                        }
+                        title={b.name + (b.description ? `: ${b.description}` : '')}
+                      >
+                        <BadgeIcon
+                          icon={b.icon || 'Star'}
+                          color={b.color}
+                          glow={b.glowColor}
+                          className={isLavender ? "w-4 h-4" : "w-3.5 h-3.5"}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {data.isBanned && (
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/30 flex items-center gap-1">
+                    <Flame className="w-3 h-3" /> Bị đình chỉ
+                  </span>
+                )}
               </div>
-              {headerBadges.length > 0 && (
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {headerBadges.map((b: any) => (
-                    <div
-                      key={b.id}
-                      className={
-                        isLavender
-                          ? "inline-flex items-center justify-center p-1.5 rounded-xl tsumiki-btn tsumiki-badge-btn !m-0 !mb-0 shadow-sm cursor-default"
-                          : "inline-flex items-center justify-center p-1.5 rounded-lg bg-black text-white border border-zinc-800/80 shadow-xs cursor-default"
-                      }
-                      title={b.name + (b.description ? `: ${b.description}` : '')}
-                    >
-                      <BadgeIcon
-                        icon={b.icon || 'Star'}
-                        color={b.color}
-                        glow={b.glowColor}
-                        className={isLavender ? "w-5 h-5" : "w-4 h-4"}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
+
+              {/* Bio */}
+              <div className="text-xs sm:text-sm ui-dim italic max-w-3xl line-clamp-2">
+                {data.bio ? `"${data.bio}"` : <span className="opacity-60">Chưa có tiểu sử.</span>}
+              </div>
+            </div>
+          </div>
+
+          {/* Metadata Pills Row (GD, Discord, Location, Clan) */}
+          <div className="flex items-center gap-2 flex-wrap pt-3 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+            {/* GD Username */}
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+              <Gamepad2 className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+              <span className="ui-dim font-bold text-[11px] uppercase">GD:</span>
+              <span className="ui-title font-semibold">{data.gdUsername || 'Chưa liên kết'}</span>
+              {data.gdVerified && <span title="Đã xác minh"><CheckCircle className="w-3 h-3 text-emerald-500" /></span>}
             </div>
 
-            {/* BIO */}
-            <div className="pt-2 px-2">
-              <div className="text-xs font-bold ui-dim mb-1">
-                {t('profile.bio') || 'TIỂU SỬ'}
-              </div>
-              <div className="text-sm ui-title whitespace-pre-wrap">{data.bio || <span className="ui-dim italic">Chưa có tiểu sử.</span>}</div>
+            {/* Discord */}
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+              <MessageSquare className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+              <span className="ui-dim font-bold text-[11px] uppercase">Discord:</span>
+              <span className="ui-title font-semibold">{data.discordTag || 'Chưa liên kết'}</span>
             </div>
 
-            {/* Socials & Info */}
-            <div className="pt-4 px-2 border-t grid grid-cols-1 md:grid-cols-2 gap-4" style={{ borderColor: 'var(--border-subtle)' }}>
-               {/* GD Username */}
-               <div className="flex items-center gap-3">
-                 <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-sky-500/10 text-sky-500">
-                   <Gamepad2 className="w-4 h-4" />
-                 </div>
-                 <div>
-                   <div className="text-[10px] font-bold uppercase ui-dim">Geometry Dash</div>
-                   <div className="text-xs font-semibold ui-title flex items-center gap-1">
-                     {data.gdUsername || 'Chưa liên kết'}
-                     {data.gdVerified && <span title="Đã xác minh"><CheckCircle className="w-3 h-3 text-green-500" /></span>}
-                   </div>
-                 </div>
-               </div>
-               
-               {/* Discord */}
-               <div className="flex items-center gap-3">
-                 <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-indigo-500/10 text-indigo-500">
-                   <MessageSquare className="w-4 h-4" />
-                 </div>
-                 <div>
-                   <div className="text-[10px] font-bold uppercase ui-dim">Discord</div>
-                   <div className="text-xs font-semibold ui-title">{data.discordTag || 'Chưa liên kết'}</div>
-                 </div>
-               </div>
-
-               {/* Location */}
-               <div className="flex items-center gap-3">
-                 <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-rose-500/10 text-rose-500">
-                   <MapPin className="w-4 h-4" />
-                 </div>
-                 <div>
-                   <div className="text-[10px] font-bold uppercase ui-dim">{t('profile.location')}</div>
-                   <div className="text-xs font-semibold ui-title">{data.country || t('profile.not_updated')}</div>
-                 </div>
-               </div>
+            {/* Location */}
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+              <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+              <span className="ui-dim font-bold text-[11px] uppercase">Vị trí:</span>
+              <span className="ui-title font-semibold">{data.country || 'Việt Nam'}</span>
             </div>
 
-            {/* Badges List */}
-            {allBadges.length > 0 && (
-              <div className="pt-4 px-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-                <div className="text-xs font-bold ui-dim mb-3 flex items-center gap-2"><Shield className="w-3.5 h-3.5" /> {t('profile.all_badges')}</div>
-                <div className="flex flex-wrap gap-2.5">
-                  {allBadges.map((b: any) => (
-                    <div
-                      key={b.id}
-                      className={
-                        isLavender
-                          ? "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl tsumiki-btn tsumiki-badge-btn !m-0 !mb-0 shadow-sm cursor-default"
-                          : "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black text-white border border-zinc-800/80 shadow-xs cursor-default"
-                      }
-                      title={b.description || b.name}
-                    >
-                      <BadgeIcon
-                        icon={b.icon || 'Star'}
-                        color={b.color}
-                        glow={b.glowColor}
-                        className={isLavender ? "w-4 h-4 shrink-0" : "w-3.5 h-3.5 shrink-0"}
-                      />
-                      <span className="text-[11px] font-bold text-white drop-shadow-sm">{b.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            {/* Clan */}
+            {data.clanMember?.clan && (
+              <Link
+                href={`/clan/${data.clanMember.clan.slug}`}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border hover:opacity-80 transition-opacity"
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+              >
+                <Shield className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span className="ui-dim font-bold text-[11px] uppercase">Clan:</span>
+                <span className="font-bold" style={{ color: data.clanMember.clan.color || 'var(--accent)' }}>
+                  [{data.clanMember.clan.tag}] {data.clanMember.clan.name}
+                </span>
+              </Link>
             )}
+          </div>
 
+          {/* All Badges Showcase (if any) */}
+          {allBadges.length > 0 && (
+            <div className="mt-3 pt-3 border-t flex items-center gap-2 flex-wrap" style={{ borderColor: 'var(--border-subtle)' }}>
+              <span className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1.5 mr-1">
+                <Shield className="w-3.5 h-3.5" /> {t('profile.all_badges')} ({allBadges.length}):
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {allBadges.map((b: any) => (
+                  <div
+                    key={b.id}
+                    className={
+                      isLavender
+                        ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl tsumiki-btn tsumiki-badge-btn !m-0 !mb-0 shadow-sm cursor-default"
+                        : "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-black text-white border border-zinc-800/80 shadow-xs cursor-default"
+                    }
+                    title={b.description || b.name}
+                  >
+                    <BadgeIcon
+                      icon={b.icon || 'Star'}
+                      color={b.color}
+                      glow={b.glowColor}
+                      className={isLavender ? "w-3.5 h-3.5 shrink-0" : "w-3 h-3 shrink-0"}
+                    />
+                    <span className="text-[11px] font-bold text-white drop-shadow-sm">{b.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Stats & Favorite Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Stats Cards (Left 6 cols) */}
+        <div className="lg:col-span-6 flex flex-col justify-between gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 h-full">
+            {/* Classic */}
+            <button 
+              type="button"
+              onClick={() => setShowClassicPoints(!showClassicPoints)}
+              className={`p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm relative transition-all cursor-pointer active:scale-95 ${
+                isLavender
+                  ? 'tsumiki-btn-yellow text-white'
+                  : 'bg-slate-50 dark:bg-zinc-850 border hover:opacity-90'
+              }`}
+              style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
+            >
+              <Star className={`w-5 h-5 mb-1.5 ${isLavender ? 'text-white drop-shadow' : 'text-amber-500'}`} />
+              <div className={`text-[11px] font-bold uppercase tracking-wider ${isLavender ? 'text-white/90' : 'ui-dim'}`}>Classic</div>
+              <div className={`text-xl font-black mt-0.5 transition-all ${isLavender ? 'text-white drop-shadow-sm' : 'text-amber-500'}`}>
+                {showClassicPoints ? (data.classicPp?.toFixed(2) || '0.00') : ((data.classicPp || 0) > 0.005 && data.classicRank ? "#" + data.classicRank : '#-')}
+              </div>
+              <div className={`text-[10px] font-semibold mt-1 ${isLavender ? 'text-white/70' : 'ui-dim'}`}>
+                {showClassicPoints ? 'Points (PP)' : 'Xếp hạng'}
+              </div>
+            </button>
+
+            {/* Platformer */}
+            <button 
+              type="button"
+              onClick={() => setShowPlatformerPoints(!showPlatformerPoints)}
+              className={`p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm relative transition-all cursor-pointer active:scale-95 ${
+                isLavender
+                  ? 'tsumiki-btn-blue text-white'
+                  : 'bg-slate-50 dark:bg-zinc-850 border hover:opacity-90'
+              }`}
+              style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
+            >
+              <Moon className={`w-5 h-5 mb-1.5 ${isLavender ? 'text-white drop-shadow' : 'text-sky-500'}`} />
+              <div className={`text-[11px] font-bold uppercase tracking-wider ${isLavender ? 'text-white/90' : 'ui-dim'}`}>Platformer</div>
+              <div className={`text-xl font-black mt-0.5 transition-all ${isLavender ? 'text-white drop-shadow-sm' : 'text-sky-500'}`}>
+                {showPlatformerPoints ? (data.platformerPp?.toFixed(2) || '0.00') : ((data.platformerPp || 0) > 0.005 && data.platformerRank ? "#" + data.platformerRank : '#-')}
+              </div>
+              <div className={`text-[10px] font-semibold mt-1 ${isLavender ? 'text-white/70' : 'ui-dim'}`}>
+                {showPlatformerPoints ? 'Points (PP)' : 'Xếp hạng'}
+              </div>
+            </button>
+
+            {/* Creator Points */}
+            <button
+              type="button"
+              onClick={() => !isEditingCp && setShowCreatorRank(!showCreatorRank)}
+              className={`col-span-2 sm:col-span-1 p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm relative transition-all cursor-pointer active:scale-95 ${
+                isLavender
+                  ? 'tsumiki-btn-pink-cyan text-white'
+                  : 'bg-slate-50 dark:bg-zinc-850 border hover:opacity-90'
+              }`}
+              style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
+            >
+              <Hammer className={`w-5 h-5 mb-1.5 ${isLavender ? 'text-white drop-shadow' : 'text-pink-500'}`} />
+              <div className={`text-[11px] font-bold uppercase tracking-wider ${isLavender ? 'text-white/90' : 'ui-dim'}`}>Creator Points</div>
+              <div className={`text-xl font-black mt-0.5 transition-all ${isLavender ? 'text-white drop-shadow-sm' : 'text-pink-500'}`}>
+                {showCreatorRank
+                  ? (data.creatorRank ? `#${data.creatorRank}` : '#-')
+                  : formatCp(data.creatorPoints)}
+              </div>
+              <div className={`text-[10px] font-semibold mt-1 ${isLavender ? 'text-white/70' : 'ui-dim'}`}>
+                {showCreatorRank ? 'Xếp hạng CP' : `${data.createdLevels?.length || 0} tác phẩm`}
+              </div>
+            </button>
           </div>
         </div>
 
-        {/* Box 2 (Right Column) */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className="ui-card p-5 space-y-5 h-full flex flex-col">
-            
-            
-            {/* Points & Rank */}
-            <div className="grid grid-cols-2 gap-3">
-              <button 
-                type="button"
-                onClick={() => setShowClassicPoints(!showClassicPoints)}
-                className={`p-3.5 rounded-2xl flex flex-col items-center text-center shadow-md relative transition-all cursor-pointer active:scale-95 ${
-                  isLavender
-                    ? 'tsumiki-btn-yellow text-white'
-                    : 'bg-slate-50 dark:bg-zinc-800/50 border hover:opacity-90'
-                }`}
-                style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
-              >
-                <Star className={`w-5 h-5 mb-1 ${isLavender ? 'text-white drop-shadow' : 'text-amber-500'}`} />
-                <div className={`text-xs font-bold uppercase ${isLavender ? 'text-white/90' : 'ui-dim'}`}>Classic</div>
-                <div className={`text-xl font-black transition-all ${isLavender ? 'text-white drop-shadow-sm' : 'text-amber-500'}`}>
-                  {showClassicPoints ? (data.classicPp?.toFixed(2) || '0.00') : ((data.classicPp || 0) > 0.005 && data.classicRank ? "#" + data.classicRank : '#-')}
-                </div>
-              </button>
-              <button 
-                type="button"
-                onClick={() => setShowPlatformerPoints(!showPlatformerPoints)}
-                className={`p-3.5 rounded-2xl flex flex-col items-center text-center shadow-md relative transition-all cursor-pointer active:scale-95 ${
-                  isLavender
-                    ? 'tsumiki-btn-blue text-white'
-                    : 'bg-slate-50 dark:bg-zinc-800/50 border hover:opacity-90'
-                }`}
-                style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
-              >
-                <Moon className={`w-5 h-5 mb-1 ${isLavender ? 'text-white drop-shadow' : 'text-sky-500'}`} />
-                <div className={`text-xs font-bold uppercase ${isLavender ? 'text-white/90' : 'ui-dim'}`}>Platformer</div>
-                <div className={`text-xl font-black transition-all ${isLavender ? 'text-white drop-shadow-sm' : 'text-sky-500'}`}>
-                  {showPlatformerPoints ? (data.platformerPp?.toFixed(2) || '0.00') : ((data.platformerPp || 0) > 0.005 && data.platformerRank ? "#" + data.platformerRank : '#-')}
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => !isEditingCp && setShowCreatorRank(!showCreatorRank)}
-                className={`col-span-2 p-3.5 rounded-2xl flex flex-col items-center text-center shadow-md relative transition-all cursor-pointer active:scale-95 ${
-                  isLavender
-                    ? 'tsumiki-btn-pink-cyan text-white'
-                    : 'bg-slate-50 dark:bg-zinc-800/50 border hover:opacity-90'
-                }`}
-                style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
-              >
-                <Hammer className={`w-5 h-5 mb-1 ${isLavender ? 'text-white drop-shadow' : 'text-pink-500'}`} />
-                <div className={`text-xs font-bold uppercase ${isLavender ? 'text-white/90' : 'ui-dim'}`}>Creator Points</div>
-                
-                <div className={`text-xl font-black mt-0.5 flex items-center justify-center gap-2 ${isLavender ? 'text-white drop-shadow-sm' : 'text-pink-500'}`}>
-                  {isFullAdmin && isEditingCp ? (
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      value={cpInput}
-                      onChange={(e) => setCpInput(e.target.value)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-24 ui-input px-2 py-1 rounded-lg text-sm font-black text-center text-zinc-900 dark:text-white"
-                      autoFocus
-                    />
-                  ) : (
-                    <span>
-                      {showCreatorRank
-                        ? (data.creatorRank ? `#${data.creatorRank}` : '#-')
-                        : formatCp(data.creatorPoints)}
-                    </span>
-                  )}
-                </div>
-                
-                <div className={`text-[10px] font-bold mt-1 ${isLavender ? 'text-white/80' : 'ui-dim'}`}>
-                  {t('profile.created_count', { n: data.createdLevels?.length || 0 })}
-                </div>
-
-                {isFullAdmin && (
-                  <div className="flex items-center justify-center gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={handleResetCp}
-                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border hover:opacity-80 ${isLavender ? 'bg-black/20 text-white border-white/20' : 'bg-slate-100 dark:bg-zinc-700/50'}`}
-                      style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
-                    >
-                      <RotateCcw className="w-3 h-3" /> Reset
-                    </button>
-                    {isEditingCp ? (
-                      <button
-                        onClick={async () => {
-                          try {
-                            const value = Number(cpInput);
-                            if (!Number.isFinite(value) || value < 0) {
-                              showToast('Creator Points không hợp lệ.', 'error');
-                              return;
-                            }
-                            const res = await fetch('/api/admin/users/' + data.id + '/cp', {
-                              method: 'PATCH',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ action: 'set', creatorPoints: value, currentAdminUsername: currentUser.username }),
-                            });
-                            const resData = await res.json();
-                            if (res.ok && resData.success) {
-                              showToast(t('profile.cp_saved'), 'success');
-                              setIsEditingCp(false);
-                              fetchProfile();
-                            } else {
-                              showToast(resData.error || t('admin.action_fail'), 'error');
-                            }
-                          } catch (e) {
-                            showToast(t('admin.action_fail'), 'error');
-                          }
-                        }}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-green-500/20 text-green-300 border border-green-500/30 hover:bg-green-500/30"
-                      >
-                        <Check className="w-3 h-3" /> {t('common.save')}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => { setCpInput(String(data.creatorPoints ?? 0)); setIsEditingCp(true); }}
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border hover:opacity-80 ${isLavender ? 'bg-black/20 text-white border-white/20' : 'bg-slate-100 dark:bg-zinc-700/50'}`}
-                        style={!isLavender ? { borderColor: 'var(--border-ui)' } : {}}
-                      >
-                        <Pencil className="w-3 h-3" /> {t('common.edit')}
-                      </button>
-                    )}
-                  </div>
-                )}
-              </button>
+        {/* Favorite / Hardest (Right 6 cols) */}
+        <div className="lg:col-span-6">
+          <div className="ui-card p-4 rounded-2xl h-full flex flex-col justify-between space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold ui-title flex items-center gap-1.5 uppercase tracking-wide">
+                <Heart className="w-3.5 h-3.5 text-rose-500" />
+                {t('profile.favorite')}
+              </span>
+              {canEditInfo && !isEditingHardest && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHardestInput(data.profileConfig?.hardestEmbed || '');
+                    setIsEditingHardest(true);
+                  }}
+                  className="p-1 rounded-lg text-sky-500 hover:bg-sky-500/10 transition-colors cursor-pointer"
+                  title="Chỉnh sửa nội dung yêu thích"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
-            {/* Hardest */}
-            <div className="pt-2 flex-1 flex flex-col">
-              <div className="text-xs font-bold ui-dim mb-3 flex items-center justify-between">
-                <span className="flex items-center gap-1.5"><Heart className="w-3.5 h-3.5 text-rose-500" /> {t('profile.favorite')}</span>
-                {isOwner && !isEditingHardest && (
-                  <button onClick={() => { setHardestInput(data.profileConfig?.hardestEmbed || ''); setIsEditingHardest(true); }} className="text-sky-500 hover:opacity-80"><Edit className="w-3.5 h-3.5" /></button>
-                )}
-              </div>
-              
-              {isEditingHardest ? (
-                <div className="space-y-2 flex-1">
-                  <textarea
-                    value={hardestInput}
-                    onChange={(e) => setHardestInput(e.target.value)}
-                    className="w-full h-32 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900 border text-xs"
+            {isEditingHardest ? (
+              <div className="space-y-2 flex-1 flex flex-col">
+                <textarea
+                  value={hardestInput}
+                  onChange={(e) => setHardestInput(e.target.value)}
+                  className="w-full flex-1 min-h-[140px] p-3 rounded-xl border text-xs resize-none"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  placeholder={t('profile.favorite_ph')}
+                  autoFocus
+                />
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingHardest(false)}
+                    className="px-3 py-1.5 text-xs font-bold border rounded-xl hover:opacity-80 transition-all cursor-pointer"
                     style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                    placeholder={t('profile.favorite_ph')}
-                  />
-                  <div className="flex gap-2">
-                    <button onClick={async () => {
+                  >
+                    {t('common.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
                       const newConfig = { ...(data.profileConfig || {}), hardestEmbed: hardestInput.trim() };
                       await updateProfileField({ profileConfig: newConfig });
                       setData((prev: any) => ({ ...prev, profileConfig: newConfig }));
                       setIsEditingHardest(false);
-                      fetchProfile();
-                    }} className="tsumiki-btn-green px-4 py-1.5 text-xs font-bold text-white rounded-xl">{t('common.save')}</button>
-                    <button onClick={() => setIsEditingHardest(false)} className="px-4 py-1.5 text-xs font-bold border rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all">{t('common.cancel')}</button>
-                  </div>
+                      fetchProfile({ silent: true });
+                    }}
+                    className="px-3.5 py-1.5 text-xs font-bold text-white rounded-xl shadow-xs transition-all cursor-pointer"
+                    style={{ backgroundColor: 'var(--accent)' }}
+                  >
+                    {t('common.save')}
+                  </button>
                 </div>
-              ) : (
-                <div className="w-full flex-1 rounded-2xl overflow-hidden bg-slate-100 dark:bg-zinc-900 border flex items-center justify-center min-h-[180px]" style={{ borderColor: 'var(--border-ui)' }}>
-                  {renderFavoriteContent(data.profileConfig?.hardestEmbed)}
-                </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="w-full flex-1 rounded-xl overflow-hidden border flex items-center justify-center min-h-[140px] max-h-[220px]" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                {renderFavoriteContent(data.profileConfig?.hardestEmbed)}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1113,13 +1100,13 @@ export default function ProfilePage() {
             <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="border-b text-[11px] font-bold uppercase ui-dim" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-                  <th className="px-5 py-3 w-12 text-center">#</th>
-                  <th className="px-5 py-3">{t("profile.col_level")}</th>
-                  <th className="px-5 py-3 text-center">{t("profile.col_progress")}</th>
-                  <th className="px-5 py-3 text-right">Base Points</th>
-                  <th className="px-5 py-3 text-center">{t("profile.col_weight")}</th>
-                  <th className="px-5 py-3 text-right">{t("profile.col_pp")}</th>
-                  <th className="px-5 py-3 text-center w-24">Video</th>
+                  <th className="px-4 py-2.5 w-12 text-center">#</th>
+                  <th className="px-4 py-2.5">{t("profile.col_level")}</th>
+                  <th className="px-4 py-2.5 text-center">{t("profile.col_progress")}</th>
+                  <th className="px-4 py-2.5 text-right">Base Points</th>
+                  <th className="px-4 py-2.5 text-center">{t("profile.col_weight")}</th>
+                  <th className="px-4 py-2.5 text-right">{t("profile.col_pp")}</th>
+                  <th className="px-4 py-2.5 text-center w-24">Video</th>
                 </tr>
               </thead>
               <tbody className="ui-zebra">
@@ -1133,8 +1120,8 @@ export default function ProfilePage() {
                   const pp = ppByRecordId.get(item.recordId);
                   return (
                   <tr key={item.recordId || item.id || `breakdown-${idx}`} className="hover:opacity-90">
-                    <td className="px-5 py-3.5 text-center font-bold ui-dim">{pp?.rankInProfile ?? (recordPage - 1) * RECORD_PAGE_SIZE + idx + 1}</td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-4 py-2.5 text-center font-bold ui-dim">{pp?.rankInProfile ?? (recordPage - 1) * RECORD_PAGE_SIZE + idx + 1}</td>
+                    <td className="px-4 py-2.5">
                       <div className="flex items-center gap-1.5">
                         {item.placement != null ? (
                           <span className="px-1 py-0.2 rounded text-[9px] font-bold ui-subtle">#{item.placement}</span>
@@ -1150,15 +1137,15 @@ export default function ProfilePage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-center font-semibold ui-title">
+                    <td className="px-4 py-2.5 text-center font-semibold ui-title">
                       {item.progress != null ? `${item.progress}%` : '—'}
                     </td>
-                    <td className="px-5 py-3.5 text-right ui-dim">
+                    <td className="px-4 py-2.5 text-right ui-dim">
                       {item.awardedPp != null && item.progress != null && item.progress < 100
                         ? `${Number(item.awardedPp).toFixed(2)} / ${item.basePp.toFixed(2)}`
                         : item.basePp.toFixed(2)}
                     </td>
-                    <td className="px-5 py-3.5 text-center">
+                    <td className="px-4 py-2.5 text-center">
                       {pp ? (
                         <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
                           {pp.weightPercent}%
@@ -1167,10 +1154,10 @@ export default function ProfilePage() {
                         <span className="text-[10px] ui-dim">—</span>
                       )}
                     </td>
-                    <td className="px-5 py-3.5 text-right font-black" style={{ color: pp ? 'var(--accent)' : 'var(--text-dim)' }}>
+                    <td className="px-4 py-2.5 text-right font-black" style={{ color: pp ? 'var(--accent)' : 'var(--text-dim)' }}>
                       {pp ? pp.weightedPp.toFixed(2) : '—'}
                     </td>
-                    <td className="px-5 py-3.5 text-center">
+                    <td className="px-4 py-2.5 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <a href={item.videoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold hover:underline" style={{ color: 'var(--accent)' }}>
                           <Play className="w-3 h-3" /> {t("profile.watch")}
@@ -1201,16 +1188,16 @@ export default function ProfilePage() {
             <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="border-b text-[11px] font-bold uppercase ui-dim" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-                  <th className="px-5 py-3">{t("profile.col_level")}</th>
-                  <th className="px-5 py-3 text-center">{t("profile.col_time")}</th>
-                  <th className="px-5 py-3 text-right">Base Points</th>
-                  <th className="px-5 py-3 text-center">Video</th>
+                  <th className="px-4 py-2.5">{t("profile.col_level")}</th>
+                  <th className="px-4 py-2.5 text-center">{t("profile.col_time")}</th>
+                  <th className="px-4 py-2.5 text-right">Base Points</th>
+                  <th className="px-4 py-2.5 text-center">Video</th>
                 </tr>
               </thead>
               <tbody className="ui-zebra">
                 {pagedPlatformer.map((rec: any, idx: number) => (
                   <tr key={rec.recordId || rec.id || `plat-${idx}`} className="hover:opacity-90">
-                    <td className="px-5 py-3.5">
+                    <td className="px-4 py-2.5">
                       {rec.gdLevelId ? (
                         <Link href={levelPath({ gdLevelId: rec.gdLevelId })} className="font-bold ui-title hover:underline" style={{ color: 'var(--accent)' }}>
                           {rec.name}
@@ -1219,11 +1206,11 @@ export default function ProfilePage() {
                         <span className="font-bold ui-title">{rec.name}</span>
                       )}
                     </td>
-                    <td className="px-5 py-3.5 text-center font-mono font-bold" style={{ color: 'var(--badge-green-text)' }}>
+                    <td className="px-4 py-2.5 text-center font-mono font-bold" style={{ color: 'var(--badge-green-text)' }}>
                       {(rec.timeMs / 1000).toFixed(3)}s
                     </td>
-                    <td className="px-5 py-3.5 text-right ui-dim">{rec.basePp.toFixed(2)}</td>
-                    <td className="px-5 py-3.5 text-center">
+                    <td className="px-4 py-2.5 text-right ui-dim">{rec.basePp.toFixed(2)}</td>
+                    <td className="px-4 py-2.5 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <a href={rec.videoUrl} target="_blank" rel="noreferrer" className="font-semibold hover:underline flex items-center gap-1" style={{ color: 'var(--accent)' }}>
                           <Play className="w-3 h-3" /> {t("profile.watch")}
@@ -1254,17 +1241,17 @@ export default function ProfilePage() {
             <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="border-b text-[11px] font-bold uppercase ui-dim" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-                  <th className="px-5 py-3">Level Name</th>
-                  <th className="px-5 py-3 text-center">Base Points</th>
-                  <th className="px-5 py-3 text-center">Rating</th>
-                  <th className="px-5 py-3 text-center">Mode</th>
-                  {isStaff && <th className="px-5 py-3 text-center w-16"></th>}
+                  <th className="px-4 py-2.5">Level Name</th>
+                  <th className="px-4 py-2.5 text-center">Base Points</th>
+                  <th className="px-4 py-2.5 text-center">Rating</th>
+                  <th className="px-4 py-2.5 text-center">Mode</th>
+                  {isStaff && <th className="px-4 py-2.5 text-center w-16"></th>}
                 </tr>
               </thead>
               <tbody className="ui-zebra">
                 {pagedCreated.map((level: any, idx: number) => (
                   <tr key={level.id || `created-${idx}`} className="hover:opacity-90">
-                    <td className="px-5 py-3.5">
+                    <td className="px-4 py-2.5">
                       {level.gdLevelId ? (
                         <Link href={levelPath(level)} className="font-bold ui-title hover:underline" style={{ color: 'var(--accent)' }}>
                           {level.name}
@@ -1273,10 +1260,10 @@ export default function ProfilePage() {
                         <span className="font-bold ui-title">{level.name}</span>
                       )}
                     </td>
-                    <td className="px-5 py-3.5 text-center ui-dim">
+                    <td className="px-4 py-2.5 text-center ui-dim">
                       {level.basePp.toFixed(2)}
                     </td>
-                    <td className="px-5 py-3.5 text-center font-bold">
+                    <td className="px-4 py-2.5 text-center font-bold">
                       <span className="px-2 py-0.5 rounded text-[10px]" style={{
                         backgroundColor: level.ratingType === 'MYTHIC' ? 'rgba(168, 85, 247, 0.15)' : 
                                          level.ratingType === 'LEGENDARY' ? 'rgba(236, 72, 153, 0.15)' : 
@@ -1292,13 +1279,13 @@ export default function ProfilePage() {
                         {level.ratingType !== 'NONE' ? level.ratingType : 'UNRATED'}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-center">
+                    <td className="px-4 py-2.5 text-center">
                       <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-black/5 dark:bg-white/5 ui-dim">
                         {level.mode}
                       </span>
                     </td>
                     {isStaff && (
-                      <td className="px-5 py-3.5 text-center">
+                      <td className="px-4 py-2.5 text-center">
                         <button
                           onClick={() => handleDeleteWork(level)}
                           className="p-1 rounded hover:bg-red-500/20 text-red-500 transition-colors"
@@ -1326,6 +1313,183 @@ export default function ProfilePage() {
 
         </div>
       </div>
+
+      {/* Box Cài Đặt Người Dùng Cho Admin (ở dưới cùng trang profile) */}
+      {(isStaff || isFullAdmin || isSuperAdmin) && (
+        <div className="ui-card p-5 md:p-6 rounded-3xl border border-red-500/25 bg-gradient-to-b from-red-500/[0.04] to-transparent shadow-sm space-y-4">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center shrink-0 border border-red-500/20 shadow-xs">
+                <ShieldAlert className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-extrabold text-sm sm:text-base ui-title">
+                    Cài Đặt Người Dùng (Admin)
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-red-500/15 text-red-500 border border-red-500/30">
+                    Chỉ dành cho BQT
+                  </span>
+                </div>
+                <p className="text-xs ui-dim mt-0.5">
+                  Bảng quản trị tài khoản <strong>@{data.username}</strong>
+                </p>
+              </div>
+            </div>
+
+            {/* Status pills */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-2.5 py-1 rounded-xl text-xs font-bold border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}>
+                Role: {data.role}
+              </span>
+              {data.isBanned ? (
+                <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-red-500/15 text-red-400 border border-red-500/30 flex items-center gap-1">
+                  <Flame className="w-3.5 h-3.5" /> Bị đình chỉ
+                </span>
+              ) : (
+                <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                  <CheckCircle className="w-3.5 h-3.5" /> Hoạt động
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* 1. Quản lý Role & Huy hiệu */}
+            <button
+              type="button"
+              onClick={handleOpenManageModal}
+              className="p-3.5 rounded-2xl border transition-all text-left group hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20 group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                  <Medal className="w-4 h-4" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500">
+                  {isFullAdmin ? 'Role & Badge' : 'Huy hiệu'}
+                </span>
+              </div>
+              <div className="text-xs font-bold ui-title group-hover:text-amber-500 transition-colors">
+                Quản Lý Role & Huy Hiệu
+              </div>
+              <div className="text-[11px] ui-dim mt-0.5 leading-snug">
+                Cấp quyền, hạn Supporter và gán huy hiệu danh dự
+              </div>
+            </button>
+
+            {/* 2. Sửa / Reset Creator Points */}
+            <button
+              type="button"
+              disabled={!isFullAdmin && !isSuperAdmin}
+              onClick={handleResetCp}
+              className="p-3.5 rounded-2xl border transition-all text-left group hover:scale-[1.01] active:scale-[0.99] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-8 h-8 rounded-xl bg-pink-500/10 text-pink-500 flex items-center justify-center border border-pink-500/20 group-hover:bg-pink-500 group-hover:text-white transition-colors">
+                  <Hammer className="w-4 h-4" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-pink-500">
+                  {formatCp(data.creatorPoints)} CP
+                </span>
+              </div>
+              <div className="text-xs font-bold ui-title group-hover:text-pink-500 transition-colors">
+                Reset Creator Points
+              </div>
+              <div className="text-[11px] ui-dim mt-0.5 leading-snug">
+                Đặt lại điểm sáng tạo về 0 hoặc tính toán lại
+              </div>
+            </button>
+
+            {/* 3. Đặt lại Mật khẩu (Owner web) */}
+            <button
+              type="button"
+              disabled={!isSuperAdmin}
+              onClick={() => {
+                if (!isSuperAdmin) {
+                  showToast('Chỉ Owner web mới có quyền đặt lại mật khẩu!', 'error');
+                  return;
+                }
+                setNewPasswordInput('');
+                setShowResetPasswordModal(true);
+              }}
+              className="p-3.5 rounded-2xl border transition-all text-left group hover:scale-[1.01] active:scale-[0.99] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center border border-sky-500/20 group-hover:bg-sky-500 group-hover:text-white transition-colors">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-sky-500">
+                  Owner Web
+                </span>
+              </div>
+              <div className="text-xs font-bold ui-title group-hover:text-sky-500 transition-colors">
+                Đặt Lại Mật Khẩu
+              </div>
+              <div className="text-[11px] ui-dim mt-0.5 leading-snug">
+                Cấp mật khẩu mới trực tiếp không cần qua email
+              </div>
+            </button>
+
+            {/* 4. Đình chỉ / Mở khóa tài khoản */}
+            <button
+              type="button"
+              disabled={!isFullAdmin && !isSuperAdmin}
+              onClick={() => {
+                if (data.isBanned) {
+                  handleToggleBan('unban');
+                } else {
+                  setBanReasonInput('');
+                  setShowBanModal(true);
+                }
+              }}
+              className="p-3.5 rounded-2xl border transition-all text-left group hover:scale-[1.01] active:scale-[0.99] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center border transition-colors ${
+                  data.isBanned 
+                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white' 
+                    : 'bg-orange-500/10 text-orange-500 border-orange-500/20 group-hover:bg-orange-500 group-hover:text-white'
+                }`}>
+                  {data.isBanned ? <Unlock className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
+                </div>
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${data.isBanned ? 'text-emerald-500' : 'text-orange-500'}`}>
+                  {data.isBanned ? 'Đang khóa' : 'Admin'}
+                </span>
+              </div>
+              <div className={`text-xs font-bold transition-colors ${data.isBanned ? 'group-hover:text-emerald-500' : 'group-hover:text-orange-500'} ui-title`}>
+                {data.isBanned ? 'Mở Khóa Tài Khoản' : 'Đình Chỉ Tài Khoản'}
+              </div>
+              <div className="text-[11px] ui-dim mt-0.5 leading-snug">
+                {data.isBanned ? 'Khôi phục quyền truy cập cho người dùng' : 'Tạm dừng đăng nhập và hủy phiên làm việc'}
+              </div>
+            </button>
+          </div>
+
+          {/* Bottom row: Audit note + Delete User */}
+          <div className="pt-3 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ borderColor: 'var(--border-subtle)' }}>
+            <div className="flex items-center gap-2 text-xs ui-dim">
+              <Shield className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+              <span>Mọi hành động quản trị viên được ghi nhận vào nhật ký hệ thống (Audit Log).</span>
+            </div>
+            {(isSuperAdmin || isFullAdmin) && (
+              <button
+                type="button"
+                onClick={openDeleteModal}
+                className="px-3.5 py-2 rounded-xl text-xs font-bold text-red-500 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Xóa Tài Khoản Này
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Modern Role & Supporter Management Modal */}
       {showManageModal && data && (
