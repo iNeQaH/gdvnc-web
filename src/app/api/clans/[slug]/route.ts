@@ -308,14 +308,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ slug: 
 
     const member = clan.members[0];
     const isClanLeader = member?.role === 'LEADER';
-    const isClanMod = member?.role === 'MODERATOR';
     const isOwner = isSuperAdminUser(auth);
 
-    // QUY TẮC BẢO MẬT: Chỉ Leader Clan, Mod Clan, hoặc Owner Web mới được sửa thông tin Clan.
-    // Admin web và Mod web KHÔNG được phép sửa thông tin Clan!
-    if (!isClanLeader && !isClanMod && !isOwner) {
+    // QUY TẮC BẢO MẬT: Chỉ Leader Clan hoặc Owner Web mới được sửa thông tin Clan.
+    // Mod Clan, Admin web và Mod web KHÔNG được phép sửa thông tin Clan!
+    if (!isClanLeader && !isOwner) {
       return NextResponse.json(
-        { error: 'Chỉ Leader, Quản trị viên Clan hoặc Owner website mới có quyền chỉnh sửa Clan.' },
+        { error: 'Chỉ Leader của Clan hoặc Owner website mới có quyền chỉnh sửa cài đặt Clan.' },
         { status: 403 }
       );
     }

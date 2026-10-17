@@ -259,12 +259,36 @@ export default function ClanListPage() {
             const sp = clan.totalSp ?? clan.effectiveSp ?? 0;
             const memberCount = clan.memberCount ?? clan._count?.members ?? clan.members?.length ?? 0;
             const tierInfo = getClanTier(sp);
+            const isTier2Plus = tierInfo.tier >= 2;
+            const isTier3 = tierInfo.tier === 3;
+            const primaryThemeColor = clan.themeColor || clan.color || (isTier3 ? '#a855f7' : '#0ea5e9');
+
+            const cardStyle: React.CSSProperties = {
+              borderColor: 'var(--border-ui)',
+            };
+
+            if (isTier2Plus) {
+              if (clan.themeGradient) {
+                cardStyle.backgroundImage = `linear-gradient(to bottom, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.94)), ${clan.themeGradient}`;
+              } else if (clan.themeColor) {
+                cardStyle.backgroundColor = `color-mix(in srgb, ${clan.themeColor} 12%, var(--bg-card))`;
+              }
+
+              if (isTier3) {
+                cardStyle.borderColor = `color-mix(in srgb, ${primaryThemeColor} 65%, var(--border-ui))`;
+                cardStyle.boxShadow = `0 0 22px color-mix(in srgb, ${primaryThemeColor} 45%, transparent), 0 0 45px color-mix(in srgb, ${primaryThemeColor} 25%, transparent)`;
+              } else {
+                cardStyle.borderColor = `color-mix(in srgb, ${primaryThemeColor} 45%, var(--border-ui))`;
+                cardStyle.boxShadow = `0 0 14px color-mix(in srgb, ${primaryThemeColor} 30%, transparent)`;
+              }
+            }
+
             return (
               <Link
                 key={clan.id}
                 href={`/clan/${clan.slug}`}
                 className="group ui-card rounded-2xl overflow-hidden border flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-xl"
-                style={{ borderColor: 'var(--border-ui)' }}
+                style={cardStyle}
               >
                 {/* Cover Banner */}
                 <div className="h-36 w-full relative bg-slate-900 overflow-hidden">
@@ -380,11 +404,30 @@ export default function ClanListPage() {
             const sp = clan.totalSp ?? clan.effectiveSp ?? 0;
             const memberCount = clan.memberCount ?? clan._count?.members ?? clan.members?.length ?? 0;
             const tierInfo = getClanTier(sp);
+            const isTier2Plus = tierInfo.tier >= 2;
+            const isTier3 = tierInfo.tier === 3;
+            const primaryThemeColor = clan.themeColor || clan.color || (isTier3 ? '#a855f7' : '#0ea5e9');
+
+            const rowStyle: React.CSSProperties = {};
+            if (isTier2Plus) {
+              if (clan.themeGradient) {
+                rowStyle.backgroundImage = `linear-gradient(to right, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.95)), ${clan.themeGradient}`;
+              } else if (clan.themeColor) {
+                rowStyle.backgroundColor = `color-mix(in srgb, ${clan.themeColor} 8%, var(--bg-card))`;
+              }
+              if (isTier3) {
+                rowStyle.boxShadow = `inset 3px 0 0 ${primaryThemeColor}`;
+              } else {
+                rowStyle.boxShadow = `inset 2px 0 0 ${primaryThemeColor}`;
+              }
+            }
+
             return (
               <Link
                 key={clan.id}
                 href={`/clan/${clan.slug}`}
                 className="p-4 flex items-center justify-between gap-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                style={rowStyle}
               >
                 <div className="flex items-center gap-3.5 min-w-0">
                   <div

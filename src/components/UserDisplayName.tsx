@@ -14,6 +14,8 @@ export const FONT_PRESETS: Record<string, { label: string; family: string; weigh
   arcade: { label: 'Righteous (Arcade Synth)', family: "'Righteous', display", weight: '400' },
   techno: { label: 'Audiowide (Techno Space)', family: "'Audiowide', display", weight: '400' },
   gothic: { label: 'Cinzel (Gothic Fantasy)', family: "'Cinzel Decorative', serif", weight: '700' },
+  ornate: { label: 'Unifraktur (Hoa văn)', family: "'UnifrakturMaguntia', cursive", weight: '400' },
+  horror: { label: 'Creepster (Horror)', family: "'Creepster', cursive", weight: '400' },
   neon: { label: 'Monoton (Neon Lines)', family: "'Monoton', display", weight: '400' },
   terminal: { label: 'VT323 (CRT Terminal)', family: "'VT323', monospace", weight: '400' },
   orbitron: { label: 'Orbitron (Sci-Fi Cyber)', family: "'Orbitron', sans-serif", weight: '800' },
@@ -32,6 +34,8 @@ export const SETTINGS_FONT_PRESETS: Record<string, { label: string; family: stri
   neon: { label: 'Monoton (Neon Lines)', family: "'Monoton', display", weight: '400' },
   graffiti: { label: 'Permanent Marker (Graffiti)', family: "'Permanent Marker', cursive", weight: '400' },
   stencil: { label: 'Black Ops (Heavy Stencil)', family: "'Black Ops One', display", weight: '400' },
+  ornate: { label: 'Unifraktur (Hoa văn)', family: "'UnifrakturMaguntia', cursive", weight: '400' },
+  horror: { label: 'Creepster (Horror)', family: "'Creepster', cursive", weight: '400' },
 };
 
 export interface UserDisplayNameProps {
@@ -65,6 +69,7 @@ export interface UserDisplayNameProps {
   showClanTag?: boolean;
   linkClan?: boolean;
   clanRole?: 'LEADER' | 'MODERATOR' | 'MEMBER' | string | null;
+  showClanRole?: boolean;
   className?: string;
   tagClassName?: string;
   tagPosition?: 'left' | 'right';
@@ -76,6 +81,7 @@ export function UserDisplayName({
   showClanTag = true,
   linkClan = false,
   clanRole,
+  showClanRole = true,
   className = '',
   tagClassName = '',
   tagPosition = 'left',
@@ -156,6 +162,7 @@ export function UserDisplayName({
   };
 
   const renderRoleIcon = () => {
+    if (!showClanRole) return null;
     if (role === 'LEADER') {
       return (
         <span title="Leader Clan" className="shrink-0 inline-flex items-center text-amber-400">

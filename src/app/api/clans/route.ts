@@ -56,6 +56,8 @@ export async function GET(req: Request) {
         coverUrl: c.coverUrl,
         color: c.color,
         colorGradient: tierInfo.tier >= 2 ? c.colorGradient : null,
+        themeColor: c.themeColor,
+        themeGradient: tierInfo.tier >= 2 ? c.themeGradient : null,
         totalSp,
         effectiveSp: totalSp,
         tier: tierInfo.tier,

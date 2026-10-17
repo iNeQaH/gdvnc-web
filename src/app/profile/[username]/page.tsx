@@ -808,7 +808,8 @@ export default function ProfilePage() {
                   user={data}
                   fallbackName={data.username}
                   linkClan
-                  tagPosition="right"
+                  tagPosition="left"
+                  showClanRole={false}
                   className="text-xl sm:text-2xl font-black ui-title drop-shadow-sm"
                 />
 

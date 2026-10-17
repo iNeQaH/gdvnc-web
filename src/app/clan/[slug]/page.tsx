@@ -416,49 +416,6 @@ function ClanHardestSlideshow({
         )}
       </div>
 
-      {/* Filmstrip Thumbnails Row */}
-      {topBeaten.length > 1 && (
-        <div
-          className="p-2 sm:p-2.5 bg-black/20 border-t flex items-center gap-2 overflow-x-auto scrollbar-none"
-          style={{ borderColor: 'var(--border-subtle)' }}
-        >
-          {topBeaten.map((item, idx) => {
-            const isSelected = idx === currentIndex;
-            const l = item.level;
-            const vSrc = item.videoUrl || l.videoUrl;
-            const yM = vSrc ? vSrc.match(/(?:youtu\.be\/|youtube\.com\/.*v=)([\w-]{11})/) : null;
-            const yId = l.youtubeId || (yM ? yM[1] : null);
-            const mThumb = yId
-              ? `https://img.youtube.com/vi/${yId}/mqdefault.jpg`
-              : 'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
-            const itemRank = l.classicRank || l.placement || l.vnPlacement;
-
-            return (
-              <button
-                key={l.id || idx}
-                type="button"
-                onClick={() => handleSelectSlide(idx)}
-                className={`relative shrink-0 flex items-center gap-1.5 p-1 pr-2 rounded-xl border transition-all text-left cursor-pointer ${
-                  isSelected
-                    ? 'border-amber-400/80 bg-amber-500/15 shadow-[0_0_12px_rgba(245,158,11,0.25)] ring-1 ring-amber-400/50'
-                    : 'border-white/10 bg-black/30 opacity-70 hover:opacity-100 hover:border-white/25'
-                }`}
-              >
-                <div className="w-9 h-6 rounded-lg overflow-hidden bg-slate-900 shrink-0 relative">
-                  <img src={mThumb} alt="" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/20" />
-                </div>
-                <div className="min-w-0 max-w-[100px]">
-                  <p className={`text-xs font-bold truncate ${isSelected ? 'text-amber-300' : 'text-white/90'}`}>
-                    {itemRank ? `#${itemRank} ` : ''}{l.name}
-                  </p>
-                  <p className="text-[10px] ui-dim truncate font-mono">{l.basePp || 0} Pt</p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
@@ -701,43 +658,6 @@ function CompactClanLevelsSlideshow({
         )}
       </div>
 
-      {/* Compact Filmstrip Row */}
-      {works.length > 1 && (
-        <div
-          className="p-1.5 bg-black/20 border-t flex items-center gap-1.5 overflow-x-auto scrollbar-none"
-          style={{ borderColor: 'var(--border-subtle)' }}
-        >
-          {works.map((w, idx) => {
-            const isSelected = idx === currentIndex;
-            const wYt = w.youtubeId || (w.videoUrl?.match(/(?:youtu\.be\/|youtube\.com\/.*v=)([\w-]{11})/) || [])[1];
-            const miniThumb = wYt
-              ? `https://img.youtube.com/vi/${wYt}/mqdefault.jpg`
-              : w.imageUrl || 'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
-
-            return (
-              <button
-                key={w.id || idx}
-                type="button"
-                onClick={() => handleSelectSlide(idx)}
-                className={`relative shrink-0 flex items-center gap-1 p-0.5 pr-2 rounded-lg border transition-all text-left cursor-pointer ${
-                  isSelected
-                    ? 'border-sky-400 bg-sky-500/15 ring-1 ring-sky-400/50'
-                    : 'border-white/10 bg-black/30 opacity-70 hover:opacity-100'
-                }`}
-              >
-                <div className="w-7 h-5 rounded overflow-hidden bg-slate-900 shrink-0 relative">
-                  <img src={miniThumb} alt="" className="w-full h-full object-cover" />
-                </div>
-                <div className="min-w-0 max-w-[90px]">
-                  <p className={`text-[10px] font-bold truncate ${isSelected ? 'text-sky-300' : 'text-white/90'}`}>
-                    {w.levelName || 'Untitled'}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
@@ -1421,7 +1341,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                 </button>
               )}
 
-              {canManageClan && (
+              {(isLeader || isOwnerWeb) && (
                 <button
                   type="button"
                   onClick={() => setIsSettingsOpen(true)}
@@ -1478,25 +1398,6 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   <LogOut className="w-4 h-4" />
                 </button>
               )}
-
-              {/* Members Roster Drawer / Sidebar Toggle Button (Desktop & Mobile) */}
-              <button
-                type="button"
-                onClick={() => setIsRosterOpen((prev) => !prev)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
-                  isRosterOpen
-                    ? 'border-sky-500/50 bg-sky-500/15 text-sky-400'
-                    : 'hover:border-sky-400/50'
-                }`}
-                style={{
-                  backgroundColor: isRosterOpen ? undefined : 'var(--bg-subtle)',
-                  borderColor: isRosterOpen ? undefined : 'var(--border-ui)',
-                  color: isRosterOpen ? undefined : 'var(--text-title)',
-                }}
-              >
-                <Users className="w-3.5 h-3.5 text-sky-400" />
-                <span>{isEn ? `Members (${clan.memberCount})` : `Thành viên (${clan.memberCount})`}</span>
-              </button>
             </div>
           </div>
 
@@ -2008,6 +1909,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
             isLeader={isLeader}
             isAdminWeb={isAdminWeb}
             isOwnerWeb={isOwnerWeb}
+            onOpenTransfer={() => setIsTransferOpen(true)}
           />
         )}
 
@@ -2040,11 +1942,12 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
         clan={clan}
         tierInfo={tierInfo}
         isLeader={isLeader}
+        isClanMod={isClanMod}
         isOwnerWeb={isOwnerWeb}
         isEn={isEn}
         isOpen={isRosterOpen}
+        onToggle={() => setIsRosterOpen((prev) => !prev)}
         onClose={() => setIsRosterOpen(false)}
-        onOpenTransfer={() => setIsTransferOpen(true)}
         onRoleChange={handleRoleChange}
         onKick={handleKick}
       />

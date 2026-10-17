@@ -14,6 +14,8 @@ import {
   Shield,
   Trash2,
   Upload,
+  Crown,
+  Sparkles,
 } from 'lucide-react';
 import ColorPicker from '@/components/ColorPicker';
 import { CircularAnglePicker } from '@/components/CircularAnglePicker';
@@ -29,6 +31,7 @@ interface ClanSettingsModalProps {
   isLeader: boolean;
   isAdminWeb: boolean;
   isOwnerWeb: boolean;
+  onOpenTransfer?: () => void;
 }
 
 export default function ClanSettingsModal({
@@ -40,6 +43,7 @@ export default function ClanSettingsModal({
   isLeader,
   isAdminWeb,
   isOwnerWeb,
+  onOpenTransfer,
 }: ClanSettingsModalProps) {
   const { showToast, showConfirm } = useToast();
   const { language } = useLanguage();
@@ -53,6 +57,7 @@ export default function ClanSettingsModal({
 
   // Gradient & Theme options for Tier 2+
   const isTier2OrHigher = Boolean(clan.tier >= 2 || (clan.totalSp || clan.effectiveSp || 0) >= 10);
+  const isTier3 = Boolean(clan.tier === 3 || (clan.totalSp || clan.effectiveSp || 0) >= 30);
   const [useTagGradient, setUseTagGradient] = useState(Boolean(clan.colorGradient));
   const [tagGrad1, setTagGrad1] = useState(() => {
     if (clan.colorGradient) {
@@ -212,8 +217,14 @@ export default function ClanSettingsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div
-        className="w-full max-w-xl rounded-2xl border shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
-        style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+        className="w-full max-w-xl rounded-2xl border shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transition-all duration-300"
+        style={{
+          backgroundColor: 'var(--bg-card)',
+          borderColor: isTier3 ? 'color-mix(in srgb, var(--accent) 70%, #a855f7)' : 'var(--border-ui)',
+          boxShadow: isTier3
+            ? '0 0 35px rgba(168, 85, 247, 0.35), 0 0 70px rgba(14, 165, 233, 0.2)'
+            : undefined,
+        }}
       >
         {/* Header */}
         <div
@@ -509,6 +520,32 @@ export default function ClanSettingsModal({
               </div>
             )}
           </div>
+
+          {/* Transfer Ownership (Leader or Web Owner only) */}
+          {(isLeader || isOwnerWeb) && onOpenTransfer && (
+            <div className="p-4 rounded-xl border border-amber-500/25 bg-amber-500/5 space-y-2">
+              <h3 className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                <Crown className="w-3.5 h-3.5" />
+                <span>{isEn ? 'Transfer Clan Ownership' : 'Chuyển giao quyền sở hữu Clan'}</span>
+              </h3>
+              <p className="text-[11px] ui-dim">
+                {isEn
+                  ? 'Transfer Clan Leadership to another member. You will become a regular member.'
+                  : 'Chuyển giao chức vụ Leader tối cao cho thành viên khác trong Clan. Bạn sẽ trở thành thành viên bình thường.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenTransfer();
+                }}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold text-amber-400 hover:text-black hover:bg-amber-400 border border-amber-500/40 transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <Crown className="w-3.5 h-3.5" />
+                <span>{isEn ? 'Transfer Host' : 'Chuyển quyền Leader'}</span>
+              </button>
+            </div>
+          )}
 
           {/* Disband Clan Danger Zone (Leader or Web Admin only) */}
           {(isLeader || isAdminWeb || isOwnerWeb) && (

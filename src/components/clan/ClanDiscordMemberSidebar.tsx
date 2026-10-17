@@ -6,10 +6,11 @@ import {
   Users,
   Crown,
   ShieldCheck,
-  X,
   UserX,
   ArrowUpCircle,
   ArrowDownCircle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { UserDisplayName } from '@/components/UserDisplayName';
 
@@ -17,11 +18,12 @@ interface ClanDiscordMemberSidebarProps {
   clan: any;
   tierInfo: { maxMembers: number; tier: number; name: string };
   isLeader: boolean;
+  isClanMod?: boolean;
   isOwnerWeb: boolean;
   isEn: boolean;
   isOpen: boolean;
+  onToggle?: () => void;
   onClose: () => void;
-  onOpenTransfer: () => void;
   onRoleChange: (memberId: string, newRole: 'MODERATOR' | 'MEMBER') => void;
   onKick: (memberId: string, username: string) => void;
 }
@@ -30,11 +32,12 @@ export default function ClanDiscordMemberSidebar({
   clan,
   tierInfo,
   isLeader,
+  isClanMod = false,
   isOwnerWeb,
   isEn,
   isOpen,
+  onToggle,
   onClose,
-  onOpenTransfer,
   onRoleChange,
   onKick,
 }: ClanDiscordMemberSidebarProps) {
@@ -42,6 +45,7 @@ export default function ClanDiscordMemberSidebar({
   const mods: any[] = clan.membersGrouped?.mods || [];
   const members: any[] = clan.membersGrouped?.members || [];
   const canManage = isLeader || isOwnerWeb;
+  const canKick = isLeader || isOwnerWeb || isClanMod;
 
   return (
     <>
@@ -80,23 +84,13 @@ export default function ClanDiscordMemberSidebar({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
-            {isLeader && (
-              <button
-                type="button"
-                onClick={onOpenTransfer}
-                className="text-[11px] font-bold text-amber-400 hover:text-amber-300 hover:underline transition-colors px-1 py-0.5 rounded cursor-pointer"
-                title={isEn ? 'Transfer Ownership' : 'Chuyển giao quyền sở hữu'}
-              >
-                {isEn ? 'Transfer' : 'Chuyển'}
-              </button>
-            )}
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg ui-dim hover:text-white transition-colors cursor-pointer"
-              title={isEn ? 'Close' : 'Đóng'}
+              className="p-1.5 rounded-lg ui-dim hover:text-white transition-colors cursor-pointer flex items-center justify-center"
+              title={isEn ? 'Collapse Members' : 'Thu gọn danh sách'}
             >
-              <X className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -243,24 +237,28 @@ export default function ClanDiscordMemberSidebar({
                     </div>
                   </Link>
 
-                  {canManage && (
+                  {(canManage || canKick) && (
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => onRoleChange(m.id, 'MODERATOR')}
-                        className="p-1 rounded text-emerald-400 hover:bg-emerald-500/10 cursor-pointer transition-colors"
-                        title={isEn ? 'Promote to Clan Mod' : 'Bổ nhiệm làm Mod Clan'}
-                      >
-                        <ArrowUpCircle className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onKick(m.id, m.user.username)}
-                        className="p-1 rounded text-red-400 hover:bg-red-500/10 cursor-pointer transition-colors"
-                        title={isEn ? 'Kick from Clan' : 'Trục xuất khỏi Clan'}
-                      >
-                        <UserX className="w-3.5 h-3.5" />
-                      </button>
+                      {canManage && (
+                        <button
+                          type="button"
+                          onClick={() => onRoleChange(m.id, 'MODERATOR')}
+                          className="p-1 rounded text-emerald-400 hover:bg-emerald-500/10 cursor-pointer transition-colors"
+                          title={isEn ? 'Promote to Clan Mod' : 'Bổ nhiệm làm Mod Clan'}
+                        >
+                          <ArrowUpCircle className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {canKick && (
+                        <button
+                          type="button"
+                          onClick={() => onKick(m.id, m.user.username)}
+                          className="p-1 rounded text-red-400 hover:bg-red-500/10 cursor-pointer transition-colors"
+                          title={isEn ? 'Kick from Clan' : 'Trục xuất khỏi Clan'}
+                        >
+                          <UserX className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -284,6 +282,26 @@ export default function ClanDiscordMemberSidebar({
           </span>
         </div>
       </aside>
+
+      {/* Collapsed Docked Tab on Right Edge */}
+      {!isOpen && (
+        <button
+          type="button"
+          onClick={onToggle || onClose}
+          className="fixed right-0 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-1.5 py-3 px-2 rounded-l-2xl border border-r-0 backdrop-blur-2xl transition-all duration-200 shadow-2xl hover:translate-x-[-3px] cursor-pointer group"
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--bg-card) 92%, transparent)',
+            borderColor: 'var(--border-subtle)',
+          }}
+          title={isEn ? `Expand Members (${clan.memberCount})` : `Mở danh sách thành viên (${clan.memberCount})`}
+        >
+          <ChevronLeft className="w-4 h-4 text-sky-400 group-hover:-translate-x-0.5 transition-transform" />
+          <Users className="w-3.5 h-3.5 ui-dim group-hover:text-sky-400 transition-colors" />
+          <span className="font-mono text-[10px] font-black text-sky-400 [writing-mode:vertical-rl] rotate-180">
+            {clan.memberCount}
+          </span>
+        </button>
+      )}
     </>
   );
 }
