@@ -74,8 +74,7 @@ export async function POST(req: Request) {
     const now = new Date();
     const currentUntil = user.supporterUntil;
     const baseDate = currentUntil && new Date(currentUntil) > now ? new Date(currentUntil) : now;
-    const nextDate = new Date(baseDate.getTime());
-    nextDate.setMonth(nextDate.getMonth() + redeemCode.months);
+    const nextDate = new Date(baseDate.getTime() + redeemCode.months * 30 * 24 * 60 * 60 * 1000);
 
     const updatedUser = await prisma.$transaction(async (tx) => {
       // 1. Update user supporter date

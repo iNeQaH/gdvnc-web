@@ -387,9 +387,7 @@ export default function ProfilePage() {
   const handleOpenManageModal = async () => {
     if (!currentUser || !isStaff || !data) return;
     setSelectedRole(data.role);
-    const remaining = data.supporterUntil && new Date(data.supporterUntil) > new Date()
-      ? Math.max(1, Math.round((new Date(data.supporterUntil).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)))
-      : 0;
+    const remaining = calculateUserSp(data);
     setSupporterMonthsInput(remaining);
     setSupporterMode('keep');
     setSelectedBadgeIds((data.badges || []).map((b: any) => b.id));
@@ -1733,9 +1731,7 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={() => {
-                      const remaining = data.supporterUntil && new Date(data.supporterUntil) > new Date()
-                        ? Math.max(1, Math.round((new Date(data.supporterUntil).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)))
-                        : 0;
+                      const remaining = calculateUserSp(data);
                       setSupporterMonthsInput(remaining);
                       setSupporterMode('keep');
                     }}
@@ -1771,9 +1767,7 @@ export default function ProfilePage() {
                       key={item.val}
                       type="button"
                       onClick={() => {
-                        const remaining = data.supporterUntil && new Date(data.supporterUntil) > new Date()
-                          ? Math.max(1, Math.round((new Date(data.supporterUntil).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)))
-                          : 0;
+                        const remaining = calculateUserSp(data);
                         const base = supporterMode === 'keep' ? remaining : supporterMonthsInput;
                         setSupporterMode('modify');
                         setSupporterMonthsInput(base + item.val);

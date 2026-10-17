@@ -35,6 +35,7 @@ import ColorPicker from '@/components/ColorPicker';
 import { BADGE_ICON_NAMES } from '@/lib/badgeIconCatalog';
 import { type DictKey } from '@/lib/dictionaries';
 import { isSuperAdminUser } from '@/lib/roles';
+import { calculateUserSp } from '@/lib/clanTypes';
 
 const allIconNames = BADGE_ICON_NAMES;
 
@@ -161,9 +162,7 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
   const handleOpenManageRole = async (user: any) => {
     setManageRoleTarget(user);
     setSelectedRole(user.role === 'ADMIN' ? 'ADMIN' : (user.role === 'MODERATOR' ? 'MODERATOR' : 'USER'));
-    const remaining = user.supporterUntil && new Date(user.supporterUntil) > new Date()
-      ? Math.max(1, Math.round((new Date(user.supporterUntil).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)))
-      : 0;
+    const remaining = calculateUserSp(user);
     setSupporterMonthsInput(remaining);
     setSupporterMode('keep');
     setSavingRoleChanges(false);
@@ -1182,9 +1181,7 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
                     <button
                       type="button"
                       onClick={() => {
-                        const remaining = manageRoleTarget.supporterUntil && new Date(manageRoleTarget.supporterUntil) > new Date()
-                          ? Math.max(1, Math.round((new Date(manageRoleTarget.supporterUntil).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)))
-                          : 0;
+                        const remaining = calculateUserSp(manageRoleTarget);
                         setSupporterMonthsInput(remaining);
                         setSupporterMode('keep');
                       }}
@@ -1220,9 +1217,7 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
                         key={item.val}
                         type="button"
                         onClick={() => {
-                          const remaining = manageRoleTarget.supporterUntil && new Date(manageRoleTarget.supporterUntil) > new Date()
-                            ? Math.max(1, Math.round((new Date(manageRoleTarget.supporterUntil).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)))
-                            : 0;
+                          const remaining = calculateUserSp(manageRoleTarget);
                           const base = supporterMode === 'keep' ? remaining : supporterMonthsInput;
                           setSupporterMode('modify');
                           setSupporterMonthsInput(base + item.val);

@@ -74,8 +74,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       if (months === 0) {
         updatedData.supporterUntil = null;
       } else {
-        const next = new Date();
-        next.setMonth(next.getMonth() + months);
+        const next = new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000);
         updatedData.supporterUntil = next;
       }
     } else if (grantSupporterMonths !== undefined && grantSupporterMonths !== 0 && grantSupporterMonths !== '0') {
@@ -91,8 +90,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         const now = new Date();
         const current = target.supporterUntil;
         const base = current && current > now ? current : now;
-        const next = new Date(base.getTime());
-        next.setMonth(next.getMonth() + months);
+        const next = new Date(base.getTime() + months * 30 * 24 * 60 * 60 * 1000);
         updatedData.supporterUntil = next;
       }
     }

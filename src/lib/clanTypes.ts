@@ -14,7 +14,7 @@ export function calculateUserSp(user?: { supporterUntil?: Date | string | null }
   const now = Date.now();
   const diff = target - now;
   if (diff <= 0) return 0;
-  return Math.max(1, Math.ceil(diff / (30 * 24 * 60 * 60 * 1000)));
+  return Math.max(1, Math.round(diff / (30 * 24 * 60 * 60 * 1000)));
 }
 
 /**

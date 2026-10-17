@@ -82,9 +82,7 @@ export async function POST(req: Request) {
     const now = new Date();
     const currentSupporter = targetUser.supporterUntil;
     const baseDate = currentSupporter && currentSupporter > now ? currentSupporter : now;
-    
-    const nextDate = new Date(baseDate.getTime());
-    nextDate.setMonth(nextDate.getMonth() + monthsToGrant);
+    const nextDate = new Date(baseDate.getTime() + monthsToGrant * 30 * 24 * 60 * 60 * 1000);
 
     await prisma.user.update({
       where: { id: targetUser.id },
