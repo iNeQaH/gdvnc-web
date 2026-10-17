@@ -547,7 +547,7 @@ export default function LevelsTab({
   };
 
   const handleRecalculateScores = () => {
-    showConfirm('Xác nhận tính toán lại điểm hệ thống? Thao tác này sẽ cập nhật điểm Base PP cho tất cả màn chơi (tối thiểu 7 điểm) và tính lại toàn bộ điểm cho người chơi.', async () => {
+    showConfirm('Xác nhận tính toán lại điểm hệ thống? Thao tác này sẽ cập nhật điểm Base Pt cho tất cả màn chơi (tối thiểu 7 điểm) và tính lại toàn bộ điểm cho người chơi.', async () => {
       setRecalculatingScores(true);
       try {
         const res = await fetch('/api/admin/levels/recalc-scores', { method: 'POST' });

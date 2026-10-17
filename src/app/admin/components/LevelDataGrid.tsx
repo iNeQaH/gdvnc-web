@@ -39,7 +39,7 @@ const COLUMNS = [
   { key: 'isVN', label: 'VN', type: 'checkbox', w: 50 },
   { key: 'isChallenge', label: 'Challenge', type: 'checkbox', w: 70 },
   { key: 'minPercent', label: 'Min %', type: 'number', w: 60 },
-  { key: 'basePp', label: 'Base PP', type: 'readonly', w: 70 },
+  { key: 'basePp', label: 'Base Pt', type: 'readonly', w: 70 },
   { key: 'youtubeId', label: 'YouTube ID', type: 'text', w: 120 },
 ] as const;
 
@@ -101,7 +101,7 @@ export default function LevelDataGrid({ currentUser }: { currentUser: any }) {
         'Level VN (isVN)',
         'Challenge (isChallenge)',
         'Min %',
-        'Base PP',
+        'Base Pt',
         'YouTube ID',
         'Link YouTube',
         'Mô tả (Description)',

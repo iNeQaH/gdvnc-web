@@ -68,6 +68,21 @@ export async function POST(req: Request) {
             lockedUntil: true,
             totpEnabled: true,
             totpSecret: true,
+            clanMember: {
+              select: {
+                role: true,
+                clan: {
+                  select: {
+                    id: true,
+                    name: true,
+                    tag: true,
+                    slug: true,
+                    color: true,
+                    colorGradient: true,
+                  },
+                },
+              },
+            },
           },
         })
       : null;
@@ -203,6 +218,7 @@ export async function POST(req: Request) {
       creatorPoints: user.creatorPoints,
       spPoints: user.spPoints,
       supporterUntil: user.supporterUntil,
+      clanMember: user.clanMember,
     };
 
     // Check 2FA TOTP

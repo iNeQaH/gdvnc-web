@@ -27,6 +27,21 @@ export async function GET() {
       profileTheme: true,
       profileConfig: true,
       tokenVersion: true,
+      clanMember: {
+        select: {
+          role: true,
+          clan: {
+            select: {
+              id: true,
+              name: true,
+              tag: true,
+              slug: true,
+              color: true,
+              colorGradient: true,
+            },
+          },
+        },
+      },
     },
   });
 

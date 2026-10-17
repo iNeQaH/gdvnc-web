@@ -962,7 +962,7 @@ export default function ProfilePage() {
                 {showClassicPoints ? (data.classicPp?.toFixed(2) || '0.00') : ((data.classicPp || 0) > 0.005 && data.classicRank ? "#" + data.classicRank : '#-')}
               </div>
               <div className={`text-[10px] font-semibold mt-1 ${isLavender ? 'text-white/70' : 'ui-dim'}`}>
-                {showClassicPoints ? 'Points (PP)' : 'Xếp hạng'}
+                {showClassicPoints ? 'Points (Pt)' : 'Xếp hạng'}
               </div>
             </button>
 
@@ -983,7 +983,7 @@ export default function ProfilePage() {
                 {showPlatformerPoints ? (data.platformerPp?.toFixed(2) || '0.00') : ((data.platformerPp || 0) > 0.005 && data.platformerRank ? "#" + data.platformerRank : '#-')}
               </div>
               <div className={`text-[10px] font-semibold mt-1 ${isLavender ? 'text-white/70' : 'ui-dim'}`}>
-                {showPlatformerPoints ? 'Points (PP)' : 'Xếp hạng'}
+                {showPlatformerPoints ? 'Points (Pt)' : 'Xếp hạng'}
               </div>
             </button>
 

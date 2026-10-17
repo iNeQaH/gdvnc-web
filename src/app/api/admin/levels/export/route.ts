@@ -62,7 +62,7 @@ export async function GET(req: Request) {
       'Level VN (isVN)',
       'Challenge (isChallenge)',
       'Min %',
-      'Base PP',
+      'Base Pt',
       'YouTube ID',
       'Link YouTube',
       'Mô tả (Description)',

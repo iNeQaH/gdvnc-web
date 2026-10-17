@@ -210,7 +210,7 @@ export default function GuidelinesPage() {
             <ul className="list-disc list-inside space-y-1.5 ui-dim pl-2">
               <li>Màn chơi Challenge là các màn có thời lượng ngắn (thường &lt; 30 giây) tập trung vào một kỹ năng cụ thể (Straight Fly, Wave micro-click, Spam...).</li>
               <li>Level Challenge phải được BQT phê duyệt và gắn nhãn Challenge trong hệ thống.</li>
-              <li>Điểm hoàn thành Challenge không tính vào tổng điểm Classic PP chính thức nhưng có bảng xếp hạng Challenge riêng biệt.</li>
+              <li>Điểm hoàn thành Challenge không tính vào tổng điểm Classic Pt chính thức nhưng có bảng xếp hạng Challenge riêng biệt.</li>
             </ul>
           </div>
 

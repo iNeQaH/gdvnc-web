@@ -337,34 +337,72 @@ export const Sidebar = () => {
 
             {navLinks.map((item) => {
               const Icon = item.icon;
+              const myClan = currentUser?.clanMember?.clan;
+              const isMyClanActive = myClan && pathname === `/clan/${myClan.slug}`;
               const isActive =
                 item.href === '/'
                   ? pathname === '/'
-                  : pathname === item.href || pathname.startsWith(item.href + '/');
+                  : (item.href === '/clan' && isMyClanActive)
+                  ? false
+                  : pathname === item.href || (pathname.startsWith(item.href + '/') && !isMyClanActive);
               const actualBgCol = isLavender ? 'transparent' : (isActive ? 'var(--accent-bg)' : 'transparent');
               const actualTextCol = isLavender && isActive ? '#ffffff' : (item.isPink ? '#f472b6' : (isActive ? 'var(--accent-text)' : 'var(--text-body)'));
 
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  ref={isActive ? activeLinkRef : null}
-                  className={`relative flex items-center justify-between px-3 py-3 rounded-xl text-xs font-semibold transition-all group z-[2] ${isLavender && isActive ? '-translate-y-[7px]' : ''}`}
-                  style={{
-                    backgroundColor: actualBgCol,
-                    color: actualTextCol,
-                  }}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Icon className={`w-4 h-4 ${isActive ? 'scale-110' : 'group-hover:scale-110'} transition-transform ${item.isPink ? 'text-pink-400' : ''}`} />
-                    <span>{item.label}</span>
-                  </div>
-                  {item.href === '/announcements' && announceUnread > 0 ? (
-                    <span className="min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
-                      {announceUnread > 9 ? '9+' : announceUnread}
-                    </span>
-                  ) : null}
-                </Link>
+                <React.Fragment key={item.href}>
+                  <Link
+                    href={item.href}
+                    ref={isActive ? activeLinkRef : null}
+                    className={`relative flex items-center justify-between px-3 py-3 rounded-xl text-xs font-semibold transition-all group z-[2] ${isLavender && isActive ? '-translate-y-[7px]' : ''}`}
+                    style={{
+                      backgroundColor: actualBgCol,
+                      color: actualTextCol,
+                    }}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Icon className={`w-4 h-4 ${isActive ? 'scale-110' : 'group-hover:scale-110'} transition-transform ${item.isPink ? 'text-pink-400' : ''}`} />
+                      <span>{item.label}</span>
+                    </div>
+                    {item.href === '/announcements' && announceUnread > 0 ? (
+                      <span className="min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                        {announceUnread > 9 ? '9+' : announceUnread}
+                      </span>
+                    ) : null}
+                  </Link>
+
+                  {/* Joined Clan Sub-item */}
+                  {item.href === '/clan' && myClan && (
+                    <Link
+                      href={`/clan/${myClan.slug}`}
+                      className={`relative flex items-center justify-between ml-5 pl-3 pr-2.5 py-1.5 rounded-lg text-xs font-semibold border-l-2 transition-all group z-[2] ${
+                        isMyClanActive
+                          ? 'bg-amber-500/10 text-amber-300 border-amber-400 shadow-xs'
+                          : 'text-slate-400 hover:text-white border-white/10 hover:border-amber-400/50 hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-amber-400 font-bold text-xs">+</span>
+                        <span
+                          className="font-mono font-bold text-xs"
+                          style={
+                            myClan.colorGradient
+                              ? {
+                                  backgroundImage: myClan.colorGradient,
+                                  WebkitBackgroundClip: 'text',
+                                  WebkitTextFillColor: 'transparent',
+                                }
+                              : { color: myClan.color || undefined }
+                          }
+                        >
+                          {myClan.tag}
+                        </span>
+                        <span className="text-[11px] truncate opacity-75 font-normal">
+                          {myClan.name}
+                        </span>
+                      </div>
+                    </Link>
+                  )}
+                </React.Fragment>
               );
             })}
           </nav>
