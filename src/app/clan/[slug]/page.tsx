@@ -25,6 +25,7 @@ import {
   UserCheck,
   ArrowRight,
   MoreVertical,
+  FileText,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
@@ -41,6 +42,110 @@ function getYouTubeEmbedUrl(url?: string | null): string | null {
     /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/
   );
   return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+}
+
+function getYouTubeThumbnail(url?: string | null): string | null {
+  if (!url) return null;
+  const match = url.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/
+  );
+  return match ? `https://img.youtube.com/vi/${match[1]}/mqdefault.jpg` : null;
+}
+
+function parseDiscordMarkdown(text: string): React.ReactNode[] {
+  if (!text) return [];
+
+  const lines = text.split('\n');
+  return lines.map((line, lineIdx) => {
+    const isQuote = line.startsWith('> ');
+    const content = isQuote ? line.slice(2) : line;
+
+    const parts: React.ReactNode[] = [];
+    let keyCounter = 0;
+
+    const regex = /(`[^`]+`|\*\*[^*]+\*\*|__[^_]+__|~~[^~]+~~|\*[^*]+\*|https?:\/\/[^\s]+)/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(content.substring(lastIndex, match.index));
+      }
+
+      const token = match[0];
+      if (token.startsWith('`') && token.endsWith('`')) {
+        parts.push(
+          <code
+            key={keyCounter++}
+            className="px-1.5 py-0.5 rounded bg-black/40 text-amber-300 font-mono text-xs border border-white/10"
+          >
+            {token.slice(1, -1)}
+          </code>
+        );
+      } else if (token.startsWith('**') && token.endsWith('**')) {
+        parts.push(
+          <strong key={keyCounter++} className="font-extrabold text-white">
+            {token.slice(2, -2)}
+          </strong>
+        );
+      } else if (token.startsWith('__') && token.endsWith('__')) {
+        parts.push(
+          <u key={keyCounter++} className="underline underline-offset-2">
+            {token.slice(2, -2)}
+          </u>
+        );
+      } else if (token.startsWith('~~') && token.endsWith('~~')) {
+        parts.push(
+          <del key={keyCounter++} className="line-through opacity-70">
+            {token.slice(2, -2)}
+          </del>
+        );
+      } else if (token.startsWith('*') && token.endsWith('*')) {
+        parts.push(
+          <em key={keyCounter++} className="italic text-slate-300">
+            {token.slice(1, -1)}
+          </em>
+        );
+      } else if (token.startsWith('http://') || token.startsWith('https://')) {
+        parts.push(
+          <a
+            key={keyCounter++}
+            href={token}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sky-400 hover:underline font-semibold break-all"
+          >
+            {token}
+          </a>
+        );
+      } else {
+        parts.push(token);
+      }
+
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < content.length) {
+      parts.push(content.substring(lastIndex));
+    }
+
+    if (isQuote) {
+      return (
+        <blockquote
+          key={lineIdx}
+          className="border-l-4 border-sky-500 pl-3 py-1 my-1 italic bg-sky-500/5 rounded-r-lg text-slate-300"
+        >
+          {parts}
+        </blockquote>
+      );
+    }
+
+    return (
+      <p key={lineIdx} className={line === '' ? 'h-3' : 'min-h-[1.25rem] leading-relaxed'}>
+        {parts}
+      </p>
+    );
+  });
 }
 
 export default function ClanProfilePage({ params }: { params: Promise<{ slug: string }> }) {
@@ -300,71 +405,89 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
     ...(clan.membersGrouped?.members || []),
   ];
 
+  // Theme tùy chỉnh toàn trang Clan (chỉ ảnh hưởng trong trang clan, không ảnh hưởng sidebar)
+  const clanThemeStyle: React.CSSProperties & Record<string, string> = {};
+  if (clan.themeGradient) {
+    clanThemeStyle['--accent-gradient'] = clan.themeGradient;
+  } else if (clan.themeColor) {
+    clanThemeStyle['--accent'] = clan.themeColor;
+  }
+
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-12">
-      {/* Clan Hero Banner */}
-      <div
-        className="rounded-3xl border overflow-hidden shadow-2xl relative"
-        style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
-      >
-        {/* Cover */}
-        <div className="h-44 sm:h-56 w-full relative bg-slate-900 overflow-hidden">
-          {clan.coverUrl ? (
-            <img src={clan.coverUrl} alt="" className="w-full h-full object-cover" />
-          ) : (
-            <div
-              className="w-full h-full bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center"
-              style={clan.themeGradient ? { background: clan.themeGradient } : undefined}
-            >
-              <span className="font-mono font-black text-4xl text-white/10">[{clan.tag}]</span>
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
+    <div className="relative min-h-[calc(100vh-5rem)] -mt-4 -mx-4 px-4 pt-4 pb-16 transition-colors duration-300" style={clanThemeStyle}>
+      {/* Ambient background glow for clan theme */}
+      {clan.themeGradient ? (
+        <div
+          className="fixed inset-0 z-[-1] pointer-events-none opacity-20 dark:opacity-25"
+          style={{ background: clan.themeGradient }}
+        />
+      ) : clan.themeColor ? (
+        <div
+          className="fixed inset-0 z-[-1] pointer-events-none opacity-15 dark:opacity-20"
+          style={{
+            background: `radial-gradient(ellipse at 50% 15%, ${clan.themeColor} 0%, transparent 65%)`
+          }}
+        />
+      ) : null}
 
-          {/* Title & Tag overlaid on banner */}
-          <div className="absolute bottom-4 left-6 right-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div className="space-y-1.5 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span
-                  className="font-mono font-black text-sm px-2.5 py-0.5 rounded-lg border shadow-xs"
-                  style={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                    borderColor: 'var(--border-subtle)',
-                    ...(clan.colorGradient
-                      ? {
-                          backgroundImage: clan.colorGradient,
-                          WebkitBackgroundClip: 'text',
-                          WebkitTextFillColor: 'transparent',
-                        }
-                      : { color: clan.color || '#f59e0b' }),
-                  }}
-                >
-                  [{clan.tag}]
-                </span>
-                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight truncate drop-shadow-md">
-                  {clan.name}
-                </h1>
-                <span
-                  className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border backdrop-blur-md ${
-                    tierInfo.tier === 3
-                      ? 'bg-purple-950/80 text-purple-300 border-purple-500/40'
-                      : tierInfo.tier === 2
-                      ? 'bg-sky-950/80 text-sky-300 border-sky-500/40'
-                      : 'bg-amber-950/80 text-amber-300 border-amber-500/40'
-                  }`}
-                >
-                  {tierInfo.name}
-                </span>
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Clan Hero Banner */}
+        <div
+          className="rounded-3xl border overflow-hidden shadow-2xl relative"
+          style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+        >
+          {/* Cover */}
+          <div className="h-44 sm:h-56 w-full relative bg-slate-900 overflow-hidden">
+            {clan.coverUrl ? (
+              <img src={clan.coverUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div
+                className="w-full h-full bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center"
+                style={clan.themeGradient ? { background: clan.themeGradient } : undefined}
+              >
+                <span className="font-mono font-black text-4xl text-white/10">[{clan.tag}]</span>
               </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
 
-              {clan.description && (
-                <p className="text-xs text-slate-300 max-w-2xl line-clamp-2 leading-relaxed drop-shadow-sm">
-                  {clan.description}
-                </p>
-              )}
+            {/* Title & Tag overlaid on banner */}
+            <div className="absolute bottom-4 left-6 right-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              <div className="space-y-1.5 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span
+                    className="font-mono font-black text-sm px-2.5 py-0.5 rounded-lg border shadow-xs"
+                    style={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                      borderColor: 'var(--border-subtle)',
+                      ...(clan.colorGradient
+                        ? {
+                            backgroundImage: clan.colorGradient,
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                          }
+                        : { color: clan.color || '#f59e0b' }),
+                    }}
+                  >
+                    [{clan.tag}]
+                  </span>
+                  <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight truncate drop-shadow-md">
+                    {clan.name}
+                  </h1>
+                  <span
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border backdrop-blur-md ${
+                      tierInfo.tier === 3
+                        ? 'bg-purple-950/80 text-purple-300 border-purple-500/40'
+                        : tierInfo.tier === 2
+                        ? 'bg-sky-950/80 text-sky-300 border-sky-500/40'
+                        : 'bg-amber-950/80 text-amber-300 border-amber-500/40'
+                    }`}
+                  >
+                    {tierInfo.name}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
         {/* Hero Actions & Stats Bar */}
         <div className="px-6 py-3.5 border-t flex flex-wrap items-center justify-between gap-3" style={{ borderColor: 'var(--border-subtle)' }}>
@@ -500,6 +623,22 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Media & Highlights */}
         <div className="lg:col-span-8 space-y-6 min-w-0">
+          {/* Dedicated Clan Description Box (Hidden if empty) */}
+          {clan.description && (
+            <div
+              className="ui-card rounded-2xl border p-5 space-y-3"
+              style={{ borderColor: 'var(--border-ui)' }}
+            >
+              <div className="flex items-center gap-2 pb-2.5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+                <FileText className="w-4 h-4 text-sky-400" />
+                <h2 className="text-sm font-bold ui-title">Mô tả & Giới thiệu Clan</h2>
+              </div>
+              <div className="text-xs sm:text-sm text-slate-300 space-y-1.5 leading-relaxed break-words font-sans">
+                {parseDiscordMarkdown(clan.description)}
+              </div>
+            </div>
+          )}
+
           {/* Video Embed (Hidden if empty) */}
           {videoEmbedUrl && (
             <div
@@ -627,10 +766,10 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
             </div>
           )}
 
-          {/* Reviewed Creator Works Slideshow / Grid (Hidden if empty) */}
+          {/* Reviewed Creator Works (Hidden if empty) */}
           {clan.creatorWorks?.length > 0 && (
             <div
-              className="ui-card rounded-2xl border p-4 sm:p-5 space-y-3"
+              className="ui-card rounded-2xl border p-4 sm:p-5 space-y-3.5"
               style={{ borderColor: 'var(--border-ui)' }}
             >
               <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--border-subtle)' }}>
@@ -640,41 +779,71 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                 <span className="text-[11px] ui-dim">{clan.creatorWorks.length} màn chơi</span>
               </div>
 
-              {/* Horizontal Scroll Slideshow */}
-              <div className="flex items-stretch gap-3 overflow-x-auto pb-2 scrollbar-thin">
-                {clan.creatorWorks.map((work: any) => (
-                  <div
-                    key={work.id}
-                    className="min-w-[200px] max-w-[220px] rounded-xl border p-3 flex flex-col justify-between shrink-0"
-                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
-                  >
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-mono ui-dim font-bold">
-                          ID: {work.gdLevelId || '—'}
-                        </span>
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-400">
+              {/* Grid of Level Embed Cards matching level list */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {clan.creatorWorks.map((work: any) => {
+                  const thumb = getYouTubeThumbnail(work.videoUrl) || work.imageUrl || '/gdvn-logo.png';
+                  return (
+                    <div
+                      key={work.id}
+                      className="group relative rounded-2xl overflow-hidden shadow-xs hover:shadow-xl transition-all border ui-card flex flex-col h-44 justify-between p-3.5"
+                      style={{ borderColor: 'var(--border-ui)' }}
+                    >
+                      {/* Background Thumbnail */}
+                      <div
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+                        style={{
+                          backgroundImage: `url(${thumb})`,
+                          filter: 'brightness(0.55)',
+                        }}
+                      />
+
+                      {/* Overlay Gradient */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
+
+                      {/* Top Header Row */}
+                      <div className="relative z-10 flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <DifficultyRatingIcon
+                            difficultyFace={work.difficultyFace || 0}
+                            ratingType={work.ratingType || 'NONE'}
+                            className="w-8 h-8 drop-shadow-md"
+                          />
+                          <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-lg bg-black/60 text-white/90 border border-white/10 backdrop-blur-xs">
+                            ID: {work.gdLevelId || '—'}
+                          </span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 backdrop-blur-xs">
                           Đã duyệt
                         </span>
                       </div>
-                      <h4 className="font-bold text-xs ui-title truncate">{work.levelName}</h4>
-                      <p className="text-[11px] ui-dim truncate">
-                        bởi {work.user?.username || work.creatorName}
-                      </p>
-                    </div>
 
-                    {work.videoUrl && (
-                      <a
-                        href={work.videoUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-3 text-[10px] font-bold text-sky-400 hover:underline flex items-center gap-1"
-                      >
-                        <ExternalLink className="w-3 h-3" /> Xem video
-                      </a>
-                    )}
-                  </div>
-                ))}
+                      {/* Bottom Info Row */}
+                      <div className="relative z-10 space-y-1">
+                        <h4 className="font-bold text-sm text-white drop-shadow-sm truncate group-hover:text-sky-400 transition-colors">
+                          {work.levelName}
+                        </h4>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-300 text-[11px] truncate">
+                            bởi <span className="font-semibold text-white">{work.user?.username || work.creatorName}</span>
+                          </span>
+
+                          {work.videoUrl && (
+                            <a
+                              href={work.videoUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-400 hover:text-sky-300 hover:underline shrink-0 px-2.5 py-1 rounded-lg bg-black/60 border border-sky-500/30 backdrop-blur-xs transition-colors"
+                            >
+                              <Play className="w-3 h-3 fill-sky-400" /> Xem Video
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1125,6 +1294,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           onSuccess={() => loadClanData()}
         />
       )}
+      </div>
     </div>
   );
 }

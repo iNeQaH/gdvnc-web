@@ -21,7 +21,7 @@ export function calculateUserSp(user?: { supporterUntil?: Date | string | null }
  * Xác định cấp bậc Tier và giới hạn của Clan theo số điểm SP.
  */
 export function getClanTier(spPoints: number) {
-  if (spPoints > 20) {
+  if (spPoints >= 20) {
     return {
       tier: 3,
       name: CLAN_TIER_CONFIG.TIER_3.name,
@@ -30,7 +30,7 @@ export function getClanTier(spPoints: number) {
       isSufficient: true,
     };
   }
-  if (spPoints > 10) {
+  if (spPoints >= 10) {
     return {
       tier: 2,
       name: CLAN_TIER_CONFIG.TIER_2.name,

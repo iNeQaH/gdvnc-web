@@ -31,6 +31,7 @@ import {
   Crown,
   Flame,
   AlertTriangle,
+  Shuffle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageContext';
@@ -282,6 +283,60 @@ export default function SettingsPage() {
         console.error('Failed to save profile config', err);
       }
     }, 400);
+  };
+
+  const handleRandomThemeColors = () => {
+    const PRESETS = [
+      ['#0ea5e9', '#8b5cf6'],
+      ['#ec4899', '#f59e0b'],
+      ['#06b6d4', '#3b82f6'],
+      ['#10b981', '#06b6d4'],
+      ['#a855f7', '#ec4899'],
+      ['#f43f5e', '#fb923c'],
+      ['#4ade80', '#3b82f6'],
+      ['#00f2fe', '#4facfe'],
+      ['#b224ef', '#7579ff'],
+      ['#0ea5e9', '#10b981', '#a855f7'],
+      ['#f43f5e', '#a855f7', '#06b6d4'],
+    ];
+    const picked = PRESETS[Math.floor(Math.random() * PRESETS.length)];
+    const angles = [0, 45, 90, 135, 180, 270];
+    const randAngle = angles[Math.floor(Math.random() * angles.length)];
+    updateThemeConfig(picked, randAngle);
+  };
+
+  const handleRandomNameColor = () => {
+    const RANDOM_SOLO_COLORS = [
+      '#38bdf8', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981',
+      '#22c55e', '#84cc16', '#eab308', '#f59e0b', '#f97316',
+      '#ef4444', '#f43f5e', '#ec4899', '#d946ef', '#a855f7',
+      '#8b5cf6', '#6366f1', '#3b82f6', '#facc15', '#4ade80'
+    ];
+    const RANDOM_GRADIENT_PAIRS = [
+      ['#38bdf8', '#8b5cf6'],
+      ['#ec4899', '#f59e0b'],
+      ['#06b6d4', '#3b82f6'],
+      ['#10b981', '#06b6d4'],
+      ['#f43f5e', '#fb923c'],
+      ['#a855f7', '#ec4899'],
+      ['#facc15', '#ef4444'],
+      ['#4ade80', '#3b82f6'],
+      ['#d946ef', '#8b5cf6'],
+      ['#00f2fe', '#4facfe'],
+      ['#ff0844', '#ffb199'],
+      ['#b224ef', '#7579ff'],
+    ];
+    if (!nameUseGradient) {
+      const random = RANDOM_SOLO_COLORS[Math.floor(Math.random() * RANDOM_SOLO_COLORS.length)];
+      setNameColor(random);
+    } else {
+      const pair = RANDOM_GRADIENT_PAIRS[Math.floor(Math.random() * RANDOM_GRADIENT_PAIRS.length)];
+      const angles = [0, 45, 90, 135, 180];
+      const randAngle = angles[Math.floor(Math.random() * angles.length)];
+      setNameGradColor1(pair[0]);
+      setNameGradColor2(pair[1]);
+      setNameGradAngle(randAngle);
+    }
   };
 
   const handleSaveInfo = async () => {
@@ -803,10 +858,21 @@ export default function SettingsPage() {
 
               {/* Theme Colors & Gradient Section */}
               <div className="space-y-3">
-                <label className="text-xs font-bold ui-title flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-pink-500" />
-                  {t('settings.custom_colors')}
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold ui-title flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-pink-500" />
+                    {t('settings.custom_colors')}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleRandomThemeColors}
+                    className="px-2.5 py-1 text-xs font-bold rounded-lg border border-pink-500/30 bg-pink-500/10 text-pink-400 hover:bg-pink-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                    title="Phối màu ngẫu nhiên"
+                  >
+                    <Shuffle className="w-3.5 h-3.5" />
+                    <span>Ngẫu Nhiên</span>
+                  </button>
+                </div>
                 <p className="text-xs ui-dim leading-relaxed">
                   {t('settings.custom_colors_desc')}
                 </p>
@@ -1203,7 +1269,7 @@ export default function SettingsPage() {
                         style={{ borderColor: active ? undefined : 'var(--border-ui)' }}
                       >
                         <span className="text-[10px] ui-dim font-sans font-bold">{f.label}</span>
-                        <span className="truncate text-base" style={{ fontFamily: f.family }}>
+                        <span className="truncate text-base" style={{ fontFamily: f.family, fontWeight: (f as any).weight || '700' }}>
                           {currentUser.username}
                         </span>
                       </button>
@@ -1215,7 +1281,18 @@ export default function SettingsPage() {
               {/* Color Mode: Solid or Gradient */}
               <div className="pt-3 border-t space-y-4" style={{ borderColor: 'var(--border-subtle)' }}>
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold ui-title">Chế Độ Màu Tên</label>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-bold ui-title">Chế Độ Màu Tên</label>
+                    <button
+                      type="button"
+                      onClick={handleRandomNameColor}
+                      className="px-2.5 py-1 text-xs font-bold rounded-lg border border-purple-500/30 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                      title="Chọn màu ngẫu nhiên"
+                    >
+                      <Shuffle className="w-3.5 h-3.5" />
+                      <span>Ngẫu Nhiên</span>
+                    </button>
+                  </div>
                   <div className="flex rounded-xl border p-0.5 bg-slate-500/5 text-xs font-bold" style={{ borderColor: 'var(--border-ui)' }}>
                     <button
                       type="button"

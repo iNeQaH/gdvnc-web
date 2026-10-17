@@ -51,6 +51,12 @@ export default function RootLayout({
           id="gdvnc-theme"
           dangerouslySetInnerHTML={{ __html: THEME_BOOT }}
         />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,400..900;1,400..900&family=Fira+Code:wght@400..700&family=Montserrat:ital,wght@0,400..900;1,400..900&family=Orbitron:wght@400..900&family=Outfit:wght@400..900&family=Unbounded:wght@400..900&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body className={`${inter.className} antialiased min-h-screen flex flex-col`} suppressHydrationWarning>
         <ThemeProvider>

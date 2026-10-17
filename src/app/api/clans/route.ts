@@ -33,10 +33,10 @@ export async function GET(req: Request) {
 
     const now = new Date();
 
-    // Tính toán SP, Tier, và trạng thái cho từng Clan
+    // Tính toán SP, Tier, và trạng thái cho từng Clan (3 SP base từ phí tạo clan)
     const clanList = clans.map((c) => {
       const memberIds = new Set(c.members.map((m) => m.userId));
-      let totalSp = 0;
+      let totalSp = 3;
       for (const contrib of c.contributions) {
         if (!memberIds.has(contrib.userId)) continue;
         const userMax = calculateUserSp(contrib.user);
@@ -171,9 +171,20 @@ export async function POST(req: Request) {
     }
 
     // Khởi tạo Clan và tự động gán người tạo làm LEADER
-    const pledgeAmount = Math.max(3, Math.min(userSp, 3));
+    // Trừ 3 tháng Supporter của user (tương đương 3 SP Coin phí tạo Clan)
+    const now = new Date();
+    const currentSupporter = user.supporterUntil ? new Date(user.supporterUntil) : now;
+    const deductedMs = 90 * 24 * 60 * 60 * 1000;
+    const newSupporterTime = Math.max(now.getTime(), currentSupporter.getTime() - deductedMs);
+    const newSupporterUntil = new Date(newSupporterTime);
 
     const newClan = await prisma.$transaction(async (tx) => {
+      // 1. Trừ 3 tháng Supporter của người tạo
+      await tx.user.update({
+        where: { id: user.id },
+        data: { supporterUntil: newSupporterUntil },
+      });
+
       const c = await tx.clan.create({
         data: {
           name,
@@ -195,20 +206,17 @@ export async function POST(req: Request) {
         },
       });
 
-      if (pledgeAmount > 0) {
-        await tx.clanSpContribution.create({
-          data: {
-            clanId: c.id,
-            userId: user.id,
-            spPledged: pledgeAmount,
-          },
-        });
-      }
-
       return c;
     });
 
-    return NextResponse.json({ success: true, clan: newClan });
+    return NextResponse.json({
+      success: true,
+      clan: newClan,
+      user: {
+        ...user,
+        supporterUntil: newSupporterUntil,
+      },
+    });
   } catch (error) {
     return publicApiError(error, 'Lỗi khi tạo Clan.');
   }

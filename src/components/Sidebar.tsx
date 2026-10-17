@@ -388,19 +388,22 @@ export const Sidebar = () => {
               {language === 'en' ? 'EN' : 'VI'}
             </button>
             {currentUser && (
-              <button
-                onClick={() => setIsInboxOpen(true)}
-                className={`h-9 flex-1 min-w-0 rounded-xl border relative cursor-pointer hover:opacity-90 flex items-center justify-center ${isLavender ? 'tsumiki-btn' : ''}`}
-                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: isLavender ? undefined : "var(--border-ui)", color: isLavender ? undefined : "var(--text-title)" }}
-                title="Inbox"
-              >
-                <Mail className="w-4 h-4" />
+              <div className="relative flex-1 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => setIsInboxOpen(true)}
+                  className={`w-full h-9 rounded-xl border relative cursor-pointer hover:opacity-90 flex items-center justify-center ${isLavender ? 'tsumiki-btn !m-0 !mb-0' : ''}`}
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: isLavender ? undefined : "var(--border-ui)", color: isLavender ? undefined : "var(--text-title)" }}
+                  title="Inbox"
+                >
+                  <Mail className="w-4 h-4" />
+                </button>
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 z-20 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center shadow-xs pointer-events-none">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
-              </button>
+              </div>
             )}
           </div>
 

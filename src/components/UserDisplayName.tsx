@@ -4,14 +4,14 @@ import React from 'react';
 import Link from 'next/link';
 import { Crown, ShieldCheck } from 'lucide-react';
 
-export const FONT_PRESETS: Record<string, { label: string; family: string }> = {
-  default: { label: 'Mặc định (Inter)', family: 'inherit' },
-  outfit: { label: 'Outfit (Geometria)', family: "'Outfit', sans-serif" },
-  orbitron: { label: 'Orbitron (Sci-fi)', family: "'Orbitron', sans-serif" },
-  exo2: { label: 'Exo 2 (Esports)', family: "'Exo 2', sans-serif" },
-  unbounded: { label: 'Unbounded (Bold)', family: "'Unbounded', sans-serif" },
-  montserrat: { label: 'Montserrat (Clean)', family: "'Montserrat', sans-serif" },
-  firacode: { label: 'Fira Code (Tech)', family: "'Fira Code', monospace" },
+export const FONT_PRESETS: Record<string, { label: string; family: string; weight?: string }> = {
+  default: { label: 'Mặc định (Inter)', family: 'inherit', weight: '700' },
+  outfit: { label: 'Outfit (Geometria)', family: "'Outfit', sans-serif", weight: '700' },
+  orbitron: { label: 'Orbitron (Sci-fi)', family: "'Orbitron', sans-serif", weight: '800' },
+  exo2: { label: 'Exo 2 (Esports)', family: "'Exo 2', sans-serif", weight: '800' },
+  unbounded: { label: 'Unbounded (Bold)', family: "'Unbounded', sans-serif", weight: '800' },
+  montserrat: { label: 'Montserrat (Clean)', family: "'Montserrat', sans-serif", weight: '800' },
+  firacode: { label: 'Fira Code (Tech)', family: "'Fira Code', monospace", weight: '700' },
 };
 
 export interface UserDisplayNameProps {
@@ -79,16 +79,24 @@ export function UserDisplayName({
   const nameStyle: React.CSSProperties = {};
   if (user?.nameFont && FONT_PRESETS[user.nameFont]?.family) {
     nameStyle.fontFamily = FONT_PRESETS[user.nameFont].family;
+    if (FONT_PRESETS[user.nameFont].weight) {
+      nameStyle.fontWeight = FONT_PRESETS[user.nameFont].weight;
+    }
   }
   if (user?.nameGradient) {
     nameStyle.backgroundImage = user.nameGradient;
     nameStyle.WebkitBackgroundClip = 'text';
     nameStyle.WebkitTextFillColor = 'transparent';
+    if (user?.nameGlow) {
+      nameStyle.filter = `drop-shadow(0 0 3px ${user.nameGlow}) drop-shadow(0 0 6px ${user.nameGlow}88)`;
+    }
   } else if (user?.nameColor) {
     nameStyle.color = user.nameColor;
-  }
-  if (user?.nameGlow) {
-    nameStyle.textShadow = `0 0 10px ${user.nameGlow}, 0 0 20px ${user.nameGlow}`;
+    if (user?.nameGlow) {
+      nameStyle.filter = `drop-shadow(0 0 3px ${user.nameGlow}) drop-shadow(0 0 6px ${user.nameGlow}88)`;
+    }
+  } else if (user?.nameGlow) {
+    nameStyle.filter = `drop-shadow(0 0 3px ${user.nameGlow}) drop-shadow(0 0 6px ${user.nameGlow}88)`;
   }
 
   const renderTag = () => {

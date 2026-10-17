@@ -844,9 +844,13 @@ export default function ProfilePage() {
               </div>
 
               {/* Bio */}
-              <div className="text-xs sm:text-sm ui-dim italic max-w-3xl line-clamp-2">
-                {data.bio ? `"${data.bio}"` : <span className="opacity-60">Chưa có tiểu sử.</span>}
-              </div>
+              {data.bio ? (
+                <div className="text-xs sm:text-sm ui-dim max-w-3xl whitespace-pre-line break-words leading-relaxed pl-3 border-l-2 border-slate-500/30 dark:border-white/20 italic py-0.5 mt-1">
+                  {data.bio}
+                </div>
+              ) : (
+                <div className="text-xs ui-dim opacity-60 italic">Chưa có tiểu sử.</div>
+              )}
             </div>
           </div>
 

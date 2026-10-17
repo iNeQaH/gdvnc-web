@@ -68,7 +68,15 @@ export default function CreateClanModal({
         return;
       }
 
-      showToast('Đã tạo Clan thành công!', 'success');
+      showToast('Đã tạo Clan thành công! (-3 xu SP)', 'success');
+      if (data.user) {
+        try {
+          const current = JSON.parse(localStorage.getItem('gdvnc_user') || '{}');
+          const updated = { ...current, ...data.user };
+          localStorage.setItem('gdvnc_user', JSON.stringify(updated));
+          window.dispatchEvent(new Event('gdvnc_user_update'));
+        } catch {}
+      }
       onCreated(data.clan);
       onClose();
     } catch {

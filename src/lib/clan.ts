@@ -27,8 +27,8 @@ export async function syncAndGetClanSp(clanId: string) {
 
   const memberUserIds = new Set(clan.members.map((m) => m.userId));
 
-  // Tính tổng SP hợp lệ (chỉ tính thành viên còn trong clan và còn hạn supporter)
-  let totalSp = 0;
+  // Clan có sẵn 3 SP từ phí tạo clan ban đầu (-3 xu SP) của Leader
+  let totalSp = 3;
   for (const contrib of clan.contributions) {
     if (!memberUserIds.has(contrib.userId)) continue;
     const userMaxSp = calculateUserSp(contrib.user);

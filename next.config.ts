@@ -33,9 +33,9 @@ const nextConfig: NextConfig = {
             value: [
               "default-src 'self'",
               `script-src ${scriptSrc}`,
-              "style-src 'self' 'unsafe-inline'",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https:",
-              "font-src 'self' data: https:",
+              "font-src 'self' data: https: https://fonts.gstatic.com",
               "connect-src 'self' https: wss: ws:",
               "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://open.spotify.com https://discord.com https://challenges.cloudflare.com",
               "media-src 'self' https: blob:",

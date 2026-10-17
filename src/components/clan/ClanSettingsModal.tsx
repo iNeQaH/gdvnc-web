@@ -13,6 +13,7 @@ import {
   Check,
   Shield,
   Trash2,
+  Upload,
 } from 'lucide-react';
 import ColorPicker from '@/components/ColorPicker';
 import { useToast } from '@/components/GlobalToast';
@@ -46,8 +47,8 @@ export default function ClanSettingsModal({
   const [favoriteLevelId, setFavoriteLevelId] = useState(clan.favoriteLevelId || '');
   const [color, setColor] = useState(clan.color || '#f59e0b');
 
-  // Gradient options for Tier 2+
-  const isTier2OrHigher = (clan.effectiveSp || 0) > 10;
+  // Gradient & Theme options for Tier 2+
+  const isTier2OrHigher = Boolean(clan.tier >= 2 || (clan.totalSp || clan.effectiveSp || 0) >= 10);
   const [useTagGradient, setUseTagGradient] = useState(Boolean(clan.colorGradient));
   const [tagGrad1, setTagGrad1] = useState('#f59e0b');
   const [tagGrad2, setTagGrad2] = useState('#ec4899');
@@ -60,9 +61,36 @@ export default function ClanSettingsModal({
   const [themeGrad2, setThemeGrad2] = useState('#8b5cf6');
 
   const [saving, setSaving] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
   const [error, setError] = useState('');
 
   if (!isOpen) return null;
+
+  const handleUploadCover = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingCover(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/uploads', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setCoverUrl(data.url);
+        showToast('Tải ảnh bìa thành công!', 'success');
+      } else {
+        showToast(data.error || 'Tải ảnh thất bại.', 'error');
+      }
+    } catch {
+      showToast('Lỗi kết nối khi tải ảnh.', 'error');
+    } finally {
+      setUploadingCover(false);
+      e.target.value = '';
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,16 +105,19 @@ export default function ClanSettingsModal({
         videoUrl: videoUrl.trim() || null,
         favoriteLevelId: favoriteLevelId.trim() || null,
         color: color || null,
+        themeColor: themeColor || null,
       };
 
       if (isTier2OrHigher) {
         payload.colorGradient = useTagGradient
           ? `linear-gradient(${tagAngle}deg, ${tagGrad1}, ${tagGrad2})`
           : null;
-        payload.themeColor = themeColor || null;
         payload.themeGradient = useThemeGradient
           ? `linear-gradient(135deg, ${themeGrad1}, ${themeGrad2})`
           : null;
+      } else {
+        payload.colorGradient = null;
+        payload.themeGradient = null;
       }
 
       const res = await fetch(`/api/clans/${clan.slug}`, {
@@ -261,17 +292,55 @@ export default function ClanSettingsModal({
 
           {/* Media Links */}
           <div className="space-y-3">
-            <div className="space-y-1">
-              <label className="text-xs font-bold ui-title flex items-center gap-1.5">
-                <ImageIcon className="w-3.5 h-3.5 text-sky-400" /> Ảnh bìa Clan (URL / GIF)
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold ui-title flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <ImageIcon className="w-3.5 h-3.5 text-sky-400" /> Ảnh bìa Clan (Tải ảnh lên hoặc điền URL)
+                </span>
+                {coverUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setCoverUrl('')}
+                    className="text-[10px] text-red-400 hover:underline cursor-pointer"
+                  >
+                    Gỡ ảnh bìa
+                  </button>
+                )}
               </label>
-              <input
-                type="url"
-                value={coverUrl}
-                onChange={(e) => setCoverUrl(e.target.value)}
-                placeholder="URL ảnh bìa hoặc GIF"
-                className="w-full px-3 py-2 rounded-xl text-xs ui-input"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="url"
+                  value={coverUrl}
+                  onChange={(e) => setCoverUrl(e.target.value)}
+                  placeholder="URL ảnh bìa hoặc tải ảnh từ máy tính"
+                  className="flex-1 px-3 py-2 rounded-xl text-xs ui-input"
+                />
+                <label className="px-3.5 py-2 rounded-xl text-xs font-bold border cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 flex items-center gap-1.5 shrink-0 transition-colors" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                  {uploadingCover ? <Loader2 className="w-3.5 h-3.5 animate-spin text-sky-400" /> : <Upload className="w-3.5 h-3.5 text-sky-400" />}
+                  <span>{uploadingCover ? 'Đang tải...' : 'Tải ảnh'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleUploadCover}
+                    disabled={uploadingCover}
+                  />
+                </label>
+              </div>
+
+              {coverUrl && (
+                <div className="relative w-full h-24 rounded-xl overflow-hidden border mt-1.5 group" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <img src={coverUrl} alt="Cover preview" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setCoverUrl('')}
+                    className="absolute top-2 right-2 p-1 rounded-lg bg-black/70 text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+                    title="Xóa ảnh bìa"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="space-y-1">
@@ -313,48 +382,55 @@ export default function ClanSettingsModal({
             </div>
           </div>
 
-          {/* Theme Customization for Clan Page (Tier 2+) */}
-          {isTier2OrHigher && (
-            <div className="p-4 rounded-xl border space-y-3" style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-subtle)' }}>
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold ui-title">Màu chủ đạo trang Clan (Theme)</label>
+          {/* Theme Customization for Clan Page */}
+          <div className="p-4 rounded-xl border space-y-3" style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-subtle)' }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-xs font-bold ui-title flex items-center gap-1.5">
+                  <Palette className="w-3.5 h-3.5 text-sky-400" /> Màu chủ đạo trang Clan (Theme)
+                </label>
+                <p className="text-[11px] ui-dim">Chỉ áp dụng trong trang Clan, không ảnh hưởng sidebar</p>
+              </div>
+              {isTier2OrHigher ? (
                 <div className="flex rounded-lg border p-0.5 bg-black/20 text-xs font-bold" style={{ borderColor: 'var(--border-subtle)' }}>
                   <button
                     type="button"
                     onClick={() => setUseThemeGradient(false)}
-                    className={`px-2 py-0.5 rounded text-[11px] ${!useThemeGradient ? 'bg-sky-500 text-white' : 'ui-dim'}`}
+                    className={`px-2.5 py-0.5 rounded text-[11px] ${!useThemeGradient ? 'bg-sky-500 text-white' : 'ui-dim'}`}
                   >
                     Đơn
                   </button>
                   <button
                     type="button"
                     onClick={() => setUseThemeGradient(true)}
-                    className={`px-2 py-0.5 rounded text-[11px] ${useThemeGradient ? 'bg-sky-500 text-white' : 'ui-dim'}`}
+                    className={`px-2.5 py-0.5 rounded text-[11px] ${useThemeGradient ? 'bg-sky-500 text-white' : 'ui-dim'}`}
                   >
-                    Gradient
+                    Gradient (Tier 2)
                   </button>
                 </div>
-              </div>
-
-              {!useThemeGradient ? (
-                <div className="flex items-center gap-3">
-                  <ColorPicker value={themeColor} onChange={setThemeColor} size={30} round ariaLabel="Theme Clan" />
-                  <span className="font-mono text-xs uppercase">{themeColor}</span>
-                </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex items-center gap-2 p-2 rounded-lg border bg-black/20" style={{ borderColor: 'var(--border-subtle)' }}>
-                    <ColorPicker value={themeGrad1} onChange={setThemeGrad1} size={26} round ariaLabel="Theme Grad 1" />
-                    <span className="font-mono text-xs uppercase">{themeGrad1}</span>
-                  </div>
-                  <div className="flex items-center gap-2 p-2 rounded-lg border bg-black/20" style={{ borderColor: 'var(--border-subtle)' }}>
-                    <ColorPicker value={themeGrad2} onChange={setThemeGrad2} size={26} round ariaLabel="Theme Grad 2" />
-                    <span className="font-mono text-xs uppercase">{themeGrad2}</span>
-                  </div>
-                </div>
+                <span className="text-[10px] ui-dim font-mono">Gradient mở tại Tier 2 (&gt;=10 SP)</span>
               )}
             </div>
-          )}
+
+            {!useThemeGradient || !isTier2OrHigher ? (
+              <div className="flex items-center gap-3">
+                <ColorPicker value={themeColor} onChange={setThemeColor} size={30} round ariaLabel="Theme Clan" />
+                <span className="font-mono text-xs uppercase font-bold">{themeColor}</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-2 p-2 rounded-lg border bg-black/20" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <ColorPicker value={themeGrad1} onChange={setThemeGrad1} size={26} round ariaLabel="Theme Grad 1" />
+                  <span className="font-mono text-xs uppercase">{themeGrad1}</span>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-lg border bg-black/20" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <ColorPicker value={themeGrad2} onChange={setThemeGrad2} size={26} round ariaLabel="Theme Grad 2" />
+                  <span className="font-mono text-xs uppercase">{themeGrad2}</span>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Disband Clan Danger Zone (Leader or Web Admin only) */}
           {(isLeader || isAdminWeb || isOwnerWeb) && (
