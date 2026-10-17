@@ -18,6 +18,7 @@ import {
 import ColorPicker from '@/components/ColorPicker';
 import { CircularAnglePicker } from '@/components/CircularAnglePicker';
 import { useToast } from '@/components/GlobalToast';
+import { useLanguage } from '@/components/LanguageContext';
 
 interface ClanSettingsModalProps {
   isOpen: boolean;
@@ -41,6 +42,8 @@ export default function ClanSettingsModal({
   isOwnerWeb,
 }: ClanSettingsModalProps) {
   const { showToast, showConfirm } = useToast();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
 
   const [description, setDescription] = useState(clan.description || '');
   const [coverUrl, setCoverUrl] = useState(clan.coverUrl || '');
@@ -119,12 +122,12 @@ export default function ClanSettingsModal({
       const uploadedUrl = data.url || data.urls?.[0];
       if (res.ok && uploadedUrl) {
         setCoverUrl(uploadedUrl);
-        showToast('Tải ảnh bìa thành công!', 'success');
+        showToast(isEn ? 'Banner uploaded successfully!' : 'Tải ảnh bìa thành công!', 'success');
       } else {
-        showToast(data.error || 'Tải ảnh thất bại.', 'error');
+        showToast(data.error || (isEn ? 'Failed to upload banner.' : 'Tải ảnh thất bại.'), 'error');
       }
     } catch {
-      showToast('Lỗi kết nối khi tải ảnh.', 'error');
+      showToast(isEn ? 'Connection error while uploading.' : 'Lỗi kết nối khi tải ảnh.', 'error');
     } finally {
       setUploadingCover(false);
       e.target.value = '';
@@ -167,15 +170,15 @@ export default function ClanSettingsModal({
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setError(data.error || 'Cập nhật cài đặt Clan thất bại.');
+        setError(data.error || (isEn ? 'Failed to update Clan settings.' : 'Cập nhật cài đặt Clan thất bại.'));
         return;
       }
 
-      showToast('Đã lưu cài đặt Clan thành công!', 'success');
+      showToast(isEn ? 'Clan settings saved successfully!' : 'Đã lưu cài đặt Clan thành công!', 'success');
       onUpdated(data.clan);
       onClose();
     } catch {
-      setError('Lỗi kết nối máy chủ.');
+      setError(isEn ? 'Server connection error.' : 'Lỗi kết nối máy chủ.');
     } finally {
       setSaving(false);
     }
@@ -183,7 +186,9 @@ export default function ClanSettingsModal({
 
   const handleDisband = () => {
     showConfirm(
-      'Hủy Clan vĩnh viễn? Hành động này không thể hoàn tác. Mọi thành viên sẽ bị giải tán và số SP đóng góp sẽ được hoàn lại.',
+      isEn
+        ? 'Permanently disband this Clan? This action cannot be undone. All members will be removed and donated SP refunded.'
+        : 'Hủy Clan vĩnh viễn? Hành động này không thể hoàn tác. Mọi thành viên sẽ bị giải tán và số SP đóng góp sẽ được hoàn lại.',
       async () => {
         try {
           const res = await fetch(`/api/clans/${clan.slug}`, {
@@ -191,14 +196,14 @@ export default function ClanSettingsModal({
           });
           const data = await res.json();
           if (res.ok && data.success) {
-            showToast('Đã hủy Clan thành công.', 'success');
+            showToast(isEn ? 'Clan disbanded successfully.' : 'Đã hủy Clan thành công.', 'success');
             onClose();
             if (onDisbanded) onDisbanded();
           } else {
-            showToast(data.error || 'Không thể hủy Clan.', 'error');
+            showToast(data.error || (isEn ? 'Failed to disband Clan.' : 'Không thể hủy Clan.'), 'error');
           }
         } catch {
-          showToast('Lỗi máy chủ.', 'error');
+          showToast(isEn ? 'Server error.' : 'Lỗi máy chủ.', 'error');
         }
       }
     );
@@ -220,8 +225,12 @@ export default function ClanSettingsModal({
               <Settings className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold ui-title">Cài đặt Clan [{clan.tag}]</h2>
-              <p className="text-xs ui-dim">Quản lý giao diện, truyền thông và thiết lập</p>
+              <h2 className="text-base font-bold ui-title">
+                {isEn ? `Clan Settings [${clan.tag}]` : `Cài đặt Clan [${clan.tag}]`}
+              </h2>
+              <p className="text-xs ui-dim">
+                {isEn ? 'Manage appearance, media, and preferences' : 'Quản lý giao diện, truyền thông và thiết lập'}
+              </p>
             </div>
           </div>
           <button
@@ -246,23 +255,24 @@ export default function ClanSettingsModal({
           <div className="p-4 rounded-xl border space-y-3.5" style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-subtle)' }}>
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold ui-title flex items-center gap-1.5">
-                <Palette className="w-4 h-4 text-amber-400" /> Màu sắc Tag Clan [{clan.tag}]
+                <Palette className="w-4 h-4 text-amber-400" />
+                <span>{isEn ? `Clan Tag Color [${clan.tag}]` : `Màu sắc Tag Clan [${clan.tag}]`}</span>
               </label>
               {isTier2OrHigher ? (
                 <div className="flex rounded-lg border p-0.5 bg-black/20 text-xs font-bold" style={{ borderColor: 'var(--border-subtle)' }}>
                   <button
                     type="button"
                     onClick={() => setUseTagGradient(false)}
-                    className={`px-2.5 py-0.5 rounded text-[11px] transition-all ${
+                    className={`px-2.5 py-0.5 rounded text-[11px] transition-all cursor-pointer ${
                       !useTagGradient ? 'bg-amber-500 text-black font-bold' : 'ui-dim hover:text-amber-400'
                     }`}
                   >
-                    Đơn sắc
+                    {isEn ? 'Solid' : 'Đơn sắc'}
                   </button>
                   <button
                     type="button"
                     onClick={() => setUseTagGradient(true)}
-                    className={`px-2.5 py-0.5 rounded text-[11px] transition-all ${
+                    className={`px-2.5 py-0.5 rounded text-[11px] transition-all cursor-pointer ${
                       useTagGradient ? 'bg-amber-500 text-black font-bold' : 'ui-dim hover:text-amber-400'
                     }`}
                   >
@@ -270,7 +280,9 @@ export default function ClanSettingsModal({
                   </button>
                 </div>
               ) : (
-                <span className="text-[10px] ui-dim font-mono">Gradient mở tại Tier 2 (&gt;10 SP)</span>
+                <span className="text-[10px] ui-dim font-mono">
+                  {isEn ? 'Gradient unlocks at Tier 2 (>10 SP)' : 'Gradient mở tại Tier 2 (>10 SP)'}
+                </span>
               )}
             </div>
 
@@ -294,7 +306,7 @@ export default function ClanSettingsModal({
                 <CircularAnglePicker
                   value={tagAngle}
                   onChange={setTagAngle}
-                  label="Góc xoay Tag"
+                  label={isEn ? 'Tag Gradient Angle' : 'Góc xoay Tag'}
                   accentColor="#f59e0b"
                 />
               </div>
@@ -302,7 +314,9 @@ export default function ClanSettingsModal({
 
             {/* Live Tag Preview */}
             <div className="pt-2 border-t flex items-center justify-between" style={{ borderColor: 'var(--border-subtle)' }}>
-              <span className="text-[11px] ui-dim">Xem trước Tag & Tên thành viên:</span>
+              <span className="text-[11px] ui-dim">
+                {isEn ? 'Preview Tag & Name:' : 'Xem trước Tag & Tên thành viên:'}
+              </span>
               <div className="flex items-center gap-1.5 font-bold text-sm">
                 <span
                   className="font-black text-sm font-mono tracking-wider inline-block"
@@ -325,32 +339,60 @@ export default function ClanSettingsModal({
 
           {/* Media Links */}
           <div className="space-y-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold ui-title flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <ImageIcon className="w-3.5 h-3.5 text-sky-400" /> Ảnh bìa Clan (Tải ảnh lên hoặc điền URL)
-                </span>
-                {coverUrl && (
-                  <button
-                    type="button"
-                    onClick={() => setCoverUrl('')}
-                    className="text-[10px] text-red-400 hover:underline cursor-pointer"
-                  >
-                    Gỡ ảnh bìa
-                  </button>
-                )}
+            {/* Ảnh bìa Clan: CHỈ TẢI ẢNH LÊN TỪ MÁY, KHÔNG ĐỂ Ô NHẬP URL */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold ui-title flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5 text-sky-400" />
+                <span>{isEn ? 'Clan Cover Banner' : 'Ảnh bìa Clan'}</span>
               </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={coverUrl}
-                  onChange={(e) => setCoverUrl(e.target.value)}
-                  placeholder="URL ảnh bìa hoặc tải ảnh từ máy tính"
-                  className="flex-1 px-3 py-2 rounded-xl text-xs ui-input"
-                />
-                <label className="px-3.5 py-2 rounded-xl text-xs font-bold border cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 flex items-center gap-1.5 shrink-0 transition-colors" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-                  {uploadingCover ? <Loader2 className="w-3.5 h-3.5 animate-spin text-sky-400" /> : <Upload className="w-3.5 h-3.5 text-sky-400" />}
-                  <span>{uploadingCover ? 'Đang tải...' : 'Tải ảnh'}</span>
+
+              {coverUrl ? (
+                <div
+                  className="relative w-full h-32 rounded-xl overflow-hidden border group bg-slate-950 flex items-center justify-center"
+                  style={{ borderColor: 'var(--border-ui)' }}
+                >
+                  <img src={coverUrl} alt="Cover preview" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <label className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white/20 hover:bg-white/30 text-white backdrop-blur-md cursor-pointer flex items-center gap-1.5 shadow-md">
+                      {uploadingCover ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                      <span>{uploadingCover ? (isEn ? 'Uploading...' : 'Đang tải...') : (isEn ? 'Change Banner' : 'Đổi ảnh bìa')}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleUploadCover}
+                        disabled={uploadingCover}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setCoverUrl('')}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600/80 hover:bg-red-600 text-white backdrop-blur-md cursor-pointer flex items-center gap-1.5 shadow-md"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>{isEn ? 'Remove' : 'Gỡ ảnh'}</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <label
+                  className="w-full py-6 px-4 rounded-xl border-2 border-dashed border-sky-500/30 hover:border-sky-400 bg-sky-500/5 hover:bg-sky-500/10 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all text-center"
+                >
+                  {uploadingCover ? (
+                    <Loader2 className="w-6 h-6 animate-spin text-sky-400" />
+                  ) : (
+                    <Upload className="w-6 h-6 text-sky-400" />
+                  )}
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold text-sky-300">
+                      {uploadingCover
+                        ? (isEn ? 'Uploading image...' : 'Đang tải ảnh bìa lên...')
+                        : (isEn ? 'Upload Clan Cover Banner' : 'Tải ảnh bìa Clan từ thiết bị')}
+                    </p>
+                    <p className="text-[10px] ui-dim font-medium">
+                      {isEn ? 'Supports PNG, JPG, WebP (Max 16MB)' : 'Hỗ trợ định dạng PNG, JPG, WebP (Tối đa 16MB)'}
+                    </p>
+                  </div>
                   <input
                     type="file"
                     accept="image/*"
@@ -359,57 +401,47 @@ export default function ClanSettingsModal({
                     disabled={uploadingCover}
                   />
                 </label>
-              </div>
-
-              {coverUrl && (
-                <div className="relative w-full h-24 rounded-xl overflow-hidden border mt-1.5 group" style={{ borderColor: 'var(--border-subtle)' }}>
-                  <img src={coverUrl} alt="Cover preview" className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => setCoverUrl('')}
-                    className="absolute top-2 right-2 p-1 rounded-lg bg-black/70 text-red-400 hover:text-red-300 transition-colors cursor-pointer"
-                    title="Xóa ảnh bìa"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
               )}
             </div>
 
             <div className="space-y-1">
               <label className="text-xs font-bold ui-title flex items-center gap-1.5">
-                <Video className="w-3.5 h-3.5 text-red-400" /> Video giới thiệu (YouTube)
+                <Video className="w-3.5 h-3.5 text-red-400" />
+                <span>{isEn ? 'Intro Video (YouTube)' : 'Video giới thiệu (YouTube)'}</span>
               </label>
               <input
                 type="text"
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
-                placeholder="URL video YouTube"
+                placeholder={isEn ? 'https://youtube.com/watch?v=...' : 'URL video YouTube'}
                 className="w-full px-3 py-2 rounded-xl text-xs ui-input"
               />
             </div>
 
             <div className="space-y-1">
               <label className="text-xs font-bold ui-title flex items-center gap-1.5">
-                <Heart className="w-3.5 h-3.5 text-pink-400" /> ID màn chơi yêu thích của Clan
+                <Heart className="w-3.5 h-3.5 text-pink-400" />
+                <span>{isEn ? 'Clan Favorite Level ID' : 'ID màn chơi yêu thích của Clan'}</span>
               </label>
               <input
                 type="text"
                 value={favoriteLevelId}
                 onChange={(e) => setFavoriteLevelId(e.target.value)}
-                placeholder="ID màn chơi"
+                placeholder={isEn ? 'Geometry Dash Level ID' : 'ID màn chơi'}
                 className="w-full px-3 py-2 rounded-xl text-xs ui-input"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold ui-title">Mô tả Clan</label>
+              <label className="text-xs font-bold ui-title">
+                {isEn ? 'Clan Description' : 'Giới thiệu Clan'}
+              </label>
               <textarea
                 rows={3}
                 maxLength={500}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Nội dung mô tả Clan"
+                placeholder={isEn ? 'Introduce your clan, Discord link, rules...' : 'Giới thiệu về Clan của bạn, link Discord, quy định...'}
                 className="w-full px-3 py-2 rounded-xl text-xs resize-y ui-input"
               />
             </div>
@@ -420,29 +452,34 @@ export default function ClanSettingsModal({
             <div className="flex items-center justify-between">
               <div>
                 <label className="text-xs font-bold ui-title flex items-center gap-1.5">
-                  <Palette className="w-3.5 h-3.5 text-sky-400" /> Màu chủ đạo trang Clan (Theme)
+                  <Palette className="w-3.5 h-3.5 text-sky-400" />
+                  <span>{isEn ? 'Clan Page Theme Color' : 'Màu chủ đạo trang Clan (Theme)'}</span>
                 </label>
-                <p className="text-[11px] ui-dim">Chỉ áp dụng trong trang Clan, không ảnh hưởng sidebar</p>
+                <p className="text-[11px] ui-dim">
+                  {isEn ? 'Applies only on the Clan page, does not affect sidebar' : 'Chỉ áp dụng trong trang Clan, không ảnh hưởng sidebar'}
+                </p>
               </div>
               {isTier2OrHigher ? (
                 <div className="flex rounded-lg border p-0.5 bg-black/20 text-xs font-bold" style={{ borderColor: 'var(--border-subtle)' }}>
                   <button
                     type="button"
                     onClick={() => setUseThemeGradient(false)}
-                    className={`px-2.5 py-0.5 rounded text-[11px] ${!useThemeGradient ? 'bg-sky-500 text-white' : 'ui-dim'}`}
+                    className={`px-2.5 py-0.5 rounded text-[11px] cursor-pointer ${!useThemeGradient ? 'bg-sky-500 text-white' : 'ui-dim'}`}
                   >
-                    Đơn
+                    {isEn ? 'Solid' : 'Đơn'}
                   </button>
                   <button
                     type="button"
                     onClick={() => setUseThemeGradient(true)}
-                    className={`px-2.5 py-0.5 rounded text-[11px] ${useThemeGradient ? 'bg-sky-500 text-white' : 'ui-dim'}`}
+                    className={`px-2.5 py-0.5 rounded text-[11px] cursor-pointer ${useThemeGradient ? 'bg-sky-500 text-white' : 'ui-dim'}`}
                   >
                     Gradient (Tier 2)
                   </button>
                 </div>
               ) : (
-                <span className="text-[10px] ui-dim font-mono">Gradient mở tại Tier 2 (&gt;=10 SP)</span>
+                <span className="text-[10px] ui-dim font-mono">
+                  {isEn ? 'Gradient unlocks at Tier 2 (>=10 SP)' : 'Gradient mở tại Tier 2 (>=10 SP)'}
+                </span>
               )}
             </div>
 
@@ -466,7 +503,7 @@ export default function ClanSettingsModal({
                 <CircularAnglePicker
                   value={themeAngle}
                   onChange={setThemeAngle}
-                  label="Góc xoay Theme"
+                  label={isEn ? 'Theme Gradient Angle' : 'Góc xoay Theme'}
                   accentColor="#38bdf8"
                 />
               </div>
@@ -477,17 +514,20 @@ export default function ClanSettingsModal({
           {(isLeader || isAdminWeb || isOwnerWeb) && (
             <div className="p-4 rounded-xl border border-red-500/20 bg-red-500/5 space-y-2">
               <h3 className="text-xs font-bold text-red-400 flex items-center gap-1.5">
-                <Trash2 className="w-3.5 h-3.5" /> Giải tán Clan
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isEn ? 'Disband Clan' : 'Giải tán Clan'}</span>
               </h3>
               <p className="text-[11px] ui-dim">
-                Chỉ Leader hoặc Quản trị viên hệ thống mới có thể giải tán Clan. Thao tác này sẽ xóa vĩnh viễn Clan.
+                {isEn
+                  ? 'Only the Leader or Web Administrator can disband this clan. This action permanently deletes the clan.'
+                  : 'Chỉ Leader hoặc Quản trị viên hệ thống mới có thể giải tán Clan. Thao tác này sẽ xóa vĩnh viễn Clan.'}
               </p>
               <button
                 type="button"
                 onClick={handleDisband}
                 className="px-3 py-1.5 rounded-lg text-xs font-bold text-red-400 hover:text-white hover:bg-red-500 border border-red-500/30 transition-colors cursor-pointer"
               >
-                Giải tán Clan này
+                {isEn ? 'Disband this Clan' : 'Giải tán Clan này'}
               </button>
             </div>
           )}
@@ -498,10 +538,10 @@ export default function ClanSettingsModal({
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border hover:opacity-80 transition-opacity"
+              className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border hover:opacity-80 transition-opacity cursor-pointer"
               style={{ borderColor: 'var(--border-ui)' }}
             >
-              Hủy
+              {isEn ? 'Cancel' : 'Hủy'}
             </button>
             <button
               type="submit"
@@ -510,7 +550,7 @@ export default function ClanSettingsModal({
               style={{ backgroundColor: 'var(--accent)' }}
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-              {saving ? 'Đang lưu...' : 'Lưu cài đặt'}
+              <span>{saving ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'Save Settings' : 'Lưu cài đặt')}</span>
             </button>
           </div>
         </form>

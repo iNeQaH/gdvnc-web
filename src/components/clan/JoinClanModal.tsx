@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { X, Send, Crown, Users, Coins, AlertCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/GlobalToast';
 import { UserDisplayName } from '@/components/UserDisplayName';
+import { useLanguage } from '@/components/LanguageContext';
 
 interface JoinClanModalProps {
   isOpen: boolean;
@@ -31,6 +32,8 @@ export default function JoinClanModal({
   clan,
   onSuccess,
 }: JoinClanModalProps) {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const { showToast } = useToast();
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -52,15 +55,15 @@ export default function JoinClanModal({
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setError(data.error || 'Không thể gửi đơn gia nhập.');
+        setError(data.error || (isEn ? 'Could not submit application.' : 'Không thể gửi đơn gia nhập.'));
         return;
       }
 
-      showToast('Đã gửi đơn xin gia nhập Clan thành công!', 'success');
+      showToast(isEn ? 'Clan join application submitted successfully!' : 'Đã gửi đơn xin gia nhập Clan thành công!', 'success');
       onSuccess();
       onClose();
     } catch {
-      setError('Lỗi kết nối máy chủ.');
+      setError(isEn ? 'Server connection error.' : 'Lỗi kết nối máy chủ.');
     } finally {
       setLoading(false);
     }
@@ -77,7 +80,7 @@ export default function JoinClanModal({
           className="px-6 py-4 border-b flex items-center justify-between"
           style={{ borderColor: 'var(--border-subtle)' }}
         >
-          <h2 className="text-base font-bold ui-title">Xin gia nhập Clan</h2>
+          <h2 className="text-base font-bold ui-title">{isEn ? 'Apply to Join Clan' : 'Xin gia nhập Clan'}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -147,7 +150,7 @@ export default function JoinClanModal({
                 <div className="flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 text-sky-400" />
                   <span>
-                    {clan.memberCount ?? 0} / {clan.maxMembers ?? 5} thành viên
+                    {clan.memberCount ?? 0} / {clan.maxMembers ?? 5} {isEn ? 'members' : 'thành viên'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 text-amber-400 font-mono font-bold">
@@ -173,7 +176,7 @@ export default function JoinClanModal({
                   <div className="min-w-0 flex-1">
                     <UserDisplayName user={clan.leader} showClanTag={false} clanRole="LEADER" />
                     <span className="text-[10px] text-amber-400 font-bold flex items-center gap-1">
-                      <Crown className="w-3 h-3" /> Leader Clan
+                      <Crown className="w-3 h-3" /> {isEn ? 'Clan Leader' : 'Leader Clan'}
                     </span>
                   </div>
                 </div>
@@ -184,17 +187,17 @@ export default function JoinClanModal({
           {/* Join Message Textarea */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold ui-title">
-              Tin nhắn xin duyệt / Lý do tham gia
+              {isEn ? 'Application Note / Reason to Join' : 'Tin nhắn xin duyệt / Lý do tham gia'}
             </label>
             <textarea
               rows={3}
               maxLength={200}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Nhập lời nhắn gửi đến Leader và Ban Quản Trị Clan..."
+              placeholder={isEn ? 'Enter a short message to the Clan Leader...' : 'Nhập lời nhắn gửi đến Leader và Ban Quản Trị Clan...'}
               className="w-full px-3 py-2 rounded-xl text-xs resize-y ui-input"
             />
-            <span className="text-[10px] ui-dim block text-right">{message.length}/200 ký tự</span>
+            <span className="text-[10px] ui-dim block text-right">{message.length}/200 {isEn ? 'characters' : 'ký tự'}</span>
           </div>
 
           {/* Footer Actions */}
@@ -203,10 +206,10 @@ export default function JoinClanModal({
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border hover:opacity-80 transition-opacity"
+              className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border hover:opacity-80 transition-opacity cursor-pointer"
               style={{ borderColor: 'var(--border-ui)' }}
             >
-              Hủy
+              {isEn ? 'Cancel' : 'Hủy'}
             </button>
             <button
               type="submit"
@@ -215,7 +218,7 @@ export default function JoinClanModal({
               style={{ backgroundColor: 'var(--accent)' }}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              {loading ? 'Đang gửi...' : 'Gửi đơn gia nhập'}
+              {loading ? (isEn ? 'Submitting...' : 'Đang gửi...') : (isEn ? 'Submit Application' : 'Gửi đơn gia nhập')}
             </button>
           </div>
         </form>

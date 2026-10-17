@@ -151,14 +151,33 @@ function parseDiscordMarkdown(text: string): React.ReactNode[] {
  */
 function ClanHardestSlideshow({
   topBeaten,
+  isEn,
 }: {
   topBeaten: any[];
+  isEn?: boolean;
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [embedVideo, setEmbedVideo] = useState(false);
 
-  if (!topBeaten || topBeaten.length === 0) return null;
+  if (!topBeaten || topBeaten.length === 0) {
+    return (
+      <div
+        className="ui-card relative w-full h-full min-h-[340px] rounded-2xl overflow-hidden border shadow-xl flex flex-col items-center justify-center p-6 text-center space-y-3"
+        style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+      >
+        <Trophy className="w-10 h-10 ui-dim opacity-30" />
+        <div>
+          <h2 className="text-sm font-bold ui-title">Clan&apos;s Hardest</h2>
+          <p className="text-xs ui-dim mt-1 max-w-xs">
+            {isEn
+              ? 'No demon records completed yet by clan members.'
+              : 'Chưa có kỷ lục Demon nào được các thành viên trong Clan chinh phục.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const currentItem = topBeaten[currentIndex] || topBeaten[0];
   const lvl = currentItem.level;
@@ -200,23 +219,33 @@ function ClanHardestSlideshow({
 
   const embedUrl = ytId ? `https://www.youtube.com/embed/${ytId}?autoplay=1` : null;
 
+  // Hạng thực tế của demon trong danh sách (không hiển thị nhầm là Top 1 Demon)
+  const rankNumber = lvl.classicRank || lvl.placement || lvl.vnPlacement;
+  const rankLabel = lvl.classicRank
+    ? `#${lvl.classicRank}`
+    : lvl.placement
+    ? `#${lvl.placement}`
+    : lvl.vnPlacement
+    ? `#${lvl.vnPlacement} VN`
+    : (isEn ? 'Unranked' : 'Chưa xếp hạng');
+
   return (
     <div
-      className="ui-card relative w-full rounded-3xl overflow-hidden border shadow-xl transition-all duration-300"
+      className="ui-card relative w-full h-full rounded-2xl overflow-hidden border shadow-xl flex flex-col justify-between transition-all duration-300"
       style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Header Row */}
       <div
-        className="px-5 py-3 border-b flex items-center justify-between gap-3 bg-black/15"
+        className="px-4 py-2.5 border-b flex items-center justify-between gap-3 bg-black/15"
         style={{ borderColor: 'var(--border-subtle)' }}
       >
         <div className="flex items-center gap-2">
           <Trophy className="w-4 h-4 text-amber-400" />
           <h2 className="text-sm font-bold ui-title">Clan&apos;s Hardest</h2>
           <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
-            Top {topBeaten.length} Demon
+            {topBeaten.length} {isEn ? 'Demons' : 'Demon'}
           </span>
         </div>
 
@@ -228,7 +257,7 @@ function ClanHardestSlideshow({
       </div>
 
       {/* Main Slide Canvas */}
-      <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-slate-950 flex flex-col justify-between p-5 sm:p-6">
+      <div className="relative h-60 sm:h-64 w-full overflow-hidden bg-slate-950 flex flex-col justify-between p-4 sm:p-5 flex-1">
         {embedVideo && embedUrl ? (
           <div className="absolute inset-0 z-20 bg-black flex flex-col">
             <div className="p-2 bg-black/80 flex items-center justify-between border-b border-white/10 px-4">
@@ -239,7 +268,7 @@ function ClanHardestSlideshow({
                 className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold text-white flex items-center gap-1.5 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
-                <span>Đóng Video</span>
+                <span>{isEn ? 'Close Video' : 'Đóng Video'}</span>
               </button>
             </div>
             <div className="flex-1 w-full h-full">
@@ -281,62 +310,62 @@ function ClanHardestSlideshow({
             <div className="relative z-10 flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2.5">
                 <span className="px-2.5 py-1 rounded-xl text-xs font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 backdrop-blur-md shadow-sm">
-                  #{currentIndex + 1} Hardest
+                  {rankLabel}
                 </span>
                 <DifficultyRatingIcon
                   difficultyFace={lvl.difficultyFace}
                   ratingType={lvl.ratingType}
-                  className="w-8 h-8 drop-shadow-md"
+                  className="w-7 h-7 drop-shadow-md"
                 />
-                <span className="font-mono text-xs font-black text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 rounded-xl backdrop-blur-md">
+                <span className="font-mono text-xs font-black text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-xl backdrop-blur-md">
                   {lvl.basePp || 0} Pt
                 </span>
               </div>
             </div>
 
             {/* Bottom Content */}
-            <div className="relative z-10 space-y-2.5 max-w-xl">
+            <div className="relative z-10 space-y-2 max-w-xl">
               <div>
                 <Link
                   href={levelPath(lvl)}
-                  className="text-xl sm:text-2xl md:text-3xl font-black text-white hover:text-amber-300 drop-shadow-md tracking-tight block transition-colors"
+                  className="text-lg sm:text-xl font-black text-white hover:text-amber-300 drop-shadow-md tracking-tight block transition-colors truncate"
                 >
                   {lvl.name}
                 </Link>
 
-                <div className="flex items-center gap-3 text-xs sm:text-sm text-slate-300 mt-1 flex-wrap">
-                  <span className="flex items-center gap-1.5">
-                    <span className="ui-dim">Người chinh phục:</span>
+                <div className="flex items-center gap-2 text-xs text-slate-300 mt-0.5 flex-wrap">
+                  <span className="flex items-center gap-1">
+                    <span className="ui-dim">{isEn ? 'Conquered by:' : 'Người chinh phục:'}</span>
                     <strong className="text-white font-bold">
                       <UserDisplayName user={currentItem.user} showClanTag={false} />
                     </strong>
                   </span>
                   {lvl.creatorName && (
-                    <span className="flex items-center gap-1.5 border-l border-white/20 pl-3 ui-dim">
-                      <span>bởi {lvl.creatorName}</span>
+                    <span className="flex items-center gap-1 border-l border-white/20 pl-2 ui-dim">
+                      <span>{isEn ? 'by' : 'bởi'} {lvl.creatorName}</span>
                     </span>
                   )}
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-2 pt-1 flex-wrap">
+              <div className="flex items-center gap-2 pt-0.5 flex-wrap">
                 {ytId && (
                   <button
                     type="button"
                     onClick={() => setEmbedVideo(true)}
-                    className="px-3.5 py-1.5 rounded-xl text-xs font-black bg-red-600 hover:bg-red-500 text-white flex items-center gap-1.5 shadow-md hover:scale-105 transition-all cursor-pointer"
+                    className="px-3 py-1 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-500 text-white flex items-center gap-1.5 shadow-sm hover:scale-105 transition-all cursor-pointer"
                   >
                     <Play className="w-3 h-3 fill-white" />
-                    <span>Xem Video Ngay</span>
+                    <span>{isEn ? 'Watch Video' : 'Xem Video Ngay'}</span>
                   </button>
                 )}
 
                 <Link
                   href={levelPath(lvl)}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/20 bg-black/40 hover:bg-black/60 text-white backdrop-blur-md flex items-center gap-1.5 transition-all"
+                  className="px-3 py-1 rounded-xl text-xs font-bold border border-white/20 bg-black/40 hover:bg-black/60 text-white backdrop-blur-md flex items-center gap-1 transition-all"
                 >
-                  <span>Chi tiết màn chơi</span>
+                  <span>{isEn ? 'Level Details' : 'Chi tiết màn chơi'}</span>
                   <ArrowRight className="w-3 h-3" />
                 </Link>
               </div>
@@ -348,16 +377,16 @@ function ClanHardestSlideshow({
                 <button
                   type="button"
                   onClick={handlePrev}
-                  className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/15 backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 cursor-pointer z-20 shadow-xl"
-                  title="Demon trước"
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/15 backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 cursor-pointer z-20 shadow-xl"
+                  title={isEn ? 'Previous demon' : 'Demon trước'}
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/15 backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 cursor-pointer z-20 shadow-xl"
-                  title="Demon kế tiếp"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/15 backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 cursor-pointer z-20 shadow-xl"
+                  title={isEn ? 'Next demon' : 'Demon kế tiếp'}
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -366,7 +395,7 @@ function ClanHardestSlideshow({
 
             {/* Dots Indicator */}
             {topBeaten.length > 1 && (
-              <div className="absolute bottom-3 right-4 sm:right-6 flex items-center gap-1.5 z-20">
+              <div className="absolute bottom-2.5 right-4 flex items-center gap-1.5 z-20">
                 {topBeaten.map((_, i) => (
                   <button
                     key={i}
@@ -374,7 +403,7 @@ function ClanHardestSlideshow({
                     onClick={() => handleSelectSlide(i)}
                     className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
                       i === currentIndex
-                        ? 'w-6 bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.6)]'
+                        ? 'w-5 bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.6)]'
                         : 'w-1.5 bg-white/35 hover:bg-white/70'
                     }`}
                     title={`Slide ${i + 1}`}
@@ -389,7 +418,7 @@ function ClanHardestSlideshow({
       {/* Filmstrip Thumbnails Row */}
       {topBeaten.length > 1 && (
         <div
-          className="p-2.5 sm:p-3 bg-black/20 border-t flex items-center gap-2 overflow-x-auto scrollbar-none"
+          className="p-2 sm:p-2.5 bg-black/20 border-t flex items-center gap-2 overflow-x-auto scrollbar-none"
           style={{ borderColor: 'var(--border-subtle)' }}
         >
           {topBeaten.map((item, idx) => {
@@ -401,25 +430,26 @@ function ClanHardestSlideshow({
             const mThumb = yId
               ? `https://img.youtube.com/vi/${yId}/mqdefault.jpg`
               : 'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
+            const itemRank = l.classicRank || l.placement || l.vnPlacement;
 
             return (
               <button
                 key={l.id || idx}
                 type="button"
                 onClick={() => handleSelectSlide(idx)}
-                className={`relative shrink-0 flex items-center gap-2 p-1 pr-2.5 rounded-xl border transition-all text-left cursor-pointer ${
+                className={`relative shrink-0 flex items-center gap-1.5 p-1 pr-2 rounded-xl border transition-all text-left cursor-pointer ${
                   isSelected
                     ? 'border-amber-400/80 bg-amber-500/15 shadow-[0_0_12px_rgba(245,158,11,0.25)] ring-1 ring-amber-400/50'
                     : 'border-white/10 bg-black/30 opacity-70 hover:opacity-100 hover:border-white/25'
                 }`}
               >
-                <div className="w-10 h-7 rounded-lg overflow-hidden bg-slate-900 shrink-0 relative">
+                <div className="w-9 h-6 rounded-lg overflow-hidden bg-slate-900 shrink-0 relative">
                   <img src={mThumb} alt="" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/20" />
                 </div>
-                <div className="min-w-0 max-w-[110px]">
+                <div className="min-w-0 max-w-[100px]">
                   <p className={`text-xs font-bold truncate ${isSelected ? 'text-amber-300' : 'text-white/90'}`}>
-                    #{idx + 1} {l.name}
+                    {itemRank ? `#${itemRank} ` : ''}{l.name}
                   </p>
                   <p className="text-[10px] ui-dim truncate font-mono">{l.basePp || 0} Pt</p>
                 </div>
@@ -433,12 +463,14 @@ function ClanHardestSlideshow({
 }
 
 /**
- * Compact Featured Creator Works Slideshow Component (thấp hơn, bé ngang Leaderboard & Clan's Hardest)
+ * Compact Featured Creator Works Slideshow Component (thấp hơn, bé nhất, dưới cùng)
  */
 function CompactClanLevelsSlideshow({
   works,
+  isEn,
 }: {
   works: any[];
+  isEn?: boolean;
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -485,7 +517,7 @@ function CompactClanLevelsSlideshow({
 
   return (
     <div
-      className="ui-card relative w-full rounded-2xl overflow-hidden border shadow-md transition-all duration-300"
+      className="ui-card relative w-full rounded-2xl overflow-hidden border shadow-sm transition-all duration-300"
       style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -499,7 +531,7 @@ function CompactClanLevelsSlideshow({
           <Hammer className="w-3.5 h-3.5 text-sky-400" />
           <h2 className="text-xs font-bold ui-title">Featured Creator Works</h2>
           <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-sky-500/10 text-sky-400 border border-sky-500/20">
-            {works.length} Màn chơi
+            {works.length} {isEn ? 'Levels' : 'Màn chơi'}
           </span>
         </div>
 
@@ -510,19 +542,19 @@ function CompactClanLevelsSlideshow({
         )}
       </div>
 
-      {/* Main Slide Canvas (thấp hơn, h-44 sm:h-52) */}
-      <div className="relative h-44 sm:h-52 w-full overflow-hidden bg-slate-950 flex flex-col justify-between p-4 sm:p-5">
+      {/* Main Slide Canvas (thấp hơn nhiều, h-32 sm:h-36) */}
+      <div className="relative h-32 sm:h-36 w-full overflow-hidden bg-slate-950 flex flex-col justify-between p-3 sm:p-4">
         {embedVideo && embedUrl ? (
           <div className="absolute inset-0 z-20 bg-black flex flex-col">
-            <div className="p-1.5 bg-black/80 flex items-center justify-between border-b border-white/10 px-3">
+            <div className="p-1 bg-black/80 flex items-center justify-between border-b border-white/10 px-3">
               <span className="text-xs font-bold text-white truncate">{currentWork.levelName}</span>
               <button
                 type="button"
                 onClick={() => setEmbedVideo(false)}
-                className="px-2.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-xs font-bold text-white flex items-center gap-1 cursor-pointer"
+                className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-xs font-bold text-white flex items-center gap-1 cursor-pointer"
               >
                 <X className="w-3 h-3" />
-                <span>Đóng</span>
+                <span>{isEn ? 'Close' : 'Đóng'}</span>
               </button>
             </div>
             <div className="flex-1 w-full h-full">
@@ -561,17 +593,17 @@ function CompactClanLevelsSlideshow({
 
             {/* Top Badges */}
             <div className="relative z-10 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <DifficultyRatingIcon
                   difficultyFace={currentWork.difficultyFace || 0}
                   ratingType={currentWork.ratingType || 'NONE'}
-                  className="w-7 h-7 drop-shadow-sm"
+                  className="w-6 h-6 drop-shadow-sm"
                 />
-                <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-lg bg-black/60 text-white/90 border border-white/15 backdrop-blur-xs">
+                <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-white/90 border border-white/15 backdrop-blur-xs">
                   ID: {currentWork.gdLevelId || '—'}
                 </span>
                 {matchedLevel?.basePp ? (
-                  <span className="font-mono font-bold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-lg text-[10px]">
+                  <span className="font-mono font-bold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px]">
                     {matchedLevel.basePp} Pt
                   </span>
                 ) : null}
@@ -579,22 +611,22 @@ function CompactClanLevelsSlideshow({
             </div>
 
             {/* Bottom Row */}
-            <div className="relative z-10 space-y-1.5 max-w-lg">
+            <div className="relative z-10 space-y-1 max-w-lg">
               <div>
                 {targetLevelUrl ? (
                   <Link
                     href={targetLevelUrl}
-                    className="text-lg sm:text-xl font-black text-white hover:text-sky-300 drop-shadow-md tracking-tight block truncate transition-colors"
+                    className="text-base sm:text-lg font-black text-white hover:text-sky-300 drop-shadow-md tracking-tight block truncate transition-colors"
                   >
                     {currentWork.levelName || 'Untitled Level'}
                   </Link>
                 ) : (
-                  <h3 className="text-lg sm:text-xl font-black text-white drop-shadow-md tracking-tight truncate">
+                  <h3 className="text-base sm:text-lg font-black text-white drop-shadow-md tracking-tight truncate">
                     {currentWork.levelName || 'Untitled Level'}
                   </h3>
                 )}
-                <div className="text-xs text-slate-300 flex items-center gap-2 flex-wrap">
-                  <span>bởi <strong className="text-white font-bold">{currentWork.user?.username || currentWork.creatorName || 'GD Creator'}</strong></span>
+                <div className="text-[11px] text-slate-300 flex items-center gap-2 flex-wrap">
+                  <span>{isEn ? 'by' : 'bởi'} <strong className="text-white font-bold">{currentWork.user?.username || currentWork.creatorName || 'GD Creator'}</strong></span>
                   {matchedLevel?.verifier && (
                     <span className="border-l border-white/20 pl-2 ui-dim">Verifier: <strong className="text-white">{matchedLevel.verifier}</strong></span>
                   )}
@@ -607,20 +639,20 @@ function CompactClanLevelsSlideshow({
                   <button
                     type="button"
                     onClick={() => setEmbedVideo(true)}
-                    className="px-3 py-1 rounded-lg text-[11px] font-bold bg-red-600 hover:bg-red-500 text-white flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-red-600 hover:bg-red-500 text-white flex items-center gap-1 cursor-pointer shadow-xs"
                   >
-                    <Play className="w-3 h-3 fill-white" />
-                    <span>Xem Video</span>
+                    <Play className="w-2.5 h-2.5 fill-white" />
+                    <span>{isEn ? 'Watch Video' : 'Xem Video'}</span>
                   </button>
                 )}
 
                 {targetLevelUrl && (
                   <Link
                     href={targetLevelUrl}
-                    className="px-3 py-1 rounded-lg text-[11px] font-bold border border-white/20 bg-black/40 hover:bg-black/60 text-white backdrop-blur-xs flex items-center gap-1"
+                    className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold border border-white/20 bg-black/40 hover:bg-black/60 text-white backdrop-blur-xs flex items-center gap-1"
                   >
-                    <span>Chi tiết</span>
-                    <ArrowRight className="w-3 h-3" />
+                    <span>{isEn ? 'Details' : 'Chi tiết'}</span>
+                    <ArrowRight className="w-2.5 h-2.5" />
                   </Link>
                 )}
               </div>
@@ -632,32 +664,32 @@ function CompactClanLevelsSlideshow({
                 <button
                   type="button"
                   onClick={handlePrev}
-                  className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/15 backdrop-blur-xs flex items-center justify-center transition-all hover:scale-110 cursor-pointer z-20 shadow-md"
-                  title="Trước"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/15 backdrop-blur-xs flex items-center justify-center transition-all hover:scale-110 cursor-pointer z-20 shadow-md"
+                  title={isEn ? 'Previous' : 'Trước'}
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/15 backdrop-blur-xs flex items-center justify-center transition-all hover:scale-110 cursor-pointer z-20 shadow-md"
-                  title="Sau"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/15 backdrop-blur-xs flex items-center justify-center transition-all hover:scale-110 cursor-pointer z-20 shadow-md"
+                  title={isEn ? 'Next' : 'Sau'}
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </>
             )}
 
             {/* Dots Indicator */}
             {works.length > 1 && (
-              <div className="absolute bottom-2.5 right-4 flex items-center gap-1 z-20">
+              <div className="absolute bottom-2 right-3 flex items-center gap-1 z-20">
                 {works.map((_, i) => (
                   <button
                     key={i}
                     type="button"
                     onClick={() => handleSelectSlide(i)}
                     className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                      i === currentIndex ? 'w-5 bg-sky-400' : 'w-1.5 bg-white/35 hover:bg-white/70'
+                      i === currentIndex ? 'w-4 bg-sky-400' : 'w-1.5 bg-white/35 hover:bg-white/70'
                     }`}
                     title={`Slide ${i + 1}`}
                   />
@@ -671,7 +703,7 @@ function CompactClanLevelsSlideshow({
       {/* Compact Filmstrip Row */}
       {works.length > 1 && (
         <div
-          className="p-2 bg-black/20 border-t flex items-center gap-2 overflow-x-auto scrollbar-none"
+          className="p-1.5 bg-black/20 border-t flex items-center gap-1.5 overflow-x-auto scrollbar-none"
           style={{ borderColor: 'var(--border-subtle)' }}
         >
           {works.map((w, idx) => {
@@ -686,17 +718,17 @@ function CompactClanLevelsSlideshow({
                 key={w.id || idx}
                 type="button"
                 onClick={() => handleSelectSlide(idx)}
-                className={`relative shrink-0 flex items-center gap-1.5 p-1 pr-2 rounded-lg border transition-all text-left cursor-pointer ${
+                className={`relative shrink-0 flex items-center gap-1 p-0.5 pr-2 rounded-lg border transition-all text-left cursor-pointer ${
                   isSelected
                     ? 'border-sky-400 bg-sky-500/15 ring-1 ring-sky-400/50'
                     : 'border-white/10 bg-black/30 opacity-70 hover:opacity-100'
                 }`}
               >
-                <div className="w-8 h-6 rounded overflow-hidden bg-slate-900 shrink-0 relative">
+                <div className="w-7 h-5 rounded overflow-hidden bg-slate-900 shrink-0 relative">
                   <img src={miniThumb} alt="" className="w-full h-full object-cover" />
                 </div>
-                <div className="min-w-0 max-w-[100px]">
-                  <p className={`text-[11px] font-bold truncate ${isSelected ? 'text-sky-300' : 'text-white/90'}`}>
+                <div className="min-w-0 max-w-[90px]">
+                  <p className={`text-[10px] font-bold truncate ${isSelected ? 'text-sky-300' : 'text-white/90'}`}>
                     {w.levelName || 'Untitled'}
                   </p>
                 </div>
@@ -714,10 +746,27 @@ function CompactClanLevelsSlideshow({
  */
 function ClanPodiumLeaderboard({
   members,
+  isEn,
 }: {
   members: any[];
+  isEn?: boolean;
 }) {
-  if (!members || members.length === 0) return null;
+  if (!members || members.length === 0) {
+    return (
+      <div
+        className="ui-card relative w-full h-full min-h-[340px] rounded-2xl overflow-hidden border shadow-xl flex flex-col items-center justify-center p-6 text-center space-y-3"
+        style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+      >
+        <Trophy className="w-10 h-10 ui-dim opacity-30" />
+        <div>
+          <h2 className="text-sm font-bold ui-title">Leaderboard</h2>
+          <p className="text-xs ui-dim mt-1 max-w-xs">
+            {isEn ? 'No member rankings available.' : 'Chưa có dữ liệu xếp hạng thành viên.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const top5 = members.slice(0, 5);
 
@@ -755,25 +804,27 @@ function ClanPodiumLeaderboard({
 
   return (
     <div
-      className="ui-card rounded-3xl border p-5 sm:p-6 space-y-6 shadow-xl"
+      className="ui-card rounded-2xl border p-4 sm:p-5 flex flex-col justify-between h-full shadow-xl space-y-3"
       style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+      <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--border-subtle)' }}>
         <div>
-          <h2 className="text-base sm:text-lg font-black ui-title flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-amber-400" /> Leaderboard
+          <h2 className="text-sm font-bold ui-title flex items-center gap-1.5">
+            <Trophy className="w-4 h-4 text-amber-400" /> Leaderboard
           </h2>
-          <p className="text-xs ui-dim mt-0.5">Bảng xếp hạng thành viên theo điểm Classic Pt</p>
+          <p className="text-[11px] ui-dim mt-0.5">
+            {isEn ? 'Member rankings by Classic Pt' : 'Bảng xếp hạng thành viên theo điểm Classic Pt'}
+          </p>
         </div>
-        <span className="font-mono text-xs font-bold ui-dim px-2.5 py-1 rounded-xl bg-black/20 border border-white/5">
-          {members.length} thành viên
+        <span className="font-mono text-xs font-bold ui-dim px-2 py-0.5 rounded-lg bg-black/20 border border-white/5">
+          {members.length} {isEn ? 'members' : 'thành viên'}
         </span>
       </div>
 
       {/* Podium Stage Container */}
-      <div className="pt-8 pb-2 px-2 sm:px-4">
-        <div className="flex items-end justify-center gap-2 sm:gap-4 md:gap-5 min-h-[300px] sm:min-h-[340px]">
+      <div className="pt-3 pb-1 px-1 flex-1 flex flex-col justify-end">
+        <div className="flex items-end justify-center gap-1.5 sm:gap-2.5 min-h-[220px] sm:min-h-[240px]">
           {podiumSlots.map(({ item, rank }) => {
             const isRank1 = rank === 1;
             const isRank2 = rank === 2;
@@ -783,19 +834,19 @@ function ClanPodiumLeaderboard({
 
             const ptVal = (item.user?.classicPp || 0).toLocaleString();
 
-            // Pedestal heights and styles
+            // Pedestal heights (compacted to match Clan's Hardest height)
             const pedestalHeight = isRank1
-              ? 'h-36 sm:h-44'
+              ? 'h-24 sm:h-28'
               : isRank2
-              ? 'h-28 sm:h-34'
+              ? 'h-18 sm:h-22'
               : isRank3
-              ? 'h-22 sm:h-28'
+              ? 'h-14 sm:h-17'
               : isRank4
-              ? 'h-16 sm:h-20'
-              : 'h-14 sm:h-18';
+              ? 'h-10 sm:h-12'
+              : 'h-8 sm:h-10';
 
             const pedestalBorder = isRank1
-              ? 'border-t-4 border-amber-400 bg-gradient-to-t from-amber-500/25 via-amber-500/10 to-amber-500/5 shadow-[0_0_20px_rgba(245,158,11,0.2)]'
+              ? 'border-t-4 border-amber-400 bg-gradient-to-t from-amber-500/25 via-amber-500/10 to-amber-500/5 shadow-[0_0_16px_rgba(245,158,11,0.2)]'
               : isRank2
               ? 'border-t-4 border-slate-300 bg-gradient-to-t from-slate-400/20 via-slate-400/10 to-slate-400/5'
               : isRank3
@@ -803,34 +854,36 @@ function ClanPodiumLeaderboard({
               : 'border-t-2 border-white/20 bg-white/5';
 
             const avatarSize = isRank1
-              ? 'w-18 h-18 sm:w-22 sm:h-22 ring-4 ring-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.4)]'
+              ? 'w-13 h-13 sm:w-16 sm:h-16 ring-3 ring-amber-400 shadow-[0_0_16px_rgba(245,158,11,0.35)]'
               : isRank2
-              ? 'w-14 h-14 sm:w-17 sm:h-17 ring-3 ring-slate-300 shadow-md'
+              ? 'w-11 h-11 sm:w-12 sm:h-12 ring-2 ring-slate-300 shadow-md'
               : isRank3
-              ? 'w-13 h-13 sm:w-15 sm:h-15 ring-3 ring-amber-600 shadow-md'
-              : 'w-11 h-11 sm:w-13 sm:h-13 ring-2 ring-white/20';
+              ? 'w-10 h-10 sm:w-11 sm:h-11 ring-2 ring-amber-600 shadow-md'
+              : isRank4
+              ? 'w-8 h-8 sm:w-9 sm:h-9 ring-1 ring-white/20'
+              : 'w-7 h-7 sm:w-8 sm:h-8 ring-1 ring-white/20';
 
             return (
               <div
                 key={item.id || item.userId || rank}
-                className={`flex flex-col items-center flex-1 min-w-0 max-w-[130px] sm:max-w-[160px] ${
+                className={`flex flex-col items-center flex-1 min-w-0 max-w-[90px] sm:max-w-[110px] ${
                   isRank1 ? 'z-10' : 'z-[1]'
                 }`}
               >
                 {/* 1. ĐIỂM TRÊN AVATAR */}
-                <div className="flex flex-col items-center mb-2">
+                <div className="flex flex-col items-center mb-1.5">
                   {isRank1 && (
-                    <Crown className="w-6 h-6 text-amber-400 drop-shadow mb-1 animate-bounce" />
+                    <Crown className="w-5 h-5 text-amber-400 drop-shadow mb-0.5 animate-bounce" />
                   )}
                   <span
-                    className={`font-mono font-black text-xs sm:text-sm px-2.5 py-0.5 rounded-full border shadow-xs whitespace-nowrap ${
+                    className={`font-mono font-black text-[10px] sm:text-xs px-2 py-0.5 rounded-full border shadow-xs whitespace-nowrap ${
                       isRank1
                         ? 'bg-amber-500/20 text-amber-300 border-amber-400/50'
                         : isRank2
                         ? 'bg-slate-400/20 text-slate-200 border-slate-300/40'
                         : isRank3
                         ? 'bg-amber-700/20 text-amber-400 border-amber-600/40'
-                        : 'bg-black/50 text-white/80 border-white/10 text-[11px]'
+                        : 'bg-black/50 text-white/80 border-white/10 text-[9px]'
                     }`}
                   >
                     {ptVal} Pt
@@ -842,11 +895,11 @@ function ClanPodiumLeaderboard({
                   href={`/profile/${item.user.username}`}
                   className="group relative block transition-transform hover:scale-105"
                 >
-                  <div className={`rounded-2xl overflow-hidden bg-slate-900 shrink-0 ${avatarSize}`}>
+                  <div className={`rounded-xl overflow-hidden bg-slate-900 shrink-0 ${avatarSize}`}>
                     {item.user.avatarUrl ? (
                       <img src={item.user.avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center font-black text-sm ui-dim">
+                      <div className="w-full h-full flex items-center justify-center font-black text-xs ui-dim">
                         {item.user.username ? item.user.username[0] : '?'}
                       </div>
                     )}
@@ -854,20 +907,20 @@ function ClanPodiumLeaderboard({
                 </Link>
 
                 {/* 3. TÊN DƯỚI AVATAR */}
-                <div className="text-center mt-2 mb-2 w-full px-1">
+                <div className="text-center mt-1.5 mb-1.5 w-full px-0.5">
                   <Link
                     href={`/profile/${item.user.username}`}
-                    className="font-bold text-xs sm:text-sm ui-title truncate block hover:underline"
+                    className="font-bold text-[11px] sm:text-xs ui-title truncate block hover:underline"
                   >
                     <UserDisplayName user={item.user} showClanTag={false} />
                   </Link>
 
                   {item.role === 'LEADER' ? (
-                    <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded text-[9px] font-black bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase">
+                    <span className="inline-block mt-0.5 px-1 py-0.2 rounded text-[8px] font-black bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase">
                       Leader
                     </span>
                   ) : item.role === 'MODERATOR' ? (
-                    <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded text-[9px] font-black bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 uppercase">
+                    <span className="inline-block mt-0.5 px-1 py-0.2 rounded text-[8px] font-black bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 uppercase">
                       Mod
                     </span>
                   ) : null}
@@ -875,23 +928,23 @@ function ClanPodiumLeaderboard({
 
                 {/* 4. BIỂU ĐỒ CỘT (PEDESTAL COLUMN) */}
                 <div
-                  className={`w-full rounded-t-2xl flex flex-col items-center justify-start pt-3 sm:pt-4 transition-all ${pedestalHeight} ${pedestalBorder}`}
+                  className={`w-full rounded-t-xl flex flex-col items-center justify-start pt-2 transition-all ${pedestalHeight} ${pedestalBorder}`}
                 >
                   <span
                     className={`font-black select-none ${
                       isRank1
-                        ? 'text-3xl sm:text-4xl text-amber-400 drop-shadow'
+                        ? 'text-xl sm:text-2xl text-amber-400 drop-shadow'
                         : isRank2
-                        ? 'text-2xl sm:text-3xl text-slate-300'
+                        ? 'text-lg sm:text-xl text-slate-300'
                         : isRank3
-                        ? 'text-xl sm:text-2xl text-amber-600'
-                        : 'text-lg sm:text-xl text-white/60'
+                        ? 'text-base sm:text-lg text-amber-600'
+                        : 'text-sm text-white/60'
                     }`}
                   >
                     #{rank}
                   </span>
                   <span
-                    className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest mt-0.5 ${
+                    className={`text-[8px] sm:text-[9px] font-black uppercase tracking-wider mt-0.5 ${
                       isRank1
                         ? 'text-amber-400/80'
                         : isRank2
@@ -909,40 +962,6 @@ function ClanPodiumLeaderboard({
           })}
         </div>
       </div>
-
-      {/* Remaining Members (Ranks #6+) */}
-      {members.length > 5 && (
-        <div className="pt-4 border-t space-y-2" style={{ borderColor: 'var(--border-subtle)' }}>
-          <span className="text-[11px] font-bold uppercase tracking-wider ui-dim px-1 block">
-            Các thứ hạng tiếp theo
-          </span>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {members.slice(5).map((m, idx) => {
-              const rankVal = idx + 6;
-              return (
-                <div
-                  key={m.id || m.userId}
-                  className="p-2.5 rounded-xl border flex items-center justify-between gap-2.5 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
-                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="w-5 text-center font-bold text-xs ui-dim">#{rankVal}</span>
-                    <div className="w-6 h-6 rounded-lg overflow-hidden bg-slate-900 border shrink-0" style={{ borderColor: 'var(--border-subtle)' }}>
-                      {m.user?.avatarUrl && <img src={m.user.avatarUrl} alt="" className="w-full h-full object-cover" />}
-                    </div>
-                    <Link href={`/profile/${m.user?.username}`} className="text-xs font-bold ui-title hover:underline truncate">
-                      <UserDisplayName user={m.user} showClanTag={false} />
-                    </Link>
-                  </div>
-                  <span className="font-mono text-xs font-bold text-amber-400 shrink-0">
-                    {(m.user?.classicPp || 0).toLocaleString()} Pt
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -950,7 +969,8 @@ function ClanPodiumLeaderboard({
 export default function ClanProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const isEn = language === 'en';
   const { showToast, showConfirm } = useToast();
   const { resolvedMode } = useTheme();
   const isDark = resolvedMode === 'dark';
@@ -977,13 +997,13 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
       const res = await fetch(`/api/clans/${slug}`);
       const data = await res.json();
       if (!res.ok || !data.success) {
-        showToast(data.error || 'Không tìm thấy Clan.', 'error');
+        showToast(data.error || (isEn ? 'Clan not found.' : 'Không tìm thấy Clan.'), 'error');
         router.push('/clan');
         return;
       }
       setClan(data.clan);
     } catch {
-      showToast('Lỗi khi tải thông tin Clan.', 'error');
+      showToast(isEn ? 'Error loading Clan data.' : 'Lỗi khi tải thông tin Clan.', 'error');
     } finally {
       setLoading(false);
     }
@@ -1010,7 +1030,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
   }, [slug]);
 
   if (loading) {
-    return <div className="p-16 text-center text-xs ui-dim font-medium">Đang tải thông tin Clan...</div>;
+    return <div className="p-16 text-center text-xs ui-dim font-medium">{isEn ? 'Loading Clan information...' : 'Đang tải thông tin Clan...'}</div>;
   }
   if (!clan) return null;
 
@@ -1028,7 +1048,9 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
   // Leave Clan
   const handleLeave = () => {
     showConfirm(
-      'Bạn có chắc chắn muốn rời khỏi Clan này không? Mọi đóng góp SP coin của bạn sẽ được hoàn lại.',
+      isEn
+        ? 'Are you sure you want to leave this Clan? All your pledged SP coins will be refunded.'
+        : 'Bạn có chắc chắn muốn rời khỏi Clan này không? Mọi đóng góp SP coin của bạn sẽ được hoàn lại.',
       async () => {
         setActionLoading(true);
         try {
@@ -1037,13 +1059,13 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           });
           const data = await res.json();
           if (res.ok && data.success) {
-            showToast('Đã rời khỏi Clan.', 'success');
+            showToast(isEn ? 'Left the Clan.' : 'Đã rời khỏi Clan.', 'success');
             loadClanData();
           } else {
-            showToast(data.error || 'Không thể rời Clan.', 'error');
+            showToast(data.error || (isEn ? 'Could not leave Clan.' : 'Không thể rời Clan.'), 'error');
           }
         } catch {
-          showToast('Lỗi kết nối máy chủ.', 'error');
+          showToast(isEn ? 'Server connection error.' : 'Lỗi kết nối máy chủ.', 'error');
         } finally {
           setActionLoading(false);
         }
@@ -1063,14 +1085,14 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        showToast('Đã đóng góp SP nâng cấp Clan thành công!', 'success');
+        showToast(isEn ? 'Successfully pledged SP to upgrade Clan!' : 'Đã đóng góp SP nâng cấp Clan thành công!', 'success');
         setIsDonateOpen(false);
         loadClanData();
       } else {
-        showToast(data.error || 'Không thể nâng cấp Clan.', 'error');
+        showToast(data.error || (isEn ? 'Could not upgrade Clan.' : 'Không thể nâng cấp Clan.'), 'error');
       }
     } catch {
-      showToast('Lỗi kết nối máy chủ.', 'error');
+      showToast(isEn ? 'Server connection error.' : 'Lỗi kết nối máy chủ.', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -1087,15 +1109,17 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
       const data = await res.json();
       if (res.ok && data.success) {
         showToast(
-          action === 'approve' ? 'Đã duyệt thành viên mới.' : 'Đã từ chối yêu cầu.',
+          action === 'approve'
+            ? (isEn ? 'Approved new member.' : 'Đã duyệt thành viên mới.')
+            : (isEn ? 'Declined request.' : 'Đã từ chối yêu cầu.'),
           'success'
         );
         loadClanData();
       } else {
-        showToast(data.error || 'Lỗi thao tác.', 'error');
+        showToast(data.error || (isEn ? 'Action failed.' : 'Lỗi thao tác.'), 'error');
       }
     } catch {
-      showToast('Lỗi kết nối máy chủ.', 'error');
+      showToast(isEn ? 'Server connection error.' : 'Lỗi kết nối máy chủ.', 'error');
     }
   };
 
@@ -1109,20 +1133,22 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        showToast('Đã cập nhật chức vụ thành viên!', 'success');
+        showToast(isEn ? 'Updated member role!' : 'Đã cập nhật chức vụ thành viên!', 'success');
         loadClanData();
       } else {
-        showToast(data.error || 'Lỗi thao tác.', 'error');
+        showToast(data.error || (isEn ? 'Action failed.' : 'Lỗi thao tác.'), 'error');
       }
     } catch {
-      showToast('Lỗi kết nối máy chủ.', 'error');
+      showToast(isEn ? 'Server connection error.' : 'Lỗi kết nối máy chủ.', 'error');
     }
   };
 
   // Member management: kick
   const handleKick = (memberId: string, username: string) => {
     showConfirm(
-      `Trục xuất [${username}]? Thành viên này sẽ bị xóa khỏi Clan và số SP đóng góp của họ sẽ bị thu hồi.`,
+      isEn
+        ? `Kick [${username}]? This member will be removed from the Clan and their pledged SP coins will be revoked.`
+        : `Trục xuất [${username}]? Thành viên này sẽ bị xóa khỏi Clan và số SP đóng góp của họ sẽ bị thu hồi.`,
       async () => {
         try {
           const res = await fetch(`/api/clans/${clan.slug}/members/${memberId}`, {
@@ -1130,13 +1156,13 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           });
           const data = await res.json();
           if (res.ok && data.success) {
-            showToast('Đã xóa thành viên khỏi Clan.', 'success');
+            showToast(isEn ? 'Removed member from Clan.' : 'Đã xóa thành viên khỏi Clan.', 'success');
             loadClanData();
           } else {
-            showToast(data.error || 'Lỗi thao tác.', 'error');
+            showToast(data.error || (isEn ? 'Action failed.' : 'Lỗi thao tác.'), 'error');
           }
         } catch {
-          showToast('Lỗi kết nối máy chủ.', 'error');
+          showToast(isEn ? 'Server connection error.' : 'Lỗi kết nối máy chủ.', 'error');
         }
       }
     );
@@ -1146,7 +1172,9 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
   const handleTransfer = () => {
     if (!transferTargetId) return;
     showConfirm(
-      'Bạn sẽ chuyển quyền Leader tối cao cho thành viên này. Hành động này không thể hoàn tác!',
+      isEn
+        ? 'You are transferring Clan Leadership to this member. This action cannot be undone!'
+        : 'Bạn sẽ chuyển quyền Leader tối cao cho thành viên này. Hành động này không thể hoàn tác!',
       async () => {
         try {
           const res = await fetch(`/api/clans/${clan.slug}/transfer`, {
@@ -1156,14 +1184,14 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           });
           const data = await res.json();
           if (res.ok && data.success) {
-            showToast('Đã chuyển giao quyền Leader thành công!', 'success');
+            showToast(isEn ? 'Transferred Clan Leadership successfully!' : 'Đã chuyển giao quyền Leader thành công!', 'success');
             setIsTransferOpen(false);
             loadClanData();
           } else {
-            showToast(data.error || 'Lỗi thao tác.', 'error');
+            showToast(data.error || (isEn ? 'Action failed.' : 'Lỗi thao tác.'), 'error');
           }
         } catch {
-          showToast('Lỗi kết nối máy chủ.', 'error');
+          showToast(isEn ? 'Server connection error.' : 'Lỗi kết nối máy chủ.', 'error');
         }
       }
     );
@@ -1357,7 +1385,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                 >
                   <Coins className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Nâng cấp Clan</span>
+                  <span>{isEn ? 'Upgrade Clan' : 'Nâng cấp Clan'}</span>
                 </button>
               )}
 
@@ -1368,7 +1396,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   className="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1.5 cursor-pointer hover:bg-amber-500/20 shadow-xs"
                 >
                   <UserCheck className="w-3.5 h-3.5" />
-                  <span>Đơn chờ ({clan.pendingRequests.length})</span>
+                  <span>{isEn ? `Requests (${clan.pendingRequests.length})` : `Đơn chờ (${clan.pendingRequests.length})`}</span>
                 </button>
               )}
 
@@ -1380,7 +1408,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                 >
                   <Settings className="w-3.5 h-3.5 text-sky-400" />
-                  <span>Cài đặt</span>
+                  <span>{isEn ? 'Settings' : 'Cài đặt'}</span>
                 </button>
               )}
 
@@ -1388,15 +1416,15 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                 clan.myPendingRequest ? (
                   <div className="px-4 py-2 rounded-xl text-xs font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center gap-1.5">
                     <UserPlus className="w-3.5 h-3.5" />
-                    <span>Đã xin vào (Chờ duyệt)</span>
+                    <span>{isEn ? 'Requested (Pending)' : 'Đã xin vào (Chờ duyệt)'}</span>
                   </div>
                 ) : clan.isSuspended ? (
                   <div className="px-4 py-2 rounded-xl text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">
-                    Clan đang tạm dừng
+                    {isEn ? 'Clan Suspended' : 'Clan đang tạm dừng'}
                   </div>
                 ) : clan.memberCount >= tierInfo.maxMembers ? (
                   <div className="px-4 py-2 rounded-xl text-xs font-bold ui-subtle border ui-border ui-dim">
-                    Clan đã đủ thành viên ({clan.memberCount}/{tierInfo.maxMembers})
+                    {isEn ? `Clan is Full (${clan.memberCount}/${tierInfo.maxMembers})` : `Clan đã đủ thành viên (${clan.memberCount}/${tierInfo.maxMembers})`}
                   </div>
                 ) : (
                   <button
@@ -1412,7 +1440,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                     style={{ backgroundColor: 'var(--accent)' }}
                   >
                     <UserPlus className="w-4 h-4" />
-                    <span>Xin gia nhập</span>
+                    <span>{isEn ? 'Join Clan' : 'Xin gia nhập'}</span>
                   </button>
                 )
               )}
@@ -1423,7 +1451,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   onClick={handleLeave}
                   disabled={actionLoading}
                   className="p-2 rounded-xl border text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition-colors cursor-pointer shadow-xs"
-                  title="Rời khỏi Clan"
+                  title={isEn ? 'Leave Clan' : 'Rời khỏi Clan'}
                   style={{ borderColor: 'var(--border-ui)' }}
                 >
                   <LogOut className="w-4 h-4" />
@@ -1439,9 +1467,9 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Coins className="w-4 h-4 text-amber-400" />
-                  <span className="font-bold ui-title">Tiến trình SP Coin</span>
+                  <span className="font-bold ui-title">{isEn ? 'SP Coin Progress' : 'Tiến trình SP Coin'}</span>
                   <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                    {clan.totalSp >= 20 ? 'Cấp tối đa (Tier 3)' : `Mục tiêu ${targetTierName}`}
+                    {clan.totalSp >= 20 ? (isEn ? 'Max Level (Tier 3)' : 'Cấp tối đa (Tier 3)') : (isEn ? `Target ${targetTierName}` : `Mục tiêu ${targetTierName}`)}
                   </span>
                 </div>
                 <div className="font-mono text-xs font-black text-amber-400">
@@ -1462,8 +1490,8 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               <div className="flex items-center justify-between text-[11px] ui-dim">
                 <span>
                   {clan.totalSp >= 20
-                    ? 'Clan đang ở cấp bậc cao nhất!'
-                    : `Cần thêm ${Math.max(0, targetSp - clan.totalSp)} SP để lên ${targetTierName}`}
+                    ? (isEn ? 'Clan has reached the maximum tier!' : 'Clan đang ở cấp bậc cao nhất!')
+                    : (isEn ? `Need ${Math.max(0, targetSp - clan.totalSp)} more SP to reach ${targetTierName}` : `Cần thêm ${Math.max(0, targetSp - clan.totalSp)} SP để lên ${targetTierName}`)}
                 </span>
                 <span className="font-mono font-bold text-amber-400/90">{progressPercentage}%</span>
               </div>
@@ -1472,7 +1500,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
             {/* Quick Metrics (5 cols) */}
             <div className="md:col-span-5 flex items-center justify-between md:justify-end gap-6 pt-3 md:pt-0 border-t md:border-t-0 md:border-l border-white/10 md:pl-6">
               <div className="text-left md:text-right">
-                <span className="text-[11px] ui-dim block font-medium">Tổng Clan Pt</span>
+                <span className="text-[11px] ui-dim block font-medium">{isEn ? 'Total Clan Pt' : 'Tổng Clan Pt'}</span>
                 <div className="flex items-center md:justify-end gap-1.5 font-mono text-base font-black text-amber-400">
                   <Trophy className="w-4 h-4 text-amber-400" />
                   <span>{totalClanPt.toLocaleString()} Pt</span>
@@ -1480,7 +1508,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               </div>
 
               <div className="text-left md:text-right">
-                <span className="text-[11px] ui-dim block font-medium">Thành viên</span>
+                <span className="text-[11px] ui-dim block font-medium">{isEn ? 'Members' : 'Thành viên'}</span>
                 <div className="flex items-center md:justify-end gap-1.5 font-mono text-base font-black ui-title">
                   <Users className="w-4 h-4 text-sky-400" />
                   <span>
@@ -1495,14 +1523,15 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           {clan.isSuspended ? (
             <div className="px-6 py-3 bg-red-500/15 border-t border-red-500/20 flex items-center gap-2 text-xs font-semibold text-red-300">
               <AlertTriangle className="w-4 h-4 shrink-0 text-red-400" />
-              <span>Clan đang bị tạm ngưng do tổng SP coin dưới 3. Đóng góp thêm SP để mở lại hoạt động!</span>
+              <span>{isEn ? 'Clan is currently suspended because total SP coins is below 3. Pledge more SP to resume operations!' : 'Clan đang bị tạm ngưng do tổng SP coin dưới 3. Đóng góp thêm SP để mở lại hoạt động!'}</span>
             </div>
           ) : clan.gracePeriodUntil ? (
             <div className="px-6 py-3 bg-amber-500/15 border-t border-amber-500/20 flex items-center gap-2 text-xs font-semibold text-amber-300">
               <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
               <span>
-                Thời gian ân hạn: Clan sẽ tạm ngưng vào{' '}
-                {new Date(clan.gracePeriodUntil).toLocaleDateString('vi-VN')} nếu không đủ 3 SP coin.
+                {isEn
+                  ? `Grace period: Clan will be suspended on ${new Date(clan.gracePeriodUntil).toLocaleDateString('en-US')} unless 3 SP coins are pledged.`
+                  : `Thời gian ân hạn: Clan sẽ tạm ngưng vào ${new Date(clan.gracePeriodUntil).toLocaleDateString('vi-VN')} nếu không đủ 3 SP coin.`}
               </span>
             </div>
           ) : null}
@@ -1611,7 +1640,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
             </div>
           </div>
 
-          {/* Mô tả Clan (Right 6 cols) */}
+          {/* Giới thiệu (About Clan) (Right 6 cols) */}
           <div className="lg:col-span-6">
             <div
               className="ui-card p-5 rounded-2xl h-full flex flex-col justify-between space-y-3"
@@ -1620,250 +1649,215 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--border-subtle)' }}>
                 <span className="text-xs font-bold ui-title flex items-center gap-2 uppercase tracking-wide">
                   <FileText className="w-4 h-4 text-[color:var(--accent)]" />
-                  Mô tả Clan
+                  {isEn ? 'About' : 'Giới thiệu'}
                 </span>
-                {canManageClan && (
-                  <button
-                    type="button"
-                    onClick={() => setIsSettingsOpen(true)}
-                    className="p-1.5 rounded-lg text-sky-400 hover:bg-sky-500/10 transition-colors cursor-pointer text-xs flex items-center gap-1 font-semibold"
-                    title="Chỉnh sửa mô tả Clan"
-                  >
-                    <Edit className="w-3.5 h-3.5" />
-                    <span>Sửa mô tả</span>
-                  </button>
-                )}
               </div>
 
               <div className="text-xs sm:text-sm text-[color:var(--text-body)] space-y-1.5 leading-relaxed break-words font-sans flex-1 overflow-y-auto max-h-56">
                 {clan.description ? (
                   parseDiscordMarkdown(clan.description)
                 ) : (
-                  <p className="text-xs ui-dim italic py-4">Chưa có mô tả nào cho Clan.</p>
+                  <p className="text-xs ui-dim italic py-4">
+                    {isEn ? 'No description provided yet.' : 'Chưa có giới thiệu nào cho Clan.'}
+                  </p>
                 )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* MAIN LAYOUT: Left (8 cols: Leaderboard, Clan's Hardest, Featured Creator Works) & Right Sidebar (4 cols: Members & Roster) */}
+        {/* MAIN LAYOUT: Left (8 cols: Leaderboard & Clan's Hardest side-by-side, Featured Creator Works at the bottom) & Right Sidebar (4 cols: Members Roster) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* LEFT COLUMN (8 cols): Leaderboard Podium, Clan's Hardest Slideshow, Featured Creator Works Slideshow */}
           <div className="lg:col-span-8 space-y-6 min-w-0">
-            {/* 1. LEADERBOARD PODIUM (Bục biểu đồ cột vinh danh Top 1-5 to, người cao nhất ở giữa) */}
-            <ClanPodiumLeaderboard members={leaderboardMembers} />
+            {/* 1 & 2. Side-by-side: Leaderboard Podium (Left) & Clan's Hardest Slideshow (Right) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
+              <ClanPodiumLeaderboard members={leaderboardMembers} isEn={isEn} />
+              <ClanHardestSlideshow topBeaten={clan.top5Beaten || []} isEn={isEn} />
+            </div>
 
-            {/* 2. CLAN'S HARDEST SLIDESHOW (với video embed và thumbnail) */}
-            {clan.top5Beaten?.length > 0 && (
-              <ClanHardestSlideshow topBeaten={clan.top5Beaten} />
-            )}
-
-            {/* 3. FEATURED CREATOR WORKS (thấp hơn, bé ngang Leaderboard & Clan's Hardest) */}
+            {/* 3. FEATURED CREATOR WORKS (dưới cùng và bé thôi) */}
             {clan.creatorWorks?.length > 0 && (
-              <CompactClanLevelsSlideshow works={clan.creatorWorks} />
+              <CompactClanLevelsSlideshow works={clan.creatorWorks} isEn={isEn} />
             )}
           </div>
 
-          {/* RIGHT SIDEBAR (4 cols): Ban Quản Trị, Danh Sách Thành Viên Clan & Media phụ */}
-          <div className="lg:col-span-4 space-y-6">
-            {/* Ban Quản Trị Clan */}
+          {/* RIGHT SIDEBAR (4 cols): Dedicated Clan Member Roster Sidebar */}
+          <div className="lg:col-span-4 space-y-5">
             <div
-              className="ui-card rounded-2xl border p-4 space-y-3 shadow-xs"
+              className="ui-card rounded-2xl border p-4 sm:p-5 shadow-xl space-y-4"
               style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
             >
-              <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
-                <h3 className="text-xs font-bold ui-title flex items-center gap-1.5">
-                  <Crown className="w-4 h-4 text-amber-400" /> Ban Quản Trị Clan
-                </h3>
-                {isLeader && (
-                  <button
-                    type="button"
-                    onClick={() => setIsTransferOpen(true)}
-                    className="text-[11px] font-bold text-amber-400 hover:underline"
-                  >
-                    Chuyển giao Leader
-                  </button>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                {/* Leader VIP Card */}
-                {clan.membersGrouped?.leader && (
-                  <Link
-                    href={`/profile/${clan.membersGrouped.leader.user.username}`}
-                    className="p-3 rounded-xl border flex items-center gap-3 bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/15 transition-all shadow-xs"
-                  >
-                    <div className="w-9 h-9 rounded-xl overflow-hidden border border-amber-500/40 bg-slate-900 shrink-0">
-                      {clan.membersGrouped.leader.user.avatarUrl ? (
-                        <img src={clan.membersGrouped.leader.user.avatarUrl} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center font-bold text-amber-400 text-xs">
-                          {clan.membersGrouped.leader.user.username[0]}
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <UserDisplayName user={clan.membersGrouped.leader.user} showClanTag={false} clanRole="LEADER" />
-                      <span className="text-[10px] text-amber-400 font-bold block mt-0.5">Clan Leader</span>
-                    </div>
-                    <Crown className="w-4 h-4 text-amber-400 shrink-0" />
-                  </Link>
-                )}
-
-                {/* Clan Mods */}
-                {clan.membersGrouped?.mods?.map((mod: any) => (
-                  <Link
-                    key={mod.id}
-                    href={`/profile/${mod.user.username}`}
-                    className="p-2.5 rounded-xl border flex items-center gap-3 bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10 transition-colors"
-                  >
-                    <div className="w-8 h-8 rounded-xl overflow-hidden border border-emerald-500/30 bg-slate-900 shrink-0">
-                      {mod.user.avatarUrl ? (
-                        <img src={mod.user.avatarUrl} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center font-bold text-emerald-400 text-xs">
-                          {mod.user.username[0]}
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <UserDisplayName user={mod.user} showClanTag={false} clanRole="MODERATOR" />
-                      <span className="text-[10px] text-emerald-400 font-bold block">Quản trị viên Clan</span>
-                    </div>
-                    <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Danh Sách Tất Cả Thành Viên (Discord Roster Sidebar) */}
-            <div
-              className="ui-card rounded-2xl border p-4 sm:p-5 space-y-4 shadow-xs"
-              style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
-            >
-              <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
-                <h3 className="text-xs font-bold ui-title flex items-center gap-1.5">
-                  <Users className="w-4 h-4 text-sky-400" /> Tất cả thành viên
-                </h3>
-                <span className="font-mono text-xs ui-dim font-bold">
-                  {clan.memberCount} / {tierInfo.maxMembers}
-                </span>
-              </div>
-
-              {/* Section: Leader */}
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 block px-1">
-                  Leader — 1
-                </span>
-                {clan.membersGrouped?.leader && (
-                  <div className="p-2.5 rounded-xl border flex items-center justify-between gap-2.5 bg-amber-500/5 border-amber-500/25">
-                    <Link
-                      href={`/profile/${clan.membersGrouped.leader.user.username}`}
-                      className="flex items-center gap-2.5 min-w-0 flex-1 hover:underline"
+              {/* Header */}
+              <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-sky-400" />
+                  <h3 className="text-sm font-bold ui-title">
+                    {isEn ? 'Clan Members' : 'Thành viên Clan'}
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs ui-dim font-bold px-2 py-0.5 rounded-lg bg-black/20 border border-white/5">
+                    {clan.memberCount} / {tierInfo.maxMembers}
+                  </span>
+                  {isLeader && (
+                    <button
+                      type="button"
+                      onClick={() => setIsTransferOpen(true)}
+                      className="text-[11px] font-bold text-amber-400 hover:underline cursor-pointer"
                     >
-                      <div className="w-7 h-7 rounded-lg overflow-hidden border border-amber-500/40 bg-slate-900 shrink-0">
-                        {clan.membersGrouped.leader.user.avatarUrl && (
-                          <img src={clan.membersGrouped.leader.user.avatarUrl} alt="" className="w-full h-full object-cover" />
-                        )}
+                      {isEn ? 'Transfer' : 'Chuyển giao'}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Roster List */}
+              <div className="space-y-4 max-h-[640px] overflow-y-auto pr-1">
+                {/* 1. Leader */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 block px-1">
+                    Leader — 1
+                  </span>
+                  {clan.membersGrouped?.leader && (
+                    <div className="p-2.5 rounded-xl border flex items-center justify-between gap-2.5 bg-amber-500/10 border-amber-500/30 shadow-xs">
+                      <Link
+                        href={`/profile/${clan.membersGrouped.leader.user.username}`}
+                        className="flex items-center gap-2.5 min-w-0 flex-1 hover:underline"
+                      >
+                        <div className="w-8 h-8 rounded-lg overflow-hidden border border-amber-500/40 bg-slate-900 shrink-0">
+                          {clan.membersGrouped.leader.user.avatarUrl ? (
+                            <img src={clan.membersGrouped.leader.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center font-bold text-amber-400 text-xs">
+                              {clan.membersGrouped.leader.user.username[0]}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <UserDisplayName user={clan.membersGrouped.leader.user} showClanTag={false} clanRole="LEADER" />
+                          <span className="font-mono text-[10px] text-amber-400 font-bold block mt-0.5">
+                            {(clan.membersGrouped.leader.user.classicPp || 0).toLocaleString()} Pt
+                          </span>
+                        </div>
+                      </Link>
+                      <Crown className="w-4 h-4 text-amber-400 shrink-0" />
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Moderators */}
+                {clan.membersGrouped?.mods?.length > 0 && (
+                  <div className="space-y-1.5 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 block px-1">
+                      {isEn ? 'Moderators' : 'Mod Clan'} — {clan.membersGrouped.mods.length}
+                    </span>
+                    {clan.membersGrouped.mods.map((m: any) => (
+                      <div
+                        key={m.id}
+                        className="p-2 rounded-xl border flex items-center justify-between gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
+                        style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
+                      >
+                        <Link
+                          href={`/profile/${m.user.username}`}
+                          className="flex items-center gap-2.5 min-w-0 flex-1 hover:underline"
+                        >
+                          <div className="w-7 h-7 rounded-lg overflow-hidden border border-emerald-500/30 bg-slate-900 shrink-0">
+                            {m.user.avatarUrl ? (
+                              <img src={m.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center font-bold text-emerald-400 text-xs">
+                                {m.user.username[0]}
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <UserDisplayName user={m.user} showClanTag={false} clanRole="MODERATOR" />
+                            <span className="font-mono text-[10px] ui-dim font-bold block">
+                              {(m.user.classicPp || 0).toLocaleString()} Pt
+                            </span>
+                          </div>
+                        </Link>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                          {(isLeader || isOwnerWeb) && (
+                            <button
+                              type="button"
+                              onClick={() => handleRoleChange(m.id, 'MEMBER')}
+                              className="text-[10px] font-bold text-slate-400 hover:text-amber-400 px-1 py-0.5 rounded cursor-pointer"
+                              title={isEn ? 'Demote to Member' : 'Hạ quyền xuống Member'}
+                            >
+                              {isEn ? 'Demote' : 'Hạ cấp'}
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <UserDisplayName user={clan.membersGrouped.leader.user} showClanTag={false} />
-                    </Link>
-                    <Crown className="w-4 h-4 text-amber-400 shrink-0" />
+                    ))}
                   </div>
                 )}
-              </div>
 
-              {/* Section: Moderators */}
-              {clan.membersGrouped?.mods?.length > 0 && (
+                {/* 3. Regular Members */}
                 <div className="space-y-1.5 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 block px-1">
-                    Mod Clan — {clan.membersGrouped.mods.length}
+                  <span className="text-[10px] font-black uppercase tracking-wider ui-dim block px-1">
+                    {isEn ? 'Members' : 'Thành viên'} — {clan.membersGrouped?.members?.length || 0}
                   </span>
-                  {clan.membersGrouped.mods.map((m: any) => (
-                    <div
-                      key={m.id}
-                      className="p-2 rounded-xl border flex items-center justify-between gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
-                      style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
-                    >
-                      <Link
-                        href={`/profile/${m.user.username}`}
-                        className="flex items-center gap-2.5 min-w-0 flex-1 hover:underline"
+                  {clan.membersGrouped?.members?.length > 0 ? (
+                    clan.membersGrouped.members.map((m: any) => (
+                      <div
+                        key={m.id}
+                        className="p-2 rounded-xl border flex items-center justify-between gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
+                        style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
                       >
-                        <div className="w-7 h-7 rounded-lg overflow-hidden border bg-slate-900 shrink-0" style={{ borderColor: 'var(--border-subtle)' }}>
-                          {m.user.avatarUrl && (
-                            <img src={m.user.avatarUrl} alt="" className="w-full h-full object-cover" />
-                          )}
-                        </div>
-                        <UserDisplayName user={m.user} showClanTag={false} />
-                      </Link>
+                        <Link
+                          href={`/profile/${m.user.username}`}
+                          className="flex items-center gap-2.5 min-w-0 flex-1 hover:underline"
+                        >
+                          <div className="w-7 h-7 rounded-lg overflow-hidden border bg-slate-900 shrink-0" style={{ borderColor: 'var(--border-subtle)' }}>
+                            {m.user.avatarUrl ? (
+                              <img src={m.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center font-bold text-xs ui-dim">
+                                {m.user.username[0]}
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <UserDisplayName user={m.user} showClanTag={false} />
+                            <span className="font-mono text-[10px] ui-dim font-bold block">
+                              {(m.user.classicPp || 0).toLocaleString()} Pt
+                            </span>
+                          </div>
+                        </Link>
 
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <ShieldCheck className="w-4 h-4 text-emerald-400" />
                         {(isLeader || isOwnerWeb) && (
-                          <button
-                            type="button"
-                            onClick={() => handleRoleChange(m.id, 'MEMBER')}
-                            className="text-[10px] font-bold text-slate-400 hover:text-amber-400 px-1 py-0.5 rounded cursor-pointer"
-                            title="Hạ quyền xuống Member"
-                          >
-                            Hạ cấp
-                          </button>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              type="button"
+                              onClick={() => handleRoleChange(m.id, 'MODERATOR')}
+                              className="text-[10px] font-bold text-emerald-400 hover:bg-emerald-500/10 px-1.5 py-0.5 rounded cursor-pointer"
+                              title={isEn ? 'Promote to Clan Mod' : 'Bổ nhiệm làm Mod Clan'}
+                            >
+                              {isEn ? 'Promote' : 'Bổ nhiệm'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleKick(m.id, m.user.username)}
+                              className="text-[10px] font-bold text-red-400 hover:bg-red-500/10 px-1.5 py-0.5 rounded cursor-pointer"
+                              title={isEn ? 'Kick from Clan' : 'Trục xuất khỏi Clan'}
+                            >
+                              {isEn ? 'Kick' : 'Xóa'}
+                            </button>
+                          </div>
                         )}
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-xs ui-dim px-2 py-2 italic">
+                      {isEn ? 'No other members yet.' : 'Chưa có thành viên nào khác.'}
+                    </p>
+                  )}
                 </div>
-              )}
-
-              {/* Section: Regular Members */}
-              <div className="space-y-1.5 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-                <span className="text-[10px] font-black uppercase tracking-wider ui-dim block px-1">
-                  Thành viên — {clan.membersGrouped?.members?.length || 0}
-                </span>
-                {clan.membersGrouped?.members?.length > 0 ? (
-                  clan.membersGrouped.members.map((m: any) => (
-                    <div
-                      key={m.id}
-                      className="p-2 rounded-xl border flex items-center justify-between gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
-                      style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
-                    >
-                      <Link
-                        href={`/profile/${m.user.username}`}
-                        className="flex items-center gap-2.5 min-w-0 flex-1 hover:underline"
-                      >
-                        <div className="w-7 h-7 rounded-lg overflow-hidden border bg-slate-900 shrink-0" style={{ borderColor: 'var(--border-subtle)' }}>
-                          {m.user.avatarUrl && (
-                            <img src={m.user.avatarUrl} alt="" className="w-full h-full object-cover" />
-                          )}
-                        </div>
-                        <UserDisplayName user={m.user} showClanTag={false} />
-                      </Link>
-
-                      {(isLeader || isOwnerWeb) && (
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            type="button"
-                            onClick={() => handleRoleChange(m.id, 'MODERATOR')}
-                            className="text-[10px] font-bold text-emerald-400 hover:bg-emerald-500/10 px-1.5 py-0.5 rounded cursor-pointer"
-                            title="Bổ nhiệm làm Mod Clan"
-                          >
-                            Bổ nhiệm
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleKick(m.id, m.user.username)}
-                            className="text-[10px] font-bold text-red-400 hover:bg-red-500/10 px-1.5 py-0.5 rounded cursor-pointer"
-                            title="Trục xuất khỏi Clan"
-                          >
-                            Xóa
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-xs ui-dim px-2 py-2 italic">Chưa có thành viên nào khác.</p>
-                )}
               </div>
             </div>
 
@@ -1874,7 +1868,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                 style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
               >
                 <h2 className="text-xs font-bold ui-title flex items-center gap-2">
-                  <Video className="w-3.5 h-3.5 text-red-400" /> Video giới thiệu Clan
+                  <Video className="w-3.5 h-3.5 text-red-400" /> {isEn ? 'Clan Showcase Video' : 'Video giới thiệu Clan'}
                 </h2>
                 <div className="aspect-video w-full rounded-xl overflow-hidden border bg-black shadow-inner" style={{ borderColor: 'var(--border-ui)' }}>
                   <iframe
@@ -1895,7 +1889,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                 style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
               >
                 <h2 className="text-xs font-bold ui-title flex items-center gap-2 text-pink-400">
-                  <Heart className="w-3.5 h-3.5 fill-pink-500" /> Màn chơi yêu thích của Clan
+                  <Heart className="w-3.5 h-3.5 fill-pink-500" /> {isEn ? 'Favorite Clan Level' : 'Màn chơi yêu thích của Clan'}
                 </h2>
                 <Link
                   href={levelPath(clan.favoriteLevel)}
@@ -1912,7 +1906,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                       <h3 className="font-bold text-xs ui-title truncate group-hover:text-sky-400 transition-colors">
                         {clan.favoriteLevel.name}
                       </h3>
-                      <p className="text-[10px] ui-dim truncate">bởi {clan.favoriteLevel.creatorName || 'GD Creator'}</p>
+                      <p className="text-[10px] ui-dim truncate">{isEn ? 'by' : 'bởi'} {clan.favoriteLevel.creatorName || 'GD Creator'}</p>
                     </div>
                   </div>
 
@@ -1937,7 +1931,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
             >
               <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
                 <h3 className="text-base font-bold ui-title flex items-center gap-2 text-amber-400">
-                  <Coins className="w-5 h-5" /> Nâng cấp Clan bằng SP
+                  <Coins className="w-5 h-5" /> {isEn ? 'Upgrade Clan with SP' : 'Nâng cấp Clan bằng SP'}
                 </h3>
                 <button
                   type="button"
@@ -1953,12 +1947,14 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   className="p-3 rounded-xl border flex items-center justify-between text-xs font-semibold"
                   style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
                 >
-                  <span className="ui-dim">SP Coin khả dụng của bạn:</span>
+                  <span className="ui-dim">{isEn ? 'Your available SP Coins:' : 'SP Coin khả dụng của bạn:'}</span>
                   <span className="font-mono text-amber-400 font-bold">{userSp} SP</span>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold ui-title">Số điểm SP đóng góp nâng cấp</label>
+                  <label className="text-xs font-bold ui-title">
+                    {isEn ? 'SP coins to contribute' : 'Số điểm SP đóng góp nâng cấp'}
+                  </label>
                   <div className="flex items-center gap-3">
                     <input
                       type="range"
@@ -1973,7 +1969,9 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                     </span>
                   </div>
                   <p className="text-[11px] ui-dim leading-relaxed">
-                    Đóng góp SP giúp tăng cấp Tier Clan và duy trì hoạt động. Điểm SP sẽ tự động hết hiệu lực khi thời hạn Supporter của bạn hết hạn.
+                    {isEn
+                      ? 'Contributing SP increases the Clan Tier and keeps it active. SP coins will automatically expire when your Supporter duration ends.'
+                      : 'Đóng góp SP giúp tăng cấp Tier Clan và duy trì hoạt động. Điểm SP sẽ tự động hết hiệu lực khi thời hạn Supporter của bạn hết hạn.'}
                   </p>
                 </div>
 
@@ -1981,10 +1979,10 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   <button
                     type="button"
                     onClick={() => setIsDonateOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border"
+                    className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border cursor-pointer"
                     style={{ borderColor: 'var(--border-ui)' }}
                   >
-                    Hủy
+                    {isEn ? 'Cancel' : 'Hủy'}
                   </button>
                   <button
                     type="submit"
@@ -1993,7 +1991,9 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                     style={{ backgroundColor: 'var(--accent)' }}
                   >
                     {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Coins className="w-4 h-4" />}
-                    {actionLoading ? 'Đang lưu...' : 'Xác nhận nâng cấp'}
+                    {actionLoading
+                      ? (isEn ? 'Saving...' : 'Đang lưu...')
+                      : (isEn ? 'Confirm Upgrade' : 'Xác nhận nâng cấp')}
                   </button>
                 </div>
               </form>
@@ -2010,7 +2010,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
             >
               <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
                 <h3 className="text-base font-bold ui-title flex items-center gap-2">
-                  <UserCheck className="w-5 h-5 text-amber-400" /> Đơn xin gia nhập ({clan.pendingRequests.length})
+                  <UserCheck className="w-5 h-5 text-amber-400" /> {isEn ? `Join Applications (${clan.pendingRequests.length})` : `Đơn xin gia nhập (${clan.pendingRequests.length})`}
                 </h3>
                 <button
                   type="button"
@@ -2041,7 +2041,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                       <div className="min-w-0">
                         <UserDisplayName user={req.user} showClanTag={false} />
                         <span className="text-[10px] ui-dim block font-mono">
-                          {req.user.classicPp || 0} Pt • {new Date(req.createdAt).toLocaleDateString('vi-VN')}
+                          {req.user.classicPp || 0} Pt • {new Date(req.createdAt).toLocaleDateString(isEn ? 'en-US' : 'vi-VN')}
                         </span>
                         {req.message && (
                           <p className="text-xs ui-dim mt-1.5 p-2 rounded-lg bg-black/10 dark:bg-white/5 border border-dashed border-white/10 italic">
@@ -2057,13 +2057,13 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                         onClick={() => handleProcessRequest(req.id, 'approve')}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 flex items-center gap-1 cursor-pointer"
                       >
-                        <Check className="w-3.5 h-3.5" /> Duyệt
+                        <Check className="w-3.5 h-3.5" /> {isEn ? 'Approve' : 'Duyệt'}
                       </button>
                       <button
                         type="button"
                         onClick={() => handleProcessRequest(req.id, 'reject')}
                         className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-red-400 hover:bg-red-500/10 border border-red-500/20 cursor-pointer"
-                        title="Từ chối"
+                        title={isEn ? 'Decline' : 'Từ chối'}
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -2084,7 +2084,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
             >
               <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
                 <h3 className="text-base font-bold ui-title flex items-center gap-2 text-amber-400">
-                  <Crown className="w-5 h-5" /> Chuyển giao quyền sở hữu Clan
+                  <Crown className="w-5 h-5" /> {isEn ? 'Transfer Clan Ownership' : 'Chuyển giao quyền sở hữu Clan'}
                 </h3>
                 <button
                   type="button"
@@ -2097,7 +2097,9 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
 
               <div className="space-y-3">
                 <p className="text-xs ui-dim leading-relaxed">
-                  Chọn thành viên nhận chức vụ Leader tối cao của Clan. Bạn sẽ chuyển thành thành viên bình thường.
+                  {isEn
+                    ? 'Select a member to receive Clan Leader ownership. You will be set as a normal member.'
+                    : 'Chọn thành viên nhận chức vụ Leader tối cao của Clan. Bạn sẽ chuyển thành thành viên bình thường.'}
                 </p>
 
                 <select
@@ -2105,7 +2107,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   onChange={(e) => setTransferTargetId(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl text-xs ui-input font-bold cursor-pointer"
                 >
-                  <option value="">-- Chọn thành viên nhận quyền --</option>
+                  <option value="">{isEn ? '-- Select member --' : '-- Chọn thành viên nhận quyền --'}</option>
                   {allMembers
                     .filter((m: any) => m.userId !== clan.leaderId)
                     .map((m: any) => (
@@ -2119,10 +2121,10 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   <button
                     type="button"
                     onClick={() => setIsTransferOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border"
+                    className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border cursor-pointer"
                     style={{ borderColor: 'var(--border-ui)' }}
                   >
-                    Hủy
+                    {isEn ? 'Cancel' : 'Hủy'}
                   </button>
                   <button
                     type="button"
@@ -2130,7 +2132,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                     onClick={handleTransfer}
                     className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
-                    <Crown className="w-4 h-4" /> Xác nhận chuyển giao
+                    <Crown className="w-4 h-4" /> {isEn ? 'Confirm Transfer' : 'Xác nhận chuyển giao'}
                   </button>
                 </div>
               </div>
