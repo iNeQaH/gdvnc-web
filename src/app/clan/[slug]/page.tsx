@@ -1697,43 +1697,10 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
 
           {/* Box 2: Coming Soon Placeholder Box */}
           <div
-            className="ui-card rounded-2xl border overflow-hidden flex flex-col justify-between shadow-sm relative group transition-all duration-300 min-h-[220px]"
+            className="ui-card rounded-2xl border flex items-center justify-center text-center shadow-sm relative transition-all duration-300 min-h-[220px] h-full p-6"
             style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
           >
-            <div
-              className="px-4 py-2.5 border-b flex items-center justify-between gap-3 bg-black/15 shrink-0"
-              style={{ borderColor: 'var(--border-subtle)' }}
-            >
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
-                <h2 className="text-sm font-bold ui-title">Coming soon</h2>
-              </div>
-              <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-purple-500/15 text-purple-300 border border-purple-500/30">
-                {isEn ? 'In Development' : 'Sắp ra mắt'}
-              </span>
-            </div>
-            <div className="relative p-6 flex-1 flex flex-col items-center justify-center text-center space-y-3 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent">
-              <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
-                <Rocket className="w-6 h-6" />
-              </div>
-              <div className="space-y-1 max-w-xs">
-                <p className="text-xs font-bold ui-title">
-                  {isEn ? 'New Clan Feature In Progress' : 'Tính năng Clan mới đang phát triển'}
-                </p>
-                <p className="text-[11px] ui-dim leading-relaxed">
-                  {isEn
-                    ? 'Exciting new clan activities, quests, and rewards are under development. Stay tuned!'
-                    : 'Nhiều hoạt động, nhiệm vụ và phần thưởng Clan hấp dẫn đang được hoàn thiện. Hãy đón chờ nhé!'}
-                </p>
-              </div>
-            </div>
-            <div
-              className="px-4 py-2 border-t flex items-center justify-between text-[11px] ui-dim bg-black/10 shrink-0 font-mono"
-              style={{ borderColor: 'var(--border-subtle)' }}
-            >
-              <span>GDVN Clan Hub</span>
-              <span className="text-purple-400 font-bold">v2.5</span>
-            </div>
+            <h2 className="text-base sm:text-lg font-bold ui-title tracking-wide">Coming soon</h2>
           </div>
         </div>
 

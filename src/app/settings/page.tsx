@@ -1406,7 +1406,7 @@ export default function SettingsPage() {
                         style={{ borderColor: active ? undefined : 'var(--border-ui)' }}
                       >
                         <span className="text-[10px] ui-dim font-sans font-bold block">{f.label}</span>
-                        <div className="h-9 flex items-center overflow-hidden">
+                        <div className="h-9 flex items-center pr-3 overflow-visible">
                           <span
                             className="truncate block"
                             style={{
@@ -1414,6 +1414,7 @@ export default function SettingsPage() {
                               fontWeight: (f as any).weight || '700',
                               fontSize: `${scale}rem`,
                               lineHeight: 1.2,
+                              paddingRight: key === 'neon' || key === 'angels' ? '0.35em' : (key === 'ornate' || key === 'horror' ? '0.15em' : '0.05em'),
                             }}
                           >
                             {currentUser.username}

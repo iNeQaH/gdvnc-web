@@ -30,6 +30,7 @@ import { useTheme } from './ThemeProvider';
 import { useLanguage } from './LanguageContext';
 import BrandMark from '@/components/BrandMark';
 import { NotificationModal } from './NotificationModal';
+import { UserDisplayName } from './UserDisplayName';
 import { isStaffRole, isSuperAdminUser } from '@/lib/roles';
 import { refreshSessionUser, logoutClient } from '@/lib/sessionClient';
 
@@ -493,7 +494,15 @@ export const Sidebar = () => {
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="font-bold text-xs ui-title truncate flex items-center gap-1">
-                    {currentUser.username}
+                    <UserDisplayName
+                      user={currentUser}
+                      fallbackName={currentUser.username}
+                      showClanTag={true}
+                      tagPosition="left"
+                      showClanRole={false}
+                      wrap={false}
+                      className="text-xs"
+                    />
                   </div>
                   <div className="text-[10px] ui-dim flex items-center gap-1">
                     {currentUser.isSuperAdmin || isSuperAdminUser(currentUser) ? (

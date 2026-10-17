@@ -42,6 +42,7 @@ export async function GET() {
               slug: true,
               color: true,
               colorGradient: true,
+              isSuspended: true,
             },
           },
         },

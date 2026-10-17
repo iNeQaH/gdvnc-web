@@ -15,10 +15,10 @@ export const FONT_PRESETS: Record<string, { label: string; family: string; weigh
   arcade: { label: 'Righteous', family: "'Righteous', display", weight: '400', scale: 1.05 },
   techno: { label: 'Audiowide', family: "'Audiowide', display", weight: '400', scale: 1.05 },
   gothic: { label: 'Cinzel Decorative', family: "'Cinzel Decorative', serif", weight: '700', scale: 1.05 },
-  ornate: { label: 'Rasley Heights', family: "'Rasley Heights', cursive", weight: '400', scale: 0.74 },
-  rasley: { label: 'Rasley Heights', family: "'Rasley Heights', cursive", weight: '400', scale: 0.74 },
-  horror: { label: "Coraline's Cat", family: "\"Coraline's Cat\", cursive", weight: '400', scale: 0.76 },
-  coraline: { label: "Coraline's Cat", family: "\"Coraline's Cat\", cursive", weight: '400', scale: 0.76 },
+  ornate: { label: 'Rasley Heights', family: "'Rasley Heights', cursive", weight: '400', scale: 0.58 },
+  rasley: { label: 'Rasley Heights', family: "'Rasley Heights', cursive", weight: '400', scale: 0.58 },
+  horror: { label: "Coraline's Cat", family: "\"Coraline's Cat\", cursive", weight: '400', scale: 0.60 },
+  coraline: { label: "Coraline's Cat", family: "\"Coraline's Cat\", cursive", weight: '400', scale: 0.60 },
   neon: { label: 'Angels', family: "'Angels', display, sans-serif", weight: '400', scale: 1.08 },
   angels: { label: 'Angels', family: "'Angels', display, sans-serif", weight: '400', scale: 1.08 },
   terminal: { label: 'VT323', family: "'VT323', monospace", weight: '400', scale: 1.15 },
@@ -38,8 +38,8 @@ export const SETTINGS_FONT_PRESETS: Record<string, { label: string; family: stri
   neon: { label: 'Angels', family: "'Angels', display, sans-serif", weight: '400', scale: 1.08 },
   graffiti: { label: 'Permanent Marker', family: "'Permanent Marker', cursive", weight: '400', scale: 1.26 },
   stencil: { label: 'Black Ops One', family: "'Black Ops One', display", weight: '400', scale: 1.26 },
-  ornate: { label: 'Rasley Heights', family: "'Rasley Heights', cursive", weight: '400', scale: 0.74 },
-  horror: { label: "Coraline's Cat", family: "\"Coraline's Cat\", cursive", weight: '400', scale: 0.76 },
+  ornate: { label: 'Rasley Heights', family: "'Rasley Heights', cursive", weight: '400', scale: 0.58 },
+  horror: { label: "Coraline's Cat", family: "\"Coraline's Cat\", cursive", weight: '400', scale: 0.60 },
 };
 
 export interface UserDisplayNameProps {
@@ -77,6 +77,7 @@ export interface UserDisplayNameProps {
   className?: string;
   tagClassName?: string;
   tagPosition?: 'left' | 'right';
+  wrap?: boolean;
 }
 
 export function UserDisplayName({
@@ -89,6 +90,7 @@ export function UserDisplayName({
   className = '',
   tagClassName = '',
   tagPosition = 'left',
+  wrap = true,
 }: UserDisplayNameProps) {
   const name = user?.displayName || user?.gdUsername || user?.username || fallbackName;
 
@@ -157,6 +159,20 @@ export function UserDisplayName({
     }
   }
 
+  // Padding chống cắt góc chữ nghiêng / nét bay (đặc biệt là ký tự 'H' của font Angels và nét uốn Rasley/Coraline)
+  if (user?.nameFont === 'neon' || user?.nameFont === 'angels') {
+    nameStyle.paddingRight = '0.35em';
+    nameStyle.display = 'inline-block';
+  } else if (
+    user?.nameFont === 'ornate' ||
+    user?.nameFont === 'rasley' ||
+    user?.nameFont === 'horror' ||
+    user?.nameFont === 'coraline'
+  ) {
+    nameStyle.paddingRight = '0.15em';
+    nameStyle.display = 'inline-block';
+  }
+
   const renderTag = () => {
     if (!showClanTag || !isClanActive || !clan?.tag) return null;
 
@@ -204,9 +220,9 @@ export function UserDisplayName({
   };
 
   return (
-    <span className={`inline-flex items-center gap-1.5 flex-wrap ${className}`}>
+    <span className={`inline-flex items-center gap-1.5 ${wrap ? 'flex-wrap' : 'flex-nowrap min-w-0'} ${className}`}>
       {tagPosition === 'left' && renderTag()}
-      <span style={nameStyle} className="font-bold">
+      <span style={nameStyle} className={`font-bold ${wrap ? '' : 'truncate'}`}>
         {name}
       </span>
       {tagPosition === 'right' && renderTag()}
