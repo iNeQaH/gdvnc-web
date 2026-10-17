@@ -52,6 +52,20 @@ function getYouTubeEmbedUrl(url?: string | null): string | null {
   return match ? `https://www.youtube.com/embed/${match[1]}` : null;
 }
 
+function hexToRgba(hex: string, alpha: number): string {
+  const m = String(hex || '').trim().match(/^#?([0-9a-fA-F]{3,8})$/);
+  if (!m) return `rgba(14, 165, 233, ${alpha})`;
+  let h = m[1];
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  if (h.length >= 6) {
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  return `rgba(14, 165, 233, ${alpha})`;
+}
+
 function parseDiscordMarkdown(text: string): React.ReactNode[] {
   if (!text) return [];
 
@@ -1188,22 +1202,30 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
   // Theme tùy chỉnh toàn trang Clan
   const clanThemeStyle: React.CSSProperties & Record<string, string> = {};
 
+  const rawClanTheme = (clan.themeGradient || '') + ' ' + (clan.themeColor || '');
+  const glowMatch = rawClanTheme.match(/\/\*glow:(\d+):(\d+)\*\//);
+  const clanGlowEnabled = glowMatch ? glowMatch[1] === '1' : true;
+  const clanGlowOpacity = glowMatch ? Math.min(Math.max(parseInt(glowMatch[2], 10) || 70, 10), 100) : 70;
+
+  const cleanThemeGradient = clan.themeGradient ? clan.themeGradient.replace(/\/\*.*?\*\//g, '').trim() : null;
+  const cleanThemeColor = clan.themeColor ? (clan.themeColor.match(/#([0-9a-fA-F]{3,8})/) ? clan.themeColor.match(/#([0-9a-fA-F]{3,8})/)![0] : clan.themeColor.replace(/\/\*.*?\*\//g, '').trim()) : null;
+
   let clanColors: string[] = [];
   let clanAngle = 135;
 
-  if (clan.themeGradient) {
-    const hexMatches = clan.themeGradient.match(/#([0-9a-fA-F]{3,8})/g);
+  if (cleanThemeGradient) {
+    const hexMatches = cleanThemeGradient.match(/#([0-9a-fA-F]{3,8})/g);
     if (hexMatches && hexMatches.length > 0) {
       clanColors = hexMatches;
     }
-    const angleMatch = clan.themeGradient.match(/(\d+)deg/);
+    const angleMatch = cleanThemeGradient.match(/(\d+)deg/);
     if (angleMatch) {
       clanAngle = parseInt(angleMatch[1], 10);
     }
-    clanThemeStyle['--accent-gradient'] = clan.themeGradient;
-  } else if (clan.themeColor && /^#([0-9a-fA-F]{3,8})$/.test(clan.themeColor.trim())) {
-    clanColors = [clan.themeColor.trim()];
-    clanThemeStyle['--accent'] = clan.themeColor;
+    clanThemeStyle['--accent-gradient'] = cleanThemeGradient;
+  } else if (cleanThemeColor && /^#([0-9a-fA-F]{3,8})$/.test(cleanThemeColor)) {
+    clanColors = [cleanThemeColor];
+    clanThemeStyle['--accent'] = cleanThemeColor;
   }
 
   const isTier2Plus = tierInfo.tier >= 2;
@@ -1216,18 +1238,38 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
       clanAngle,
       undefined,
       true,
-      isTier2Plus || isTier3,
+      (isTier2Plus || isTier3) && clanGlowEnabled,
       themeColors,
       clanAngle
     );
+
+    if (clanGlowEnabled) {
+      const alpha = (clanGlowOpacity / 100) * 0.55;
+      const blur = Math.round(14 + (clanGlowOpacity / 100) * 16);
+      if (themeColors.length >= 2) {
+        const rad = (clanAngle * Math.PI) / 180;
+        const ox = Math.round(Math.sin(rad) * 8);
+        const oy = Math.round(-Math.cos(rad) * 8);
+        themeVars['--border-glow-shadow'] = `${ox}px ${oy}px ${blur}px 1px ${hexToRgba(themeColors[1], alpha)}, ${-ox}px ${-oy}px ${blur}px 1px ${hexToRgba(themeColors[0], alpha)}, 0 0 ${Math.round(blur * 0.75)}px 2px ${hexToRgba(themeColors[0], alpha * 0.8)}`;
+      } else {
+        themeVars['--border-glow-shadow'] = `0 0 ${blur}px 2px ${hexToRgba(themeColors[0], alpha)}`;
+      }
+    } else {
+      themeVars['--border-glow'] = 'transparent';
+      themeVars['--border-glow-shadow'] = 'none';
+    }
+
     Object.assign(clanThemeStyle, themeVars);
+  } else {
+    clanThemeStyle['--border-glow'] = 'transparent';
+    clanThemeStyle['--border-glow-shadow'] = 'none';
   }
 
   return (
     <div
       className="relative min-h-[calc(100vh-8rem)] pb-16 transition-colors duration-300"
       style={clanThemeStyle}
-      data-tier3={isTier3 || (isTier2Plus && hasCustomClanTheme) ? 'true' : undefined}
+      data-tier3={clanGlowEnabled && (isTier3 || (isTier2Plus && hasCustomClanTheme)) ? 'true' : undefined}
     >
       {/* Full-bleed Clan Theme Backdrop */}
       {hasCustomClanTheme && (
@@ -1237,16 +1279,20 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
             backgroundColor: 'var(--bg-page)',
           }}
         >
-          {clan.themeGradient ? (
+          {cleanThemeGradient ? (
             <div
-              className="absolute inset-0 opacity-25 dark:opacity-30"
-              style={{ background: clan.themeGradient }}
-            />
-          ) : clan.themeColor ? (
-            <div
-              className="absolute inset-0 opacity-20 dark:opacity-25"
+              className="absolute inset-0 transition-opacity duration-300"
               style={{
-                background: `radial-gradient(ellipse 80% 50% at 50% -10%, ${clan.themeColor} 0%, transparent 75%)`,
+                background: cleanThemeGradient,
+                opacity: clanGlowEnabled ? (clanGlowOpacity / 100) * 0.35 : 0.05,
+              }}
+            />
+          ) : cleanThemeColor ? (
+            <div
+              className="absolute inset-0 transition-opacity duration-300"
+              style={{
+                background: `radial-gradient(ellipse 80% 50% at 50% -10%, ${cleanThemeColor} 0%, transparent 75%)`,
+                opacity: clanGlowEnabled ? (clanGlowOpacity / 100) * 0.3 : 0.05,
               }}
             />
           ) : null}
@@ -1267,7 +1313,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
             ) : (
               <div
                 className="w-full h-full bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center"
-                style={clan.themeGradient ? { background: clan.themeGradient } : undefined}
+                style={cleanThemeGradient ? { background: cleanThemeGradient } : undefined}
               >
                 <span className="font-mono font-black text-4xl text-white/10">[{clan.tag}]</span>
               </div>
@@ -1425,7 +1471,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-amber-500 to-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.5)]"
                   style={{
                     width: `${progressPercentage}%`,
-                    ...(clan.themeGradient ? { background: clan.themeGradient } : {}),
+                    ...(cleanThemeGradient ? { background: cleanThemeGradient } : {}),
                   }}
                 />
               </div>

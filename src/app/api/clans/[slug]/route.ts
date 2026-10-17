@@ -332,11 +332,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ slug: 
     if (body.color !== undefined) updateData.color = clipText(body.color, 30)?.trim() || '#0ea5e9';
     if (body.videoUrl !== undefined) updateData.videoUrl = clipText(body.videoUrl, 200)?.trim() || null;
     if (body.favoriteLevelId !== undefined) updateData.favoriteLevelId = body.favoriteLevelId || null;
-    if (body.themeColor !== undefined) updateData.themeColor = clipText(body.themeColor, 30)?.trim() || null;
+    if (body.themeColor !== undefined) updateData.themeColor = clipText(body.themeColor, 60)?.trim() || null;
 
     if (tierInfo.tier >= 2) {
       if (body.colorGradient !== undefined) updateData.colorGradient = clipText(body.colorGradient, 100)?.trim() || null;
-      if (body.themeGradient !== undefined) updateData.themeGradient = clipText(body.themeGradient, 100)?.trim() || null;
+      if (body.themeGradient !== undefined) updateData.themeGradient = clipText(body.themeGradient, 160)?.trim() || null;
     }
 
     // Chỉ Leader hoặc Owner mới được đổi tên clan

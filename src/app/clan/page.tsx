@@ -23,6 +23,20 @@ import { useLanguage } from '@/components/LanguageContext';
 import CreateClanModal from '@/components/clan/CreateClanModal';
 import { calculateUserSp, getClanTier } from '@/lib/clanTypes';
 
+function hexToRgba(hex: string, alpha: number): string {
+  const m = String(hex || '').trim().match(/^#?([0-9a-fA-F]{3,8})$/);
+  if (!m) return `rgba(14, 165, 233, ${alpha})`;
+  let h = m[1];
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  if (h.length >= 6) {
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  return `rgba(14, 165, 233, ${alpha})`;
+}
+
 const SORT_OPTIONS: { value: 'members' | 'sp' | 'newest' | 'oldest'; label: string; icon: any }[] = [
   { value: 'members', label: 'Đông thành viên nhất', icon: Users },
   { value: 'sp', label: 'SP Coin cao nhất', icon: Coins },
@@ -261,34 +275,59 @@ export default function ClanListPage() {
             const tierInfo = getClanTier(sp);
             const isTier2Plus = tierInfo.tier >= 2;
             const isTier3 = tierInfo.tier === 3;
-            const primaryThemeColor = clan.themeColor || clan.color || (isTier3 ? '#a855f7' : '#0ea5e9');
+            const rawGlow = (clan.themeGradient || '') + ' ' + (clan.themeColor || '');
+            const glowMatch = rawGlow.match(/\/\*glow:(\d+):(\d+)\*\//);
+            const cardGlowEnabled = glowMatch ? glowMatch[1] === '1' : true;
+            const cardGlowOpacity = glowMatch ? Math.min(Math.max(parseInt(glowMatch[2], 10) || 70, 10), 100) : 70;
+
+            const cleanThemeGradient = clan.themeGradient ? clan.themeGradient.replace(/\/\*.*?\*\//g, '').trim() : null;
+            const cleanThemeColor = clan.themeColor ? (clan.themeColor.match(/#([0-9a-fA-F]{3,8})/) ? clan.themeColor.match(/#([0-9a-fA-F]{3,8})/)![0] : clan.themeColor.replace(/\/\*.*?\*\//g, '').trim()) : null;
+
+            const rawPrimary = cleanThemeColor || clan.color || (isTier3 ? '#a855f7' : '#0ea5e9');
+            const primaryThemeColor = rawPrimary.match(/#([0-9a-fA-F]{3,8})/) ? rawPrimary.match(/#([0-9a-fA-F]{3,8})/)![0] : rawPrimary;
 
             const cardStyle: React.CSSProperties = {
               borderColor: 'var(--border-ui)',
             };
 
             if (isTier2Plus) {
-              if (clan.themeGradient) {
-                cardStyle.backgroundImage = `linear-gradient(to bottom, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.94)), ${clan.themeGradient}`;
-                const gMatch = clan.themeGradient.match(/(\d+)deg/);
-                const colMatch = clan.themeGradient.match(/#[a-fA-F0-9]{3,8}/g);
+              if (cleanThemeGradient) {
+                cardStyle.backgroundImage = `linear-gradient(to bottom, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.94)), ${cleanThemeGradient}`;
+                const gMatch = cleanThemeGradient.match(/(\d+)deg/);
+                const colMatch = cleanThemeGradient.match(/#[a-fA-F0-9]{3,8}/g);
                 if (gMatch && colMatch && colMatch.length >= 2) {
                   const angle = parseInt(gMatch[1], 10) || 135;
                   const rad = (angle * Math.PI) / 180;
                   const ox = Math.round(Math.sin(rad) * 8);
                   const oy = Math.round(-Math.cos(rad) * 8);
                   cardStyle.borderColor = colMatch[0];
-                  cardStyle.boxShadow = isTier3
-                    ? `${ox}px ${oy}px 24px 2px ${colMatch[1]}77, ${-ox}px ${-oy}px 24px 2px ${colMatch[0]}77, 0 0 20px 2px ${colMatch[0]}55`
-                    : `${ox}px ${oy}px 16px 1px ${colMatch[1]}55, ${-ox}px ${-oy}px 16px 1px ${colMatch[0]}55`;
+                  if (cardGlowEnabled) {
+                    const alpha = (cardGlowOpacity / 100) * 0.55;
+                    const blur = Math.round(14 + (cardGlowOpacity / 100) * 14);
+                    cardStyle.boxShadow = `${ox}px ${oy}px ${blur}px 2px ${hexToRgba(colMatch[1], alpha)}, ${-ox}px ${-oy}px ${blur}px 2px ${hexToRgba(colMatch[0], alpha)}, 0 0 ${Math.round(blur * 0.75)}px 2px ${hexToRgba(colMatch[0], alpha * 0.7)}`;
+                  } else {
+                    cardStyle.boxShadow = 'none';
+                  }
                 } else {
                   cardStyle.borderColor = `color-mix(in srgb, ${primaryThemeColor} 55%, var(--border-ui))`;
-                  cardStyle.boxShadow = `0 0 16px color-mix(in srgb, ${primaryThemeColor} 35%, transparent)`;
+                  if (cardGlowEnabled) {
+                    const alpha = (cardGlowOpacity / 100) * 0.45;
+                    const blur = Math.round(12 + (cardGlowOpacity / 100) * 12);
+                    cardStyle.boxShadow = `0 0 ${blur}px ${hexToRgba(primaryThemeColor, alpha)}`;
+                  } else {
+                    cardStyle.boxShadow = 'none';
+                  }
                 }
-              } else if (clan.themeColor) {
-                cardStyle.backgroundColor = `color-mix(in srgb, ${clan.themeColor} 12%, var(--bg-card))`;
+              } else if (cleanThemeColor) {
+                cardStyle.backgroundColor = `color-mix(in srgb, ${cleanThemeColor} 12%, var(--bg-card))`;
                 cardStyle.borderColor = `color-mix(in srgb, ${primaryThemeColor} 55%, var(--border-ui))`;
-                cardStyle.boxShadow = `0 0 16px color-mix(in srgb, ${primaryThemeColor} 35%, transparent)`;
+                if (cardGlowEnabled) {
+                  const alpha = (cardGlowOpacity / 100) * 0.45;
+                  const blur = Math.round(12 + (cardGlowOpacity / 100) * 12);
+                  cardStyle.boxShadow = `0 0 ${blur}px ${hexToRgba(primaryThemeColor, alpha)}`;
+                } else {
+                  cardStyle.boxShadow = 'none';
+                }
               }
             }
 

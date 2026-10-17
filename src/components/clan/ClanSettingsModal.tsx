@@ -34,6 +34,20 @@ interface ClanSettingsModalProps {
   onOpenTransfer?: () => void;
 }
 
+function hexToRgba(hex: string, alpha: number): string {
+  const m = String(hex || '').trim().match(/^#?([0-9a-fA-F]{3,8})$/);
+  if (!m) return `rgba(14, 165, 233, ${alpha})`;
+  let h = m[1];
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  if (h.length >= 6) {
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`;
+  }
+  return `rgba(14, 165, 233, ${alpha})`;
+}
+
 export default function ClanSettingsModal({
   isOpen,
   onClose,
@@ -82,7 +96,13 @@ export default function ClanSettingsModal({
   });
 
   // Theme page
-  const [themeColor, setThemeColor] = useState(clan.themeColor || '#0ea5e9');
+  const [themeColor, setThemeColor] = useState(() => {
+    if (clan.themeColor) {
+      const hex = clan.themeColor.match(/#([0-9a-fA-F]{3,8})/);
+      if (hex) return hex[0];
+    }
+    return '#0ea5e9';
+  });
   const [useThemeGradient, setUseThemeGradient] = useState(Boolean(clan.themeGradient));
   const [themeGrad1, setThemeGrad1] = useState(() => {
     if (clan.themeGradient) {
@@ -104,6 +124,20 @@ export default function ClanSettingsModal({
       if (match) return parseInt(match[1], 10);
     }
     return 135;
+  });
+
+  // Glow controls: toggle on/off & brightness/blur percentage
+  const [glowEnabled, setGlowEnabled] = useState(() => {
+    const raw = (clan.themeGradient || '') + ' ' + (clan.themeColor || '');
+    const match = raw.match(/\/\*glow:(\d+):(\d+)\*\//);
+    if (match) return match[1] === '1';
+    return true; // Default is ON
+  });
+  const [glowOpacity, setGlowOpacity] = useState(() => {
+    const raw = (clan.themeGradient || '') + ' ' + (clan.themeColor || '');
+    const match = raw.match(/\/\*glow:(\d+):(\d+)\*\//);
+    if (match) return Math.min(Math.max(parseInt(match[2], 10) || 70, 10), 100);
+    return 70; // Default is 70%
   });
 
   const [saving, setSaving] = useState(false);
@@ -155,16 +189,20 @@ export default function ClanSettingsModal({
         themeColor: themeColor || null,
       };
 
+      const glowSuffix = `/*glow:${glowEnabled ? 1 : 0}:${glowOpacity}*/`;
+
       if (isTier2OrHigher) {
         payload.colorGradient = useTagGradient
           ? `linear-gradient(${tagAngle}deg, ${tagGrad1}, ${tagGrad2})`
           : null;
         payload.themeGradient = useThemeGradient
-          ? `linear-gradient(${themeAngle}deg, ${themeGrad1}, ${themeGrad2})`
+          ? `linear-gradient(${themeAngle}deg, ${themeGrad1}, ${themeGrad2})${glowSuffix}`
           : null;
+        payload.themeColor = `${themeColor}${glowSuffix}`;
       } else {
         payload.colorGradient = null;
         payload.themeGradient = null;
+        payload.themeColor = `${themeColor}${glowSuffix}`;
       }
 
       const res = await fetch(`/api/clans/${clan.slug}`, {
@@ -520,15 +558,76 @@ export default function ClanSettingsModal({
               </div>
             )}
 
+            {/* Glow Controls */}
+            <div className="pt-2 border-t space-y-3" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-sky-400" />
+                  <span className="text-xs font-semibold">
+                    {isEn ? 'Clan Glow Aura' : 'Hiệu ứng Glow Clan'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setGlowEnabled(!glowEnabled)}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                    glowEnabled
+                      ? 'bg-sky-500/20 text-sky-300 border-sky-500/40 hover:bg-sky-500/30'
+                      : 'bg-zinc-800/60 text-zinc-400 border-zinc-700/60 hover:text-zinc-200 hover:bg-zinc-800'
+                  }`}
+                >
+                  {glowEnabled
+                    ? (isEn ? 'Glow: ON' : 'Glow: Bật')
+                    : (isEn ? 'Glow: OFF' : 'Glow: Tắt')}
+                </button>
+              </div>
+
+              {glowEnabled && (
+                <div className="space-y-1.5 bg-black/20 p-2.5 rounded-xl border" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="ui-dim text-[11px] font-medium">
+                      {isEn ? 'Glow Brightness / Opacity' : 'Độ sáng / mờ của Glow'}
+                    </span>
+                    <span className="font-mono text-xs font-bold text-sky-400">
+                      {glowOpacity}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="10"
+                    max="100"
+                    step="5"
+                    value={glowOpacity}
+                    onChange={(e) => setGlowOpacity(parseInt(e.target.value, 10))}
+                    className="w-full accent-sky-400 h-1.5 bg-zinc-700/60 rounded-lg cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] ui-dim font-mono">
+                    <span>10% ({isEn ? 'Dim' : 'Mờ'})</span>
+                    <span>50%</span>
+                    <span>100% ({isEn ? 'Bright' : 'Sáng rõ'})</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Live Preview of Clan Theme & Glow */}
             <div
               className="w-full h-11 rounded-xl border flex items-center justify-between px-3 text-xs font-mono font-bold transition-all mt-2"
               style={{
                 borderColor: 'var(--border-ui)',
                 backgroundColor: 'var(--bg-card)',
-                boxShadow: useThemeGradient && isTier2OrHigher
-                  ? `${Math.round(Math.sin((themeAngle * Math.PI) / 180) * 8)}px ${Math.round(-Math.cos((themeAngle * Math.PI) / 180) * 8)}px 22px 1px ${themeGrad2}77, ${-Math.round(Math.sin((themeAngle * Math.PI) / 180) * 8)}px ${-Math.round(-Math.cos((themeAngle * Math.PI) / 180) * 8)}px 22px 1px ${themeGrad1}77, 0 0 16px 2px ${themeGrad1}55`
-                  : `0 0 18px 2px ${themeColor}66`,
+                boxShadow: !glowEnabled
+                  ? 'none'
+                  : useThemeGradient && isTier2OrHigher
+                  ? (() => {
+                      const alpha = (glowOpacity / 100) * 0.7;
+                      const blur = Math.round(14 + (glowOpacity / 100) * 16);
+                      const rad = (themeAngle * Math.PI) / 180;
+                      const ox = Math.round(Math.sin(rad) * 8);
+                      const oy = Math.round(-Math.cos(rad) * 8);
+                      return `${ox}px ${oy}px ${blur}px 1px ${hexToRgba(themeGrad2, alpha)}, ${-ox}px ${-oy}px ${blur}px 1px ${hexToRgba(themeGrad1, alpha)}, 0 0 ${Math.round(blur * 0.75)}px 2px ${hexToRgba(themeGrad1, alpha * 0.7)}`;
+                    })()
+                  : `0 0 ${Math.round(14 + (glowOpacity / 100) * 16)}px 2px ${hexToRgba(themeColor, (glowOpacity / 100) * 0.65)}`,
               }}
             >
               <span className="ui-dim text-[11px] flex items-center gap-1.5 font-sans font-bold">
@@ -536,7 +635,10 @@ export default function ClanSettingsModal({
                 <span>{isEn ? 'Clan Theme & Glow Preview' : 'Xem thử Glow Clan'}</span>
               </span>
               <span className="text-[10px] ui-dim font-sans font-normal">
-                {useThemeGradient && isTier2OrHigher ? `${themeAngle}° Gradient (2 màu)` : (isEn ? 'Solid' : 'Đơn sắc')}
+                {useThemeGradient && isTier2OrHigher ? `${themeAngle}° Gradient` : (isEn ? 'Solid' : 'Đơn sắc')}{' '}
+                <span className={glowEnabled ? 'text-sky-400 font-semibold' : 'text-zinc-500 font-normal'}>
+                  ({glowEnabled ? `${glowOpacity}% Glow` : (isEn ? 'Glow OFF' : 'Glow Tắt')})
+                </span>
               </span>
             </div>
           </div>
