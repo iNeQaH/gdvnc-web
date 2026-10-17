@@ -26,6 +26,10 @@ import {
   ArrowRight,
   MoreVertical,
   FileText,
+  ChevronLeft,
+  ChevronRight,
+  LayoutGrid,
+  Sparkles,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
@@ -37,6 +41,9 @@ import { useTheme } from '@/components/ThemeProvider';
 import { getCustomThemeVars } from '@/lib/customTheme';
 import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
 import { levelPath } from '@/lib/levelUrl';
+import { AnimatedTabs, TabOption } from '@/components/AnimatedTabs';
+
+type ClanTab = 'overview' | 'levels' | 'leaderboard' | 'members';
 
 function getYouTubeEmbedUrl(url?: string | null): string | null {
   if (!url) return null;
@@ -44,14 +51,6 @@ function getYouTubeEmbedUrl(url?: string | null): string | null {
     /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/
   );
   return match ? `https://www.youtube.com/embed/${match[1]}` : null;
-}
-
-function getYouTubeThumbnail(url?: string | null): string | null {
-  if (!url) return null;
-  const match = url.match(
-    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/
-  );
-  return match ? `https://img.youtube.com/vi/${match[1]}/mqdefault.jpg` : null;
 }
 
 function parseDiscordMarkdown(text: string): React.ReactNode[] {
@@ -150,6 +149,316 @@ function parseDiscordMarkdown(text: string): React.ReactNode[] {
   });
 }
 
+/**
+ * Interactive Cinematic Levels Slideshow Component
+ */
+function ClanLevelsSlideshow({
+  works,
+}: {
+  works: any[];
+}) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [embedVideo, setEmbedVideo] = useState(false);
+
+  if (!works || works.length === 0) return null;
+
+  const currentWork = works[currentIndex] || works[0];
+
+  // Auto-advance every 5.5s when not hovered or watching video
+  useEffect(() => {
+    if (works.length <= 1 || isHovered || embedVideo) return;
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % works.length);
+    }, 5500);
+    return () => clearInterval(timer);
+  }, [works.length, isHovered, embedVideo]);
+
+  const handleSelectSlide = (idx: number) => {
+    setEmbedVideo(false);
+    setCurrentIndex(idx);
+  };
+
+  const handleNext = () => {
+    setEmbedVideo(false);
+    setCurrentIndex((prev) => (prev + 1) % works.length);
+  };
+
+  const handlePrev = () => {
+    setEmbedVideo(false);
+    setCurrentIndex((prev) => (prev - 1 + works.length) % works.length);
+  };
+
+  const ytIdFromUrl = currentWork.videoUrl
+    ? (currentWork.videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/) || [])[1]
+    : null;
+  const ytId = currentWork.youtubeId || ytIdFromUrl;
+  const highResThumb = ytId
+    ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`
+    : currentWork.imageUrl || 'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
+
+  const matchedLevel = currentWork.matchedLevel;
+  const targetLevelUrl = matchedLevel ? levelPath(matchedLevel) : currentWork.gdLevelId ? `/levels?search=${currentWork.gdLevelId}` : null;
+  const embedUrl = ytId ? `https://www.youtube.com/embed/${ytId}?autoplay=1` : null;
+
+  return (
+    <div
+      className="relative w-full rounded-3xl overflow-hidden border shadow-2xl transition-all duration-300"
+      style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Top Header Row for Slideshow */}
+      <div
+        className="px-5 py-3 border-b flex items-center justify-between gap-3 bg-black/15"
+        style={{ borderColor: 'var(--border-subtle)' }}
+      >
+        <div className="flex items-center gap-2">
+          <Hammer className="w-4 h-4 text-sky-400" />
+          <h2 className="text-sm font-bold ui-title">Featured Creator Works</h2>
+          <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-sky-500/10 text-sky-400 border border-sky-500/20">
+            Slideshow
+          </span>
+        </div>
+
+        {works.length > 1 && (
+          <span className="font-mono text-xs font-black px-2.5 py-0.5 rounded-lg bg-black/40 text-amber-400 border border-white/10">
+            {String(currentIndex + 1).padStart(2, '0')} / {String(works.length).padStart(2, '0')}
+          </span>
+        )}
+      </div>
+
+      {/* Main Slide Canvas */}
+      <div className="relative h-72 sm:h-84 md:h-[380px] w-full overflow-hidden bg-slate-950 flex flex-col justify-between p-5 sm:p-7">
+        {/* Embedded YouTube video if requested */}
+        {embedVideo && embedUrl ? (
+          <div className="absolute inset-0 z-20 bg-black flex flex-col">
+            <div className="p-2 bg-black/80 flex items-center justify-between border-b border-white/10 px-4">
+              <span className="text-xs font-bold text-white truncate">{currentWork.levelName}</span>
+              <button
+                type="button"
+                onClick={() => setEmbedVideo(false)}
+                className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold text-white flex items-center gap-1.5 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Đóng Video</span>
+              </button>
+            </div>
+            <div className="flex-1 w-full h-full">
+              <iframe
+                src={embedUrl}
+                title={currentWork.levelName || 'Level Video'}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Background Thumbnail with Smooth Fade */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <img
+                key={currentWork.id || currentIndex}
+                src={highResThumb}
+                alt={currentWork.levelName || ''}
+                className="w-full h-full object-cover transition-all duration-700 ease-out"
+                style={{ filter: 'brightness(0.48) contrast(1.15)' }}
+                onError={(e) => {
+                  if (ytId && (e.currentTarget as HTMLImageElement).src.includes('maxresdefault')) {
+                    (e.currentTarget as HTMLImageElement).src = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+                  } else {
+                    (e.currentTarget as HTMLImageElement).src =
+                      'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
+                  }
+                }}
+              />
+            </div>
+
+            {/* Cinematic Vignette Overlays */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/30 to-transparent pointer-events-none" />
+
+            {/* Top Floating Badges */}
+            <div className="relative z-10 flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2.5">
+                <DifficultyRatingIcon
+                  difficultyFace={currentWork.difficultyFace || 0}
+                  ratingType={currentWork.ratingType || 'NONE'}
+                  className="w-9 h-9 drop-shadow-[0_0_12px_rgba(255,255,255,0.35)]"
+                />
+                <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-xl bg-black/60 text-white/90 border border-white/15 backdrop-blur-md">
+                  ID: {currentWork.gdLevelId || '—'}
+                </span>
+                <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 backdrop-blur-md">
+                  Đã duyệt
+                </span>
+              </div>
+            </div>
+
+            {/* Bottom Content Row */}
+            <div className="relative z-10 space-y-3 max-w-2xl">
+              <div>
+                {targetLevelUrl ? (
+                  <Link
+                    href={targetLevelUrl}
+                    className="text-2xl sm:text-3xl md:text-4xl font-black text-white hover:text-sky-300 drop-shadow-lg tracking-tight block transition-colors"
+                  >
+                    {currentWork.levelName || 'Untitled Level'}
+                  </Link>
+                ) : (
+                  <h3 className="text-2xl sm:text-3xl md:text-4xl font-black text-white drop-shadow-lg tracking-tight">
+                    {currentWork.levelName || 'Untitled Level'}
+                  </h3>
+                )}
+
+                <div className="flex items-center gap-3 text-xs sm:text-sm text-slate-300 mt-1.5 flex-wrap">
+                  <span className="flex items-center gap-1.5">
+                    <span className="ui-dim">Creator:</span>
+                    <strong className="text-white font-bold">
+                      {currentWork.user?.username || currentWork.creatorName || 'GD Creator'}
+                    </strong>
+                  </span>
+
+                  {matchedLevel?.verifier && (
+                    <span className="flex items-center gap-1.5 border-l border-white/20 pl-3">
+                      <span className="ui-dim">Verifier:</span>
+                      <strong className="text-white font-bold">{matchedLevel.verifier}</strong>
+                    </span>
+                  )}
+
+                  {matchedLevel?.basePp ? (
+                    <span className="font-mono font-black text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-lg text-xs">
+                      {matchedLevel.basePp} PP
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2.5 pt-1 flex-wrap">
+                {ytId && (
+                  <button
+                    type="button"
+                    onClick={() => setEmbedVideo(true)}
+                    className="px-4 py-2 rounded-xl text-xs font-black bg-red-600 hover:bg-red-500 text-white flex items-center gap-2 shadow-lg hover:scale-105 transition-all cursor-pointer"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-white" />
+                    <span>Xem Video Ngay</span>
+                  </button>
+                )}
+
+                {targetLevelUrl && (
+                  <Link
+                    href={targetLevelUrl}
+                    className="px-4 py-2 rounded-xl text-xs font-bold border border-white/20 bg-black/40 hover:bg-black/60 text-white backdrop-blur-md flex items-center gap-1.5 transition-all"
+                  >
+                    <span>Chi tiết màn chơi</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                )}
+
+                {currentWork.videoUrl && !ytId && (
+                  <a
+                    href={currentWork.videoUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-4 py-2 rounded-xl text-xs font-bold border border-white/20 bg-black/40 hover:bg-black/60 text-white backdrop-blur-md flex items-center gap-1.5 transition-all"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Mở Video</span>
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {/* Navigation Arrows */}
+            {works.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={handlePrev}
+                  className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/15 backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 cursor-pointer z-20 shadow-xl"
+                  title="Màn chơi trước"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/15 backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 cursor-pointer z-20 shadow-xl"
+                  title="Màn chơi kế tiếp"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </>
+            )}
+
+            {/* Dots Indicator */}
+            {works.length > 1 && (
+              <div className="absolute bottom-4 right-5 sm:right-7 flex items-center gap-1.5 z-20">
+                {works.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => handleSelectSlide(i)}
+                    className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                      i === currentIndex
+                        ? 'w-7 bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.6)]'
+                        : 'w-2 bg-white/35 hover:bg-white/70'
+                    }`}
+                    title={`Slide ${i + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Filmstrip Thumbnails Preview Row */}
+      {works.length > 1 && (
+        <div
+          className="p-3 sm:p-4 bg-black/20 border-t flex items-center gap-2.5 overflow-x-auto scrollbar-none"
+          style={{ borderColor: 'var(--border-subtle)' }}
+        >
+          {works.map((w, idx) => {
+            const isSelected = idx === currentIndex;
+            const wYt = w.youtubeId || (w.videoUrl?.match(/(?:youtu\.be\/|youtube\.com\/.*v=)([\w-]{11})/) || [])[1];
+            const miniThumb = wYt
+              ? `https://img.youtube.com/vi/${wYt}/mqdefault.jpg`
+              : w.imageUrl || 'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
+
+            return (
+              <button
+                key={w.id || idx}
+                type="button"
+                onClick={() => handleSelectSlide(idx)}
+                className={`relative shrink-0 flex items-center gap-2.5 p-1.5 pr-3 rounded-xl border transition-all text-left cursor-pointer group ${
+                  isSelected
+                    ? 'border-amber-400/80 bg-amber-500/15 shadow-[0_0_12px_rgba(245,158,11,0.25)] ring-1 ring-amber-400/50'
+                    : 'border-white/10 bg-black/30 opacity-70 hover:opacity-100 hover:border-white/25'
+                }`}
+              >
+                <div className="w-12 h-8 rounded-lg overflow-hidden bg-slate-900 shrink-0 relative">
+                  <img src={miniThumb} alt="" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/20" />
+                </div>
+                <div className="min-w-0 max-w-[120px] sm:max-w-[160px]">
+                  <p className={`text-xs font-bold truncate ${isSelected ? 'text-amber-300' : 'text-white/90'}`}>
+                    {w.levelName || 'Untitled'}
+                  </p>
+                  <p className="text-[10px] ui-dim truncate">ID: {w.gdLevelId || '—'}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ClanProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const router = useRouter();
@@ -162,6 +471,9 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userSp, setUserSp] = useState<number>(0);
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<ClanTab>('overview');
 
   // Modals
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -227,29 +539,6 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
   const tierInfo = getClanTier(clan.totalSp);
 
   const videoEmbedUrl = getYouTubeEmbedUrl(clan.videoUrl);
-
-  // Join Clan Request
-  const handleJoin = async () => {
-    if (!currentUser) {
-      router.push('/login');
-      return;
-    }
-    setActionLoading(true);
-    try {
-      const res = await fetch(`/api/clans/${clan.slug}/join`, { method: 'POST' });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        showToast('Đã gửi yêu cầu gia nhập Clan! Vui lòng chờ Leader hoặc Mod duyệt.', 'success');
-        loadClanData();
-      } else {
-        showToast(data.error || 'Không thể gửi yêu cầu gia nhập.', 'error');
-      }
-    } catch {
-      showToast('Lỗi kết nối máy chủ.', 'error');
-    } finally {
-      setActionLoading(false);
-    }
-  };
 
   // Leave Clan
   const handleLeave = () => {
@@ -395,14 +684,6 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
     );
   };
 
-  // Page theme accent style
-  const themeHeaderStyle: React.CSSProperties = {};
-  if (clan.themeGradient) {
-    themeHeaderStyle.background = clan.themeGradient;
-  } else if (clan.themeColor) {
-    themeHeaderStyle.backgroundColor = clan.themeColor;
-  }
-
   const allMembers = [
     ...(clan.membersGrouped?.leader ? [clan.membersGrouped.leader] : []),
     ...(clan.membersGrouped?.mods || []),
@@ -414,6 +695,8 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
     const ppB = b.user?.classicPp ?? 0;
     return ppB - ppA;
   });
+
+  const totalClanPp = allMembers.reduce((sum: number, m: any) => sum + (m.user?.classicPp || 0), 0);
 
   const isTier3 = tierInfo.tier === 3;
 
@@ -475,6 +758,14 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
     Object.assign(clanThemeStyle, themeVars);
   }
 
+  // Navigation tab options
+  const tabOptions: TabOption<ClanTab>[] = [
+    { id: 'overview', label: 'Tổng quan', icon: <LayoutGrid className="w-4 h-4" /> },
+    { id: 'levels', label: `Levels (${clan.creatorWorks?.length || 0})`, icon: <Hammer className="w-4 h-4" /> },
+    { id: 'leaderboard', label: 'Bảng xếp hạng', icon: <Trophy className="w-4 h-4" /> },
+    { id: 'members', label: `Thành viên (${clan.memberCount})`, icon: <Users className="w-4 h-4" /> },
+  ];
+
   return (
     <div
       className="relative min-h-[calc(100vh-8rem)] pb-16 transition-colors duration-300"
@@ -508,12 +799,12 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
       )}
 
       <div className="relative z-[1] max-w-6xl mx-auto space-y-6">
-        {/* Clan Hero Banner */}
+        {/* Clan Hero Command Header */}
         <div
           className="rounded-3xl border overflow-hidden shadow-2xl relative"
           style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
         >
-          {/* Cover */}
+          {/* Panoramic Cover */}
           <div className="h-44 sm:h-64 w-full relative bg-slate-900 overflow-hidden">
             {clan.coverUrl ? (
               <img src={clan.coverUrl} alt="" className="w-full h-full object-cover" />
@@ -525,17 +816,17 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                 <span className="font-mono font-black text-4xl text-white/10">[{clan.tag}]</span>
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
           </div>
 
-          {/* Clan Identity & Actions Bar (Below Cover) */}
+          {/* Clan Identity & Actions Bar */}
           <div
             className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b"
             style={{ borderColor: 'var(--border-subtle)', backgroundColor: 'var(--bg-card)' }}
           >
             {/* Tag, Name & Tier Badge */}
             <div className="flex items-center gap-3 flex-wrap min-w-0">
-              {/* Isolated Tag container so backgroundClip does not cause black box glitch */}
+              {/* Isolated Tag Container */}
               <span
                 className="inline-flex items-center px-3 py-1 rounded-xl border font-mono font-black text-sm shadow-xs shrink-0 backdrop-blur-xs select-none"
                 style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', borderColor: 'rgba(255, 255, 255, 0.15)' }}
@@ -574,7 +865,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
 
             {/* Action Buttons */}
             <div className="flex items-center gap-2.5 flex-wrap shrink-0">
-              {/* If Member: Nâng cấp Clan */}
+              {/* Member Action: Nâng cấp Clan */}
               {myMembership && (
                 <button
                   type="button"
@@ -587,7 +878,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                 </button>
               )}
 
-              {/* If Leader / Mod: Pending Requests */}
+              {/* Leader / Mod: Pending Requests */}
               {canManageClan && clan.pendingRequests?.length > 0 && (
                 <button
                   type="button"
@@ -599,7 +890,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                 </button>
               )}
 
-              {/* If Leader / Mod / Owner: Clan Settings */}
+              {/* Leader / Mod / Owner: Clan Settings */}
               {canManageClan && (
                 <button
                   type="button"
@@ -612,7 +903,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                 </button>
               )}
 
-              {/* If Non-Member: Join Clan */}
+              {/* Non-Member: Join Clan */}
               {!myMembership && (
                 clan.myPendingRequest ? (
                   <div className="px-4 py-2 rounded-xl text-xs font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center gap-1.5">
@@ -646,7 +937,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                 )
               )}
 
-              {/* If Member (not Leader): Leave Clan */}
+              {/* Member (not Leader): Leave Clan */}
               {myMembership && !isLeader && (
                 <button
                   type="button"
@@ -662,7 +953,71 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
             </div>
           </div>
 
-          {/* Warning Notices for Grace Period or Suspended */}
+          {/* Integrated Clan Telemetry Bar */}
+          <div
+            className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-black/10"
+          >
+            {/* SP Progress (7 cols) */}
+            <div className="md:col-span-7 space-y-2 min-w-0">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Coins className="w-4 h-4 text-amber-400" />
+                  <span className="font-bold ui-title">Tiến trình SP Coin</span>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                    {clan.totalSp >= 20 ? 'Cấp tối đa (Tier 3)' : `Mục tiêu ${targetTierName}`}
+                  </span>
+                </div>
+                <div className="font-mono text-xs font-black text-amber-400">
+                  {clan.totalSp} / {targetSp} SP
+                </div>
+              </div>
+
+              {/* Progress Bar Track */}
+              <div className="w-full h-2.5 rounded-full bg-black/30 dark:bg-black/50 border border-white/5 overflow-hidden p-0.5">
+                <div
+                  className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-amber-500 to-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.5)]"
+                  style={{
+                    width: `${progressPercentage}%`,
+                    ...(clan.themeGradient ? { background: clan.themeGradient } : {}),
+                  }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] ui-dim">
+                <span>
+                  {clan.totalSp >= 20
+                    ? 'Clan đang ở cấp bậc cao nhất!'
+                    : `Cần thêm ${Math.max(0, targetSp - clan.totalSp)} SP để lên ${targetTierName}`}
+                </span>
+                <span className="font-mono font-bold text-amber-400/90">{progressPercentage}%</span>
+              </div>
+            </div>
+
+            {/* Quick Metrics (5 cols) */}
+            <div className="md:col-span-5 flex items-center justify-between md:justify-end gap-6 pt-3 md:pt-0 border-t md:border-t-0 md:border-l border-white/10 md:pl-6">
+              {/* Total Clan PP */}
+              <div className="text-left md:text-right">
+                <span className="text-[11px] ui-dim block font-medium">Tổng Clan PP</span>
+                <div className="flex items-center md:justify-end gap-1.5 font-mono text-base font-black text-amber-400">
+                  <Trophy className="w-4 h-4 text-amber-400" />
+                  <span>{totalClanPp.toLocaleString()} PP</span>
+                </div>
+              </div>
+
+              {/* Member Capacity */}
+              <div className="text-left md:text-right">
+                <span className="text-[11px] ui-dim block font-medium">Thành viên</span>
+                <div className="flex items-center md:justify-end gap-1.5 font-mono text-base font-black ui-title">
+                  <Users className="w-4 h-4 text-sky-400" />
+                  <span>
+                    {clan.memberCount} <span className="text-xs ui-dim font-normal">/ {tierInfo.maxMembers}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Warning Notices */}
           {clan.isSuspended ? (
             <div className="px-6 py-3 bg-red-500/15 border-t border-red-500/20 flex items-center gap-2 text-xs font-semibold text-red-300">
               <AlertTriangle className="w-4 h-4 shrink-0 text-red-400" />
@@ -679,846 +1034,1098 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           ) : null}
         </div>
 
-        {/* Dedicated Clan SP Progress & Member Box */}
-        <div
-          className="ui-card rounded-2xl border p-4 sm:p-5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-5 shadow-xs"
-          style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
-        >
-          {/* Left: SP Progress */}
-          <div className="flex-1 space-y-2.5 min-w-0">
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2 flex-wrap">
-                <Coins className="w-4 h-4 text-amber-400" />
-                <span className="font-bold ui-title">Tiến trình SP Clan</span>
-                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                  {clan.totalSp >= 20 ? 'Cấp tối đa (Tier 3)' : `Mục tiêu ${targetTierName}`}
-                </span>
-              </div>
-              <div className="font-mono text-xs font-black text-amber-400">
-                {clan.totalSp} / {targetSp} SP
-              </div>
-            </div>
-
-            {/* Progress Bar Track */}
-            <div className="w-full h-3 rounded-full bg-black/20 dark:bg-black/40 border border-white/5 overflow-hidden p-0.5">
-              <div
-                className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-amber-500 to-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.5)]"
-                style={{
-                  width: `${progressPercentage}%`,
-                  ...(clan.themeGradient ? { background: clan.themeGradient } : {}),
-                }}
-              />
-            </div>
-
-            <div className="flex items-center justify-between text-[11px] ui-dim">
-              <span>
-                {clan.totalSp >= 20
-                  ? 'Clan đã đạt cấp bậc cao nhất!'
-                  : `Cần thêm ${Math.max(0, targetSp - clan.totalSp)} SP để lên ${targetTierName}`}
-              </span>
-              <span className="font-mono font-bold text-amber-400/90">{progressPercentage}%</span>
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="hidden md:block w-px h-12 bg-white/10 shrink-0" style={{ backgroundColor: 'var(--border-subtle)' }} />
-
-          {/* Right: Member Capacity */}
-          <div className="md:w-56 shrink-0 flex items-center justify-between md:justify-end gap-3.5">
-            <div className="text-left md:text-right">
-              <span className="text-[11px] ui-dim block font-medium">Số thành viên</span>
-              <div className="flex items-center md:justify-end gap-1.5 font-mono text-base font-black ui-title">
-                <Users className="w-4 h-4 text-sky-400" />
-                <span>
-                  {clan.memberCount} <span className="text-xs ui-dim font-normal">/ {tierInfo.maxMembers}</span>
-                </span>
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center border bg-sky-500/10 border-sky-500/20 text-sky-400 shrink-0">
-              <Users className="w-5 h-5" />
-            </div>
-          </div>
+        {/* Tab Navigation Hub */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <AnimatedTabs
+            options={tabOptions}
+            active={activeTab}
+            onChange={(id) => setActiveTab(id)}
+            className="overflow-x-auto max-w-full"
+          />
         </div>
 
-      {/* Main Grid: Left Content (8 cols) & Right Discord-style Sidebar (4 cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Media & Highlights */}
-        <div className="lg:col-span-8 space-y-6 min-w-0">
-          {/* Dedicated Clan Description Box (Hidden if empty) */}
-          {clan.description && (
-            <div
-              className="ui-card rounded-2xl border p-5 space-y-3"
-              style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
-            >
-              <div className="flex items-center gap-2 pb-2.5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-                <FileText className="w-4 h-4 text-[color:var(--accent)]" />
-                <h2 className="text-sm font-bold ui-title">Giới thiệu</h2>
-              </div>
-              <div className="text-xs sm:text-sm text-[color:var(--text-body)] space-y-1.5 leading-relaxed break-words font-sans">
-                {parseDiscordMarkdown(clan.description)}
-              </div>
-            </div>
-          )}
+        {/* TAB 1: TỔNG QUAN (OVERVIEW & SPOTLIGHT SHOWCASE) */}
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            {/* Featured Creator Works Slideshow */}
+            {clan.creatorWorks?.length > 0 && (
+              <ClanLevelsSlideshow works={clan.creatorWorks} />
+            )}
 
-          {/* Video Embed (Hidden if empty) */}
-          {videoEmbedUrl && (
-            <div
-              className="ui-card rounded-2xl border p-4 space-y-3"
-              style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
-            >
-              <h2 className="text-sm font-bold ui-title flex items-center gap-2">
-                <Video className="w-4 h-4 text-red-400" /> Video giới thiệu Clan
-              </h2>
-              <div className="aspect-video w-full rounded-xl overflow-hidden border bg-black shadow-inner" style={{ borderColor: 'var(--border-ui)' }}>
-                <iframe
-                  src={videoEmbedUrl}
-                  title="Clan Trailer"
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Favorite Level (Hidden if empty) */}
-          {clan.favoriteLevel && (
-            <div
-              className="ui-card rounded-2xl border p-4 space-y-3"
-              style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
-            >
-              <h2 className="text-sm font-bold ui-title flex items-center gap-2 text-pink-400">
-                <Heart className="w-4 h-4 fill-pink-500" /> Màn chơi yêu thích của Clan
-              </h2>
-              <Link
-                href={levelPath(clan.favoriteLevel)}
-                className="flex items-center justify-between gap-4 p-3.5 rounded-xl border hover:bg-black/5 dark:hover:bg-white/5 transition-all group"
-                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <DifficultyRatingIcon
-                    difficultyFace={clan.favoriteLevel.difficultyFace}
-                    ratingType={clan.favoriteLevel.ratingType}
-                    className="w-9 h-9"
-                  />
-                  <div className="min-w-0">
-                    <h3 className="font-bold text-sm ui-title truncate group-hover:text-sky-400 transition-colors">
-                      {clan.favoriteLevel.name}
-                    </h3>
-                    <p className="text-xs ui-dim">bởi {clan.favoriteLevel.creatorName || 'GD Creator'}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="font-mono text-xs font-bold text-amber-400">
-                    {clan.favoriteLevel.basePp || 0} PP
-                  </span>
-                  <ArrowRight className="w-4 h-4 ui-dim group-hover:translate-x-1 transition-transform" />
-                </div>
-              </Link>
-            </div>
-          )}
-
-          {/* Top 5 Hardest Beaten Levels by Clan Members (Hidden if empty) */}
-          {clan.top5Beaten?.length > 0 && (
-            <div
-              className="ui-card rounded-2xl border p-4 sm:p-5 space-y-3"
-              style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
-            >
-              <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--border-subtle)' }}>
-                <h2 className="text-sm font-bold ui-title flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-amber-400" /> Clan&apos;s Hardest
-                </h2>
-                <span className="text-[11px] ui-dim">Bởi thành viên Clan</span>
-              </div>
-
-              <div className="space-y-2">
-                {clan.top5Beaten.map((item: any, idx: number) => {
-                  const lvl = item.level;
-                  return (
-                    <div
-                      key={lvl.id}
-                      className="p-3 rounded-xl border flex items-center justify-between gap-3 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
-                      style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span
-                          className={`w-6 text-center font-black text-xs shrink-0 ${
-                            idx === 0
-                              ? 'text-amber-400'
-                              : idx === 1
-                              ? 'text-slate-300'
-                              : idx === 2
-                              ? 'text-amber-600'
-                              : 'ui-dim'
-                          }`}
-                        >
-                          #{idx + 1}
-                        </span>
-
-                        <DifficultyRatingIcon
-                          difficultyFace={lvl.difficultyFace}
-                          ratingType={lvl.ratingType}
-                          className="w-8 h-8"
-                        />
-
-                        <div className="min-w-0">
-                          <Link
-                            href={levelPath(lvl)}
-                            className="font-bold text-xs ui-title hover:underline truncate block"
-                          >
-                            {lvl.name}
-                          </Link>
-                          <span className="text-[11px] ui-dim flex items-center gap-1">
-                            Người beat: <UserDisplayName user={item.user} showClanTag={false} />
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <span className="font-mono text-xs font-bold text-amber-400 block">
-                          {lvl.basePp || 0} PP
-                        </span>
-                      </div>
+            {/* 2-Column Bento Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Left Column (7 cols): Story & Demon Hall of Fame */}
+              <div className="lg:col-span-7 space-y-6 min-w-0">
+                {/* Giới thiệu Clan (Discord Markdown) */}
+                {clan.description && (
+                  <div
+                    className="ui-card rounded-2xl border p-5 space-y-3"
+                    style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+                  >
+                    <div className="flex items-center gap-2 pb-2.5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+                      <FileText className="w-4 h-4 text-[color:var(--accent)]" />
+                      <h2 className="text-sm font-bold ui-title">Giới thiệu</h2>
                     </div>
-                  );
-                })}
+                    <div className="text-xs sm:text-sm text-[color:var(--text-body)] space-y-1.5 leading-relaxed break-words font-sans">
+                      {parseDiscordMarkdown(clan.description)}
+                    </div>
+                  </div>
+                )}
+
+                {/* Clan's Hardest (Top 5 Demon) */}
+                {clan.top5Beaten?.length > 0 && (
+                  <div
+                    className="ui-card rounded-2xl border p-4 sm:p-5 space-y-3"
+                    style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+                  >
+                    <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--border-subtle)' }}>
+                      <h2 className="text-sm font-bold ui-title flex items-center gap-2">
+                        <Trophy className="w-4 h-4 text-amber-400" /> Clan&apos;s Hardest
+                      </h2>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('leaderboard')}
+                        className="text-[11px] font-bold text-sky-400 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Chi tiết</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {clan.top5Beaten.slice(0, 5).map((item: any, idx: number) => {
+                        const lvl = item.level;
+                        return (
+                          <div
+                            key={lvl.id}
+                            className={`p-3 rounded-xl border flex items-center justify-between gap-3 transition-colors hover:bg-black/5 dark:hover:bg-white/5 ${
+                              idx === 0 ? 'bg-amber-500/5 border-amber-500/25' : ''
+                            }`}
+                            style={{
+                              backgroundColor: idx === 0 ? undefined : 'var(--bg-subtle)',
+                              borderColor: idx === 0 ? undefined : 'var(--border-subtle)',
+                            }}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span
+                                className={`w-6 text-center font-black text-xs shrink-0 ${
+                                  idx === 0
+                                    ? 'text-amber-400'
+                                    : idx === 1
+                                    ? 'text-slate-300'
+                                    : idx === 2
+                                    ? 'text-amber-600'
+                                    : 'ui-dim'
+                                }`}
+                              >
+                                #{idx + 1}
+                              </span>
+
+                              <DifficultyRatingIcon
+                                difficultyFace={lvl.difficultyFace}
+                                ratingType={lvl.ratingType}
+                                className="w-8 h-8 drop-shadow-sm"
+                              />
+
+                              <div className="min-w-0">
+                                <Link
+                                  href={levelPath(lvl)}
+                                  className="font-bold text-xs ui-title hover:underline truncate block"
+                                >
+                                  {lvl.name}
+                                </Link>
+                                <span className="text-[11px] ui-dim flex items-center gap-1">
+                                  Người beat: <UserDisplayName user={item.user} showClanTag={false} />
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              <span className="font-mono text-xs font-bold text-amber-400 block">
+                                {lvl.basePp || 0} PP
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Video giới thiệu Clan */}
+                {videoEmbedUrl && (
+                  <div
+                    className="ui-card rounded-2xl border p-4 space-y-3"
+                    style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+                  >
+                    <h2 className="text-sm font-bold ui-title flex items-center gap-2">
+                      <Video className="w-4 h-4 text-red-400" /> Video giới thiệu Clan
+                    </h2>
+                    <div className="aspect-video w-full rounded-xl overflow-hidden border bg-black shadow-inner" style={{ borderColor: 'var(--border-ui)' }}>
+                      <iframe
+                        src={videoEmbedUrl}
+                        title="Clan Trailer"
+                        className="w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
 
-          {/* Bảng xếp hạng thành viên trong Clan (Xếp theo Classic PP, nằm trên Levels) */}
-          {allMembers.length > 0 && (
-            <div
-              className="ui-card rounded-2xl border p-4 sm:p-5 space-y-3"
-              style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
-            >
-              <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--border-subtle)' }}>
-                <h2 className="text-sm font-bold ui-title flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-amber-400" /> Bảng xếp hạng thành viên
-                </h2>
-                <span className="text-[11px] ui-dim font-mono">{allMembers.length} thành viên</span>
-              </div>
+              {/* Right Column (5 cols): Staff & Highlights */}
+              <div className="lg:col-span-5 space-y-6">
+                {/* Ban Quản Trị Clan */}
+                <div
+                  className="ui-card rounded-2xl border p-4 space-y-3"
+                  style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+                >
+                  <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <h3 className="text-xs font-bold ui-title flex items-center gap-1.5">
+                      <Crown className="w-4 h-4 text-amber-400" /> Ban Quản Trị Clan
+                    </h3>
+                    {isLeader && (
+                      <button
+                        type="button"
+                        onClick={() => setIsTransferOpen(true)}
+                        className="text-[11px] font-bold text-amber-400 hover:underline"
+                      >
+                        Chuyển giao Leader
+                      </button>
+                    )}
+                  </div>
 
-              <div className="space-y-2">
-                {leaderboardMembers.map((m: any, idx: number) => {
-                  const rankNumVal = idx + 1;
-                  return (
-                    <div
-                      key={m.id || m.userId}
-                      className="p-3 rounded-xl border flex items-center justify-between gap-3 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
-                      style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span
-                          className={`w-6 text-center font-black text-xs shrink-0 ${
-                            rankNumVal === 1
-                              ? 'text-amber-400'
-                              : rankNumVal === 2
-                              ? 'text-slate-300'
-                              : rankNumVal === 3
-                              ? 'text-amber-600'
-                              : 'ui-dim'
-                          }`}
-                        >
-                          #{rankNumVal}
-                        </span>
-
-                        <div
-                          className="w-8 h-8 rounded-xl overflow-hidden border bg-slate-900 shrink-0"
-                          style={{ borderColor: 'var(--border-subtle)' }}
-                        >
-                          {m.user?.avatarUrl ? (
-                            <img src={m.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                  <div className="space-y-2">
+                    {/* Leader VIP Card */}
+                    {clan.membersGrouped?.leader && (
+                      <Link
+                        href={`/profile/${clan.membersGrouped.leader.user.username}`}
+                        className="p-3 rounded-xl border flex items-center gap-3 bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/15 transition-all shadow-xs"
+                      >
+                        <div className="w-10 h-10 rounded-xl overflow-hidden border border-amber-500/40 bg-slate-900 shrink-0">
+                          {clan.membersGrouped.leader.user.avatarUrl ? (
+                            <img src={clan.membersGrouped.leader.user.avatarUrl} alt="" className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center font-bold text-xs ui-dim">
-                              {m.user?.username ? m.user.username[0] : '?'}
+                            <div className="w-full h-full flex items-center justify-center font-bold text-amber-400 text-xs">
+                              {clan.membersGrouped.leader.user.username[0]}
                             </div>
                           )}
                         </div>
+                        <div className="min-w-0 flex-1">
+                          <UserDisplayName user={clan.membersGrouped.leader.user} showClanTag={false} clanRole="LEADER" />
+                          <span className="text-[10px] text-amber-400 font-bold block mt-0.5">Clan Leader</span>
+                        </div>
+                        <Crown className="w-4 h-4 text-amber-400 shrink-0" />
+                      </Link>
+                    )}
 
-                        <div className="min-w-0 flex items-center gap-2 flex-wrap">
-                          <Link href={`/profile/${m.user?.username}`} className="hover:underline">
-                            <UserDisplayName user={m.user} showClanTag={false} />
-                          </Link>
-
-                          {m.role === 'LEADER' && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                              Leader
-                            </span>
-                          )}
-                          {m.role === 'MODERATOR' && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                              Mod
-                            </span>
+                    {/* Clan Mods */}
+                    {clan.membersGrouped?.mods?.slice(0, 2).map((mod: any) => (
+                      <Link
+                        key={mod.id}
+                        href={`/profile/${mod.user.username}`}
+                        className="p-2.5 rounded-xl border flex items-center gap-3 bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10 transition-colors"
+                      >
+                        <div className="w-8 h-8 rounded-xl overflow-hidden border border-emerald-500/30 bg-slate-900 shrink-0">
+                          {mod.user.avatarUrl ? (
+                            <img src={mod.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center font-bold text-emerald-400 text-xs">
+                              {mod.user.username[0]}
+                            </div>
                           )}
                         </div>
-                      </div>
+                        <div className="min-w-0 flex-1">
+                          <UserDisplayName user={mod.user} showClanTag={false} clanRole="MODERATOR" />
+                          <span className="text-[10px] text-emerald-400 font-bold block">Quản trị viên Clan</span>
+                        </div>
+                        <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
 
-                      <div className="text-right shrink-0">
-                        <span className="font-mono text-xs font-bold text-amber-400 block">
-                          {(m.user?.classicPp || 0).toLocaleString()} PP
-                        </span>
-                      </div>
+                {/* Bảng Xếp Hạng Thành Viên Preview */}
+                {leaderboardMembers.length > 0 && (
+                  <div
+                    className="ui-card rounded-2xl border p-4 space-y-3"
+                    style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+                  >
+                    <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
+                      <h3 className="text-xs font-bold ui-title flex items-center gap-1.5">
+                        <Trophy className="w-4 h-4 text-amber-400" /> Bảng xếp hạng thành viên
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('leaderboard')}
+                        className="text-[11px] font-bold text-sky-400 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Tất cả ({leaderboardMembers.length})</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
-          {/* Reviewed Creator Works (Hidden if empty) */}
-          {clan.creatorWorks?.length > 0 && (
-            <div
-              className="ui-card rounded-2xl border p-4 sm:p-5 space-y-3.5"
-              style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
-            >
-              <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--border-subtle)' }}>
-                <h2 className="text-sm font-bold ui-title flex items-center gap-2">
-                  <Hammer className="w-4 h-4 text-sky-400" /> Levels
-                </h2>
-                <span className="text-[11px] ui-dim">{clan.creatorWorks.length} màn chơi</span>
-              </div>
-
-              {/* Grid of Level Embed Cards matching level list */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                {clan.creatorWorks.map((work: any) => {
-                  const ytIdFromUrl = work.videoUrl
-                    ? (work.videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/) || [])[1]
-                    : null;
-                  const ytId = work.youtubeId || ytIdFromUrl;
-                  const thumb = ytId
-                    ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`
-                    : work.imageUrl || 'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
-
-                  const matchedLevel = work.matchedLevel;
-                  const targetLevelUrl = matchedLevel ? levelPath(matchedLevel) : work.gdLevelId ? `/levels?search=${work.gdLevelId}` : null;
-
-                  return (
-                    <div
-                      key={work.id}
-                      className="group relative rounded-2xl overflow-hidden shadow-xs hover:shadow-xl transition-all border ui-card flex flex-col h-44 justify-between p-3.5"
-                      style={{ borderColor: 'var(--border-ui)' }}
-                    >
-                      {/* Background Thumbnail with fallback */}
-                      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                        <img
-                          src={thumb}
-                          alt=""
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          style={{ filter: 'brightness(0.55)' }}
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src =
-                              'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
-                          }}
-                        />
-                      </div>
-
-                      {/* Overlay Gradient */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
-
-                      {/* Top Header Row */}
-                      <div className="relative z-10 flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <DifficultyRatingIcon
-                            difficultyFace={work.difficultyFace || 0}
-                            ratingType={work.ratingType || 'NONE'}
-                            className="w-8 h-8 drop-shadow-md"
-                          />
-                          <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-lg bg-black/60 text-white/90 border border-white/10 backdrop-blur-xs">
-                            ID: {work.gdLevelId || '—'}
-                          </span>
-                        </div>
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 backdrop-blur-xs">
-                          Đã duyệt
-                        </span>
-                      </div>
-
-                      {/* Bottom Info Row */}
-                      <div className="relative z-10 space-y-1">
-                        {targetLevelUrl ? (
-                          <Link
-                            href={targetLevelUrl}
-                            className="font-bold text-sm text-white drop-shadow-sm truncate block hover:text-sky-400 transition-colors"
+                    <div className="space-y-1.5">
+                      {leaderboardMembers.slice(0, 5).map((m: any, idx: number) => {
+                        const rankNum = idx + 1;
+                        return (
+                          <div
+                            key={m.id || m.userId}
+                            className="p-2 rounded-xl border flex items-center justify-between gap-2.5 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                            style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
                           >
-                            {work.levelName || 'Untitled Level'}
-                          </Link>
-                        ) : (
-                          <h4 className="font-bold text-sm text-white drop-shadow-sm truncate">
-                            {work.levelName || 'Untitled Level'}
-                          </h4>
-                        )}
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-300 text-[11px] truncate">
-                            bởi <span className="font-semibold text-white">{work.user?.username || work.creatorName || 'GD Creator'}</span>
-                          </span>
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span
+                                className={`w-5 text-center font-black text-xs shrink-0 ${
+                                  rankNum === 1
+                                    ? 'text-amber-400'
+                                    : rankNum === 2
+                                    ? 'text-slate-300'
+                                    : rankNum === 3
+                                    ? 'text-amber-600'
+                                    : 'ui-dim'
+                                }`}
+                              >
+                                #{rankNum}
+                              </span>
 
-                          {work.videoUrl && (
-                            <a
-                              href={work.videoUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-400 hover:text-sky-300 hover:underline shrink-0 px-2.5 py-1 rounded-lg bg-black/60 border border-sky-500/30 backdrop-blur-xs transition-colors"
-                            >
-                              <Play className="w-3 h-3 fill-sky-400" /> Xem Video
-                            </a>
-                          )}
+                              <div className="w-7 h-7 rounded-lg overflow-hidden border bg-slate-900 shrink-0" style={{ borderColor: 'var(--border-subtle)' }}>
+                                {m.user?.avatarUrl ? (
+                                  <img src={m.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center font-bold text-[10px] ui-dim">
+                                    {m.user?.username ? m.user.username[0] : '?'}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="min-w-0">
+                                <Link href={`/profile/${m.user?.username}`} className="hover:underline block">
+                                  <UserDisplayName user={m.user} showClanTag={false} />
+                                </Link>
+                              </div>
+                            </div>
+
+                            <span className="font-mono text-xs font-bold text-amber-400 shrink-0">
+                              {(m.user?.classicPp || 0).toLocaleString()} PP
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Màn chơi yêu thích của Clan */}
+                {clan.favoriteLevel && (
+                  <div
+                    className="ui-card rounded-2xl border p-4 space-y-3"
+                    style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+                  >
+                    <h2 className="text-sm font-bold ui-title flex items-center gap-2 text-pink-400">
+                      <Heart className="w-4 h-4 fill-pink-500" /> Màn chơi yêu thích của Clan
+                    </h2>
+                    <Link
+                      href={levelPath(clan.favoriteLevel)}
+                      className="flex items-center justify-between gap-4 p-3.5 rounded-xl border hover:bg-black/5 dark:hover:bg-white/5 transition-all group"
+                      style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <DifficultyRatingIcon
+                          difficultyFace={clan.favoriteLevel.difficultyFace}
+                          ratingType={clan.favoriteLevel.ratingType}
+                          className="w-9 h-9"
+                        />
+                        <div className="min-w-0">
+                          <h3 className="font-bold text-sm ui-title truncate group-hover:text-sky-400 transition-colors">
+                            {clan.favoriteLevel.name}
+                          </h3>
+                          <p className="text-xs ui-dim">bởi {clan.favoriteLevel.creatorName || 'GD Creator'}</p>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="font-mono text-xs font-bold text-amber-400">
+                          {clan.favoriteLevel.basePp || 0} PP
+                        </span>
+                        <ArrowRight className="w-4 h-4 ui-dim group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </Link>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right Column: Discord-style Members Sidebar */}
-        <div className="lg:col-span-4 space-y-4">
-          {/* Prominent Clan Staff Box (Leader & Mods, max 3) */}
-          <div
-            className="ui-card rounded-2xl border p-4 space-y-3"
-            style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
-          >
-            <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
-              <h3 className="text-xs font-bold ui-title flex items-center gap-1.5">
-                <Crown className="w-4 h-4 text-amber-400" /> Ban Quản Trị Clan
-              </h3>
-              {isLeader && (
-                <button
-                  type="button"
-                  onClick={() => setIsTransferOpen(true)}
-                  className="text-[11px] font-bold text-amber-400 hover:underline"
-                >
-                  Chuyển giao Leader
-                </button>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              {/* Leader */}
-              {clan.membersGrouped?.leader && (
-                <Link
-                  href={`/profile/${clan.membersGrouped.leader.user.username}`}
-                  className="p-2.5 rounded-xl border flex items-center gap-3 bg-amber-500/5 border-amber-500/20 hover:bg-amber-500/10 transition-colors"
-                >
-                  <div className="w-9 h-9 rounded-xl overflow-hidden border border-amber-500/30 bg-slate-900 shrink-0">
-                    {clan.membersGrouped.leader.user.avatarUrl ? (
-                      <img src={clan.membersGrouped.leader.user.avatarUrl} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center font-bold text-amber-400 text-xs">
-                        {clan.membersGrouped.leader.user.username[0]}
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <UserDisplayName user={clan.membersGrouped.leader.user} showClanTag={false} clanRole="LEADER" />
-                    <span className="text-[10px] text-amber-400 font-bold block">Clan Leader</span>
-                  </div>
-                </Link>
-              )}
-
-              {/* Clan Mods (up to 2 in this top box) */}
-              {clan.membersGrouped?.mods?.slice(0, 2).map((mod: any) => (
-                <Link
-                  key={mod.id}
-                  href={`/profile/${mod.user.username}`}
-                  className="p-2.5 rounded-xl border flex items-center gap-3 bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10 transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-xl overflow-hidden border border-emerald-500/30 bg-slate-900 shrink-0">
-                    {mod.user.avatarUrl ? (
-                      <img src={mod.user.avatarUrl} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center font-bold text-emerald-400 text-xs">
-                        {mod.user.username[0]}
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <UserDisplayName user={mod.user} showClanTag={false} clanRole="MODERATOR" />
-                    <span className="text-[10px] text-emerald-400 font-bold block">Quản trị viên Clan</span>
-                  </div>
-                </Link>
-              ))}
             </div>
           </div>
+        )}
 
-          {/* Full Discord-Style Member Roster */}
-          <div
-            className="ui-card rounded-2xl border p-4 space-y-4"
-            style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
-          >
-            <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
-              <h3 className="text-xs font-bold ui-title flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-sky-400" /> Tất cả thành viên
-              </h3>
-              <span className="font-mono text-xs ui-dim font-bold">
-                {clan.memberCount} / {tierInfo.maxMembers}
-              </span>
+        {/* TAB 2: LEVELS (FULL SHOWCASE & CAROUSEL) */}
+        {activeTab === 'levels' && (
+          <div className="space-y-6">
+            {clan.creatorWorks?.length > 0 ? (
+              <>
+                {/* Widescreen Slideshow */}
+                <ClanLevelsSlideshow works={clan.creatorWorks} />
+
+                {/* Grid of All Works */}
+                <div
+                  className="ui-card rounded-2xl border p-5 space-y-4"
+                  style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+                >
+                  <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <h3 className="text-sm font-bold ui-title flex items-center gap-2">
+                      <Hammer className="w-4 h-4 text-sky-400" /> Tất cả tác phẩm Creator ({clan.creatorWorks.length})
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {clan.creatorWorks.map((work: any) => {
+                      const ytIdFromUrl = work.videoUrl
+                        ? (work.videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/) || [])[1]
+                        : null;
+                      const ytId = work.youtubeId || ytIdFromUrl;
+                      const thumb = ytId
+                        ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`
+                        : work.imageUrl || 'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
+
+                      const matchedLevel = work.matchedLevel;
+                      const targetLevelUrl = matchedLevel ? levelPath(matchedLevel) : work.gdLevelId ? `/levels?search=${work.gdLevelId}` : null;
+
+                      return (
+                        <div
+                          key={work.id}
+                          className="group relative rounded-2xl overflow-hidden shadow-xs hover:shadow-xl transition-all border ui-card flex flex-col h-48 justify-between p-3.5"
+                          style={{ borderColor: 'var(--border-ui)' }}
+                        >
+                          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                            <img
+                              src={thumb}
+                              alt=""
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              style={{ filter: 'brightness(0.55)' }}
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src =
+                                  'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
+                              }}
+                            />
+                          </div>
+
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
+
+                          <div className="relative z-10 flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <DifficultyRatingIcon
+                                difficultyFace={work.difficultyFace || 0}
+                                ratingType={work.ratingType || 'NONE'}
+                                className="w-8 h-8 drop-shadow-md"
+                              />
+                              <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-lg bg-black/60 text-white/90 border border-white/10 backdrop-blur-xs">
+                                ID: {work.gdLevelId || '—'}
+                              </span>
+                            </div>
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 backdrop-blur-xs">
+                              Đã duyệt
+                            </span>
+                          </div>
+
+                          <div className="relative z-10 space-y-1">
+                            {targetLevelUrl ? (
+                              <Link
+                                href={targetLevelUrl}
+                                className="font-bold text-sm text-white drop-shadow-sm truncate block hover:text-sky-400 transition-colors"
+                              >
+                                {work.levelName || 'Untitled Level'}
+                              </Link>
+                            ) : (
+                              <h4 className="font-bold text-sm text-white drop-shadow-sm truncate">
+                                {work.levelName || 'Untitled Level'}
+                              </h4>
+                            )}
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-slate-300 text-[11px] truncate">
+                                bởi <span className="font-semibold text-white">{work.user?.username || work.creatorName || 'GD Creator'}</span>
+                              </span>
+
+                              {work.videoUrl && (
+                                <a
+                                  href={work.videoUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-400 hover:text-sky-300 hover:underline shrink-0 px-2 py-0.5 rounded-lg bg-black/60 border border-sky-500/30 backdrop-blur-xs transition-colors"
+                                >
+                                  <Play className="w-3 h-3 fill-sky-400" /> Xem Video
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div
+                className="ui-card rounded-2xl border p-12 text-center space-y-3"
+                style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+              >
+                <div className="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 mx-auto flex items-center justify-center">
+                  <Hammer className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold ui-title">Chưa có tác phẩm Creator nào</h3>
+                <p className="text-xs ui-dim max-w-sm mx-auto">
+                  Thành viên Clan có thể gửi màn chơi do mình sáng tác tại mục Đệ Trình Creator để được xét duyệt và hiển thị tại đây!
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: BẢNG XẾP HẠNG & DANH HIỆU */}
+        {activeTab === 'leaderboard' && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Left: Clan's Hardest (6 cols) */}
+            <div className="lg:col-span-6 space-y-4">
+              <div
+                className="ui-card rounded-2xl border p-5 space-y-4 shadow-sm"
+                style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+              >
+                <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <div>
+                    <h2 className="text-sm font-bold ui-title flex items-center gap-2">
+                      <Trophy className="w-4 h-4 text-amber-400" /> Clan&apos;s Hardest
+                    </h2>
+                    <p className="text-[11px] ui-dim mt-0.5">Top 5 Demon khó nhất từng được thành viên hoàn thành</p>
+                  </div>
+                </div>
+
+                {clan.top5Beaten?.length > 0 ? (
+                  <div className="space-y-2.5">
+                    {clan.top5Beaten.map((item: any, idx: number) => {
+                      const lvl = item.level;
+                      return (
+                        <div
+                          key={lvl.id}
+                          className={`p-3.5 rounded-xl border flex items-center justify-between gap-3.5 transition-colors hover:bg-black/5 dark:hover:bg-white/5 ${
+                            idx === 0 ? 'bg-amber-500/5 border-amber-500/30' : ''
+                          }`}
+                          style={{
+                            backgroundColor: idx === 0 ? undefined : 'var(--bg-subtle)',
+                            borderColor: idx === 0 ? undefined : 'var(--border-subtle)',
+                          }}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span
+                              className={`w-7 text-center font-black text-sm shrink-0 ${
+                                idx === 0
+                                  ? 'text-amber-400'
+                                  : idx === 1
+                                  ? 'text-slate-300'
+                                  : idx === 2
+                                  ? 'text-amber-600'
+                                  : 'ui-dim'
+                              }`}
+                            >
+                              #{idx + 1}
+                            </span>
+
+                            <DifficultyRatingIcon
+                              difficultyFace={lvl.difficultyFace}
+                              ratingType={lvl.ratingType}
+                              className="w-9 h-9 drop-shadow-sm"
+                            />
+
+                            <div className="min-w-0">
+                              <Link
+                                href={levelPath(lvl)}
+                                className="font-bold text-xs sm:text-sm ui-title hover:underline truncate block"
+                              >
+                                {lvl.name}
+                              </Link>
+                              <span className="text-[11px] ui-dim flex items-center gap-1 mt-0.5">
+                                Người beat: <UserDisplayName user={item.user} showClanTag={false} />
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <span className="font-mono text-xs sm:text-sm font-black text-amber-400 block">
+                              {lvl.basePp || 0} PP
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center text-xs ui-dim">Chưa có thành viên nào ghi nhận kỷ lục Demon.</div>
+                )}
+              </div>
             </div>
 
-            {/* Section: LEADER */}
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 block px-1">
-                Leader — 1
-              </span>
-              {clan.membersGrouped?.leader && (
-                <div className="p-2 rounded-xl flex items-center justify-between gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                  <Link
-                    href={`/profile/${clan.membersGrouped.leader.user.username}`}
-                    className="flex items-center gap-2.5 min-w-0 flex-1"
+            {/* Right: Bảng Xếp Hạng Thành Viên (6 cols) */}
+            <div className="lg:col-span-6 space-y-4">
+              <div
+                className="ui-card rounded-2xl border p-5 space-y-4 shadow-sm"
+                style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+              >
+                <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <div>
+                    <h2 className="text-sm font-bold ui-title flex items-center gap-2">
+                      <Trophy className="w-4 h-4 text-amber-400" /> Bảng xếp hạng thành viên
+                    </h2>
+                    <p className="text-[11px] ui-dim mt-0.5">Xếp hạng theo tổng Classic Points (PP) của từng người</p>
+                  </div>
+                  <span className="font-mono text-xs font-bold ui-dim">{leaderboardMembers.length} thành viên</span>
+                </div>
+
+                <div className="space-y-2">
+                  {leaderboardMembers.map((m: any, idx: number) => {
+                    const rankNumVal = idx + 1;
+                    return (
+                      <div
+                        key={m.id || m.userId}
+                        className={`p-3 rounded-xl border flex items-center justify-between gap-3 transition-colors hover:bg-black/5 dark:hover:bg-white/5 ${
+                          rankNumVal === 1 ? 'bg-amber-500/5 border-amber-500/30' : ''
+                        }`}
+                        style={{
+                          backgroundColor: rankNumVal === 1 ? undefined : 'var(--bg-subtle)',
+                          borderColor: rankNumVal === 1 ? undefined : 'var(--border-subtle)',
+                        }}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span
+                            className={`w-6 text-center font-black text-xs shrink-0 ${
+                              rankNumVal === 1
+                                ? 'text-amber-400'
+                                : rankNumVal === 2
+                                ? 'text-slate-300'
+                                : rankNumVal === 3
+                                ? 'text-amber-600'
+                                : 'ui-dim'
+                            }`}
+                          >
+                            #{rankNumVal}
+                          </span>
+
+                          <div
+                            className="w-8 h-8 rounded-xl overflow-hidden border bg-slate-900 shrink-0"
+                            style={{ borderColor: 'var(--border-subtle)' }}
+                          >
+                            {m.user?.avatarUrl ? (
+                              <img src={m.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center font-bold text-xs ui-dim">
+                                {m.user?.username ? m.user.username[0] : '?'}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="min-w-0 flex items-center gap-2 flex-wrap">
+                            <Link href={`/profile/${m.user?.username}`} className="hover:underline">
+                              <UserDisplayName user={m.user} showClanTag={false} />
+                            </Link>
+
+                            {m.role === 'LEADER' && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                Leader
+                              </span>
+                            )}
+                            {m.role === 'MODERATOR' && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                Mod
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <span className="font-mono text-xs font-bold text-amber-400 block">
+                            {(m.user?.classicPp || 0).toLocaleString()} PP
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: THÀNH VIÊN & DISCORD ROSTER */}
+        {activeTab === 'members' && (
+          <div className="space-y-6">
+            {/* Staff Showcase */}
+            <div
+              className="ui-card rounded-2xl border p-5 space-y-4 shadow-sm"
+              style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+            >
+              <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+                <div>
+                  <h3 className="text-sm font-bold ui-title flex items-center gap-2">
+                    <Crown className="w-4 h-4 text-amber-400" /> Ban Quản Trị Clan
+                  </h3>
+                  <p className="text-[11px] ui-dim mt-0.5">Leader và Moderator phụ trách quản lý thành viên và xét duyệt</p>
+                </div>
+
+                {isLeader && (
+                  <button
+                    type="button"
+                    onClick={() => setIsTransferOpen(true)}
+                    className="text-xs font-bold text-amber-400 hover:underline flex items-center gap-1.5 cursor-pointer"
                   >
-                    <div className="w-7 h-7 rounded-lg overflow-hidden border bg-slate-900 shrink-0" style={{ borderColor: 'var(--border-subtle)' }}>
-                      {clan.membersGrouped.leader.user.avatarUrl && (
+                    <Crown className="w-3.5 h-3.5" />
+                    <span>Chuyển giao quyền Leader</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {/* Leader Card */}
+                {clan.membersGrouped?.leader && (
+                  <div className="p-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 flex items-center gap-3.5 shadow-xs">
+                    <div className="w-12 h-12 rounded-xl overflow-hidden border border-amber-500/40 bg-slate-900 shrink-0">
+                      {clan.membersGrouped.leader.user.avatarUrl ? (
                         <img src={clan.membersGrouped.leader.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center font-bold text-amber-400 text-sm">
+                          {clan.membersGrouped.leader.user.username[0]}
+                        </div>
                       )}
                     </div>
-                    <UserDisplayName user={clan.membersGrouped.leader.user} showClanTag={false} />
-                  </Link>
-                  <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                </div>
-              )}
-            </div>
+                    <div className="min-w-0 flex-1">
+                      <Link href={`/profile/${clan.membersGrouped.leader.user.username}`} className="hover:underline block truncate">
+                        <UserDisplayName user={clan.membersGrouped.leader.user} showClanTag={false} clanRole="LEADER" />
+                      </Link>
+                      <span className="text-[11px] text-amber-400 font-bold block mt-0.5">Clan Leader</span>
+                      <span className="text-[10px] ui-dim font-mono block mt-0.5">
+                        {(clan.membersGrouped.leader.user.classicPp || 0).toLocaleString()} PP
+                      </span>
+                    </div>
+                  </div>
+                )}
 
-            {/* Section: MODERATORS */}
-            {clan.membersGrouped?.mods?.length > 0 && (
-              <div className="space-y-1.5 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 block px-1">
-                  Mod Clan — {clan.membersGrouped.mods.length}
-                </span>
-                {clan.membersGrouped.mods.map((m: any) => (
-                  <div
-                    key={m.id}
-                    className="p-2 rounded-xl flex items-center justify-between gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
-                  >
-                    <Link
-                      href={`/profile/${m.user.username}`}
-                      className="flex items-center gap-2.5 min-w-0 flex-1"
-                    >
-                      <div className="w-7 h-7 rounded-lg overflow-hidden border bg-slate-900 shrink-0" style={{ borderColor: 'var(--border-subtle)' }}>
-                        {m.user.avatarUrl && (
-                          <img src={m.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                {/* Clan Mods */}
+                {clan.membersGrouped?.mods?.map((mod: any) => (
+                  <div key={mod.id} className="p-4 rounded-2xl border border-emerald-500/25 bg-emerald-500/5 flex items-center justify-between gap-3.5 shadow-xs">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl overflow-hidden border border-emerald-500/30 bg-slate-900 shrink-0">
+                        {mod.user.avatarUrl ? (
+                          <img src={mod.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center font-bold text-emerald-400 text-xs">
+                            {mod.user.username[0]}
+                          </div>
                         )}
                       </div>
-                      <UserDisplayName user={m.user} showClanTag={false} />
-                    </Link>
+                      <div className="min-w-0">
+                        <Link href={`/profile/${mod.user.username}`} className="hover:underline block truncate">
+                          <UserDisplayName user={mod.user} showClanTag={false} clanRole="MODERATOR" />
+                        </Link>
+                        <span className="text-[11px] text-emerald-400 font-bold block mt-0.5">Quản trị viên Clan</span>
+                      </div>
+                    </div>
 
-                    <div className="flex items-center gap-1 shrink-0">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                      {/* Leader options on Clan Mod */}
-                      {(isLeader || isOwnerWeb) && (
-                        <button
-                          type="button"
-                          onClick={() => handleRoleChange(m.id, 'MEMBER')}
-                          className="text-[10px] font-bold text-slate-400 hover:text-amber-400 px-1 py-0.5 rounded cursor-pointer"
-                          title="Hạ quyền xuống Member"
+                    {(isLeader || isOwnerWeb) && (
+                      <button
+                        type="button"
+                        onClick={() => handleRoleChange(mod.id, 'MEMBER')}
+                        className="text-[10px] font-bold text-slate-400 hover:text-amber-400 px-2 py-1 rounded border border-white/10 hover:border-amber-400/30 cursor-pointer shrink-0"
+                        title="Hạ quyền xuống Member"
+                      >
+                        Hạ cấp
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Full Discord-Style Member Roster */}
+            <div
+              className="ui-card rounded-2xl border p-5 space-y-4 shadow-sm"
+              style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+            >
+              <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+                <h3 className="text-sm font-bold ui-title flex items-center gap-2">
+                  <Users className="w-4 h-4 text-sky-400" /> Danh sách tất cả thành viên
+                </h3>
+                <span className="font-mono text-xs ui-dim font-bold">
+                  {clan.memberCount} / {tierInfo.maxMembers} thành viên
+                </span>
+              </div>
+
+              {/* Leader Section */}
+              <div className="space-y-2">
+                <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 block px-1">
+                  Leader — 1
+                </span>
+                {clan.membersGrouped?.leader && (
+                  <div className="p-3 rounded-xl border flex items-center justify-between gap-3 bg-amber-500/5 border-amber-500/20">
+                    <Link
+                      href={`/profile/${clan.membersGrouped.leader.user.username}`}
+                      className="flex items-center gap-3 min-w-0 flex-1 hover:underline"
+                    >
+                      <div className="w-8 h-8 rounded-lg overflow-hidden border border-amber-500/30 bg-slate-900 shrink-0">
+                        {clan.membersGrouped.leader.user.avatarUrl && (
+                          <img src={clan.membersGrouped.leader.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                        )}
+                      </div>
+                      <UserDisplayName user={clan.membersGrouped.leader.user} showClanTag={false} />
+                    </Link>
+                    <Crown className="w-4 h-4 text-amber-400 shrink-0" />
+                  </div>
+                )}
+              </div>
+
+              {/* Mods Section */}
+              {clan.membersGrouped?.mods?.length > 0 && (
+                <div className="space-y-2 pt-3 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 block px-1">
+                    Mod Clan — {clan.membersGrouped.mods.length}
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {clan.membersGrouped.mods.map((m: any) => (
+                      <div
+                        key={m.id}
+                        className="p-3 rounded-xl border flex items-center justify-between gap-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
+                        style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
+                      >
+                        <Link
+                          href={`/profile/${m.user.username}`}
+                          className="flex items-center gap-3 min-w-0 flex-1 hover:underline"
                         >
-                          Hạ cấp
-                        </button>
-                      )}
+                          <div className="w-8 h-8 rounded-lg overflow-hidden border bg-slate-900 shrink-0" style={{ borderColor: 'var(--border-subtle)' }}>
+                            {m.user.avatarUrl && (
+                              <img src={m.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                            )}
+                          </div>
+                          <UserDisplayName user={m.user} showClanTag={false} />
+                        </Link>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                          {(isLeader || isOwnerWeb) && (
+                            <button
+                              type="button"
+                              onClick={() => handleRoleChange(m.id, 'MEMBER')}
+                              className="text-[10px] font-bold text-slate-400 hover:text-amber-400 px-1.5 py-0.5 rounded cursor-pointer"
+                              title="Hạ quyền xuống Member"
+                            >
+                              Hạ cấp
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Members Section */}
+              <div className="space-y-2 pt-3 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                <span className="text-[11px] font-black uppercase tracking-wider ui-dim block px-1">
+                  Thành viên — {clan.membersGrouped?.members?.length || 0}
+                </span>
+                {clan.membersGrouped?.members?.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {clan.membersGrouped.members.map((m: any) => (
+                      <div
+                        key={m.id}
+                        className="p-3 rounded-xl border flex items-center justify-between gap-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
+                        style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
+                      >
+                        <Link
+                          href={`/profile/${m.user.username}`}
+                          className="flex items-center gap-3 min-w-0 flex-1 hover:underline"
+                        >
+                          <div className="w-8 h-8 rounded-lg overflow-hidden border bg-slate-900 shrink-0" style={{ borderColor: 'var(--border-subtle)' }}>
+                            {m.user.avatarUrl && (
+                              <img src={m.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                            )}
+                          </div>
+                          <UserDisplayName user={m.user} showClanTag={false} />
+                        </Link>
+
+                        {(isLeader || isOwnerWeb) && (
+                          <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              type="button"
+                              onClick={() => handleRoleChange(m.id, 'MODERATOR')}
+                              className="text-[10px] font-bold text-emerald-400 hover:bg-emerald-500/10 px-1.5 py-0.5 rounded cursor-pointer"
+                              title="Bổ nhiệm làm Mod Clan"
+                            >
+                              Bổ nhiệm
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleKick(m.id, m.user.username)}
+                              className="text-[10px] font-bold text-red-400 hover:bg-red-500/10 px-1.5 py-0.5 rounded cursor-pointer"
+                              title="Trục xuất khỏi Clan"
+                            >
+                              Xóa
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs ui-dim px-2 py-4 italic">Chưa có thành viên nào khác.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL: DONATE SP */}
+        {isDonateOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div
+              className="w-full max-w-md rounded-2xl border shadow-2xl p-6 space-y-4"
+              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+            >
+              <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+                <h3 className="text-base font-bold ui-title flex items-center gap-2 text-amber-400">
+                  <Coins className="w-5 h-5" /> Nâng cấp Clan bằng SP
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsDonateOpen(false)}
+                  className="p-1.5 rounded-lg ui-dim hover:text-red-500 transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleDonate} className="space-y-4">
+                <div
+                  className="p-3 rounded-xl border flex items-center justify-between text-xs font-semibold"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+                >
+                  <span className="ui-dim">SP Coin khả dụng của bạn:</span>
+                  <span className="font-mono text-amber-400 font-bold">{userSp} SP</span>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold ui-title">Số điểm SP đóng góp nâng cấp</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min={0}
+                      max={userSp}
+                      value={pledgeAmount}
+                      onChange={(e) => setPledgeAmount(parseInt(e.target.value, 10) || 0)}
+                      className="flex-1 accent-amber-500 cursor-pointer"
+                    />
+                    <span className="font-mono text-xs font-bold px-3 py-1 rounded-lg border bg-amber-500/10 border-amber-500/20 text-amber-400">
+                      {pledgeAmount} SP
+                    </span>
+                  </div>
+                  <p className="text-[11px] ui-dim leading-relaxed">
+                    Đóng góp SP giúp tăng cấp Tier Clan và duy trì hoạt động. Điểm SP sẽ tự động hết hiệu lực khi thời hạn Supporter của bạn hết hạn.
+                  </p>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsDonateOpen(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border"
+                    style={{ borderColor: 'var(--border-ui)' }}
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={actionLoading}
+                    className="px-5 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    style={{ backgroundColor: 'var(--accent)' }}
+                  >
+                    {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Coins className="w-4 h-4" />}
+                    {actionLoading ? 'Đang lưu...' : 'Xác nhận nâng cấp'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL: PENDING JOIN REQUESTS */}
+        {isRequestsOpen && clan.pendingRequests && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div
+              className="w-full max-w-lg rounded-2xl border shadow-2xl p-6 space-y-4 max-h-[85vh] flex flex-col"
+              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+            >
+              <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+                <h3 className="text-base font-bold ui-title flex items-center gap-2">
+                  <UserCheck className="w-5 h-5 text-amber-400" /> Đơn xin gia nhập ({clan.pendingRequests.length})
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsRequestsOpen(false)}
+                  className="p-1.5 rounded-lg ui-dim hover:text-red-500 transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-2 overflow-y-auto flex-1">
+                {clan.pendingRequests.map((req: any) => (
+                  <div
+                    key={req.id}
+                    className="p-3 rounded-xl border flex items-center justify-between gap-3"
+                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl overflow-hidden border bg-slate-900 shrink-0" style={{ borderColor: 'var(--border-ui)' }}>
+                        {req.user.avatarUrl ? (
+                          <img src={req.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center font-bold text-xs ui-dim">
+                            {req.user.username[0]}
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <UserDisplayName user={req.user} showClanTag={false} />
+                        <span className="text-[10px] ui-dim block font-mono">
+                          {req.user.classicPp || 0} PP • {new Date(req.createdAt).toLocaleDateString('vi-VN')}
+                        </span>
+                        {req.message && (
+                          <p className="text-xs ui-dim mt-1.5 p-2 rounded-lg bg-black/10 dark:bg-white/5 border border-dashed border-white/10 italic">
+                            &ldquo;{req.message}&rdquo;
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleProcessRequest(req.id, 'approve')}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Check className="w-3.5 h-3.5" /> Duyệt
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleProcessRequest(req.id, 'reject')}
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-red-400 hover:bg-red-500/10 border border-red-500/20 cursor-pointer"
+                        title="Từ chối"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
-            )}
-
-            {/* Section: REGULAR MEMBERS */}
-            <div className="space-y-1.5 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-              <span className="text-[10px] font-black uppercase tracking-wider ui-dim block px-1">
-                Thành viên — {clan.membersGrouped?.members?.length || 0}
-              </span>
-              {clan.membersGrouped?.members?.map((m: any) => (
-                <div
-                  key={m.id}
-                  className="p-2 rounded-xl flex items-center justify-between gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
-                >
-                  <Link
-                    href={`/profile/${m.user.username}`}
-                    className="flex items-center gap-2.5 min-w-0 flex-1"
-                  >
-                    <div className="w-7 h-7 rounded-lg overflow-hidden border bg-slate-900 shrink-0" style={{ borderColor: 'var(--border-subtle)' }}>
-                      {m.user.avatarUrl && (
-                        <img src={m.user.avatarUrl} alt="" className="w-full h-full object-cover" />
-                      )}
-                    </div>
-                    <UserDisplayName user={m.user} showClanTag={false} />
-                  </Link>
-
-                  {/* Leader actions: Promote to Mod or Kick */}
-                  {(isLeader || isOwnerWeb) && (
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        type="button"
-                        onClick={() => handleRoleChange(m.id, 'MODERATOR')}
-                        className="text-[10px] font-bold text-emerald-400 hover:bg-emerald-500/10 px-1.5 py-0.5 rounded cursor-pointer"
-                        title="Bổ nhiệm làm Mod Clan"
-                      >
-                        Bổ nhiệm
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleKick(m.id, m.user.username)}
-                        className="text-[10px] font-bold text-red-400 hover:bg-red-500/10 px-1.5 py-0.5 rounded cursor-pointer"
-                        title="Trục xuất khỏi Clan"
-                      >
-                        Xóa
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
             </div>
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* Donate SP Modal */}
-      {isDonateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div
-            className="w-full max-w-md rounded-2xl border shadow-2xl p-6 space-y-4"
-            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
-          >
-            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
-              <h3 className="text-base font-bold ui-title flex items-center gap-2 text-amber-400">
-                <Coins className="w-5 h-5" /> Nâng cấp Clan bằng SP
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsDonateOpen(false)}
-                className="p-1.5 rounded-lg ui-dim hover:text-red-500 transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleDonate} className="space-y-4">
-              <div
-                className="p-3 rounded-xl border flex items-center justify-between text-xs font-semibold"
-                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
-              >
-                <span className="ui-dim">SP Coin khả dụng của bạn:</span>
-                <span className="font-mono text-amber-400 font-bold">{userSp} SP</span>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold ui-title">Số điểm SP đóng góp nâng cấp</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="range"
-                    min={0}
-                    max={userSp}
-                    value={pledgeAmount}
-                    onChange={(e) => setPledgeAmount(parseInt(e.target.value, 10) || 0)}
-                    className="flex-1 accent-amber-500 cursor-pointer"
-                  />
-                  <span className="font-mono text-xs font-bold px-3 py-1 rounded-lg border bg-amber-500/10 border-amber-500/20 text-amber-400">
-                    {pledgeAmount} SP
-                  </span>
-                </div>
-                <p className="text-[11px] ui-dim leading-relaxed">
-                  Đóng góp SP giúp tăng cấp Tier Clan và duy trì hoạt động. Điểm SP sẽ tự động hết hiệu lực khi thời hạn Supporter của bạn hết hạn.
-                </p>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-                <button
-                  type="button"
-                  onClick={() => setIsDonateOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border"
-                  style={{ borderColor: 'var(--border-ui)' }}
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="px-5 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  style={{ backgroundColor: 'var(--accent)' }}
-                >
-                  {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Coins className="w-4 h-4" />}
-                  {actionLoading ? 'Đang lưu...' : 'Xác nhận nâng cấp'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Pending Join Requests Modal */}
-      {isRequestsOpen && clan.pendingRequests && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div
-            className="w-full max-w-lg rounded-2xl border shadow-2xl p-6 space-y-4 max-h-[85vh] flex flex-col"
-            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
-          >
-            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
-              <h3 className="text-base font-bold ui-title flex items-center gap-2">
-                <UserCheck className="w-5 h-5 text-amber-400" /> Đơn xin gia nhập ({clan.pendingRequests.length})
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsRequestsOpen(false)}
-                className="p-1.5 rounded-lg ui-dim hover:text-red-500 transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-2 overflow-y-auto flex-1">
-              {clan.pendingRequests.map((req: any) => (
-                <div
-                  key={req.id}
-                  className="p-3 rounded-xl border flex items-center justify-between gap-3"
-                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-xl overflow-hidden border bg-slate-900 shrink-0" style={{ borderColor: 'var(--border-ui)' }}>
-                      {req.user.avatarUrl ? (
-                        <img src={req.user.avatarUrl} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center font-bold text-xs ui-dim">
-                          {req.user.username[0]}
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <UserDisplayName user={req.user} showClanTag={false} />
-                      <span className="text-[10px] ui-dim block font-mono">
-                        {req.user.classicPp || 0} PP • {new Date(req.createdAt).toLocaleDateString('vi-VN')}
-                      </span>
-                      {req.message && (
-                        <p className="text-xs ui-dim mt-1.5 p-2 rounded-lg bg-black/10 dark:bg-white/5 border border-dashed border-white/10 italic">
-                          &ldquo;{req.message}&rdquo;
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => handleProcessRequest(req.id, 'approve')}
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 flex items-center gap-1 cursor-pointer"
-                    >
-                      <Check className="w-3.5 h-3.5" /> Duyệt
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleProcessRequest(req.id, 'reject')}
-                      className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-red-400 hover:bg-red-500/10 border border-red-500/20 cursor-pointer"
-                      title="Từ chối"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Transfer Clan Ownership Modal */}
-      {isTransferOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div
-            className="w-full max-w-md rounded-2xl border shadow-2xl p-6 space-y-4"
-            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
-          >
-            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
-              <h3 className="text-base font-bold ui-title flex items-center gap-2 text-amber-400">
-                <Crown className="w-5 h-5" /> Chuyển giao quyền sở hữu Clan
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsTransferOpen(false)}
-                className="p-1.5 rounded-lg ui-dim hover:text-red-500 transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-xs ui-dim leading-relaxed">
-                Chọn thành viên nhận chức vụ Leader tối cao của Clan. Bạn sẽ chuyển thành thành viên bình thường.
-              </p>
-
-              <select
-                value={transferTargetId}
-                onChange={(e) => setTransferTargetId(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-xs ui-input font-bold cursor-pointer"
-              >
-                <option value="">-- Chọn thành viên nhận quyền --</option>
-                {allMembers
-                  .filter((m: any) => m.userId !== clan.leaderId)
-                  .map((m: any) => (
-                    <option key={m.userId} value={m.userId}>
-                      {m.user.username} ({m.role})
-                    </option>
-                  ))}
-              </select>
-
-              <div className="flex justify-end gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+        {/* MODAL: TRANSFER LEADERSHIP */}
+        {isTransferOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div
+              className="w-full max-w-md rounded-2xl border shadow-2xl p-6 space-y-4"
+              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+            >
+              <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+                <h3 className="text-base font-bold ui-title flex items-center gap-2 text-amber-400">
+                  <Crown className="w-5 h-5" /> Chuyển giao quyền sở hữu Clan
+                </h3>
                 <button
                   type="button"
                   onClick={() => setIsTransferOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border"
-                  style={{ borderColor: 'var(--border-ui)' }}
+                  className="p-1.5 rounded-lg ui-dim hover:text-red-500 transition-colors cursor-pointer"
                 >
-                  Hủy
+                  <X className="w-4 h-4" />
                 </button>
-                <button
-                  type="button"
-                  disabled={!transferTargetId}
-                  onClick={handleTransfer}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-xs ui-dim leading-relaxed">
+                  Chọn thành viên nhận chức vụ Leader tối cao của Clan. Bạn sẽ chuyển thành thành viên bình thường.
+                </p>
+
+                <select
+                  value={transferTargetId}
+                  onChange={(e) => setTransferTargetId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-xs ui-input font-bold cursor-pointer"
                 >
-                  <Crown className="w-4 h-4" /> Xác nhận chuyển giao
-                </button>
+                  <option value="">-- Chọn thành viên nhận quyền --</option>
+                  {allMembers
+                    .filter((m: any) => m.userId !== clan.leaderId)
+                    .map((m: any) => (
+                      <option key={m.userId} value={m.userId}>
+                        {m.user.username} ({m.role})
+                      </option>
+                    ))}
+                </select>
+
+                <div className="flex justify-end gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsTransferOpen(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border"
+                    style={{ borderColor: 'var(--border-ui)' }}
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!transferTargetId}
+                    onClick={handleTransfer}
+                    className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <Crown className="w-4 h-4" /> Xác nhận chuyển giao
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Clan Settings Modal */}
-      {isSettingsOpen && (
-        <ClanSettingsModal
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          clan={clan}
-          onUpdated={() => loadClanData()}
-          onDisbanded={() => router.push('/clan')}
-          isLeader={isLeader}
-          isAdminWeb={isAdminWeb}
-          isOwnerWeb={isOwnerWeb}
-        />
-      )}
+        {/* MODAL: CLAN SETTINGS */}
+        {isSettingsOpen && (
+          <ClanSettingsModal
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            clan={clan}
+            onUpdated={() => loadClanData()}
+            onDisbanded={() => router.push('/clan')}
+            isLeader={isLeader}
+            isAdminWeb={isAdminWeb}
+            isOwnerWeb={isOwnerWeb}
+          />
+        )}
 
-      {/* Join Clan Application Modal */}
-      {isJoinModalOpen && (
-        <JoinClanModal
-          isOpen={isJoinModalOpen}
-          onClose={() => setIsJoinModalOpen(false)}
-          clan={{
-            id: clan.id,
-            slug: clan.slug,
-            name: clan.name,
-            tag: clan.tag,
-            coverUrl: clan.coverUrl,
-            description: clan.description,
-            color: clan.color,
-            colorGradient: clan.colorGradient,
-            totalSp: clan.totalSp,
-            memberCount: clan.memberCount,
-            maxMembers: tierInfo.maxMembers,
-            leader: clan.leader,
-          }}
-          onSuccess={() => loadClanData()}
-        />
-      )}
+        {/* MODAL: JOIN APPLICATION */}
+        {isJoinModalOpen && (
+          <JoinClanModal
+            isOpen={isJoinModalOpen}
+            onClose={() => setIsJoinModalOpen(false)}
+            clan={{
+              id: clan.id,
+              slug: clan.slug,
+              name: clan.name,
+              tag: clan.tag,
+              coverUrl: clan.coverUrl,
+              description: clan.description,
+              color: clan.color,
+              colorGradient: clan.colorGradient,
+              totalSp: clan.totalSp,
+              memberCount: clan.memberCount,
+              maxMembers: tierInfo.maxMembers,
+              leader: clan.leader,
+            }}
+            onSuccess={() => loadClanData()}
+          />
+        )}
       </div>
     </div>
   );
