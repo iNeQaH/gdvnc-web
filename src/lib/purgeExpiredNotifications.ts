@@ -14,5 +14,21 @@ export async function purgeExpiredNotifications(userId?: string) {
       ...(userId ? { userId } : {}),
     },
   });
+
+  // Also clean up expired OTPs and page visits older than 90 days to prevent unbounded database growth
+  if (!userId) {
+    try {
+      await prisma.otp.deleteMany({
+        where: { expiresAt: { lte: new Date() } },
+      });
+      const pageVisitCutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+      await prisma.pageVisit.deleteMany({
+        where: { createdAt: { lte: pageVisitCutoff } },
+      });
+    } catch {
+      /* ignore background cleanup errors */
+    }
+  }
+
   return result.count;
 }

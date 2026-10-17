@@ -16,6 +16,18 @@ const eslintConfig = defineConfig([
     "user-data/**",
     "*.mjs",
   ]),
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-require-imports": "warn",
+      "react/no-unescaped-entities": "warn",
+      "@next/next/no-html-link-for-pages": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+      "@next/next/no-img-element": "warn",
+      "prefer-const": "warn",
+    },
+  },
 ]);
 
 export default eslintConfig;

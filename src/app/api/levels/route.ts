@@ -202,7 +202,9 @@ function buildSspWhere(input: {
   searching: boolean;
   filterModes: string[];
   filterTiers: string[];
+  filterFaces: number[];
   filterVN: boolean;
+  filterUnranked: boolean;
   q: string;
   vnRanking: boolean;
 }): Prisma.LevelWhereInput {
@@ -213,6 +215,9 @@ function buildSspWhere(input: {
   }
   if (input.filterVN) {
     and.push({ isVN: true });
+  }
+  if (input.filterFaces && input.filterFaces.length > 0) {
+    and.push({ difficultyFace: { in: input.filterFaces } });
   }
 
   const rankField = input.tab === 'classic' ? 'classicRank' : input.vnRanking ? 'vnPlacement' : 'placement';
@@ -246,6 +251,14 @@ function buildSspWhere(input: {
     } else if (input.tab === 'vn') {
       and.push({ isVN: true, isChallenge: false });
     }
+  }
+
+  if (input.filterUnranked) {
+    and.push({
+      placement: null,
+      classicRank: null,
+      records: { some: { status: RecordStatus.APPROVED } },
+    });
   }
 
   if (input.searching && input.q) {
@@ -303,19 +316,53 @@ async function loadSspLevelsPage(searchParams: URLSearchParams) {
     searching,
     filterModes,
     filterTiers,
+    filterFaces,
     filterVN,
+    filterUnranked,
     q,
     vnRanking,
   });
 
+  // Fast-path: When not searching, leverage direct PostgreSQL pagination, ordering, and count
+  // This drastically reduces memory allocations on VPS 1GB RAM by avoiding loading 2,900+ rows into RAM.
+  if (!searching) {
+    const orderBy: Prisma.LevelOrderByWithRelationInput[] = challenge
+      ? [{ placement: { sort: 'asc', nulls: 'last' } }, { difficultyFace: 'desc' }, { name: 'asc' }]
+      : tab === 'vn'
+        ? [{ creator: { creatorPoints: 'desc' } }, { creatorName: 'asc' }, { name: 'asc' }]
+        : classicRanking
+          ? [{ classicRank: { sort: 'asc', nulls: 'last' } }, { difficultyFace: 'desc' }, { name: 'asc' }]
+          : vnRanking
+            ? [{ vnPlacement: { sort: 'asc', nulls: 'last' } }, { difficultyFace: 'desc' }, { name: 'asc' }]
+            : [{ mode: 'asc' }, { placement: { sort: 'asc', nulls: 'last' } }, { difficultyFace: 'desc' }, { name: 'asc' }];
+
+    const [total, rows] = await Promise.all([
+      prisma.level.count({ where }),
+      prisma.level.findMany({
+        where,
+        select: dbLevelSelect,
+        orderBy,
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+    ]);
+
+    const mapped = mapLevelFaces(rows);
+    const withCounts = await attachVictorCounts(mapped);
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+
+    return { levels: withCounts, total, totalPages };
+  }
+
+  // Search path: capped candidate queries with fuzzy similarity scoring
   let rows = await prisma.level.findMany({
     where,
     select: dbLevelSelect,
+    take: 200,
   });
 
-  // If searching and initial exact/token query yielded 0 results, fallback to searching all candidates
-  // so fuzzy similarity (e.g. typos, near matches) can still discover the levels
-  if (searching && rows.length === 0) {
+  // If searching and initial exact/token query yielded 0 results, fallback to searching candidates
+  if (rows.length === 0) {
     const fallbackWhere: Prisma.LevelWhereInput = {
       isChallenge: challenge,
       ...(filterModes.length > 0 ? { mode: { in: filterModes as LevelMode[] } } : {}),
@@ -324,18 +371,16 @@ async function loadSspLevelsPage(searchParams: URLSearchParams) {
     rows = await prisma.level.findMany({
       where: fallbackWhere,
       select: dbLevelSelect,
+      take: 200,
     });
   }
 
-  let candidates: (DbLevelRow & { _searchScore?: number })[] = rows;
-  if (searching) {
-    candidates = candidates
-      .map((lvl) => {
-        const score = calculateSearchScore(lvl, q);
-        return { ...lvl, _searchScore: score };
-      })
-      .filter((lvl) => (lvl._searchScore ?? 0) > 0);
-  }
+  let candidates: (DbLevelRow & { _searchScore?: number })[] = rows
+    .map((lvl) => {
+      const score = calculateSearchScore(lvl, q);
+      return { ...lvl, _searchScore: score };
+    })
+    .filter((lvl) => (lvl._searchScore ?? 0) > 0);
 
   let mapped = mapLevelFaces(candidates);
   mapped = await attachVictorCounts(mapped);
@@ -350,21 +395,6 @@ async function loadSspLevelsPage(searchParams: URLSearchParams) {
     const face = (lvl.difficultyFace as number | null) ?? 10;
     if (!matchesDifficultyFilter(face, filterFaces)) return false;
 
-    if (!challenge && !searching) {
-      if (tab === 'classic') {
-        if (!(lvl.classicRank as number | null)) return false;
-      } else if (tab === 'featured') {
-        if (!lvl.isVN) return false;
-        if (!lvl.vnPlacement && !isDemonDifficultyFace(face)) return false;
-      } else if (tab === 'demonlist') {
-        if (lvl.mode !== 'CLASSIC' || !lvl.placement || (lvl.placement as number) > 150) return false;
-      } else if (tab === 'pemonlist') {
-        if (lvl.mode !== 'PLATFORMER' || !lvl.placement || (lvl.placement as number) > 150) return false;
-      } else if (tab === 'vn') {
-        if (!lvl.isVN || lvl.isChallenge) return false;
-      }
-    }
-
     if (filterUnranked) {
       if ((lvl.classicRank as number | null) !== null) return false;
       if ((lvl.placement as number | null) !== null) return false;
@@ -375,42 +405,23 @@ async function loadSspLevelsPage(searchParams: URLSearchParams) {
   });
 
   filtered.sort((a: Record<string, unknown>, b: Record<string, unknown>) => {
-    if (searching) {
-      const scoreA = (a._searchScore as number) || 0;
-      const scoreB = (b._searchScore as number) || 0;
-      if (scoreA !== scoreB) {
-        return scoreB - scoreA;
-      }
-      if (classicRanking) {
-        const aRank = (a.classicRank as number | null) ?? 999999;
-        const bRank = (b.classicRank as number | null) ?? 999999;
-        if (aRank !== bRank) return aRank - bRank;
-      }
-      const aPlace = (a.placement as number | null) ?? 999999;
-      const bPlace = (b.placement as number | null) ?? 999999;
-      if (aPlace !== bPlace) return aPlace - bPlace;
-      const aVic = (a.victorCount as number | null) ?? 0;
-      const bVic = (b.victorCount as number | null) ?? 0;
-      if (aVic !== bVic) return bVic - aVic;
-      return String(a.name || '').localeCompare(String(b.name || ''));
-    }
-
-    if (!challenge && tab === 'vn') {
-      const cpA = (a.creator as { creatorPoints?: number } | null)?.creatorPoints || 0;
-      const cpB = (b.creator as { creatorPoints?: number } | null)?.creatorPoints || 0;
-      if (cpA !== cpB) return cpB - cpA;
-      return String(a.creatorName || '').localeCompare(String(b.creatorName || ''));
+    const scoreA = (a._searchScore as number) || 0;
+    const scoreB = (b._searchScore as number) || 0;
+    if (scoreA !== scoreB) {
+      return scoreB - scoreA;
     }
     if (classicRanking) {
       const aRank = (a.classicRank as number | null) ?? 999999;
       const bRank = (b.classicRank as number | null) ?? 999999;
-      return aRank - bRank;
+      if (aRank !== bRank) return aRank - bRank;
     }
-    if (vnRanking) return compareVnListLevels(a, b);
-    const am = String(a.mode || '');
-    const bm = String(b.mode || '');
-    if (am !== bm) return am === 'CLASSIC' ? -1 : 1;
-    return compareListLevels(a, b);
+    const aPlace = (a.placement as number | null) ?? 999999;
+    const bPlace = (b.placement as number | null) ?? 999999;
+    if (aPlace !== bPlace) return aPlace - bPlace;
+    const aVic = (a.victorCount as number | null) ?? 0;
+    const bVic = (b.victorCount as number | null) ?? 0;
+    if (aVic !== bVic) return bVic - aVic;
+    return String(a.name || '').localeCompare(String(b.name || ''));
   });
 
   const total = filtered.length;

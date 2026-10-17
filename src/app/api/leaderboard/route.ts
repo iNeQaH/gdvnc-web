@@ -16,10 +16,12 @@ export async function GET(req: Request) {
 
     const body = await cachedJson(
       async () => {
+        const playerMode =
+          mode === 'PLATFORMER' ? 'PLATFORMER' : mode === 'CHALLENGE' ? 'CHALLENGE' : 'CLASSIC';
         const leaderboard =
           mode === 'CREATOR'
             ? await getCreatorLeaderboard()
-            : await getPlayerLeaderboard(mode === 'PLATFORMER' ? 'PLATFORMER' : 'CLASSIC', device);
+            : await getPlayerLeaderboard(playerMode, device);
         return { success: true, leaderboard };
       },
       ['leaderboard-v3', mode, device],
