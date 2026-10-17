@@ -217,6 +217,15 @@ export default function SettingsPage() {
   const canAccessSupporter = isSupporter || isSuperAdmin;
 
   const handleSaveNameStyle = async (reset = false) => {
+    if (!reset && !canAccessSupporter) {
+      showToast(
+        language === 'en'
+          ? 'Supporter role required to save name style.'
+          : 'Tùy biến phong cách tên yêu cầu đặc quyền Supporter.',
+        'error'
+      );
+      return;
+    }
     setSavingNameStyle(true);
     try {
       const payload = reset
@@ -1513,30 +1522,50 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Tab 3: Font & Name Style */}
+      {/* Tab 4: Font & Name Style */}
       {activeTab === 'name_style' && (
         <div className="space-y-6 animate-in fade-in-50 duration-200">
-          {canAccessSupporter ? (
-            <div className="ui-card p-6 space-y-6 border-purple-500/20">
-              <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
-                <div>
+          <div className="ui-card p-6 space-y-6 border-purple-500/20 relative">
+            <div className="flex items-center justify-between border-b pb-3 gap-3 flex-wrap" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-sm font-bold flex items-center gap-2 text-purple-400">
                     <Type className="w-4 h-4" /> {t('settings.font_title')}
                   </h2>
-                  <p className="text-xs ui-dim mt-0.5">
-                    {t('settings.font_desc')}
-                  </p>
+                  {!canAccessSupporter && (
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/30 flex items-center gap-1">
+                      <Lock className="w-3 h-3" />
+                      {language === 'en' ? 'Supporter Required' : 'Yêu cầu Supporter'}
+                    </span>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleSaveNameStyle(true)}
-                  disabled={savingNameStyle}
-                  className="px-3 py-1.5 text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl border border-red-500/20 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  title={t('settings.font_reset')}
-                >
-                  <RotateCcw className="w-3.5 h-3.5" /> {t('settings.font_reset')}
-                </button>
+                <p className="text-xs ui-dim mt-0.5">
+                  {t('settings.font_desc')}
+                </p>
               </div>
+              <div className="flex items-center gap-2">
+                {!canAccessSupporter && (
+                  <Link
+                    href="/support"
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white flex items-center gap-1.5 transition-all shadow-xs"
+                  >
+                    <Heart className="w-3.5 h-3.5" />
+                    <span>{language === 'en' ? 'Upgrade Supporter' : 'Nâng cấp Supporter'}</span>
+                  </Link>
+                )}
+                {canAccessSupporter && (
+                  <button
+                    type="button"
+                    onClick={() => handleSaveNameStyle(true)}
+                    disabled={savingNameStyle}
+                    className="px-3 py-1.5 text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl border border-red-500/20 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    title={t('settings.font_reset')}
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" /> {t('settings.font_reset')}
+                  </button>
+                )}
+              </div>
+            </div>
 
               {/* Live Preview Box */}
               <div
@@ -1822,37 +1851,60 @@ export default function SettingsPage() {
               </div>
 
               {/* Save Button */}
-              <div className="pt-3 border-t flex items-center justify-end" style={{ borderColor: 'var(--border-subtle)' }}>
-                <button
-                  type="button"
-                  onClick={() => handleSaveNameStyle(false)}
-                  disabled={savingNameStyle}
-                  className="px-6 py-2.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
-                >
-                  <Check className="w-4 h-4" />
-                  <span>{savingNameStyle ? t('settings.font_saving') : t('settings.font_save')}</span>
-                </button>
+              <div className="pt-3 border-t flex items-center justify-between gap-3 flex-wrap" style={{ borderColor: 'var(--border-subtle)' }}>
+                {!canAccessSupporter ? (
+                  <div className="flex items-center gap-2 text-xs text-purple-400 font-medium">
+                    <Lock className="w-4 h-4 shrink-0" />
+                    <span>
+                      {language === 'en'
+                        ? 'Preview mode. Supporter role is required to save name style.'
+                        : 'Chế độ xem trước. Cần có đặc quyền Supporter để lưu phong cách tên.'}
+                    </span>
+                  </div>
+                ) : <div />}
+                <div className="flex items-center gap-2">
+                  {!canAccessSupporter && (
+                    <Link
+                      href="/support"
+                      className="px-4 py-2.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                    >
+                      <Heart className="w-4 h-4" />
+                      <span>{language === 'en' ? 'Upgrade Supporter' : 'Nâng cấp Supporter'}</span>
+                    </Link>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!canAccessSupporter) {
+                        showToast(
+                          language === 'en'
+                            ? 'Supporter role required to save name style.'
+                            : 'Tùy biến phong cách tên yêu cầu đặc quyền Supporter.',
+                          'error'
+                        );
+                        return;
+                      }
+                      handleSaveNameStyle(false);
+                    }}
+                    disabled={savingNameStyle}
+                    className={`px-6 py-2.5 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50 ${
+                      !canAccessSupporter
+                        ? 'bg-purple-600/60 hover:bg-purple-600/70 border border-purple-500/30'
+                        : 'bg-purple-600 hover:bg-purple-500'
+                    }`}
+                  >
+                    {!canAccessSupporter ? <Lock className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                    <span>
+                      {!canAccessSupporter
+                        ? (language === 'en' ? 'Supporter Required to Save' : 'Cần Supporter Để Lưu')
+                        : (savingNameStyle ? t('settings.font_saving') : t('settings.font_save'))}
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
-          ) : (
-            <div className="ui-card p-6 border-dashed border-purple-500/30 text-center space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center mx-auto border border-purple-500/20">
-                <Type className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-sm ui-title">{t('settings.font_perk_title')}</h3>
-              <p className="text-xs ui-dim max-w-md mx-auto leading-relaxed">
-                {t('settings.font_perk_desc')}
-              </p>
-              <Link
-                href="/support"
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
-              >
-                <Heart className="w-3.5 h-3.5" /> {t('settings.font_upgrade_btn')}
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
 
 
 

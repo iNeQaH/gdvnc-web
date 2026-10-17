@@ -322,6 +322,25 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
       );
     }
 
+    const hasNameCustomization =
+      body.nameColor !== undefined ||
+      body.nameGradient !== undefined ||
+      body.nameGlow !== undefined ||
+      body.nameFont !== undefined;
+
+    const isClearingName =
+      (body.nameColor === null || body.nameColor === undefined || body.nameColor === '') &&
+      (body.nameGradient === null || body.nameGradient === undefined || body.nameGradient === '') &&
+      (body.nameGlow === null || body.nameGlow === undefined || body.nameGlow === '') &&
+      (body.nameFont === null || body.nameFont === undefined || body.nameFont === 'default' || body.nameFont === '');
+
+    if (hasNameCustomization && !isClearingName && !isSupporterOrOwner) {
+      return NextResponse.json(
+        { error: 'Tùy biến phong cách tên yêu cầu đặc quyền Supporter.' },
+        { status: 403 }
+      );
+    }
+
     if (!isSelf) {
       if (isSuperAdminUser(current) && !isSuperAdminUser(auth)) {
         return NextResponse.json({ error: 'Không thể sửa profile của Super Admin' }, { status: 403 });
