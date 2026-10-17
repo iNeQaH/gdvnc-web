@@ -42,7 +42,7 @@ import SmartCaptcha from '@/components/SmartCaptcha';
 import ColorPicker from '@/components/ColorPicker';
 import { CircularAnglePicker } from '@/components/CircularAnglePicker';
 import { AnimatedTabs } from '@/components/AnimatedTabs';
-import { UserDisplayName, FONT_PRESETS } from '@/components/UserDisplayName';
+import { UserDisplayName, SETTINGS_FONT_PRESETS } from '@/components/UserDisplayName';
 
 export default function SettingsPage() {
   const { t, language } = useLanguage();
@@ -233,9 +233,9 @@ export default function SettingsPage() {
         setData((prev: any) => ({ ...prev, ...payload }));
         localStorage.setItem('gdvnc_user', JSON.stringify(updatedUser));
         window.dispatchEvent(new Event('gdvnc_user_update'));
-        showToast('Đã lưu phong cách tên thành công!', 'success');
+        showToast(t('settings.font_saved'), 'success');
       } else {
-        showToast(resJson.error || 'Không thể lưu phong cách tên', 'error');
+        showToast(resJson.error || t('settings.font_save_error'), 'error');
       }
     } catch {
       showToast('Lỗi kết nối máy chủ', 'error');
@@ -623,7 +623,6 @@ export default function SettingsPage() {
                     fallbackName={currentUser.username}
                     linkClan
                     className="text-lg sm:text-xl font-black ui-title drop-shadow-sm"
-                    tagClassName="text-xs sm:text-sm px-2 py-0.5 rounded-lg border border-black/10 dark:border-white/10"
                   />
                   {currentUser.role === 'ADMIN' && (
                     <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-red-500/15 text-red-400 border border-red-500/30 flex items-center gap-1">
@@ -688,17 +687,17 @@ export default function SettingsPage() {
           },
           {
             id: 'appearance',
-            label: 'Giao Diện & Theme',
+            label: t('settings.tab_appearance') || 'Giao Diện & Theme',
             icon: <Sparkles className="w-4 h-4" />,
           },
           {
             id: 'name_style',
-            label: 'Phong Cách Tên',
-            icon: <Palette className="w-4 h-4" />,
+            label: t('settings.tab_font') || 'Font',
+            icon: <Type className="w-4 h-4" />,
           },
           {
             id: 'security',
-            label: 'Bảo Mật & Quà Tặng',
+            label: t('settings.tab_security') || 'Bảo Mật & Quà Tặng',
             icon: <ShieldCheck className="w-4 h-4" />,
           },
         ]}
@@ -1201,8 +1200,8 @@ export default function SettingsPage() {
               <div className="pt-4 border-t space-y-3" style={{ borderColor: 'var(--border-subtle)' }}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-xs font-bold ui-title block">Ảnh Nền Trang Cá Nhân</label>
-                    <p className="text-xs ui-dim mt-0.5">Đặt hình nền riêng tư cho hồ sơ cá nhân của bạn</p>
+                    <label className="text-xs font-bold ui-title block">{t('settings.bg_label')}</label>
+                    <p className="text-xs ui-dim mt-0.5">{t('settings.bg_desc')}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -1262,22 +1261,22 @@ export default function SettingsPage() {
               <div className="w-12 h-12 rounded-2xl bg-pink-500/10 text-pink-500 flex items-center justify-center mx-auto border border-pink-500/20">
                 <Heart className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-sm ui-title">Đặc Quyền Theme Dành Cho Supporter</h3>
+              <h3 className="font-bold text-sm ui-title">{t('settings.theme_perks_title')}</h3>
               <p className="text-xs ui-dim max-w-md mx-auto leading-relaxed">
-                Nâng cấp Supporter để mở khóa toàn bộ tùy biến màu sắc theme động, dải màu gradient tự chọn, viền xoay phát sáng và ảnh nền riêng tư cho hồ sơ cá nhân.
+                {t('settings.theme_perks_desc')}
               </p>
               <Link
                 href="/support"
                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
               >
-                <Heart className="w-3.5 h-3.5" /> Khám Phá Các Gói Supporter
+                <Heart className="w-3.5 h-3.5" /> {t('settings.theme_perks_btn')}
               </Link>
             </div>
           )}
         </div>
       )}
 
-      {/* Tab 3: Name Style (Phong Cách Tên) */}
+      {/* Tab 3: Font & Name Style */}
       {activeTab === 'name_style' && (
         <div className="space-y-6 animate-in fade-in-50 duration-200">
           {canAccessSupporter ? (
@@ -1285,10 +1284,10 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
                 <div>
                   <h2 className="text-sm font-bold flex items-center gap-2 text-purple-400">
-                    <Palette className="w-4 h-4" /> Tùy Biến Phong Cách Tên (Supporter)
+                    <Type className="w-4 h-4" /> {t('settings.font_title')}
                   </h2>
                   <p className="text-xs ui-dim mt-0.5">
-                    Tùy chỉnh phông chữ, màu đơn sắc, dải gradient và viền phát sáng (Glow) hiển thị trên Bảng Xếp Hạng & Profile
+                    {t('settings.font_desc')}
                   </p>
                 </div>
                 <button
@@ -1296,9 +1295,9 @@ export default function SettingsPage() {
                   onClick={() => handleSaveNameStyle(true)}
                   disabled={savingNameStyle}
                   className="px-3 py-1.5 text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl border border-red-500/20 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  title="Đặt lại về mặc định"
+                  title={t('settings.font_reset')}
                 >
-                  <RotateCcw className="w-3.5 h-3.5" /> Đặt Lại
+                  <RotateCcw className="w-3.5 h-3.5" /> {t('settings.font_reset')}
                 </button>
               </div>
 
@@ -1307,7 +1306,7 @@ export default function SettingsPage() {
                 className="p-5 rounded-2xl border flex flex-col items-center justify-center gap-3 bg-slate-900/60 shadow-inner"
                 style={{ borderColor: 'var(--border-ui)' }}
               >
-                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400 font-bold">Xem Trước Hiển Thị Thời Gian Thực</span>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400 font-bold">{t('settings.font_preview')}</span>
                 <div className="text-lg font-bold py-2 px-5 rounded-xl bg-black/40 border border-white/10 shadow-sm">
                   <UserDisplayName
                     user={{
@@ -1330,10 +1329,10 @@ export default function SettingsPage() {
               {/* Font Selector */}
               <div className="space-y-3">
                 <label className="text-xs font-bold ui-title flex items-center gap-1.5">
-                  <Type className="w-4 h-4 text-purple-400" /> Phông Chữ Hiển Thị
+                  <Type className="w-4 h-4 text-purple-400" /> {t('settings.font_select')}
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {Object.entries(FONT_PRESETS).map(([key, f]) => {
+                  {Object.entries(SETTINGS_FONT_PRESETS).map(([key, f]) => {
                     const active = nameFont === key;
                     return (
                       <button
@@ -1361,15 +1360,15 @@ export default function SettingsPage() {
               <div className="pt-3 border-t space-y-4" style={{ borderColor: 'var(--border-subtle)' }}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <label className="text-xs font-bold ui-title">Chế Độ Màu Tên</label>
+                    <label className="text-xs font-bold ui-title">{t('settings.font_color_mode')}</label>
                     <button
                       type="button"
                       onClick={handleRandomNameColor}
                       className="px-2.5 py-1 text-xs font-bold rounded-lg border border-purple-500/30 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
-                      title="Chọn màu ngẫu nhiên"
+                      title={t('settings.font_random')}
                     >
                       <Shuffle className="w-3.5 h-3.5" />
-                      <span>Ngẫu Nhiên</span>
+                      <span>{t('settings.font_random')}</span>
                     </button>
                   </div>
                   <div className="flex rounded-xl border p-0.5 bg-slate-500/5 text-xs font-bold" style={{ borderColor: 'var(--border-ui)' }}>
@@ -1380,7 +1379,7 @@ export default function SettingsPage() {
                         !nameUseGradient ? 'bg-purple-500 text-white shadow-xs' : 'ui-dim hover:text-purple-400'
                       }`}
                     >
-                      Đơn Sắc
+                      {t('settings.font_solid')}
                     </button>
                     <button
                       type="button"
@@ -1389,7 +1388,7 @@ export default function SettingsPage() {
                         nameUseGradient ? 'bg-purple-500 text-white shadow-xs' : 'ui-dim hover:text-purple-400'
                       }`}
                     >
-                      Gradient
+                      {t('settings.font_gradient')}
                     </button>
                   </div>
                 </div>
@@ -1401,10 +1400,10 @@ export default function SettingsPage() {
                       onChange={setNameColor}
                       size={34}
                       round
-                      ariaLabel="Màu chữ"
+                      ariaLabel={t('settings.font_text_color')}
                     />
                     <div className="flex-1">
-                      <span className="text-xs font-bold ui-title block">Màu chữ</span>
+                      <span className="text-xs font-bold ui-title block">{t('settings.font_text_color')}</span>
                       <span className="font-mono text-xs uppercase ui-dim">{nameColor}</span>
                     </div>
                   </div>
@@ -1417,10 +1416,10 @@ export default function SettingsPage() {
                           onChange={setNameGradColor1}
                           size={30}
                           round
-                          ariaLabel="Màu 1"
+                          ariaLabel={t('settings.font_color_1')}
                         />
                         <div className="min-w-0">
-                          <span className="text-[11px] font-bold block ui-dim">Màu 1</span>
+                          <span className="text-[11px] font-bold block ui-dim">{t('settings.font_color_1')}</span>
                           <span className="font-mono text-[11px] uppercase truncate block">{nameGradColor1}</span>
                         </div>
                       </div>
@@ -1430,10 +1429,10 @@ export default function SettingsPage() {
                           onChange={setNameGradColor2}
                           size={30}
                           round
-                          ariaLabel="Màu 2"
+                          ariaLabel={t('settings.font_color_2')}
                         />
                         <div className="min-w-0">
-                          <span className="text-[11px] font-bold block ui-dim">Màu 2</span>
+                          <span className="text-[11px] font-bold block ui-dim">{t('settings.font_color_2')}</span>
                           <span className="font-mono text-[11px] uppercase truncate block">{nameGradColor2}</span>
                         </div>
                       </div>
@@ -1443,7 +1442,7 @@ export default function SettingsPage() {
                       <CircularAnglePicker
                         value={nameGradAngle}
                         onChange={setNameGradAngle}
-                        label="Góc Nghiêng Gradient"
+                        label={t('settings.font_angle')}
                         accentColor="#a855f7"
                       />
                     </div>
@@ -1455,7 +1454,7 @@ export default function SettingsPage() {
               <div className="pt-3 border-t space-y-3" style={{ borderColor: 'var(--border-subtle)' }}>
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold ui-title flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400" /> Hiệu Ứng Phát Sáng (Glow)
+                    <Sparkles className="w-3.5 h-3.5 text-purple-400" /> {t('settings.font_glow')}
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer text-xs font-bold ui-dim hover:text-purple-400 transition-colors">
                     <input
@@ -1464,7 +1463,7 @@ export default function SettingsPage() {
                       onChange={(e) => setNameUseGlow(e.target.value === 'true' || e.target.checked)}
                       className="rounded accent-purple-500 cursor-pointer"
                     />
-                    <span>Bật phát sáng</span>
+                    <span>{t('settings.font_glow_enable')}</span>
                   </label>
                 </div>
 
@@ -1476,10 +1475,10 @@ export default function SettingsPage() {
                         onChange={setNameGlowColor}
                         size={32}
                         round
-                        ariaLabel="Màu viền phát sáng"
+                        ariaLabel={t('settings.font_glow_color')}
                       />
                       <div className="flex-1">
-                        <span className="text-xs font-bold ui-title block">Màu Glow</span>
+                        <span className="text-xs font-bold ui-title block">{t('settings.font_glow_color')}</span>
                         <span className="font-mono text-xs uppercase ui-dim">{nameGlowColor}</span>
                       </div>
                     </div>
@@ -1496,24 +1495,24 @@ export default function SettingsPage() {
                   className="px-6 py-2.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
                 >
                   <Check className="w-4 h-4" />
-                  <span>{savingNameStyle ? 'Đang lưu...' : 'Lưu Phong Cách Tên'}</span>
+                  <span>{savingNameStyle ? t('settings.font_saving') : t('settings.font_save')}</span>
                 </button>
               </div>
             </div>
           ) : (
             <div className="ui-card p-6 border-dashed border-purple-500/30 text-center space-y-3">
               <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center mx-auto border border-purple-500/20">
-                <Palette className="w-6 h-6" />
+                <Type className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-sm ui-title">Tùy Biến Tên Độc Quyền Cho Supporter</h3>
+              <h3 className="font-bold text-sm ui-title">{t('settings.font_perk_title')}</h3>
               <p className="text-xs ui-dim max-w-md mx-auto leading-relaxed">
-                Nâng cấp Supporter để sở hữu phông chữ độc đáo, hiệu ứng dải màu gradient và hào quang phát sáng (glow) quanh tên bạn trên toàn bộ website.
+                {t('settings.font_perk_desc')}
               </p>
               <Link
                 href="/support"
                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
               >
-                <Heart className="w-3.5 h-3.5" /> Nâng Cấp Supporter Ngay
+                <Heart className="w-3.5 h-3.5" /> {t('settings.font_upgrade_btn')}
               </Link>
             </div>
           )}

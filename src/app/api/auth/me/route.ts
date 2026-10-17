@@ -26,6 +26,10 @@ export async function GET() {
       supporterUntil: true,
       profileTheme: true,
       profileConfig: true,
+      nameColor: true,
+      nameGradient: true,
+      nameGlow: true,
+      nameFont: true,
       tokenVersion: true,
       clanMember: {
         select: {

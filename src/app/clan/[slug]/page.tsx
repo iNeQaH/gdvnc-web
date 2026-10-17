@@ -988,7 +988,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [transferTargetId, setTransferTargetId] = useState('');
-  const [isMobileRosterOpen, setIsMobileRosterOpen] = useState(false);
+  const [isRosterOpen, setIsRosterOpen] = useState(false);
 
   // Actions state
   const [pledgeAmount, setPledgeAmount] = useState<number>(1);
@@ -1010,6 +1010,25 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (window.innerWidth >= 1280) {
+        setIsRosterOpen(true);
+      } else {
+        setIsRosterOpen(false);
+      }
+
+      const handleResize = () => {
+        if (window.innerWidth < 1280) {
+          setIsRosterOpen(false);
+        }
+      };
+
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
 
   useEffect(() => {
     const raw = localStorage.getItem('gdvnc_user');
@@ -1313,7 +1332,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
         </div>
       )}
 
-      <div className="relative z-[1] max-w-6xl mx-auto space-y-6 xl:mr-64 2xl:mx-auto">
+      <div className={`relative z-[1] max-w-6xl mx-auto space-y-6 transition-all duration-300 ${isRosterOpen ? 'xl:mr-64 2xl:mx-auto' : ''}`}>
         {/* HERO CARD (Tương tự cấu trúc trang Profile) */}
         <div
           className="ui-card rounded-3xl border overflow-hidden shadow-2xl relative"
@@ -1460,12 +1479,20 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                 </button>
               )}
 
-              {/* Mobile Members Roster Drawer Button */}
+              {/* Members Roster Drawer / Sidebar Toggle Button (Desktop & Mobile) */}
               <button
                 type="button"
-                onClick={() => setIsMobileRosterOpen(true)}
-                className="xl:hidden px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all cursor-pointer hover:border-sky-400/50 shadow-xs"
-                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                onClick={() => setIsRosterOpen((prev) => !prev)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+                  isRosterOpen
+                    ? 'border-sky-500/50 bg-sky-500/15 text-sky-400'
+                    : 'hover:border-sky-400/50'
+                }`}
+                style={{
+                  backgroundColor: isRosterOpen ? undefined : 'var(--bg-subtle)',
+                  borderColor: isRosterOpen ? undefined : 'var(--border-ui)',
+                  color: isRosterOpen ? undefined : 'var(--text-title)',
+                }}
               >
                 <Users className="w-3.5 h-3.5 text-sky-400" />
                 <span>{isEn ? `Members (${clan.memberCount})` : `Thành viên (${clan.memberCount})`}</span>
@@ -2015,8 +2042,8 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
         isLeader={isLeader}
         isOwnerWeb={isOwnerWeb}
         isEn={isEn}
-        isOpenMobile={isMobileRosterOpen}
-        onCloseMobile={() => setIsMobileRosterOpen(false)}
+        isOpen={isRosterOpen}
+        onClose={() => setIsRosterOpen(false)}
         onOpenTransfer={() => setIsTransferOpen(true)}
         onRoleChange={handleRoleChange}
         onKick={handleKick}

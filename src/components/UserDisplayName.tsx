@@ -6,6 +6,7 @@ import { Crown, ShieldCheck } from 'lucide-react';
 
 export const FONT_PRESETS: Record<string, { label: string; family: string; weight?: string }> = {
   default: { label: 'Mặc định (Inter)', family: 'inherit', weight: '700' },
+  pusab: { label: 'Pusab (Geometry Dash)', family: "'Pusab', sans-serif", weight: '400' },
   pixel: { label: 'Press Start (8-Bit Pixel)', family: "'Press Start 2P', monospace", weight: '400' },
   glitch: { label: 'Rubik Glitch (Cyber Glitch)', family: "'Rubik Glitch', display", weight: '400' },
   stencil: { label: 'Black Ops (Heavy Stencil)', family: "'Black Ops One', display", weight: '400' },
@@ -21,6 +22,16 @@ export const FONT_PRESETS: Record<string, { label: string; family: string; weigh
   exo2: { label: 'Exo 2 (Esports)', family: "'Exo 2', sans-serif", weight: '800' },
   outfit: { label: 'Outfit (Geometria)', family: "'Outfit', sans-serif", weight: '700' },
   montserrat: { label: 'Montserrat (Clean)', family: "'Montserrat', sans-serif", weight: '800' },
+};
+
+export const SETTINGS_FONT_PRESETS: Record<string, { label: string; family: string; weight?: string }> = {
+  default: { label: 'Mặc định (Inter)', family: 'inherit', weight: '700' },
+  pusab: { label: 'Pusab (Geometry Dash)', family: "'Pusab', sans-serif", weight: '400' },
+  pixel: { label: 'Press Start (8-Bit Pixel)', family: "'Press Start 2P', monospace", weight: '400' },
+  glitch: { label: 'Rubik Glitch (Cyber Glitch)', family: "'Rubik Glitch', display", weight: '400' },
+  neon: { label: 'Monoton (Neon Lines)', family: "'Monoton', display", weight: '400' },
+  graffiti: { label: 'Permanent Marker (Graffiti)', family: "'Permanent Marker', cursive", weight: '400' },
+  stencil: { label: 'Black Ops (Heavy Stencil)', family: "'Black Ops One', display", weight: '400' },
 };
 
 export interface UserDisplayNameProps {
@@ -56,6 +67,7 @@ export interface UserDisplayNameProps {
   clanRole?: 'LEADER' | 'MODERATOR' | 'MEMBER' | string | null;
   className?: string;
   tagClassName?: string;
+  tagPosition?: 'left' | 'right';
 }
 
 export function UserDisplayName({
@@ -66,6 +78,7 @@ export function UserDisplayName({
   clanRole,
   className = '',
   tagClassName = '',
+  tagPosition = 'left',
 }: UserDisplayNameProps) {
   const name = user?.displayName || user?.gdUsername || user?.username || fallbackName;
 
@@ -120,11 +133,7 @@ export function UserDisplayName({
 
     const content = (
       <span
-        className={`inline-flex items-center px-1.5 py-0.5 rounded-md border font-mono font-black text-[10px] tracking-wider shrink-0 mr-1 select-none shadow-2xs backdrop-blur-xs ${tagClassName}`}
-        style={{
-          backgroundColor: 'rgba(0, 0, 0, 0.45)',
-          borderColor: 'rgba(255, 255, 255, 0.12)',
-        }}
+        className={`inline-flex items-center font-mono font-black select-none tracking-normal shrink-0 ${tagClassName}`}
         title={`Clan [${clan.tag}]`}
       >
         <span style={clanTagStyle}>[{clan.tag}]</span>
@@ -165,11 +174,12 @@ export function UserDisplayName({
   };
 
   return (
-    <span className={`inline-flex items-center gap-1 flex-wrap ${className}`}>
-      {renderTag()}
+    <span className={`inline-flex items-center gap-1.5 flex-wrap ${className}`}>
+      {tagPosition === 'left' && renderTag()}
       <span style={nameStyle} className="font-bold">
         {name}
       </span>
+      {tagPosition === 'right' && renderTag()}
       {renderRoleIcon()}
     </span>
   );

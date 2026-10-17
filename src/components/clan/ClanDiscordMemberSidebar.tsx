@@ -19,8 +19,8 @@ interface ClanDiscordMemberSidebarProps {
   isLeader: boolean;
   isOwnerWeb: boolean;
   isEn: boolean;
-  isOpenMobile: boolean;
-  onCloseMobile: () => void;
+  isOpen: boolean;
+  onClose: () => void;
   onOpenTransfer: () => void;
   onRoleChange: (memberId: string, newRole: 'MODERATOR' | 'MEMBER') => void;
   onKick: (memberId: string, username: string) => void;
@@ -32,8 +32,8 @@ export default function ClanDiscordMemberSidebar({
   isLeader,
   isOwnerWeb,
   isEn,
-  isOpenMobile,
-  onCloseMobile,
+  isOpen,
+  onClose,
   onOpenTransfer,
   onRoleChange,
   onKick,
@@ -45,10 +45,10 @@ export default function ClanDiscordMemberSidebar({
 
   return (
     <>
-      {/* Mobile Backdrop Overlay */}
-      {isOpenMobile && (
+      {/* Mobile/Tablet Backdrop Overlay (when open on screens < 1280px) */}
+      {isOpen && (
         <div
-          onClick={onCloseMobile}
+          onClick={onClose}
           className="xl:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-xs transition-opacity duration-300"
           aria-hidden="true"
         />
@@ -57,7 +57,7 @@ export default function ClanDiscordMemberSidebar({
       {/* Fixed Full-Height Discord-style Right Sidebar */}
       <aside
         className={`fixed top-0 bottom-0 right-0 z-40 w-64 flex flex-col border-l backdrop-blur-2xl transition-transform duration-300 ease-in-out select-none ${
-          isOpenMobile ? 'translate-x-0 shadow-2xl' : 'translate-x-full xl:translate-x-0'
+          isOpen ? 'translate-x-0 shadow-2xl' : 'translate-x-full'
         }`}
         style={{
           backgroundColor: 'color-mix(in srgb, var(--bg-card) 88%, transparent)',
@@ -92,9 +92,9 @@ export default function ClanDiscordMemberSidebar({
             )}
             <button
               type="button"
-              onClick={onCloseMobile}
-              className="xl:hidden p-1.5 rounded-lg ui-dim hover:text-white transition-colors cursor-pointer"
-              title="Close"
+              onClick={onClose}
+              className="p-1.5 rounded-lg ui-dim hover:text-white transition-colors cursor-pointer"
+              title={isEn ? 'Close' : 'Đóng'}
             >
               <X className="w-4 h-4" />
             </button>

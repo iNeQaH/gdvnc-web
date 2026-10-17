@@ -19,6 +19,7 @@ import {
 } from '@/lib/uploadthing';
 import { deleteUserAccount } from '@/lib/deleteUser';
 import { isSuperAdminUser, isStaffRole } from '@/lib/roles';
+import { clearLeaderboardCache } from '@/lib/leaderboard';
 
 export const dynamic = 'force-dynamic';
 
@@ -249,6 +250,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         platformerPp: user.platformerPp,
         creatorPoints: user.creatorPoints,
         totpEnabled: user.totpEnabled,
+        nameColor: user.nameColor,
+        nameGradient: user.nameGradient,
+        nameGlow: user.nameGlow,
+        nameFont: user.nameFont,
+        clanMember: user.clanMember,
         classicRank,
         platformerRank,
         creatorRank,
@@ -399,6 +405,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
       }
     }
 
+    clearLeaderboardCache();
     return NextResponse.json({ success: true, updated });
   } catch (error: any) {
     if (error?.message === 'UNAUTHORIZED') {

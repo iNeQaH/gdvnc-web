@@ -808,8 +808,8 @@ export default function ProfilePage() {
                   user={data}
                   fallbackName={data.username}
                   linkClan
+                  tagPosition="right"
                   className="text-xl sm:text-2xl font-black ui-title drop-shadow-sm"
-                  tagClassName="text-sm sm:text-base px-2 py-0.5 rounded-lg border border-black/10 dark:border-white/10"
                 />
 
                 {/* Header Badges */}
