@@ -98,20 +98,19 @@ function LeaderboardPodium({
             const displayName = item.displayName || item.gdUsername || item.username || '?';
             const profileHref = item.username ? `/profile/${item.username}` : null;
 
+            // Symmetric heights for #4 and #5 so #5 is never lopsided
             const pedestalHeight = isRank1
               ? 'h-24 sm:h-28'
               : isRank2
               ? 'h-18 sm:h-22'
               : isRank3
-              ? 'h-14 sm:h-17'
-              : isRank4
-              ? 'h-10 sm:h-12'
-              : 'h-8 sm:h-10';
+              ? 'h-15 sm:h-18'
+              : 'h-11 sm:h-13';
 
             const pedestalBorder = isRank1
               ? 'border-t-4 border-amber-300 dark:border-amber-400 bg-gradient-to-b from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 shadow-md'
               : isRank2
-              ? 'border-t-4 border-slate-300 dark:border-slate-300 bg-gradient-to-b from-slate-500 to-slate-600 dark:from-slate-600 dark:to-slate-700 shadow-md'
+              ? 'border-t-4 border-slate-100 dark:border-white bg-gradient-to-b from-slate-100 via-slate-300 to-slate-400 shadow-[0_0_20px_rgba(255,255,255,0.4)]'
               : isRank3
               ? 'border-t-4 border-amber-500 dark:border-amber-600 bg-gradient-to-b from-amber-700 to-amber-800 dark:from-amber-800 dark:to-amber-900 shadow-md'
               : 'border-t-2 border-slate-400 dark:border-slate-500 bg-gradient-to-b from-slate-600 to-slate-700 dark:from-slate-700 dark:to-slate-800 shadow-sm';
@@ -119,7 +118,7 @@ function LeaderboardPodium({
             const avatarSize = isRank1
               ? 'w-13 h-13 sm:w-16 sm:h-16 ring-3 ring-amber-500 dark:ring-amber-400 shadow-[0_0_16px_rgba(245,158,11,0.35)]'
               : isRank2
-              ? 'w-11 h-11 sm:w-12 sm:h-12 ring-2 ring-slate-500 dark:ring-slate-300 shadow-md'
+              ? 'w-11 h-11 sm:w-12 sm:h-12 ring-3 ring-slate-100 dark:ring-white shadow-[0_0_16px_rgba(255,255,255,0.4)]'
               : isRank3
               ? 'w-10 h-10 sm:w-11 sm:h-11 ring-2 ring-amber-600 shadow-md'
               : 'w-8 h-8 sm:w-9 sm:h-9 ring-1 ring-slate-400 dark:ring-white/20';
@@ -137,21 +136,21 @@ function LeaderboardPodium({
                     <Crown className="w-5 h-5 text-amber-500 dark:text-amber-400 drop-shadow mb-0.5 animate-bounce" />
                   )}
                   <span
-                    className={`font-mono font-black text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full border shadow-sm whitespace-nowrap text-white ${
+                    className={`font-mono font-black text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full border shadow-sm whitespace-nowrap ${
                       isRank1
-                        ? 'bg-amber-600 border-amber-400'
+                        ? 'bg-amber-600 border-amber-400 text-white'
                         : isRank2
-                        ? 'bg-slate-600 border-slate-400'
+                        ? 'bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 text-slate-900 border-white shadow-[0_0_12px_rgba(255,255,255,0.4)]'
                         : isRank3
-                        ? 'bg-amber-800 border-amber-600'
-                        : 'bg-slate-700 border-slate-500 text-[9px]'
+                        ? 'bg-amber-800 border-amber-600 text-white'
+                        : 'bg-slate-700 border-slate-500 text-[9px] text-white'
                     }`}
                   >
                     {ptVal}
                   </span>
                 </div>
 
-                {/* 2. Avatar */}
+                {/* 2. Avatar with graceful onError fallback */}
                 {profileHref ? (
                   <Link
                     href={profileHref}
@@ -159,7 +158,21 @@ function LeaderboardPodium({
                   >
                     <div className={`rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-900 shrink-0 ${avatarSize}`}>
                       {item.avatarUrl ? (
-                        <img src={item.avatarUrl} alt="" className="w-full h-full object-cover" />
+                        <div className="relative w-full h-full">
+                          <img
+                            src={item.avatarUrl}
+                            alt=""
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              const fb = e.currentTarget.parentElement?.querySelector('.podium-avatar-fb');
+                              if (fb) (fb as HTMLElement).style.display = 'flex';
+                            }}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="podium-avatar-fb hidden w-full h-full items-center justify-center font-black text-xs ui-dim bg-slate-200 dark:bg-slate-800">
+                            {displayName[0]}
+                          </div>
+                        </div>
                       ) : (
                         <div className="w-full h-full flex items-center justify-center font-black text-xs ui-dim">
                           {displayName[0]}
@@ -170,7 +183,21 @@ function LeaderboardPodium({
                 ) : (
                   <div className={`rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-900 shrink-0 ${avatarSize}`}>
                     {item.avatarUrl ? (
-                      <img src={item.avatarUrl} alt="" className="w-full h-full object-cover" />
+                      <div className="relative w-full h-full">
+                        <img
+                          src={item.avatarUrl}
+                          alt=""
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const fb = e.currentTarget.parentElement?.querySelector('.podium-avatar-fb');
+                            if (fb) (fb as HTMLElement).style.display = 'flex';
+                          }}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="podium-avatar-fb hidden w-full h-full items-center justify-center font-black text-xs ui-dim bg-slate-200 dark:bg-slate-800">
+                          {displayName[0]}
+                        </div>
+                      </div>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center font-black text-xs ui-dim">
                         {displayName[0]}
@@ -195,27 +222,22 @@ function LeaderboardPodium({
                   )}
                 </div>
 
-                {/* 4. Biểu đồ cột */}
+                {/* 4. Biểu đồ cột: chỉ hiện #{rank}, bỏ chữ TOP thừa theo yêu cầu */}
                 <div
-                  className={`w-full rounded-t-xl flex flex-col items-center justify-start pt-2 transition-all ${pedestalHeight} ${pedestalBorder}`}
+                  className={`w-full rounded-t-xl flex items-center justify-center transition-all ${pedestalHeight} ${pedestalBorder}`}
                 >
                   <span
-                    className={`font-black select-none text-white drop-shadow-xs ${
+                    className={`font-black select-none drop-shadow-xs ${
                       isRank1
-                        ? 'text-xl sm:text-2xl'
+                        ? 'text-xl sm:text-2xl text-white'
                         : isRank2
-                        ? 'text-lg sm:text-xl'
+                        ? 'text-lg sm:text-xl text-slate-900'
                         : isRank3
-                        ? 'text-base sm:text-lg'
-                        : 'text-sm'
+                        ? 'text-base sm:text-lg text-white'
+                        : 'text-sm sm:text-base text-white'
                     }`}
                   >
                     #{rank}
-                  </span>
-                  <span
-                    className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider mt-0.5 text-white/95 drop-shadow-xs"
-                  >
-                    {isRank1 ? 'TOP 1' : `TOP ${rank}`}
                   </span>
                 </div>
               </div>
@@ -242,9 +264,13 @@ export default function HomePage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const isStaff = currentUser?.role === 'ADMIN' || currentUser?.role === 'MODERATOR';
 
-  // Rotation step for quick stats cards
-  const [rotateStep, setRotateStep] = useState(0);
-  const [isCardHovered, setIsCardHovered] = useState(false);
+  // Rotation states for 4 quick stats cards with independent offsets
+  const [card1Step, setCard1Step] = useState(0);
+  const [card2Step, setCard2Step] = useState(0);
+  const [card3Step, setCard3Step] = useState(0);
+  const [card4Step, setCard4Step] = useState(0);
+  const [tick, setTick] = useState(0);
+  const [isCardsHovered, setIsCardsHovered] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -268,14 +294,23 @@ export default function HomePage() {
       .catch(() => {});
   }, []);
 
-  // Timer to rotate highlight items every 4.5 seconds
+  // Staggered ticker every 2.5s -> each of the 4 cards updates once every 10s sequentially!
   useEffect(() => {
-    if (isCardHovered) return;
+    if (isCardsHovered) return;
     const timer = setInterval(() => {
-      setRotateStep((s) => s + 1);
-    }, 4500);
+      setTick((t) => t + 1);
+    }, 2500);
     return () => clearInterval(timer);
-  }, [isCardHovered]);
+  }, [isCardsHovered]);
+
+  useEffect(() => {
+    if (tick === 0) return;
+    const mod = tick % 4;
+    if (mod === 1) setCard1Step((s) => s + 1);
+    else if (mod === 2) setCard2Step((s) => s + 1);
+    else if (mod === 3) setCard3Step((s) => s + 1);
+    else if (mod === 0) setCard4Step((s) => s + 1);
+  }, [tick]);
 
   // 1-second debounce after typing stops before submitting/filtering search
   useEffect(() => {
@@ -396,231 +431,292 @@ export default function HomePage() {
           </h1>
         </div>
 
-        {/* Quick Stats Cards with smooth rotational items */}
+        {/* Quick Stats Cards with staggered 10s slide-up animation and themed click buttons */}
         <div 
           className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2"
-          onMouseEnter={() => setIsCardHovered(true)}
-          onMouseLeave={() => setIsCardHovered(false)}
+          onMouseEnter={() => setIsCardsHovered(true)}
+          onMouseLeave={() => setIsCardsHovered(false)}
         >
-          {/* Card 1: Top 1 Classic Demon / Top 1 Player Classic */}
+          {/* Card 1: Top 1 Classic Demon / Top 1 Player Classic (Màu CAM) */}
           {(() => {
-            const isPlayer = (rotateStep % 2) === 1;
-            if (isPlayer) {
-              const p = highlights?.topPlayer;
-              const href = p?.username ? `/profile/${p.username}` : '#';
-              return (
-                <Link
-                  key="card1-player"
-                  href={href}
-                  className="ui-subtle p-3.5 rounded-xl block hover:opacity-90 transition-opacity"
-                >
-                  <div className="animate-card-fade-in space-y-0.5">
-                    <div className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1">
-                      <User className="w-3 h-3 text-amber-500" /> {t('leaderboard.stats.top_classic_player')}
-                    </div>
-                    <div className="text-base font-extrabold ui-title mt-0.5 truncate">
-                      {p?.displayName || p?.gdUsername || p?.username || t('leaderboard.stats.no_data')}
-                    </div>
-                    <div className="text-[10px] ui-dim truncate">
-                      {p ? `${Number(p.classicPp || 0).toFixed(2)} ${t('leaderboard.points')}` : '—'}
-                    </div>
-                  </div>
-                </Link>
-              );
-            }
+            const isPlayer = (card1Step % 2) === 1;
+            const p = highlights?.topPlayer;
             const lvl = highlights?.topClassicLevel;
-            const href = lvl ? levelPath(lvl) : '/levels';
+            const href = isPlayer
+              ? (p?.username ? `/profile/${p.username}` : '#')
+              : (lvl ? levelPath(lvl) : '/levels');
+
             return (
-              <Link
-                key="card1-demon"
-                href={href}
-                className="ui-subtle p-3.5 rounded-xl block hover:opacity-90 transition-opacity"
-              >
-                <div className="animate-card-fade-in space-y-0.5">
-                  <div className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1">
-                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" /> {t('leaderboard.stats.top_classic_demon')}
+              <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 hover:border-amber-500/50 hover:bg-amber-500/10 transition-all p-3.5 relative overflow-hidden group">
+                {/* Header: Label + Clickable indicator buttons (Cam) */}
+                <div className="flex items-center justify-between gap-1">
+                  <div className="text-[11px] font-bold uppercase text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                    {isPlayer ? <User className="w-3 h-3" /> : <Star className="w-3 h-3 fill-amber-500" />}
+                    {isPlayer ? t('leaderboard.stats.top_classic_player') : t('leaderboard.stats.top_classic_demon')}
                   </div>
-                  <div className="text-base font-extrabold ui-title mt-0.5 truncate">
-                    {lvl?.name || t('leaderboard.stats.no_data')}
-                  </div>
-                  <div className="text-[10px] ui-dim truncate">
-                    {lvl?.creatorName
-                      ? `${t('common.by')} ${lvl.creatorName}`
-                      : lvl?.vnPlacement
-                        ? `#${lvl.vnPlacement}`
-                        : '—'}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCard1Step(0); }}
+                      className={`px-1.5 py-0.5 rounded text-[8px] font-black transition-all cursor-pointer ${
+                        !isPlayer ? 'bg-amber-500 text-white shadow-xs' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30'
+                      }`}
+                      title="Top 1 Classic Demon"
+                    >
+                      Demon
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCard1Step(1); }}
+                      className={`px-1.5 py-0.5 rounded text-[8px] font-black transition-all cursor-pointer ${
+                        isPlayer ? 'bg-amber-500 text-white shadow-xs' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30'
+                      }`}
+                      title="Top 1 Player Classic"
+                    >
+                      Player
+                    </button>
                   </div>
                 </div>
-              </Link>
-            );
-          })()}
 
-          {/* Card 2: Top 1 Platformer Demon / Top 1 Player Platformer */}
-          {(() => {
-            const isPlayer = (rotateStep % 2) === 1;
-            if (isPlayer) {
-              const p = highlights?.topPlatformerPlayer;
-              const href = p?.username ? `/profile/${p.username}` : '#';
-              return (
-                <Link
-                  key="card2-player"
-                  href={href}
-                  className="ui-subtle p-3.5 rounded-xl block hover:opacity-90 transition-opacity"
-                >
-                  <div className="animate-card-fade-in space-y-0.5">
-                    <div className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1">
-                      <Gamepad2 className="w-3 h-3 text-sky-500" /> {t('leaderboard.stats.top_plat_player')}
-                    </div>
-                    <div className="text-base font-extrabold ui-title mt-0.5 truncate">
-                      {p?.displayName || p?.gdUsername || p?.username || t('leaderboard.stats.no_data')}
+                {/* Content: Slide up vertically */}
+                <Link href={href} className="block mt-1.5 overflow-hidden">
+                  <div key={`card1-${isPlayer ? 'player' : 'demon'}-${card1Step}`} className="animate-card-slide-up space-y-0.5">
+                    <div className="text-base font-extrabold ui-title truncate">
+                      {isPlayer
+                        ? (p?.displayName || p?.gdUsername || p?.username || t('leaderboard.stats.no_data'))
+                        : (lvl?.name || t('leaderboard.stats.no_data'))}
                     </div>
                     <div className="text-[10px] ui-dim truncate">
-                      {p ? `${Number(p.platformerPp || 0).toFixed(2)} ${t('leaderboard.points')}` : '—'}
+                      {isPlayer
+                        ? (p ? `${Number(p.classicPp || 0).toFixed(2)} ${t('leaderboard.points')}` : '—')
+                        : (lvl?.creatorName
+                            ? `${t('common.by')} ${lvl.creatorName}`
+                            : lvl?.vnPlacement
+                              ? `#${lvl.vnPlacement}`
+                              : '—')}
                     </div>
                   </div>
                 </Link>
-              );
-            }
-            const lvl = highlights?.topPlatformerLevel;
-            const href = lvl ? levelPath(lvl) : '/levels';
-            return (
-              <Link
-                key="card2-demon"
-                href={href}
-                className="ui-subtle p-3.5 rounded-xl block hover:opacity-90 transition-opacity"
-              >
-                <div className="animate-card-fade-in space-y-0.5">
-                  <div className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1">
-                    <Moon className="w-3 h-3 text-sky-500 fill-sky-500 -rotate-12" /> {t('leaderboard.stats.top_plat_demon')}
-                  </div>
-                  <div className="text-base font-extrabold ui-title mt-0.5 truncate">
-                    {lvl?.name || t('leaderboard.stats.no_data')}
-                  </div>
-                  <div className="text-[10px] ui-dim truncate">
-                    {lvl?.creatorName
-                      ? `${t('common.by')} ${lvl.creatorName}`
-                      : lvl
-                        ? t('leaderboard.speedrun')
-                        : '—'}
-                  </div>
-                </div>
-              </Link>
+              </div>
             );
           })()}
 
-          {/* Card 3: Clan with highest score (cycling 5 categories) */}
+          {/* Card 2: Top 1 Platformer Demon / Top 1 Player Platformer (Màu XANH DƯƠNG NHẠT) */}
           {(() => {
-            const clanPhase = rotateStep % 5;
+            const isPlayer = (card2Step % 2) === 1;
+            const p = highlights?.topPlatformerPlayer;
+            const lvl = highlights?.topPlatformerLevel;
+            const href = isPlayer
+              ? (p?.username ? `/profile/${p.username}` : '#')
+              : (lvl ? levelPath(lvl) : '/levels');
+
+            return (
+              <div className="rounded-xl border border-sky-500/25 bg-sky-500/5 hover:border-sky-500/50 hover:bg-sky-500/10 transition-all p-3.5 relative overflow-hidden group">
+                {/* Header: Label + Clickable indicator buttons (Xanh dương nhạt) */}
+                <div className="flex items-center justify-between gap-1">
+                  <div className="text-[11px] font-bold uppercase text-sky-600 dark:text-sky-400 flex items-center gap-1">
+                    {isPlayer ? <Gamepad2 className="w-3 h-3" /> : <Moon className="w-3 h-3 fill-sky-500 -rotate-12" />}
+                    {isPlayer ? t('leaderboard.stats.top_plat_player') : t('leaderboard.stats.top_plat_demon')}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCard2Step(0); }}
+                      className={`px-1.5 py-0.5 rounded text-[8px] font-black transition-all cursor-pointer ${
+                        !isPlayer ? 'bg-sky-500 text-white shadow-xs' : 'bg-sky-500/15 text-sky-600 dark:text-sky-400 hover:bg-sky-500/30'
+                      }`}
+                      title="Top 1 Plat Demon"
+                    >
+                      Demon
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCard2Step(1); }}
+                      className={`px-1.5 py-0.5 rounded text-[8px] font-black transition-all cursor-pointer ${
+                        isPlayer ? 'bg-sky-500 text-white shadow-xs' : 'bg-sky-500/15 text-sky-600 dark:text-sky-400 hover:bg-sky-500/30'
+                      }`}
+                      title="Top 1 Player Plat"
+                    >
+                      Player
+                    </button>
+                  </div>
+                </div>
+
+                {/* Content: Slide up vertically */}
+                <Link href={href} className="block mt-1.5 overflow-hidden">
+                  <div key={`card2-${isPlayer ? 'player' : 'demon'}-${card2Step}`} className="animate-card-slide-up space-y-0.5">
+                    <div className="text-base font-extrabold ui-title truncate">
+                      {isPlayer
+                        ? (p?.displayName || p?.gdUsername || p?.username || t('leaderboard.stats.no_data'))
+                        : (lvl?.name || t('leaderboard.stats.no_data'))}
+                    </div>
+                    <div className="text-[10px] ui-dim truncate">
+                      {isPlayer
+                        ? (p ? `${Number(p.platformerPp || 0).toFixed(2)} ${t('leaderboard.points')}` : '—')
+                        : (lvl?.creatorName
+                            ? `${t('common.by')} ${lvl.creatorName}`
+                            : lvl
+                              ? t('leaderboard.speedrun')
+                              : '—')}
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            );
+          })()}
+
+          {/* Card 3: Clan nhiều điểm nhất (5 tiêu chí) (Màu XANH LÁ) */}
+          {(() => {
             const clanConfigs = [
               {
+                id: 0,
                 key: 'clan-classic',
-                icon: <Swords className="w-3 h-3 text-rose-500" />,
+                label: 'Classic',
+                icon: <Swords className="w-3 h-3 text-emerald-500" />,
                 title: t('leaderboard.stats.clan_classic'),
                 data: highlights?.topClans?.classic,
-                formatVal: (val: number) => `${Number(val || 0).toFixed(2)} Classic PP`,
+                formatVal: (val: number) => `${Number(val || 0).toFixed(2)} Classic Pt`,
               },
               {
+                id: 1,
                 key: 'clan-platformer',
-                icon: <Gamepad2 className="w-3 h-3 text-violet-500" />,
+                label: 'Plat',
+                icon: <Gamepad2 className="w-3 h-3 text-emerald-500" />,
                 title: t('leaderboard.stats.clan_plat'),
                 data: highlights?.topClans?.platformer,
-                formatVal: (val: number) => `${Number(val || 0).toFixed(2)} Plat PP`,
+                formatVal: (val: number) => `${Number(val || 0).toFixed(2)} Plat Pt`,
               },
               {
+                id: 2,
                 key: 'clan-creator',
-                icon: <Wrench className="w-3 h-3 text-teal-500" />,
+                label: 'CP',
+                icon: <Wrench className="w-3 h-3 text-emerald-500" />,
                 title: t('leaderboard.stats.clan_creator'),
                 data: highlights?.topClans?.creator,
                 formatVal: (val: number) => `${formatCp(val || 0)} CP`,
               },
               {
+                id: 3,
                 key: 'clan-sp',
-                icon: <Star className="w-3 h-3 text-amber-500" />,
+                label: 'SP',
+                icon: <Star className="w-3 h-3 text-emerald-500" />,
                 title: t('leaderboard.stats.clan_sp'),
                 data: highlights?.topClans?.sp,
                 formatVal: (val: number) => `${Number(val || 0).toLocaleString()} SP Coin`,
               },
               {
+                id: 4,
                 key: 'clan-members',
-                icon: <User className="w-3 h-3 text-indigo-500" />,
+                label: 'Mem',
+                icon: <User className="w-3 h-3 text-emerald-500" />,
                 title: t('leaderboard.stats.clan_members'),
                 data: highlights?.topClans?.members,
                 formatVal: (val: number) => t('leaderboard.stats.members_count', { n: val || 0 }),
               },
             ];
 
+            const clanPhase = card3Step % 5;
             const current = clanConfigs[clanPhase];
             const clanInfo = current.data?.clan;
             const href = clanInfo?.slug ? `/clan/${clanInfo.slug}` : '/clan';
             const displayName = clanInfo?.name ? `[${clanInfo.tag}] ${clanInfo.name}` : t('leaderboard.stats.no_data');
 
             return (
-              <Link
-                key={current.key}
-                href={href}
-                className="ui-subtle p-3.5 rounded-xl block hover:opacity-90 transition-opacity"
-              >
-                <div className="animate-card-fade-in space-y-0.5">
-                  <div className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1">
+              <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all p-3.5 relative overflow-hidden group">
+                {/* Header: Label + Clickable indicator buttons (Xanh lá) */}
+                <div className="flex items-center justify-between gap-1">
+                  <div className="text-[11px] font-bold uppercase text-emerald-600 dark:text-emerald-400 flex items-center gap-1 truncate">
                     {current.icon} {current.title}
                   </div>
-                  <div className="text-base font-extrabold ui-title mt-0.5 truncate">
-                    {displayName}
-                  </div>
-                  <div className="text-[10px] ui-dim truncate">
-                    {clanInfo ? current.formatVal(current.data?.value) : '—'}
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    {clanConfigs.map((cfg) => (
+                      <button
+                        key={cfg.key}
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCard3Step(cfg.id); }}
+                        className={`px-1 py-0.5 rounded text-[8px] font-black transition-all cursor-pointer ${
+                          clanPhase === cfg.id ? 'bg-emerald-500 text-white shadow-xs' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/30'
+                        }`}
+                        title={cfg.title}
+                      >
+                        {cfg.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              </Link>
-            );
-          })()}
 
-          {/* Card 4: Top 1 Creator / Top 1 Supporter */}
-          {(() => {
-            const isSupporter = (rotateStep % 2) === 1;
-            if (isSupporter) {
-              const s = highlights?.topSupporter;
-              const href = s?.username ? `/profile/${s.username}` : '#';
-              return (
-                <Link
-                  key="card4-supporter"
-                  href={href}
-                  className="ui-subtle p-3.5 rounded-xl block hover:opacity-90 transition-opacity"
-                >
-                  <div className="animate-card-fade-in space-y-0.5">
-                    <div className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1">
-                      <Heart className="w-3 h-3 text-pink-500 fill-pink-500" /> {t('leaderboard.stats.top_supporter')}
-                    </div>
-                    <div className="text-base font-extrabold ui-title mt-0.5 truncate">
-                      {s?.displayName || s?.gdUsername || s?.username || t('leaderboard.stats.no_data')}
+                {/* Content: Slide up vertically */}
+                <Link href={href} className="block mt-1.5 overflow-hidden">
+                  <div key={`card3-${current.key}-${card3Step}`} className="animate-card-slide-up space-y-0.5">
+                    <div className="text-base font-extrabold ui-title truncate">
+                      {displayName}
                     </div>
                     <div className="text-[10px] ui-dim truncate">
-                      {s ? t('leaderboard.stats.donated_months', { n: s.totalMonths }) : '—'}
+                      {clanInfo ? current.formatVal(current.data?.value) : '—'}
                     </div>
                   </div>
                 </Link>
-              );
-            }
+              </div>
+            );
+          })()}
+
+          {/* Card 4: Top 1 Creator / Top 1 Supporter (Màu HỒNG) */}
+          {(() => {
+            const isSupporter = (card4Step % 2) === 1;
+            const s = highlights?.topSupporter;
             const c = highlights?.topCreator;
-            const href = c?.username ? `/profile/${c.username}` : '#';
+            const href = isSupporter
+              ? (s?.username ? `/profile/${s.username}` : '#')
+              : (c?.username ? `/profile/${c.username}` : '#');
+
             return (
-              <Link
-                key="card4-creator"
-                href={href}
-                className="ui-subtle p-3.5 rounded-xl block hover:opacity-90 transition-opacity"
-              >
-                <div className="animate-card-fade-in space-y-0.5">
-                  <div className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1">
-                    <Wrench className="w-3 h-3 text-emerald-500" /> {t('leaderboard.stats.top1_creator')}
+              <div className="rounded-xl border border-pink-500/25 bg-pink-500/5 hover:border-pink-500/50 hover:bg-pink-500/10 transition-all p-3.5 relative overflow-hidden group">
+                {/* Header: Label + Clickable indicator buttons (Hồng) */}
+                <div className="flex items-center justify-between gap-1">
+                  <div className="text-[11px] font-bold uppercase text-pink-600 dark:text-pink-400 flex items-center gap-1">
+                    {isSupporter ? <Heart className="w-3 h-3 fill-pink-500" /> : <Wrench className="w-3 h-3 text-pink-500" />}
+                    {isSupporter ? t('leaderboard.stats.top_supporter') : t('leaderboard.stats.top1_creator')}
                   </div>
-                  <div className="text-base font-extrabold ui-title mt-0.5 truncate">
-                    {c?.displayName || c?.gdUsername || c?.username || t('leaderboard.stats.no_data')}
-                  </div>
-                  <div className="text-[10px] ui-dim truncate">
-                    {c ? `${formatCp(c.creatorPoints)} CP` : '—'}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCard4Step(0); }}
+                      className={`px-1.5 py-0.5 rounded text-[8px] font-black transition-all cursor-pointer ${
+                        !isSupporter ? 'bg-pink-500 text-white shadow-xs' : 'bg-pink-500/15 text-pink-600 dark:text-pink-400 hover:bg-pink-500/30'
+                      }`}
+                      title="Top 1 Creator"
+                    >
+                      Creator
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCard4Step(1); }}
+                      className={`px-1.5 py-0.5 rounded text-[8px] font-black transition-all cursor-pointer ${
+                        isSupporter ? 'bg-pink-500 text-white shadow-xs' : 'bg-pink-500/15 text-pink-600 dark:text-pink-400 hover:bg-pink-500/30'
+                      }`}
+                      title="Top 1 Supporter"
+                    >
+                      Supporter
+                    </button>
                   </div>
                 </div>
-              </Link>
+
+                {/* Content: Slide up vertically */}
+                <Link href={href} className="block mt-1.5 overflow-hidden">
+                  <div key={`card4-${isSupporter ? 'supporter' : 'creator'}-${card4Step}`} className="animate-card-slide-up space-y-0.5">
+                    <div className="text-base font-extrabold ui-title truncate">
+                      {isSupporter
+                        ? (s?.displayName || s?.gdUsername || s?.username || t('leaderboard.stats.no_data'))
+                        : (c?.displayName || c?.gdUsername || c?.username || t('leaderboard.stats.no_data'))}
+                    </div>
+                    <div className="text-[10px] ui-dim truncate">
+                      {isSupporter
+                        ? (s ? t('leaderboard.stats.donated_months', { n: s.totalMonths }) : '—')
+                        : (c ? `${formatCp(c.creatorPoints)} CP` : '—')}
+                    </div>
+                  </div>
+                </Link>
+              </div>
             );
           })()}
         </div>
@@ -785,7 +881,21 @@ export default function HomePage() {
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-2.5">
                             {player.avatarUrl ? (
-                              <img src={player.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-xl object-cover" />
+                              <div className="relative w-8 h-8 rounded-xl overflow-hidden shrink-0 bg-slate-200 dark:bg-slate-800">
+                                <img
+                                  src={player.avatarUrl}
+                                  alt=""
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    const fb = e.currentTarget.parentElement?.querySelector('.row-avatar-fb');
+                                    if (fb) (fb as HTMLElement).style.display = 'flex';
+                                  }}
+                                  className="w-8 h-8 rounded-xl object-cover"
+                                />
+                                <div className="row-avatar-fb hidden w-8 h-8 rounded-xl items-center justify-center font-bold text-xs text-[color:var(--accent-fg)]" style={{ backgroundColor: 'var(--accent)' }}>
+                                  {displayName[0]}
+                                </div>
+                              </div>
                             ) : (
                               <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs text-[color:var(--accent-fg)]" style={{ backgroundColor: 'var(--accent)' }}>
                                 {displayName[0]}

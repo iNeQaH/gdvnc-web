@@ -727,9 +727,16 @@ export default function ProfilePage() {
         {/* Banner Cover */}
         <div className="relative w-full h-36 sm:h-48 md:h-56 bg-slate-100 dark:bg-zinc-800">
           {data.coverUrl ? (
-            <img src={data.coverUrl} alt="Cover" className="w-full h-full object-cover" />
+            <img
+              src={data.coverUrl}
+              alt=""
+              onError={(e) => {
+                e.currentTarget.src = '/default-banner.svg';
+              }}
+              className="w-full h-full object-cover"
+            />
           ) : (
-            <img src="/default-banner.svg" alt="Default Cover" className="w-full h-full object-cover opacity-50" />
+            <img src="/default-banner.svg" alt="" className="w-full h-full object-cover opacity-50" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
           
@@ -747,7 +754,21 @@ export default function ProfilePage() {
               >
                 <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden shadow-inner">
                   {data.avatarUrl ? (
-                    <img src={data.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    <>
+                      <img
+                        src={data.avatarUrl}
+                        alt=""
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const fb = e.currentTarget.parentElement?.querySelector('.profile-avatar-fb');
+                          if (fb) (fb as HTMLElement).style.display = 'flex';
+                        }}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="profile-avatar-fb hidden w-full h-full items-center justify-center bg-slate-200 dark:bg-zinc-800">
+                        <UserIcon className="w-12 h-12 text-slate-400" />
+                      </div>
+                    </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-slate-200 dark:bg-zinc-800">
                       <UserIcon className="w-12 h-12 text-slate-400" />

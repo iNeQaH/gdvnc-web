@@ -349,6 +349,21 @@
   animation: ui-card-fade-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+@keyframes ui-card-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-card-slide-up {
+  animation: ui-card-slide-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 [data-theme="custom"] .ui-card {
   position: relative;
   border: 2px solid transparent !important;

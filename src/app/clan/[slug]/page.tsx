@@ -859,21 +859,19 @@ function ClanPodiumLeaderboard({
 
             const ptVal = (item.user?.classicPp || 0).toLocaleString();
 
-            // Pedestal heights (compacted to match Clan's Hardest height)
+            // Pedestal heights (compacted to match Clan's Hardest height, #4 and #5 symmetric)
             const pedestalHeight = isRank1
               ? 'h-24 sm:h-28'
               : isRank2
               ? 'h-18 sm:h-22'
               : isRank3
-              ? 'h-14 sm:h-17'
-              : isRank4
-              ? 'h-10 sm:h-12'
-              : 'h-8 sm:h-10';
+              ? 'h-15 sm:h-18'
+              : 'h-11 sm:h-13';
 
             const pedestalBorder = isRank1
               ? 'border-t-4 border-amber-300 dark:border-amber-400 bg-gradient-to-b from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 shadow-md'
               : isRank2
-              ? 'border-t-4 border-slate-300 dark:border-slate-300 bg-gradient-to-b from-slate-500 to-slate-600 dark:from-slate-600 dark:to-slate-700 shadow-md'
+              ? 'border-t-4 border-slate-100 dark:border-white bg-gradient-to-b from-slate-100 via-slate-300 to-slate-400 shadow-[0_0_20px_rgba(255,255,255,0.4)]'
               : isRank3
               ? 'border-t-4 border-amber-500 dark:border-amber-600 bg-gradient-to-b from-amber-700 to-amber-800 dark:from-amber-800 dark:to-amber-900 shadow-md'
               : 'border-t-2 border-slate-400 dark:border-slate-500 bg-gradient-to-b from-slate-600 to-slate-700 dark:from-slate-700 dark:to-slate-800 shadow-sm';
@@ -881,7 +879,7 @@ function ClanPodiumLeaderboard({
             const avatarSize = isRank1
               ? 'w-13 h-13 sm:w-16 sm:h-16 ring-3 ring-amber-500 dark:ring-amber-400 shadow-[0_0_16px_rgba(245,158,11,0.35)]'
               : isRank2
-              ? 'w-11 h-11 sm:w-12 sm:h-12 ring-2 ring-slate-500 dark:ring-slate-300 shadow-md'
+              ? 'w-11 h-11 sm:w-12 sm:h-12 ring-3 ring-slate-100 dark:ring-white shadow-[0_0_16px_rgba(255,255,255,0.4)]'
               : isRank3
               ? 'w-10 h-10 sm:w-11 sm:h-11 ring-2 ring-amber-600 shadow-md'
               : 'w-8 h-8 sm:w-9 sm:h-9 ring-1 ring-slate-400 dark:ring-white/20';
@@ -899,14 +897,14 @@ function ClanPodiumLeaderboard({
                     <Crown className="w-5 h-5 text-amber-500 dark:text-amber-400 drop-shadow mb-0.5 animate-bounce" />
                   )}
                   <span
-                    className={`font-mono font-black text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full border shadow-sm whitespace-nowrap text-white ${
+                    className={`font-mono font-black text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full border shadow-sm whitespace-nowrap ${
                       isRank1
-                        ? 'bg-amber-600 border-amber-400'
+                        ? 'bg-amber-600 border-amber-400 text-white'
                         : isRank2
-                        ? 'bg-slate-600 border-slate-400'
+                        ? 'bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 text-slate-900 border-white shadow-[0_0_12px_rgba(255,255,255,0.4)]'
                         : isRank3
-                        ? 'bg-amber-800 border-amber-600'
-                        : 'bg-slate-700 border-slate-500 text-[9px]'
+                        ? 'bg-amber-800 border-amber-600 text-white'
+                        : 'bg-slate-700 border-slate-500 text-[9px] text-white'
                     }`}
                   >
                     {ptVal} Pt
@@ -920,7 +918,21 @@ function ClanPodiumLeaderboard({
                 >
                   <div className={`rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-900 shrink-0 ${avatarSize}`}>
                     {item.user.avatarUrl ? (
-                      <img src={item.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                      <div className="relative w-full h-full">
+                        <img
+                          src={item.user.avatarUrl}
+                          alt=""
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const fb = e.currentTarget.parentElement?.querySelector('.clan-podium-fb');
+                            if (fb) (fb as HTMLElement).style.display = 'flex';
+                          }}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="clan-podium-fb hidden w-full h-full items-center justify-center font-black text-xs ui-dim bg-slate-200 dark:bg-slate-800">
+                          {item.user.username ? item.user.username[0] : '?'}
+                        </div>
+                      </div>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center font-black text-xs ui-dim">
                         {item.user.username ? item.user.username[0] : '?'}
@@ -951,25 +963,20 @@ function ClanPodiumLeaderboard({
 
                 {/* 4. BIỂU ĐỒ CỘT (PEDESTAL COLUMN) */}
                 <div
-                  className={`w-full rounded-t-xl flex flex-col items-center justify-start pt-2 transition-all ${pedestalHeight} ${pedestalBorder}`}
+                  className={`w-full rounded-t-xl flex items-center justify-center transition-all ${pedestalHeight} ${pedestalBorder}`}
                 >
                   <span
-                    className={`font-black select-none text-white drop-shadow-xs ${
+                    className={`font-black select-none drop-shadow-xs ${
                       isRank1
-                        ? 'text-xl sm:text-2xl'
+                        ? 'text-xl sm:text-2xl text-white'
                         : isRank2
-                        ? 'text-lg sm:text-xl'
+                        ? 'text-lg sm:text-xl text-slate-900'
                         : isRank3
-                        ? 'text-base sm:text-lg'
-                        : 'text-sm'
+                        ? 'text-base sm:text-lg text-white'
+                        : 'text-sm sm:text-base text-white'
                     }`}
                   >
                     #{rank}
-                  </span>
-                  <span
-                    className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider mt-0.5 text-white/95 drop-shadow-xs"
-                  >
-                    {isRank1 ? 'TOP 1' : `TOP ${rank}`}
                   </span>
                 </div>
               </div>
