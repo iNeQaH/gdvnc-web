@@ -64,6 +64,52 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(14, 165, 233, ${alpha})`;
 }
 
+function ClanTierBadge({
+  tier,
+  name,
+  cleanThemeColor,
+  isDark,
+  className = '',
+}: {
+  tier: number;
+  name: string;
+  cleanThemeColor?: string;
+  isDark: boolean;
+  className?: string;
+}) {
+  return (
+    <span
+      className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border-2 backdrop-blur-md shrink-0 shadow-xs inline-flex items-center ${
+        tier === 3
+          ? ''
+          : tier === 2
+          ? 'bg-sky-500/20 text-sky-800 border-sky-400/60 shadow-[0_0_12px_rgba(14,165,233,0.45)] dark:bg-sky-500/30 dark:text-sky-100 dark:border-sky-300/70'
+          : tier === 1
+          ? 'bg-amber-500/15 text-amber-800 border-amber-400/50 dark:bg-amber-500/25 dark:text-amber-100 dark:border-amber-400/60'
+          : 'bg-red-500/20 text-red-800 dark:text-red-200 border-red-400/50'
+      } ${className}`}
+      style={
+        tier === 3
+          ? {
+              borderColor: cleanThemeColor || 'var(--accent)',
+              backgroundColor: isDark
+                ? 'rgba(0, 0, 0, 0.75)'
+                : `color-mix(in srgb, ${cleanThemeColor || 'var(--accent)'} 16%, #ffffff)`,
+              boxShadow: isDark
+                ? `0 0 10px ${cleanThemeColor || 'var(--accent)'}, inset 0 0 6px ${hexToRgba(cleanThemeColor || '#a855f7', 0.4)}`
+                : `0 0 10px ${hexToRgba(cleanThemeColor || '#a855f7', 0.4)}`,
+              color: isDark
+                ? '#ffffff'
+                : `color-mix(in srgb, ${cleanThemeColor || 'var(--accent)'} 85%, #000000)`,
+            }
+          : undefined
+      }
+    >
+      {name}
+    </span>
+  );
+}
+
 function parseDiscordMarkdown(text: string): React.ReactNode[] {
   if (!text) return [];
 
@@ -981,7 +1027,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
   // Open Donate / Manage SP Modal
   const handleOpenDonateModal = () => {
     const currentPledged = clan?.myPledge || 0;
-    setPledgeAmount(currentPledged > 0 ? currentPledged : Math.min(1, userSp));
+    setPledgeAmount(currentPledged);
     setWithdrawAmount(currentPledged > 0 ? currentPledged : 1);
     setSpModalTab('upgrade');
     setIsDonateOpen(true);
@@ -1021,6 +1067,10 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
   // Donate / Pledge SP Coin
   const handleDonate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (pledgeAmount <= (clan?.myPledge || 0)) {
+      showToast(isEn ? 'Please choose a higher SP amount to upgrade.' : 'Vui lòng chọn mức SP lớn hơn mức hiện tại để nâng cấp.', 'error');
+      return;
+    }
     setActionLoading(true);
     try {
       const res = await fetch(`/api/clans/${clan.slug}/donate`, {
@@ -1030,7 +1080,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        showToast(data.message || (isEn ? 'Successfully updated SP contribution!' : 'Đã cập nhật đóng góp SP thành công!'), 'success');
+        showToast(data.message || (isEn ? 'Successfully upgraded Clan SP!' : 'Đã nâng cấp SP Clan thành công!'), 'success');
         setIsDonateOpen(false);
         loadClanData();
       } else {
@@ -1332,33 +1382,13 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                 {clan.name}
               </h1>
 
-              <span
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border-2 backdrop-blur-md shrink-0 shadow-lg ${
-                  tierInfo.tier === 3
-                    ? ''
-                    : tierInfo.tier === 2
-                    ? 'bg-sky-500/20 text-sky-800 border-sky-400/60 shadow-[0_0_14px_rgba(14,165,233,0.45)] dark:bg-sky-500/30 dark:text-sky-100 dark:border-sky-300/70'
-                    : 'bg-amber-500/15 text-amber-800 border-amber-400/50 dark:bg-amber-500/25 dark:text-amber-100'
-                }`}
-                style={
-                  tierInfo.tier === 3
-                    ? {
-                        borderColor: cleanThemeColor || 'var(--accent)',
-                        backgroundColor: isDark
-                          ? 'rgba(0, 0, 0, 0.75)'
-                          : `color-mix(in srgb, ${cleanThemeColor || 'var(--accent)'} 16%, #ffffff)`,
-                        boxShadow: isDark
-                          ? `0 0 12px ${cleanThemeColor || 'var(--accent)'}, inset 0 0 6px ${hexToRgba(cleanThemeColor || '#a855f7', 0.4)}`
-                          : `0 0 10px ${hexToRgba(cleanThemeColor || '#a855f7', 0.4)}`,
-                        color: isDark
-                          ? '#ffffff'
-                          : `color-mix(in srgb, ${cleanThemeColor || 'var(--accent)'} 85%, #000000)`,
-                      }
-                    : undefined
-                }
-              >
-                {tierInfo.name}
-              </span>
+              <ClanTierBadge
+                tier={tierInfo.tier}
+                name={tierInfo.name}
+                cleanThemeColor={cleanThemeColor}
+                isDark={isDark}
+                className="py-1 shadow-lg"
+              />
             </div>
 
             {/* Action Buttons */}
@@ -1767,7 +1797,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
             >
               <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
                 <h3 className="text-base font-bold ui-title flex items-center gap-2 text-amber-500 dark:text-amber-400">
-                  <Coins className="w-5 h-5" /> {isEn ? 'Upgrade & Manage SP' : 'Nâng cấp & Quản lý SP Clan'}
+                  <Coins className="w-5 h-5" /> {isEn ? 'Upgrade Clan' : 'Nâng cấp Clan'}
                 </h3>
                 <button
                   type="button"
@@ -1808,7 +1838,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                       : 'ui-dim hover:opacity-80'
                   }`}
                 >
-                  {isEn ? 'Upgrade / Pledge SP' : 'Nâng cấp / Đóng góp'}
+                  {isEn ? 'Upgrade' : 'Nâng cấp'}
                 </button>
                 <button
                   type="button"
@@ -1839,8 +1869,8 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        disabled={pledgeAmount <= 0}
-                        onClick={() => setPledgeAmount((prev) => Math.max(0, prev - 1))}
+                        disabled={pledgeAmount <= (clan?.myPledge || 0)}
+                        onClick={() => setPledgeAmount((prev) => Math.max(clan?.myPledge || 0, prev - 1))}
                         className="w-9 h-9 rounded-xl border flex items-center justify-center font-bold text-sm cursor-pointer hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                         style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-subtle)', color: 'var(--text-title)' }}
                       >
@@ -1849,11 +1879,15 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
 
                       <input
                         type="range"
-                        min={0}
-                        max={userSp}
+                        min={clan?.myPledge || 0}
+                        max={Math.max(clan?.myPledge || 0, userSp)}
                         value={pledgeAmount}
-                        onChange={(e) => setPledgeAmount(parseInt(e.target.value, 10) || 0)}
-                        className="flex-1 accent-amber-500 cursor-pointer"
+                        disabled={userSp <= (clan?.myPledge || 0)}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10) || (clan?.myPledge || 0);
+                          setPledgeAmount(Math.max(clan?.myPledge || 0, val));
+                        }}
+                        className="flex-1 accent-amber-500 cursor-pointer disabled:opacity-40"
                       />
 
                       <button
@@ -1869,13 +1903,12 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
 
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {[
-                        { val: 0, label: '0 SP (Rút hết)' },
                         { val: clan?.myPledge || 0, label: `Hiện tại (${clan?.myPledge || 0} SP)` },
-                        { val: Math.min(userSp, (clan?.myPledge || 0) + 1), label: '+1 SP' },
-                        { val: Math.min(userSp, (clan?.myPledge || 0) + 3), label: '+3 SP' },
+                        { val: (clan?.myPledge || 0) + 1, label: '+1 SP' },
+                        { val: (clan?.myPledge || 0) + 3, label: '+3 SP' },
                         { val: userSp, label: `Tối đa (${userSp} SP)` },
                       ]
-                        .filter((item, idx, self) => self.findIndex((i) => i.val === item.val) === idx)
+                        .filter((item, idx, self) => item.val <= userSp && item.val >= (clan?.myPledge || 0) && self.findIndex((i) => i.val === item.val) === idx)
                         .map((chip) => (
                           <button
                             key={chip.label}
@@ -1891,20 +1924,32 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                         ))}
                     </div>
 
-                    <div className="p-2.5 rounded-xl border text-[11px] flex items-center justify-between" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}>
-                      <span className="ui-dim">Hiệu lực sau khi lưu:</span>
-                      {pledgeAmount > (clan?.myPledge || 0) ? (
-                        <strong className="text-emerald-500 font-bold">
-                          Đóng góp thêm +{pledgeAmount - (clan?.myPledge || 0)} SP
-                        </strong>
-                      ) : pledgeAmount < (clan?.myPledge || 0) ? (
-                        <strong className="text-amber-500 font-bold">
-                          Rút bớt {(clan?.myPledge || 0) - pledgeAmount} SP về tài khoản
-                        </strong>
-                      ) : (
-                        <strong className="ui-title">Giữ nguyên mức hiện tại</strong>
-                      )}
-                    </div>
+                    {/* Hiệu lực sau khi lưu: (tổng số SP dự kiến) + (Số SP đóng góp) [Tier] */}
+                    {(() => {
+                      const delta = pledgeAmount - (clan?.myPledge || 0);
+                      const currentClanSp = clan?.totalSp ?? clan?.effectiveSp ?? 0;
+                      const projectedClanSp = Math.max(0, currentClanSp + delta);
+                      const projectedTier = getClanTier(projectedClanSp);
+                      return (
+                        <div className="p-2.5 rounded-xl border text-[11px] flex items-center justify-between gap-2" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}>
+                          <span className="ui-dim">{isEn ? 'Effective after save:' : 'Hiệu lực sau khi lưu:'}</span>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 font-mono font-black text-xs">
+                              <span className="text-sm ui-title">{projectedClanSp}</span>
+                              <span className={delta > 0 ? "text-emerald-500 font-bold" : "ui-dim"}>
+                                ({delta >= 0 ? `+${delta}` : delta})
+                              </span>
+                            </div>
+                            <ClanTierBadge
+                              tier={projectedTier.tier}
+                              name={projectedTier.name}
+                              cleanThemeColor={cleanThemeColor}
+                              isDark={isDark}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="flex justify-end gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
@@ -1918,15 +1963,13 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                     </button>
                     <button
                       type="submit"
-                      disabled={actionLoading}
+                      disabled={actionLoading || pledgeAmount <= (clan?.myPledge || 0)}
                       className="px-5 py-2 rounded-xl text-xs font-bold text-black flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                       style={{ backgroundColor: '#f59e0b' }}
                     >
                       {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Coins className="w-4 h-4" />}
                       {actionLoading
                         ? (isEn ? 'Saving...' : 'Đang lưu...')
-                        : pledgeAmount < (clan?.myPledge || 0)
-                        ? (isEn ? 'Confirm Withdraw' : 'Xác nhận rút bớt SP')
                         : (isEn ? 'Confirm Upgrade' : 'Xác nhận nâng cấp')}
                     </button>
                   </div>
@@ -2015,6 +2058,33 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                             {isEn ? `All (${clan?.myPledge} SP)` : `Rút toàn bộ (${clan?.myPledge} SP)`}
                           </button>
                         </div>
+
+                        {/* Hiệu lực sau khi lưu: (tổng số SP dự kiến) + (Số SP đóng góp) [Tier] */}
+                        {(() => {
+                          const delta = -withdrawAmount;
+                          const currentClanSp = clan?.totalSp ?? clan?.effectiveSp ?? 0;
+                          const projectedClanSp = Math.max(0, currentClanSp + delta);
+                          const projectedTier = getClanTier(projectedClanSp);
+                          return (
+                            <div className="p-2.5 rounded-xl border text-[11px] flex items-center justify-between gap-2" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}>
+                              <span className="ui-dim">{isEn ? 'Effective after save:' : 'Hiệu lực sau khi lưu:'}</span>
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1 font-mono font-black text-xs">
+                                  <span className="text-sm ui-title">{projectedClanSp}</span>
+                                  <span className="text-red-500 font-bold">
+                                    ({delta})
+                                  </span>
+                                </div>
+                                <ClanTierBadge
+                                  tier={projectedTier.tier}
+                                  name={projectedTier.name}
+                                  cleanThemeColor={cleanThemeColor}
+                                  isDark={isDark}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })()}
 
                         <p className="text-[11px] text-amber-500 dark:text-amber-400 font-medium leading-relaxed pt-1">
                           {isEn

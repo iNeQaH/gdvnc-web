@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Star, Sparkles, Moon, Sun, Medal, Play, Globe, MessageSquare, Gamepad2, ArrowLeft, Camera, Check, X, Pencil, ShieldCheck, Heart, Trash2, Hammer, User as UserIcon, Shield, Crown, Trophy, Award, Zap, Flame, Diamond, StarHalf, CheckCircle, ChevronDown, RotateCcw, UserCheck, MapPin, Edit, ShieldAlert, RefreshCw, Ban, Unlock, Lock, FileText, Save } from 'lucide-react';
+import { Star, Sparkles, Moon, Sun, Medal, Play, Globe, MessageSquare, Gamepad2, ArrowLeft, Camera, Check, X, Pencil, ShieldCheck, Heart, Trash2, Hammer, User as UserIcon, Shield, Crown, Trophy, Award, Zap, Flame, Diamond, StarHalf, CheckCircle, ChevronDown, RotateCcw, UserCheck, MapPin, Edit, ShieldAlert, RefreshCw, Ban, Unlock, Lock, FileText, Save, Minus, Plus } from 'lucide-react';
 
 import BadgePickerModal from '@/components/BadgePickerModal';
 import BadgeIcon from '@/components/BadgeIcon';
@@ -172,8 +172,9 @@ export default function ProfilePage() {
 
   // Admin Management States
   const [showManageModal, setShowManageModal] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<'USER' | 'MODERATOR' | 'ADMIN'>('USER');
-  const [supporterMonthsToAdd, setSupporterMonthsToAdd] = useState<string>('0');
+  const [selectedRole, setSelectedRole] = useState<string>('USER');
+  const [supporterMode, setSupporterMode] = useState<'keep' | 'modify'>('keep');
+  const [supporterMonthsInput, setSupporterMonthsInput] = useState<number>(0);
   const [savingAdminChanges, setSavingAdminChanges] = useState(false);
   const [badgesList, setBadgesList] = useState<any[]>([]);
   const [selectedBadgeIds, setSelectedBadgeIds] = useState<string[]>([]);
@@ -386,7 +387,11 @@ export default function ProfilePage() {
   const handleOpenManageModal = async () => {
     if (!currentUser || !isStaff || !data) return;
     setSelectedRole(data.role);
-    setSupporterMonthsToAdd('0');
+    const remaining = data.supporterUntil && new Date(data.supporterUntil) > new Date()
+      ? Math.max(1, Math.round((new Date(data.supporterUntil).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)))
+      : 0;
+    setSupporterMonthsInput(remaining);
+    setSupporterMode('keep');
     setSelectedBadgeIds((data.badges || []).map((b: any) => b.id));
     setCpInput(String(data.creatorPoints ?? 0));
     setIsEditingCp(false);
@@ -406,16 +411,17 @@ export default function ProfilePage() {
     setSavingAdminChanges(true);
 
     try {
-      if (isFullAdmin && (selectedRole !== data.role || supporterMonthsToAdd !== '0')) {
-        const months = parseInt(supporterMonthsToAdd);
+      if (isFullAdmin && (selectedRole !== data.role || supporterMode === 'modify')) {
+        const payload: any = {
+          currentAdminUsername: currentUser.username,
+        };
+        if (selectedRole !== data.role) payload.newRole = selectedRole;
+        if (supporterMode === 'modify') payload.setSupporterMonths = supporterMonthsInput;
+
         const res = await fetch(`/api/admin/users/${data.id}/role`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            newRole: selectedRole !== data.role ? selectedRole : undefined,
-            grantSupporterMonths: months !== 0 ? (months > 0 ? months : -999) : undefined,
-            currentAdminUsername: currentUser.username,
-          }),
+          body: JSON.stringify(payload),
         });
         const resData = await res.json();
         if (!res.ok || !resData.success) {
@@ -1636,9 +1642,14 @@ export default function ProfilePage() {
 
             {/* Section 2: Supporter Duration */}
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider ui-dim flex items-center gap-1.5">
-                <Heart className="w-3.5 h-3.5 text-pink-500" />
-                {t('admin.section_supporter')}
+              <label className="text-xs font-bold uppercase tracking-wider ui-dim flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Heart className="w-3.5 h-3.5 text-pink-500" />
+                  {t('admin.section_supporter')}
+                </span>
+                {supporterMode === 'modify' && (
+                  <span className="text-[10px] font-bold text-amber-500">Đang chỉnh sửa</span>
+                )}
               </label>
 
               {data.supporterUntil && new Date(data.supporterUntil) > new Date() ? (
@@ -1648,34 +1659,136 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="p-2.5 rounded-xl border text-[11px] ui-dim" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-                  {t('admin.no_supporter')}
+                  {t('admin.no_supporter')} (0 tháng)
                 </div>
               )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-1">
-                {[
-                  { val: '0', label: t('admin.keep') },
-                  { val: '1', label: t('admin.plus_1m') },
-                  { val: '3', label: t('admin.plus_3m') },
-                  { val: '6', label: t('admin.plus_6m') },
-                  { val: '12', label: t('admin.plus_1y') },
-                ].map((item) => (
+              {/* Manual Input with +/- controls */}
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center gap-2">
                   <button
-                    key={item.val}
                     type="button"
-                    onClick={() => setSupporterMonthsToAdd(item.val)}
-                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
-                      supporterMonthsToAdd === item.val ? 'ring-2' : 'hover:opacity-80'
-                    }`}
-                    style={{
-                      backgroundColor: supporterMonthsToAdd === item.val ? 'var(--accent)' : 'var(--bg-subtle)',
-                      borderColor: supporterMonthsToAdd === item.val ? 'var(--accent)' : 'var(--border-ui)',
-                      color: supporterMonthsToAdd === item.val ? '#fff' : 'var(--text-title)',
+                    disabled={supporterMonthsInput <= 0}
+                    onClick={() => {
+                      setSupporterMode('modify');
+                      setSupporterMonthsInput((prev) => Math.max(0, prev - 1));
                     }}
+                    className="w-10 h-10 rounded-xl border flex items-center justify-center font-bold text-base cursor-pointer hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-subtle)', color: 'var(--text-title)' }}
+                    title="Trừ 1 tháng (tới 0)"
                   >
-                    {item.label}
+                    <Minus className="w-4 h-4" />
                   </button>
-                ))}
+
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      min={0}
+                      max={120}
+                      value={supporterMonthsInput}
+                      onChange={(e) => {
+                        setSupporterMode('modify');
+                        const val = parseInt(e.target.value, 10);
+                        setSupporterMonthsInput(isNaN(val) || val < 0 ? 0 : val);
+                      }}
+                      placeholder="0"
+                      className="w-full text-center py-2 px-3 rounded-xl border text-sm font-black focus:outline-none focus:ring-2 focus:ring-pink-500/50"
+                      style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold ui-dim pointer-events-none">
+                      {isEn ? 'months' : 'tháng'}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSupporterMode('modify');
+                      setSupporterMonthsInput((prev) => prev + 1);
+                    }}
+                    className="w-10 h-10 rounded-xl border flex items-center justify-center font-bold text-base cursor-pointer hover:bg-white/10 transition-all"
+                    style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-subtle)', color: 'var(--text-title)' }}
+                    title="Cộng 1 tháng"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Status Preview */}
+                <div className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border flex items-center justify-between" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}>
+                  <span className="ui-dim">Trạng thái áp dụng:</span>
+                  {supporterMode === 'keep' ? (
+                    <span className="ui-title">Giữ nguyên hạn hiện tại</span>
+                  ) : supporterMonthsInput === 0 ? (
+                    <span className="text-red-500 font-bold">Gỡ bỏ đặc quyền Supporter (0 tháng)</span>
+                  ) : (
+                    <span className="text-pink-500 font-bold">
+                      {supporterMonthsInput} {isEn ? 'months from today' : 'tháng từ hôm nay'} (~{new Date(Date.now() + supporterMonthsInput * 30 * 24 * 60 * 60 * 1000).toLocaleDateString(isEn ? 'en-US' : 'vi-VN')})
+                    </span>
+                  )}
+                </div>
+
+                {/* Quick Preset Buttons */}
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const remaining = data.supporterUntil && new Date(data.supporterUntil) > new Date()
+                        ? Math.max(1, Math.round((new Date(data.supporterUntil).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)))
+                        : 0;
+                      setSupporterMonthsInput(remaining);
+                      setSupporterMode('keep');
+                    }}
+                    className={`py-1.5 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      supporterMode === 'keep' ? 'ring-2 ring-pink-500 bg-pink-500/15 text-pink-500' : 'hover:opacity-80'
+                    }`}
+                    style={{ borderColor: supporterMode === 'keep' ? 'var(--accent)' : 'var(--border-ui)', backgroundColor: supporterMode === 'keep' ? undefined : 'var(--bg-subtle)', color: supporterMode === 'keep' ? undefined : 'var(--text-title)' }}
+                  >
+                    {t('admin.keep') || 'Giữ nguyên'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSupporterMode('modify');
+                      setSupporterMonthsInput(0);
+                    }}
+                    className={`py-1.5 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer text-red-500 ${
+                      supporterMode === 'modify' && supporterMonthsInput === 0 ? 'ring-2 ring-red-500 bg-red-500/15' : 'hover:opacity-80'
+                    }`}
+                    style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-subtle)' }}
+                  >
+                    0 (Gỡ bỏ)
+                  </button>
+
+                  {[
+                    { val: 1, label: '+1 tháng' },
+                    { val: 3, label: '+3 tháng' },
+                    { val: 6, label: '+6 tháng' },
+                    { val: 12, label: '+1 năm' },
+                  ].map((item) => (
+                    <button
+                      key={item.val}
+                      type="button"
+                      onClick={() => {
+                        const remaining = data.supporterUntil && new Date(data.supporterUntil) > new Date()
+                          ? Math.max(1, Math.round((new Date(data.supporterUntil).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)))
+                          : 0;
+                        const base = supporterMode === 'keep' ? remaining : supporterMonthsInput;
+                        setSupporterMode('modify');
+                        setSupporterMonthsInput(base + item.val);
+                      }}
+                      className="py-1.5 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer hover:opacity-80"
+                      style={{
+                        backgroundColor: 'var(--bg-subtle)',
+                        borderColor: 'var(--border-ui)',
+                        color: 'var(--text-title)',
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
             </>
