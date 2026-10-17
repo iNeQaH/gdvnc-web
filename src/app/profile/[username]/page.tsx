@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Star, Sparkles, Moon, Medal, Play, Globe, MessageSquare, Gamepad2, ArrowLeft, Camera, Check, X, Pencil, ShieldCheck, Heart, Trash2, Hammer, User as UserIcon, Shield, Crown, Trophy, Award, Zap, Flame, Diamond, StarHalf, CheckCircle, ChevronDown, RotateCcw, UserCheck, MapPin, Edit, ShieldAlert, RefreshCw, Ban, Unlock, Lock } from 'lucide-react';
-import ImageEditorModal from '@/components/ImageEditorModal';
+
 import BadgePickerModal from '@/components/BadgePickerModal';
 import BadgeIcon from '@/components/BadgeIcon';
 import { AnimatedTabs } from '@/components/AnimatedTabs';
@@ -162,13 +162,6 @@ export default function ProfilePage() {
   const [totpInput, setTotpInput] = useState('');
   const [totpError, setTotpError] = useState('');
   const [settingUp2fa, setSettingUp2fa] = useState(false);
-  const [imageModal, setImageModal] = useState<{
-    open: boolean;
-    type: 'avatar' | 'cover';
-  }>({
-    open: false,
-    type: 'avatar',
-  });
 
   // Admin Management States
   const [showManageModal, setShowManageModal] = useState(false);
@@ -279,15 +272,6 @@ export default function ProfilePage() {
     setEditingField(null);
   };
 
-  const handleOpenAvatarModal = () => {
-    if (!canEditInfo) return;
-    setImageModal({ open: true, type: 'avatar' });
-  };
-
-  const handleOpenCoverModal = () => {
-    if (!canEditInfo) return;
-    setImageModal({ open: true, type: 'cover' });
-  };
 
   const handleSetup2FA = async () => {
     setSettingUp2fa(true);
@@ -731,20 +715,6 @@ export default function ProfilePage() {
 
       {isOwner && data.gdUsername && !data.gdVerified && <GdUnverifiedNotice />}
 
-      {/* Image Editor Modal Dialog */}
-      <ImageEditorModal
-        isOpen={imageModal.open}
-        type={imageModal.type}
-        currentImage={imageModal.type === 'avatar' ? data.avatarUrl : data.coverUrl}
-        onClose={() => setImageModal({ ...imageModal, open: false })}
-        onSave={async (dataUrl: string) => {
-          if (imageModal.type === 'avatar') {
-            await updateProfileField({ avatarUrl: dataUrl });
-          } else {
-            await updateProfileField({ coverUrl: dataUrl });
-          }
-        }}
-      />
 
       {/* Unified Hero Card */}
       <div className="ui-card overflow-hidden shadow-sm">
@@ -757,17 +727,7 @@ export default function ProfilePage() {
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
           
-          {canEditInfo && (
-            <button
-              type="button"
-              onClick={handleOpenCoverModal}
-              className="absolute top-3 right-3 px-3 py-1.5 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer border border-white/20"
-              title="Đổi ảnh bìa"
-            >
-              <Camera className="w-3.5 h-3.5" />
-              <span>Đổi Banner</span>
-            </button>
-          )}
+          
         </div>
 
         {/* Info Bar */}
@@ -779,11 +739,7 @@ export default function ProfilePage() {
                 className={`p-1 rounded-2xl shadow-xl ${isLavender ? 'tsumiki-btn !m-0 !p-1' : 'bg-white dark:bg-zinc-900 border'}`}
                 style={!isLavender ? { backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' } : {}}
               >
-                <div
-                  className={`relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden shadow-inner ${canEditInfo ? 'cursor-pointer group' : ''}`}
-                  onClick={canEditInfo ? handleOpenAvatarModal : undefined}
-                  title={canEditInfo ? "Đổi Avatar" : undefined}
-                >
+                <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden shadow-inner">
                   {data.avatarUrl ? (
                     <img src={data.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (

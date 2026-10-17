@@ -86,6 +86,7 @@ export default function SettingsPage() {
   const [nameGlowColor1, setNameGlowColor1] = useState<string>('#38bdf8');
   const [nameGlowColor2, setNameGlowColor2] = useState<string>('#ec4899');
   const [nameGlowAngle, setNameGlowAngle] = useState<number>(135);
+  const [nameGlowOpacity, setNameGlowOpacity] = useState<number>(100);
   const [nameFont, setNameFont] = useState<string>('default');
   const [savingNameStyle, setSavingNameStyle] = useState<boolean>(false);
 
@@ -184,7 +185,13 @@ export default function SettingsPage() {
         }
         if (json.user.nameGlow) {
           setNameUseGlow(true);
-          const glowGradMatch = json.user.nameGlow.match(
+          const rawGlow = json.user.nameGlow;
+          const opMatch = rawGlow.match(/\/\*(?:op|glow:\d+):(\d+)\*\//);
+          if (opMatch) {
+            setNameGlowOpacity(Math.min(Math.max(parseInt(opMatch[1], 10) || 100, 10), 100));
+          }
+          const cleanGlow = rawGlow.replace(/\/\*[\s\S]*?\*\//g, '').trim();
+          const glowGradMatch = cleanGlow.match(
             /linear-gradient\s*\(\s*(\d+)deg\s*,\s*(#[a-fA-F0-9]{3,8}|[^\s,]+)\s*,\s*(#[a-fA-F0-9]{3,8}|[^\s,]+)\s*\)/i
           );
           if (glowGradMatch) {
@@ -194,7 +201,7 @@ export default function SettingsPage() {
             setNameGlowColor2(glowGradMatch[3].trim());
           } else {
             setNameGlowMode(false);
-            setNameGlowColor1(json.user.nameGlow);
+            setNameGlowColor1(cleanGlow);
           }
         }
       }
@@ -242,9 +249,9 @@ export default function SettingsPage() {
               : null,
             nameGlow: !nameUseGlow
               ? null
-              : nameGlowMode
-              ? `linear-gradient(${nameGlowAngle}deg, ${nameGlowColor1}, ${nameGlowColor2})`
-              : (nameGlowColor1 || '#38bdf8'),
+              : `${nameGlowMode
+                  ? `linear-gradient(${nameGlowAngle}deg, ${nameGlowColor1}, ${nameGlowColor2})`
+                  : (nameGlowColor1 || '#38bdf8')}/*op:${nameGlowOpacity}*/`,
             nameFont: nameFont === 'default' ? null : nameFont,
           };
 
@@ -1584,9 +1591,9 @@ export default function SettingsPage() {
                         : null,
                       nameGlow: !nameUseGlow
                         ? null
-                        : nameGlowMode
-                        ? `linear-gradient(${nameGlowAngle}deg, ${nameGlowColor1}, ${nameGlowColor2})`
-                        : (nameGlowColor1 || '#38bdf8'),
+                        : `${nameGlowMode
+                            ? `linear-gradient(${nameGlowAngle}deg, ${nameGlowColor1}, ${nameGlowColor2})`
+                            : (nameGlowColor1 || '#38bdf8')}/*op:${nameGlowOpacity}*/`,
                       nameFont: nameFont,
                       clan: data?.clanMember?.clan || data?.clan || null,
                       clanMember: data?.clanMember || null,
@@ -1846,6 +1853,25 @@ export default function SettingsPage() {
                         </div>
                       </div>
                     )}
+
+                    {/* Glow Intensity / Opacity */}
+                    <div className="pt-2 border-t space-y-2" style={{ borderColor: 'var(--border-subtle)' }}>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="ui-dim font-bold">
+                          {language === 'vi' ? 'Độ sáng / mờ của Glow:' : 'Glow Intensity / Opacity:'}
+                        </span>
+                        <span className="font-mono font-black text-purple-400">{nameGlowOpacity}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="10"
+                        max="100"
+                        step="5"
+                        value={nameGlowOpacity}
+                        onChange={(e) => setNameGlowOpacity(parseInt(e.target.value, 10))}
+                        className="w-full accent-purple-500 cursor-pointer"
+                      />
+                    </div>
                   </div>
                 )}
               </div>

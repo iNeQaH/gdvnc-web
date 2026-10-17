@@ -406,7 +406,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         profileTheme: body.profileTheme !== undefined ? body.profileTheme : undefined,
         nameColor: body.nameColor !== undefined ? (clipText(body.nameColor, 30)?.trim() || null) : undefined,
         nameGradient: body.nameGradient !== undefined ? (clipText(body.nameGradient, 120)?.trim() || null) : undefined,
-        nameGlow: body.nameGlow !== undefined ? (clipText(body.nameGlow, 120)?.trim() || null) : undefined,
+        nameGlow: body.nameGlow !== undefined ? (clipText(body.nameGlow, 160)?.trim() || null) : undefined,
         nameFont: body.nameFont !== undefined ? (clipText(body.nameFont, 50)?.trim() || null) : undefined,
       },
       select: {

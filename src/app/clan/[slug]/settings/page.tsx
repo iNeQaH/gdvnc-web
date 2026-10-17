@@ -162,6 +162,10 @@ export default function ClanSettingsPage({
         return;
       }
 
+      if (!isLeader && !isOwnerWeb) {
+        setActiveTab('requests');
+      }
+
       // Populate form state
       setName(c.name || '');
       setDescription(c.description || '');
@@ -544,31 +548,35 @@ export default function ClanSettingsPage({
 
       {/* Tabs Navigation Bar */}
       <div className="flex items-center gap-2 border-b pb-2 overflow-x-auto select-none" style={{ borderColor: 'var(--border-subtle)' }}>
-        <button
-          type="button"
-          onClick={() => setActiveTab('general')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === 'general'
-              ? 'bg-[color:var(--accent)] text-[color:var(--accent-fg)] shadow-sm'
-              : 'ui-dim hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
-          }`}
-        >
-          <Settings className="w-4 h-4" />
-          <span>{isEn ? 'General' : 'Thông tin chung'}</span>
-        </button>
+        {canEditInfo && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('general')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'general'
+                ? 'bg-[color:var(--accent)] text-[color:var(--accent-fg)] shadow-sm'
+                : 'ui-dim hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            <span>{isEn ? 'General' : 'Thông tin chung'}</span>
+          </button>
+        )}
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('theme')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === 'theme'
-              ? 'bg-[color:var(--accent)] text-[color:var(--accent-fg)] shadow-sm'
-              : 'ui-dim hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
-          }`}
-        >
-          <Palette className="w-4 h-4" />
-          <span>{isEn ? 'Appearance & Theme' : 'Giao diện & Theme'}</span>
-        </button>
+        {canEditInfo && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('theme')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'theme'
+                ? 'bg-[color:var(--accent)] text-[color:var(--accent-fg)] shadow-sm'
+                : 'ui-dim hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+            }`}
+          >
+            <Palette className="w-4 h-4" />
+            <span>{isEn ? 'Appearance & Theme' : 'Giao diện & Theme'}</span>
+          </button>
+        )}
 
         <button
           type="button"
@@ -618,7 +626,7 @@ export default function ClanSettingsPage({
       </div>
 
       {/* TAB 1: THÔNG TIN CHUNG */}
-      {activeTab === 'general' && (
+      {canEditInfo && activeTab === 'general' && (
         <form onSubmit={handleSaveSettings} className="space-y-6">
           <div className="ui-card p-6 rounded-2xl border space-y-5" style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}>
             <h2 className="text-sm font-bold ui-title flex items-center gap-2 border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
@@ -637,8 +645,7 @@ export default function ClanSettingsPage({
                   onChange={(e) => setName(e.target.value)}
                   disabled={!canEditInfo}
                   maxLength={40}
-                  className="w-full px-4 py-2.5 rounded-xl border text-xs ui-title bg-black/5 dark:bg-black/20 focus:outline-hidden focus:border-amber-400 transition-colors"
-                  style={{ borderColor: 'var(--border-ui)' }}
+                  className="w-full px-4 py-2.5 rounded-xl border text-xs ui-title bg-white dark:bg-black/40 border-slate-200 dark:border-white/10 focus:outline-hidden focus:border-amber-400 transition-colors"
                   placeholder="VD: Geometry Dash Vietnam"
                 />
               </div>
@@ -648,8 +655,7 @@ export default function ClanSettingsPage({
                   {isEn ? 'Clan Tag (Read-only)' : 'Tên viết tắt / Tag (Cố định)'}
                 </label>
                 <div
-                  className="w-full px-4 py-2.5 rounded-xl border text-xs font-mono font-bold ui-dim bg-black/5 dark:bg-black/30"
-                  style={{ borderColor: 'var(--border-ui)' }}
+                  className="w-full px-4 py-2.5 rounded-xl border text-xs font-mono font-bold ui-dim bg-slate-50 dark:bg-black/30 border-slate-200 dark:border-white/10"
                 >
                   [{clan.tag}]
                 </div>
@@ -671,8 +677,7 @@ export default function ClanSettingsPage({
                 disabled={!canEditInfo}
                 maxLength={1000}
                 rows={4}
-                className="w-full p-3.5 rounded-xl border text-xs ui-title bg-black/5 dark:bg-black/20 focus:outline-hidden focus:border-amber-400 transition-colors resize-y leading-relaxed font-sans"
-                style={{ borderColor: 'var(--border-ui)' }}
+                className="w-full p-3.5 rounded-xl border text-xs ui-title bg-white dark:bg-black/40 border-slate-200 dark:border-white/10 focus:outline-hidden focus:border-amber-400 transition-colors resize-y leading-relaxed font-sans"
                 placeholder={isEn ? 'Introduce your Clan, rules, Discord server, etc.' : 'Giới thiệu về Clan, tôn chỉ hoạt động, link Discord, v.v.'}
               />
             </div>
@@ -711,7 +716,7 @@ export default function ClanSettingsPage({
                   </div>
                 </div>
               ) : (
-                <label className="border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-amber-400 transition-colors space-y-2 bg-black/5 dark:bg-black/10" style={{ borderColor: 'var(--border-ui)' }}>
+                <label className="border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-amber-400 transition-colors space-y-2 bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-white/10">
                   <Upload className="w-8 h-8 ui-dim" />
                   <div>
                     <span className="text-xs font-bold ui-title block">{isEn ? 'Upload banner image from computer' : 'Tải ảnh bìa từ máy tính'}</span>
@@ -740,8 +745,7 @@ export default function ClanSettingsPage({
                   value={videoUrl}
                   onChange={(e) => setVideoUrl(e.target.value)}
                   disabled={!canEditInfo}
-                  className="w-full px-4 py-2.5 rounded-xl border text-xs ui-title bg-black/5 dark:bg-black/20 focus:outline-hidden focus:border-red-400 transition-colors"
-                  style={{ borderColor: 'var(--border-ui)' }}
+                  className="w-full px-4 py-2.5 rounded-xl border text-xs ui-title bg-white dark:bg-black/40 border-slate-200 dark:border-white/10 focus:outline-hidden focus:border-red-400 transition-colors"
                   placeholder="https://youtube.com/watch?v=..."
                 />
               </div>
@@ -756,8 +760,7 @@ export default function ClanSettingsPage({
                   value={favoriteLevelId}
                   onChange={(e) => setFavoriteLevelId(e.target.value)}
                   disabled={!canEditInfo}
-                  className="w-full px-4 py-2.5 rounded-xl border text-xs ui-title bg-black/5 dark:bg-black/20 focus:outline-hidden focus:border-pink-400 transition-colors font-mono"
-                  style={{ borderColor: 'var(--border-ui)' }}
+                  className="w-full px-4 py-2.5 rounded-xl border text-xs ui-title bg-white dark:bg-black/40 border-slate-200 dark:border-white/10 focus:outline-hidden focus:border-pink-400 transition-colors font-mono"
                   placeholder="VD: 128 (Bloodbath)"
                 />
               </div>
@@ -780,7 +783,7 @@ export default function ClanSettingsPage({
       )}
 
       {/* TAB 2: GIAO DIỆN & THEME (MÀU, GRADIENT, GLOW TIER 3) */}
-      {activeTab === 'theme' && (
+      {canEditInfo && activeTab === 'theme' && (
         <form onSubmit={handleSaveSettings} className="space-y-6">
           <div className="ui-card p-6 rounded-2xl border space-y-6" style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}>
             <h2 className="text-sm font-bold ui-title flex items-center gap-2 border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
@@ -851,7 +854,7 @@ export default function ClanSettingsPage({
               </div>
 
               {useTagGradient && isTier2Plus ? (
-                <div className="p-4 rounded-xl border space-y-4 bg-black/5 dark:bg-black/10" style={{ borderColor: 'var(--border-ui)' }}>
+                <div className="p-4 rounded-xl border space-y-4 bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-white/10">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <span className="text-[11px] font-bold ui-dim block mb-1.5">{isEn ? 'Color 1' : 'Màu bắt đầu (1)'}</span>
@@ -895,7 +898,7 @@ export default function ClanSettingsPage({
               </div>
 
               {useThemeGradient && isTier2Plus ? (
-                <div className="p-4 rounded-xl border space-y-4 bg-black/5 dark:bg-black/10" style={{ borderColor: 'var(--border-ui)' }}>
+                <div className="p-4 rounded-xl border space-y-4 bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-white/10">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <span className="text-[11px] font-bold ui-dim block mb-1.5">{isEn ? 'Theme Color 1' : 'Màu Theme (1)'}</span>
@@ -1051,7 +1054,7 @@ export default function ClanSettingsPage({
                       </div>
 
                       {req.message ? (
-                        <p className="text-xs ui-title leading-relaxed bg-black/5 dark:bg-black/20 p-2.5 rounded-xl border border-dashed border-white/10">
+                        <p className="text-xs ui-title leading-relaxed bg-slate-50 dark:bg-black/30 p-2.5 rounded-xl border border-dashed border-slate-200 dark:border-white/10">
                           &ldquo;{req.message}&rdquo;
                         </p>
                       ) : (
@@ -1111,8 +1114,7 @@ export default function ClanSettingsPage({
                   value={banTargetUsername}
                   onChange={(e) => setBanTargetUsername(e.target.value)}
                   placeholder="VD: ineqah"
-                  className="w-full px-3.5 py-2 rounded-xl border text-xs ui-title bg-black/5 dark:bg-black/20 focus:outline-hidden focus:border-red-400 transition-colors"
-                  style={{ borderColor: 'var(--border-ui)' }}
+                  className="w-full px-3.5 py-2 rounded-xl border text-xs ui-title bg-white dark:bg-black/40 border-slate-200 dark:border-white/10 focus:outline-hidden focus:border-red-400 transition-colors"
                 />
               </div>
 
@@ -1126,8 +1128,7 @@ export default function ClanSettingsPage({
                     const val = e.target.value;
                     setBanDurationDays(val === 'perm' ? null : parseInt(val, 10));
                   }}
-                  className="w-full px-3.5 py-2 rounded-xl border text-xs ui-title bg-black/5 dark:bg-black/20 focus:outline-hidden focus:border-red-400 transition-colors cursor-pointer"
-                  style={{ borderColor: 'var(--border-ui)' }}
+                  className="w-full px-3.5 py-2 rounded-xl border text-xs ui-title bg-white dark:bg-black/40 border-slate-200 dark:border-white/10 focus:outline-hidden focus:border-red-400 transition-colors cursor-pointer"
                 >
                   <option value="1">{isEn ? '1 day' : '1 ngày'}</option>
                   <option value="3">{isEn ? '3 days' : '3 ngày'}</option>
@@ -1159,8 +1160,7 @@ export default function ClanSettingsPage({
                 onChange={(e) => setBanReason(e.target.value)}
                 maxLength={200}
                 placeholder={isEn ? 'e.g., Harassment, cheating, spamming' : 'VD: Gian lận, thái độ không phù hợp, phá hoại'}
-                className="w-full px-3.5 py-2 rounded-xl border text-xs ui-title bg-black/5 dark:bg-black/20 focus:outline-hidden focus:border-red-400 transition-colors"
-                style={{ borderColor: 'var(--border-ui)' }}
+                className="w-full px-3.5 py-2 rounded-xl border text-xs ui-title bg-white dark:bg-black/40 border-slate-200 dark:border-white/10 focus:outline-hidden focus:border-red-400 transition-colors"
               />
             </div>
           </form>
@@ -1251,8 +1251,7 @@ export default function ClanSettingsPage({
               <select
                 value={transferTargetId}
                 onChange={(e) => setTransferTargetId(e.target.value)}
-                className="w-full sm:w-80 px-3.5 py-2.5 rounded-xl border text-xs ui-title bg-black/5 dark:bg-black/20 focus:outline-hidden focus:border-amber-400 transition-colors cursor-pointer"
-                style={{ borderColor: 'var(--border-ui)' }}
+                className="w-full sm:w-80 px-3.5 py-2.5 rounded-xl border text-xs ui-title bg-white dark:bg-black/40 border-slate-200 dark:border-white/10 focus:outline-hidden focus:border-amber-400 transition-colors cursor-pointer"
               >
                 <option value="">{isEn ? '-- Select clan member --' : '-- Chọn thành viên Clan --'}</option>
                 {clan.membersGrouped?.mods?.map((m: any) => (

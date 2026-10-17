@@ -138,9 +138,20 @@ export function UserDisplayName({
     clanTagStyle.WebkitTextFillColor = 'initial';
   }
 
-  // Helper tính toán Drop-shadow Glow (hỗ trợ cả đơn sắc lẫn 2 màu gradient kèm góc xoay, tối ưu tương phản cả Dark & Light Mode)
+  // Helper tính toán Drop-shadow Glow (hỗ trợ cả đơn sắc lẫn 2 màu gradient kèm góc xoay và độ sáng/mờ opacity, tối ưu tương phản cả Dark & Light Mode)
   const getGlowFilter = (glow: string, dark: boolean) => {
-    const gradMatch = glow.match(
+    // Trích xuất metadata độ mờ/sáng opacity (nếu có, e.g. /*op:75*/ hoặc /*glow:1:70*/)
+    let opacity = 100;
+    const opMatch = glow.match(/\/\*(?:op|glow:\d+):(\d+)\*\//);
+    if (opMatch) {
+      opacity = Math.min(Math.max(parseInt(opMatch[1], 10) || 100, 10), 100);
+    }
+    const alphaMultiplier = opacity / 100;
+
+    // Làm sạch chuỗi glow để parse màu sắc hoặc gradient
+    const cleanGlow = glow.replace(/\/\*[\s\S]*?\*\//g, '').trim();
+
+    const gradMatch = cleanGlow.match(
       /linear-gradient\s*\(\s*(\d+)deg\s*,\s*(#[a-fA-F0-9]{3,8}|[^\s,]+)\s*,\s*(#[a-fA-F0-9]{3,8}|[^\s,]+)\s*\)/i
     );
     if (gradMatch) {
@@ -152,18 +163,24 @@ export function UserDisplayName({
         // LIGHT MODE: Soft, airy, translucent ambient aura (chống bẩn / thâm đen viền chữ)
         const ox = Math.round(Math.sin(rad) * 3);
         const oy = Math.round(-Math.cos(rad) * 3);
-        return `drop-shadow(${ox}px ${oy}px 6px ${hexToRgba(col2, 0.38)}) drop-shadow(${-ox}px ${-oy}px 6px ${hexToRgba(col1, 0.38)})`;
+        const a = 0.38 * alphaMultiplier;
+        return `drop-shadow(${ox}px ${oy}px 6px ${hexToRgba(col2, a)}) drop-shadow(${-ox}px ${-oy}px 6px ${hexToRgba(col1, a)})`;
       }
       // DARK MODE: Rich vibrant neon glow
       const ox = Math.round(Math.sin(rad) * 4);
       const oy = Math.round(-Math.cos(rad) * 4);
-      return `drop-shadow(${ox}px ${oy}px 4px ${hexToRgba(col2, 0.75)}) drop-shadow(${-ox}px ${-oy}px 4px ${hexToRgba(col1, 0.75)}) drop-shadow(0 0 8px ${hexToRgba(col1, 0.45)})`;
+      const a1 = 0.75 * alphaMultiplier;
+      const a2 = 0.45 * alphaMultiplier;
+      return `drop-shadow(${ox}px ${oy}px 4px ${hexToRgba(col2, a1)}) drop-shadow(${-ox}px ${-oy}px 4px ${hexToRgba(col1, a1)}) drop-shadow(0 0 8px ${hexToRgba(col1, a2)})`;
     }
 
     if (!dark) {
-      return `drop-shadow(0 0 5px ${hexToRgba(glow, 0.38)})`;
+      const a = 0.38 * alphaMultiplier;
+      return `drop-shadow(0 0 5px ${hexToRgba(cleanGlow, a)})`;
     }
-    return `drop-shadow(0 0 3px ${hexToRgba(glow, 0.75)}) drop-shadow(0 0 7px ${hexToRgba(glow, 0.45)})`;
+    const a1 = 0.75 * alphaMultiplier;
+    const a2 = 0.45 * alphaMultiplier;
+    return `drop-shadow(0 0 3px ${hexToRgba(cleanGlow, a1)}) drop-shadow(0 0 7px ${hexToRgba(cleanGlow, a2)})`;
   };
 
   // Style cho Tên Supporter (bảo đảm độc lập 100% với màu Clan tag)

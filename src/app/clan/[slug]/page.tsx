@@ -779,22 +779,22 @@ function ClanPodiumLeaderboard({
               : 'h-8 sm:h-10';
 
             const pedestalBorder = isRank1
-              ? 'border-t-4 border-amber-500 dark:border-amber-400 bg-gradient-to-t from-amber-500/20 dark:from-amber-500/25 via-amber-500/10 to-transparent dark:to-amber-500/5 shadow-[0_0_16px_rgba(245,158,11,0.2)]'
+              ? 'border-t-4 border-amber-500 dark:border-amber-400 bg-gradient-to-t from-amber-500/25 via-amber-500/10 to-transparent shadow-[0_0_16px_rgba(245,158,11,0.2)]'
               : isRank2
-              ? 'border-t-4 border-slate-400 dark:border-slate-300 bg-gradient-to-t from-slate-300/30 dark:from-slate-400/20 via-slate-300/15 dark:via-slate-400/10 to-transparent dark:to-slate-400/5'
+              ? 'border-t-4 border-slate-500 dark:border-slate-300 bg-gradient-to-t from-slate-400/35 dark:from-slate-400/20 via-slate-300/20 dark:via-slate-400/10 to-transparent shadow-xs'
               : isRank3
-              ? 'border-t-4 border-amber-600 dark:border-amber-600 bg-gradient-to-t from-amber-600/20 dark:from-amber-700/20 via-amber-600/10 dark:via-amber-700/10 to-transparent dark:to-amber-700/5'
-              : 'border-t-2 border-slate-300 dark:border-white/20 bg-slate-200/60 dark:bg-white/5';
+              ? 'border-t-4 border-amber-600 dark:border-amber-600 bg-gradient-to-t from-amber-600/30 dark:from-amber-700/20 via-amber-600/15 dark:via-amber-700/10 to-transparent shadow-xs'
+              : 'border-t-2 border-slate-400 dark:border-white/20 bg-slate-200/80 dark:bg-white/5';
 
             const avatarSize = isRank1
               ? 'w-13 h-13 sm:w-16 sm:h-16 ring-3 ring-amber-500 dark:ring-amber-400 shadow-[0_0_16px_rgba(245,158,11,0.35)]'
               : isRank2
-              ? 'w-11 h-11 sm:w-12 sm:h-12 ring-2 ring-slate-400 dark:ring-slate-300 shadow-md'
+              ? 'w-11 h-11 sm:w-12 sm:h-12 ring-2 ring-slate-500 dark:ring-slate-300 shadow-md'
               : isRank3
               ? 'w-10 h-10 sm:w-11 sm:h-11 ring-2 ring-amber-600 shadow-md'
               : isRank4
-              ? 'w-8 h-8 sm:w-9 sm:h-9 ring-1 ring-slate-300 dark:ring-white/20'
-              : 'w-7 h-7 sm:w-8 sm:h-8 ring-1 ring-slate-300 dark:ring-white/20';
+              ? 'w-8 h-8 sm:w-9 sm:h-9 ring-1 ring-slate-400 dark:ring-white/20'
+              : 'w-7 h-7 sm:w-8 sm:h-8 ring-1 ring-slate-400 dark:ring-white/20';
 
             return (
               <div
@@ -809,14 +809,14 @@ function ClanPodiumLeaderboard({
                     <Crown className="w-5 h-5 text-amber-500 dark:text-amber-400 drop-shadow mb-0.5 animate-bounce" />
                   )}
                   <span
-                    className={`font-mono font-black text-[10px] sm:text-xs px-2 py-0.5 rounded-full border shadow-xs whitespace-nowrap ${
+                    className={`font-mono font-black text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full border shadow-sm whitespace-nowrap ${
                       isRank1
-                        ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 dark:border-amber-400/50'
+                        ? 'bg-amber-500/20 text-amber-800 dark:text-amber-300 border-amber-500/50 dark:border-amber-400/50'
                         : isRank2
-                        ? 'bg-slate-300/40 dark:bg-slate-400/20 text-slate-800 dark:text-slate-200 border-slate-400/40 dark:border-slate-300/40'
+                        ? 'bg-slate-200 text-slate-900 border-slate-400 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600 font-black'
                         : isRank3
-                        ? 'bg-amber-700/15 dark:bg-amber-700/20 text-amber-800 dark:text-amber-400 border-amber-600/40'
-                        : 'bg-slate-200/80 dark:bg-black/50 text-slate-700 dark:text-white/80 border-slate-300/60 dark:border-white/10 text-[9px]'
+                        ? 'bg-amber-100 text-amber-950 border-amber-400 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700 font-black'
+                        : 'bg-slate-100 text-slate-800 border-slate-300 dark:bg-black/60 dark:text-white/80 dark:border-white/10 text-[9px]'
                     }`}
                   >
                     {ptVal} Pt
@@ -849,11 +849,11 @@ function ClanPodiumLeaderboard({
                   </Link>
 
                   {item.role === 'LEADER' ? (
-                    <span className="inline-block mt-0.5 px-1 py-0.2 rounded text-[8px] font-black bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 uppercase">
+                    <span className="inline-block mt-0.5 px-1 py-0.2 rounded text-[8px] font-black bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 uppercase">
                       Leader
                     </span>
                   ) : item.role === 'MODERATOR' ? (
-                    <span className="inline-block mt-0.5 px-1 py-0.2 rounded text-[8px] font-black bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 uppercase">
+                    <span className="inline-block mt-0.5 px-1 py-0.2 rounded text-[8px] font-black bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 uppercase">
                       Mod
                     </span>
                   ) : null}
@@ -868,10 +868,10 @@ function ClanPodiumLeaderboard({
                       isRank1
                         ? 'text-xl sm:text-2xl text-amber-600 dark:text-amber-400 drop-shadow'
                         : isRank2
-                        ? 'text-lg sm:text-xl text-slate-700 dark:text-slate-300'
+                        ? 'text-lg sm:text-xl text-slate-900 dark:text-slate-100'
                         : isRank3
-                        ? 'text-base sm:text-lg text-amber-700 dark:text-amber-600'
-                        : 'text-sm text-slate-600 dark:text-white/60'
+                        ? 'text-base sm:text-lg text-amber-900 dark:text-amber-300'
+                        : 'text-sm text-slate-700 dark:text-white/70'
                     }`}
                   >
                     #{rank}
@@ -879,12 +879,12 @@ function ClanPodiumLeaderboard({
                   <span
                     className={`text-[8px] sm:text-[9px] font-black uppercase tracking-wider mt-0.5 ${
                       isRank1
-                        ? 'text-amber-700/80 dark:text-amber-400/80'
+                        ? 'text-amber-700 dark:text-amber-400/90'
                         : isRank2
-                        ? 'text-slate-600 dark:text-slate-400'
+                        ? 'text-slate-800 dark:text-slate-300 font-extrabold'
                         : isRank3
-                        ? 'text-amber-800/80 dark:text-amber-600/80'
-                        : 'text-slate-500 dark:text-white/40'
+                        ? 'text-amber-900 dark:text-amber-400 font-extrabold'
+                        : 'text-slate-600 dark:text-white/50'
                     }`}
                   >
                     {isRank1 ? 'TOP 1' : `TOP ${rank}`}
@@ -1266,15 +1266,20 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           {/* Clan Identity & Actions Bar */}
           <div
             className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b"
-            style={{ borderColor: 'var(--border-subtle)', backgroundColor: 'var(--bg-card)' }}
+            style={{
+              borderColor: 'var(--border-subtle)',
+              backgroundColor: isDark
+                ? 'var(--bg-card)'
+                : 'color-mix(in srgb, var(--accent) 3%, #ffffff)',
+            }}
           >
             {/* Tag, Name & Tier Badge */}
             <div className="flex items-center gap-3 flex-wrap min-w-0">
               <span
                 className="inline-flex items-center px-3 py-1 rounded-xl border font-mono font-black text-sm shadow-xs shrink-0 backdrop-blur-xs select-none"
                 style={{
-                  backgroundColor: isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(0, 0, 0, 0.05)',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
+                  backgroundColor: isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(255, 255, 255, 0.95)',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.12)',
                 }}
               >
                 <span
@@ -1389,23 +1394,37 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           </div>
 
           {/* Integrated Clan Telemetry Bar */}
-          <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-black/5 dark:bg-black/20">
+          <div
+            className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-12 gap-4 items-center border-t transition-colors"
+            style={{
+              backgroundColor: isDark
+                ? 'rgba(0, 0, 0, 0.25)'
+                : 'color-mix(in srgb, var(--accent) 5%, #ffffff)',
+              borderColor: 'var(--border-subtle)',
+            }}
+          >
             {/* SP Progress (7 cols) */}
             <div className="md:col-span-7 space-y-2 min-w-0">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Coins className="w-4 h-4 text-amber-500 dark:text-amber-400" />
-                  <span className="font-bold ui-title">{isEn ? 'SP Coin Progress' : 'Tiến trình SP Coin'}</span>
-                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  <span className="font-bold text-xs ui-title">{isEn ? 'SP Coin Progress' : 'Tiến trình SP Coin'}</span>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30">
                     {clan.totalSp >= 20 ? (isEn ? 'Max Level (Tier 3)' : 'Cấp tối đa (Tier 3)') : (isEn ? `Target ${targetTierName}` : `Mục tiêu ${targetTierName}`)}
                   </span>
                 </div>
-                <div className="font-mono text-xs font-black text-amber-600 dark:text-amber-400">
+                <div className="font-mono text-xs font-black text-amber-700 dark:text-amber-300">
                   {clan.totalSp} / {targetSp} SP
                 </div>
               </div>
 
-              <div className="w-full h-2.5 rounded-full bg-slate-200/80 dark:bg-black/50 border border-slate-300/40 dark:border-white/5 overflow-hidden p-0.5">
+              <div
+                className="w-full h-2.5 rounded-full overflow-hidden p-0.5 border"
+                style={{
+                  backgroundColor: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.08)',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                }}
+              >
                 <div
                   className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-amber-500 to-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.5)]"
                   style={{
@@ -1416,20 +1435,23 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               </div>
 
               <div className="flex items-center justify-between text-[11px] ui-dim">
-                <span>
+                <span className="font-medium">
                   {clan.totalSp >= 20
                     ? (isEn ? 'Clan has reached the maximum tier!' : 'Clan đang ở cấp bậc cao nhất!')
                     : (isEn ? `Need ${Math.max(0, targetSp - clan.totalSp)} more SP to reach ${targetTierName}` : `Cần thêm ${Math.max(0, targetSp - clan.totalSp)} SP để lên ${targetTierName}`)}
                 </span>
-                <span className="font-mono font-bold text-amber-600 dark:text-amber-400/90">{progressPercentage}%</span>
+                <span className="font-mono font-black text-amber-700 dark:text-amber-300">{progressPercentage}%</span>
               </div>
             </div>
 
             {/* Quick Metrics (5 cols) */}
-            <div className="md:col-span-5 flex items-center justify-between md:justify-end gap-6 pt-3 md:pt-0 border-t md:border-t-0 md:border-l border-slate-200 dark:border-white/10 md:pl-6">
+            <div
+              className="md:col-span-5 flex items-center justify-between md:justify-end gap-6 pt-3 md:pt-0 border-t md:border-t-0 md:border-l md:pl-6"
+              style={{ borderColor: 'var(--border-subtle)' }}
+            >
               <div className="text-left md:text-right">
                 <span className="text-[11px] ui-dim block font-medium">{isEn ? 'Total Clan Pt' : 'Tổng Clan Pt'}</span>
-                <div className="flex items-center md:justify-end gap-1.5 font-mono text-base font-black text-amber-600 dark:text-amber-400">
+                <div className="flex items-center md:justify-end gap-1.5 font-mono text-base font-black text-amber-700 dark:text-amber-400">
                   <Trophy className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                   <span>{totalClanPt.toLocaleString()} Pt</span>
                 </div>

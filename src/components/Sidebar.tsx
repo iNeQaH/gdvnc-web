@@ -535,7 +535,8 @@ export const Sidebar = () => {
           ) : (
             <Link
               href="/login"
-              className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 tsumiki-btn" style={{ backgroundColor: "var(--accent)" }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 ${isLavender ? 'tsumiki-btn' : ''}`}
+              style={{ backgroundColor: "var(--accent)" }}
             >
               <UserIcon className="w-3.5 h-3.5" />
               {t('nav.login')}
