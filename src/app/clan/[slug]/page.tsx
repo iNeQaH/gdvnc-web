@@ -29,6 +29,7 @@ import {
   ChevronRight,
   Sparkles,
   Edit,
+  Rocket,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
@@ -475,14 +476,14 @@ function CompactClanLevelsSlideshow({
 
   return (
     <div
-      className="ui-card relative w-full rounded-2xl overflow-hidden border shadow-sm transition-all duration-300"
+      className="ui-card relative w-full h-full rounded-2xl overflow-hidden border shadow-sm transition-all duration-300 flex flex-col"
       style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Header Row (thấp & gọn) */}
+      {/* Header Row */}
       <div
-        className="px-4 py-2 border-b flex items-center justify-between gap-3 bg-black/15"
+        className="px-4 py-2.5 border-b flex items-center justify-between gap-3 bg-black/15 shrink-0"
         style={{ borderColor: 'var(--border-subtle)' }}
       >
         <div className="flex items-center gap-2">
@@ -500,8 +501,8 @@ function CompactClanLevelsSlideshow({
         )}
       </div>
 
-      {/* Main Slide Canvas (thấp hơn nhiều, h-32 sm:h-36) */}
-      <div className="relative h-32 sm:h-36 w-full overflow-hidden bg-slate-950 flex flex-col justify-between p-3 sm:p-4">
+      {/* Main Slide Canvas */}
+      <div className="relative h-44 sm:h-52 w-full overflow-hidden bg-slate-950 flex flex-col justify-between p-3 sm:p-4 flex-1">
         {embedVideo && embedUrl ? (
           <div className="absolute inset-0 z-20 bg-black flex flex-col">
             <div className="p-1 bg-black/80 flex items-center justify-between border-b border-white/10 px-3">
@@ -1252,7 +1253,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
         </div>
       )}
 
-      <div className={`relative z-[1] max-w-6xl mx-auto space-y-6 transition-all duration-300 ${isRosterOpen ? 'xl:mr-64 2xl:mx-auto' : ''}`}>
+      <div className={`relative z-[1] max-w-6xl mx-auto space-y-6 transition-all duration-300 ease-in-out ${isRosterOpen ? 'xl:-translate-x-14 2xl:-translate-x-16' : ''}`}>
         {/* HERO CARD (Tương tự cấu trúc trang Profile) */}
         <div
           className="ui-card rounded-3xl border overflow-hidden shadow-2xl relative"
@@ -1675,10 +1676,65 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           </div>
         )}
 
-        {/* ROW 5: FEATURED CREATOR WORKS (dưới cùng và bé thôi) */}
-        {clan.creatorWorks?.length > 0 && (
-          <CompactClanLevelsSlideshow works={clan.creatorWorks} isEn={isEn} />
-        )}
+        {/* ROW 5: FEATURED CREATOR WORKS & COMING SOON PLACEHOLDER */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
+          {/* Box 1: Featured Creator Works */}
+          {clan.creatorWorks?.length > 0 ? (
+            <CompactClanLevelsSlideshow works={clan.creatorWorks} isEn={isEn} />
+          ) : (
+            <div
+              className="ui-card rounded-2xl border p-5 flex flex-col items-center justify-center text-center space-y-2 h-full min-h-[220px]"
+              style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+            >
+              <Hammer className="w-8 h-8 ui-dim opacity-40 mb-1" />
+              <h3 className="text-xs font-bold ui-title">Featured Creator Works</h3>
+              <p className="text-[11px] ui-dim max-w-xs leading-relaxed">
+                {isEn ? 'No creator works published yet by clan members.' : 'Chưa có tác phẩm creator nào từ thành viên clan.'}
+              </p>
+            </div>
+          )}
+
+          {/* Box 2: Coming Soon Placeholder Box */}
+          <div
+            className="ui-card rounded-2xl border overflow-hidden flex flex-col justify-between shadow-sm relative group transition-all duration-300 min-h-[220px]"
+            style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+          >
+            <div
+              className="px-4 py-2.5 border-b flex items-center justify-between gap-3 bg-black/15 shrink-0"
+              style={{ borderColor: 'var(--border-subtle)' }}
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
+                <h2 className="text-sm font-bold ui-title">Coming soon</h2>
+              </div>
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                {isEn ? 'In Development' : 'Sắp ra mắt'}
+              </span>
+            </div>
+            <div className="relative p-6 flex-1 flex flex-col items-center justify-center text-center space-y-3 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent">
+              <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                <Rocket className="w-6 h-6" />
+              </div>
+              <div className="space-y-1 max-w-xs">
+                <p className="text-xs font-bold ui-title">
+                  {isEn ? 'New Clan Feature In Progress' : 'Tính năng Clan mới đang phát triển'}
+                </p>
+                <p className="text-[11px] ui-dim leading-relaxed">
+                  {isEn
+                    ? 'Exciting new clan activities, quests, and rewards are under development. Stay tuned!'
+                    : 'Nhiều hoạt động, nhiệm vụ và phần thưởng Clan hấp dẫn đang được hoàn thiện. Hãy đón chờ nhé!'}
+                </p>
+              </div>
+            </div>
+            <div
+              className="px-4 py-2 border-t flex items-center justify-between text-[11px] ui-dim bg-black/10 shrink-0 font-mono"
+              style={{ borderColor: 'var(--border-subtle)' }}
+            >
+              <span>GDVN Clan Hub</span>
+              <span className="text-purple-400 font-bold">v2.5</span>
+            </div>
+          </div>
+        </div>
 
         {/* MODAL: DONATE SP */}
         {isDonateOpen && (

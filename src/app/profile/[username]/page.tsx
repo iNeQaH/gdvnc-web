@@ -772,9 +772,9 @@ export default function ProfilePage() {
 
         {/* Info Bar */}
         <div className="px-5 pb-5 pt-0">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12 sm:-mt-14 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-4 mb-4">
             {/* Avatar */}
-            <div className="relative shrink-0">
+            <div className="relative shrink-0 -mt-12 sm:-mt-14">
               <div
                 className={`p-1 rounded-2xl shadow-xl ${isLavender ? 'tsumiki-btn !m-0 !p-1' : 'bg-white dark:bg-zinc-900 border'}`}
                 style={!isLavender ? { backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' } : {}}
@@ -802,7 +802,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Primary Details (Name, Badges, Roles) */}
-            <div className="flex-1 min-w-0 space-y-1 sm:mb-1">
+            <div className="flex-1 min-w-0 space-y-1.5 pt-2 sm:pt-3.5">
               <div className="flex items-center gap-2 flex-wrap">
                 <UserDisplayName
                   user={data}
