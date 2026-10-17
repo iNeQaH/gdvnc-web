@@ -1,4 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@700;800;900&family=Fira+Code:wght@700&family=Montserrat:wght@700;800;900&family=Orbitron:wght@700;800;900&family=Outfit:wght@700;800;900&family=Unbounded:wght@700;800;900&display=swap');
 @import "tailwindcss";
+@import "./tsumiki.css";
 
 :root {
   /* Common variables */
@@ -790,4 +792,4 @@ input[type="number"] {
   overflow: visible;
 }
 
-@import "./tsumiki.css";
+

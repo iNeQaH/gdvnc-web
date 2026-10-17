@@ -18,7 +18,7 @@ import {
   uploadthingKeysFromRef,
 } from '@/lib/uploadthing';
 import { deleteUserAccount } from '@/lib/deleteUser';
-import { isSuperAdminUser } from '@/lib/roles';
+import { isSuperAdminUser, isStaffRole } from '@/lib/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,6 +48,25 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         platformerPp: true,
         creatorPoints: true,
         totpEnabled: true,
+        nameColor: true,
+        nameGradient: true,
+        nameGlow: true,
+        nameFont: true,
+        clanMember: {
+          include: {
+            clan: {
+              select: {
+                id: true,
+                name: true,
+                tag: true,
+                slug: true,
+                color: true,
+                colorGradient: true,
+                isSuspended: true,
+              },
+            },
+          },
+        },
         records: {
           where: { status: RecordStatus.APPROVED },
           include: {
@@ -261,8 +280,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
     const body = await req.json();
 
     const isSelf = auth.username.toLowerCase() === username.toLowerCase();
-    const isStaff = auth.role === 'ADMIN' || auth.role === 'MODERATOR';
-    if (!isSelf && !isStaff) {
+    const isOwner = isSuperAdminUser(auth);
+    const isStaff = isStaffRole(auth.role);
+    if (!isSelf && !isOwner) {
       return NextResponse.json({ error: 'Không có quyền sửa profile này' }, { status: 403 });
     }
 
@@ -337,6 +357,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         discordTag: body.discordTag !== undefined ? clipText(body.discordTag, 80) : undefined,
         profileConfig: body.profileConfig !== undefined ? body.profileConfig : undefined,
         profileTheme: body.profileTheme !== undefined ? body.profileTheme : undefined,
+        nameColor: body.nameColor !== undefined ? (clipText(body.nameColor, 30)?.trim() || null) : undefined,
+        nameGradient: body.nameGradient !== undefined ? (clipText(body.nameGradient, 120)?.trim() || null) : undefined,
+        nameGlow: body.nameGlow !== undefined ? (clipText(body.nameGlow, 50)?.trim() || null) : undefined,
+        nameFont: body.nameFont !== undefined ? (clipText(body.nameFont, 50)?.trim() || null) : undefined,
       },
       select: {
         bio: true,
@@ -348,6 +372,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         discordTag: true,
         profileConfig: true,
         profileTheme: true,
+        nameColor: true,
+        nameGradient: true,
+        nameGlow: true,
+        nameFont: true,
       }
     });
 

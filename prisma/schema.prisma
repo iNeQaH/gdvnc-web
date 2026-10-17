@@ -86,6 +86,18 @@ model User {
   createdRedeemCodes RedeemCode[]     @relation("RedeemCodeCreator")
   redeemedCodes      RedeemCodeUse[]  @relation("UserRedeemUses")
 
+  // Supporter name customization
+  nameColor          String?
+  nameGradient       String?
+  nameGlow           String?
+  nameFont           String?
+
+  // Clan relationships
+  clanMember         ClanMember?
+  ledClans           Clan[]              @relation("ClanLeader")
+  clanRequests       ClanJoinRequest[]
+  clanSpContributed  ClanSpContribution?
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -128,6 +140,7 @@ model Level {
   hardestClassicFor  User[] @relation("UserHardestClassic")
   hardestPlatformerFor User[] @relation("UserHardestPlatformer")
   hardestChallengeFor User[] @relation("UserHardestChallenge")
+  favoritedByClans    Clan[] @relation("ClanFavoriteLevel")
 
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
@@ -479,5 +492,93 @@ model RedeemCodeUse {
   @@unique([codeId, userId])
   @@index([userId])
   @@index([codeId])
+}
+
+enum ClanRole {
+  LEADER
+  MODERATOR
+  MEMBER
+}
+
+enum ClanRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Clan {
+  id              String      @id @default(uuid())
+  name            String      @unique
+  tag             String      @unique
+  slug            String      @unique
+  description     String?     @db.Text
+  avatarUrl       String?     @db.Text
+  coverUrl        String?     @db.Text
+  videoUrl        String?
+  favoriteLevelId String?
+  favoriteLevel   Level?      @relation("ClanFavoriteLevel", fields: [favoriteLevelId], references: [id], onDelete: SetNull)
+
+  color           String      @default("#0ea5e9")
+  colorGradient   String?
+  themeColor      String?
+  themeGradient   String?
+
+  isSuspended      Boolean     @default(false)
+  gracePeriodUntil DateTime?
+
+  leaderId        String
+  leader          User        @relation("ClanLeader", fields: [leaderId], references: [id], onDelete: Cascade)
+  members         ClanMember[]
+  requests        ClanJoinRequest[]
+  contributions   ClanSpContribution[]
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([tag])
+  @@index([slug])
+  @@index([isSuspended])
+}
+
+model ClanMember {
+  id        String   @id @default(uuid())
+  clanId    String
+  clan      Clan     @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      ClanRole @default(MEMBER)
+  joinedAt  DateTime @default(now())
+
+  @@index([clanId])
+  @@index([userId])
+  @@index([role])
+}
+
+model ClanJoinRequest {
+  id        String            @id @default(uuid())
+  clanId    String
+  clan      Clan              @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   String?           @db.Text
+  status    ClanRequestStatus @default(PENDING)
+  createdAt DateTime          @default(now())
+
+  @@unique([clanId, userId])
+  @@index([clanId, status])
+  @@index([userId])
+}
+
+model ClanSpContribution {
+  id        String   @id @default(uuid())
+  clanId    String
+  clan      Clan     @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  spPledged Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@index([clanId])
+  @@index([userId])
 }
 

@@ -21,6 +21,9 @@ import {
   Gift,
   Ticket,
   Plus,
+  Palette,
+  Type,
+  RotateCcw,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
@@ -28,6 +31,7 @@ import { logoutClient } from '@/lib/sessionClient';
 import ImageEditorModal from '@/components/ImageEditorModal';
 import SmartCaptcha from '@/components/SmartCaptcha';
 import ColorPicker from '@/components/ColorPicker';
+import { UserDisplayName, FONT_PRESETS } from '@/components/UserDisplayName';
 
 export default function SettingsPage() {
   const { t, language } = useLanguage();
@@ -54,6 +58,17 @@ export default function SettingsPage() {
   const [borderGlowEnabled, setBorderGlowEnabled] = useState<boolean>(true);
   const [borderGlowColor, setBorderGlowColor] = useState<string>('#38bdf8');
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Supporter custom name styles
+  const [nameColor, setNameColor] = useState<string>('#ffffff');
+  const [nameUseGradient, setNameUseGradient] = useState<boolean>(false);
+  const [nameGradColor1, setNameGradColor1] = useState<string>('#38bdf8');
+  const [nameGradColor2, setNameGradColor2] = useState<string>('#ec4899');
+  const [nameGradAngle, setNameGradAngle] = useState<number>(90);
+  const [nameUseGlow, setNameUseGlow] = useState<boolean>(false);
+  const [nameGlowColor, setNameGlowColor] = useState<string>('#38bdf8');
+  const [nameFont, setNameFont] = useState<string>('default');
+  const [savingNameStyle, setSavingNameStyle] = useState<boolean>(false);
 
   // Image Modal
   const [imageModal, setImageModal] = useState<{ open: boolean; type: 'avatar' | 'cover' | 'background' }>({
@@ -123,6 +138,25 @@ export default function SettingsPage() {
         setBorderAnimation(initBorderAnim);
         setBorderGlowEnabled(initBorderGlowEnabled);
         setBorderGlowColor(initBorderGlowColor);
+
+        // Load supporter name styles
+        if (json.user.nameFont) setNameFont(json.user.nameFont);
+        if (json.user.nameColor) setNameColor(json.user.nameColor);
+        if (json.user.nameGradient) {
+          setNameUseGradient(true);
+          const gradMatch = json.user.nameGradient.match(
+            /linear-gradient\s*\(\s*(\d+)deg\s*,\s*(#[a-fA-F0-9]{3,8}|[a-zA-Z0-9(),\s]+)\s*,\s*(#[a-fA-F0-9]{3,8}|[a-zA-Z0-9(),\s]+)\s*\)/i
+          );
+          if (gradMatch) {
+            setNameGradAngle(parseInt(gradMatch[1], 10) || 90);
+            setNameGradColor1(gradMatch[2].trim());
+            setNameGradColor2(gradMatch[3].trim());
+          }
+        }
+        if (json.user.nameGlow) {
+          setNameUseGlow(true);
+          setNameGlowColor(json.user.nameGlow);
+        }
       }
     } catch (e) {}
     setLoading(false);
@@ -131,6 +165,58 @@ export default function SettingsPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleSaveNameStyle = async (reset = false) => {
+    setSavingNameStyle(true);
+    try {
+      const payload = reset
+        ? {
+            nameColor: null,
+            nameGradient: null,
+            nameGlow: null,
+            nameFont: null,
+          }
+        : {
+            nameColor: nameUseGradient ? null : (nameColor || null),
+            nameGradient: nameUseGradient
+              ? `linear-gradient(${nameGradAngle}deg, ${nameGradColor1}, ${nameGradColor2})`
+              : null,
+            nameGlow: nameUseGlow ? (nameGlowColor || '#38bdf8') : null,
+            nameFont: nameFont === 'default' ? null : nameFont,
+          };
+
+      const res = await fetch(`/api/profile/${currentUser.username}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const resJson = await res.json();
+      if (res.ok && resJson.success) {
+        if (reset) {
+          setNameColor('#ffffff');
+          setNameUseGradient(false);
+          setNameGradColor1('#38bdf8');
+          setNameGradColor2('#ec4899');
+          setNameGradAngle(90);
+          setNameUseGlow(false);
+          setNameGlowColor('#38bdf8');
+          setNameFont('default');
+        }
+        const updatedUser = { ...currentUser, ...payload };
+        setCurrentUser(updatedUser);
+        setData((prev: any) => ({ ...prev, ...payload }));
+        localStorage.setItem('gdvnc_user', JSON.stringify(updatedUser));
+        window.dispatchEvent(new Event('gdvnc_user_update'));
+        showToast('Đã lưu phong cách tên thành công!', 'success');
+      } else {
+        showToast(resJson.error || 'Không thể lưu phong cách tên', 'error');
+      }
+    } catch {
+      showToast('Lỗi kết nối máy chủ', 'error');
+    } finally {
+      setSavingNameStyle(false);
+    }
+  };
 
   const updateThemeConfig = (
     newColors: string[],
@@ -941,6 +1027,221 @@ export default function SettingsPage() {
                     <span className="text-xs ui-dim truncate font-mono">{t('settings.current_bg')}</span>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Supporter Name Styling Box */}
+          {canAccessSupporter && (
+            <div className="ui-card p-5 space-y-5 border-purple-500/20" style={{ backgroundColor: 'var(--bg-card)' }}>
+              <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--border-subtle)' }}>
+                <h2 className="text-sm font-bold flex items-center gap-2 text-purple-400">
+                  <Palette className="w-4 h-4" /> Tùy biến phong cách Tên (Supporter)
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => handleSaveNameStyle(true)}
+                  disabled={savingNameStyle}
+                  className="px-2.5 py-1 text-[11px] font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg border border-red-500/20 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                  title="Đặt lại về mặc định"
+                >
+                  <RotateCcw className="w-3 h-3" /> Đặt lại
+                </button>
+              </div>
+
+              {/* Live Preview Box */}
+              <div
+                className="p-4 rounded-xl border flex flex-col items-center justify-center gap-2.5 bg-slate-900/60 shadow-inner"
+                style={{ borderColor: 'var(--border-ui)' }}
+              >
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">Xem trước hiển thị</span>
+                <div className="text-base font-bold py-1 px-3 rounded-lg bg-black/30 border border-white/5">
+                  <UserDisplayName
+                    user={{
+                      username: currentUser.username,
+                      displayName: currentUser.displayName || currentUser.gdUsername || currentUser.username,
+                      nameColor: nameUseGradient ? null : (nameColor || null),
+                      nameGradient: nameUseGradient
+                        ? `linear-gradient(${nameGradAngle}deg, ${nameGradColor1}, ${nameGradColor2})`
+                        : null,
+                      nameGlow: nameUseGlow ? (nameGlowColor || '#38bdf8') : null,
+                      nameFont: nameFont,
+                      clan: data?.clanMember?.clan || data?.clan || null,
+                      clanMember: data?.clanMember || null,
+                    }}
+                    className="text-base"
+                  />
+                </div>
+              </div>
+
+              {/* Font Selector */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold ui-title flex items-center gap-1.5">
+                  <Type className="w-3.5 h-3.5 text-purple-400" /> Phông chữ hiển thị
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {Object.entries(FONT_PRESETS).map(([key, f]) => {
+                    const active = nameFont === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setNameFont(key)}
+                        className={`p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer flex flex-col gap-1 ${
+                          active
+                            ? 'border-purple-500 bg-purple-500/15 font-bold shadow-xs'
+                            : 'ui-subtle hover:border-purple-500/40'
+                        }`}
+                        style={{ borderColor: active ? undefined : 'var(--border-ui)' }}
+                      >
+                        <span className="text-[10px] ui-dim font-sans">{f.label}</span>
+                        <span className="truncate text-sm" style={{ fontFamily: f.family }}>
+                          {currentUser.username}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Color Mode: Solid or Gradient */}
+              <div className="pt-2 border-t space-y-3" style={{ borderColor: 'var(--border-subtle)' }}>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold ui-title">Chế độ màu tên</label>
+                  <div className="flex rounded-lg border p-0.5 bg-slate-500/5 text-xs font-bold" style={{ borderColor: 'var(--border-ui)' }}>
+                    <button
+                      type="button"
+                      onClick={() => setNameUseGradient(false)}
+                      className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
+                        !nameUseGradient ? 'bg-purple-500 text-white shadow-xs' : 'ui-dim hover:text-purple-400'
+                      }`}
+                    >
+                      Đơn sắc
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNameUseGradient(true)}
+                      className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
+                        nameUseGradient ? 'bg-purple-500 text-white shadow-xs' : 'ui-dim hover:text-purple-400'
+                      }`}
+                    >
+                      Gradient
+                    </button>
+                  </div>
+                </div>
+
+                {!nameUseGradient ? (
+                  <div className="flex items-center gap-3 p-2.5 rounded-xl border bg-slate-500/5" style={{ borderColor: 'var(--border-ui)' }}>
+                    <ColorPicker
+                      value={nameColor}
+                      onChange={setNameColor}
+                      size={32}
+                      round
+                      ariaLabel="Màu chữ"
+                    />
+                    <div className="flex-1">
+                      <span className="text-xs font-bold ui-title block">Màu chữ</span>
+                      <span className="font-mono text-xs uppercase ui-dim">{nameColor}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3.5 rounded-xl border bg-slate-500/5 space-y-3" style={{ borderColor: 'var(--border-ui)' }}>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex items-center gap-2.5 p-2 rounded-lg border bg-slate-500/5" style={{ borderColor: 'var(--border-subtle)' }}>
+                        <ColorPicker
+                          value={nameGradColor1}
+                          onChange={setNameGradColor1}
+                          size={28}
+                          round
+                          ariaLabel="Màu 1"
+                        />
+                        <div className="min-w-0">
+                          <span className="text-[11px] font-bold block ui-dim">Màu 1</span>
+                          <span className="font-mono text-[11px] uppercase truncate block">{nameGradColor1}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2.5 p-2 rounded-lg border bg-slate-500/5" style={{ borderColor: 'var(--border-subtle)' }}>
+                        <ColorPicker
+                          value={nameGradColor2}
+                          onChange={setNameGradColor2}
+                          size={28}
+                          round
+                          ariaLabel="Màu 2"
+                        />
+                        <div className="min-w-0">
+                          <span className="text-[11px] font-bold block ui-dim">Màu 2</span>
+                          <span className="font-mono text-[11px] uppercase truncate block">{nameGradColor2}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs font-bold pt-1">
+                      <span className="ui-dim">Góc nghiêng Gradient</span>
+                      <div className="flex items-center gap-1 text-[11px]">
+                        {[0, 45, 90, 135, 180].map((deg) => (
+                          <button
+                            key={deg}
+                            type="button"
+                            onClick={() => setNameGradAngle(deg)}
+                            className={`px-1.5 py-0.5 rounded-md font-mono cursor-pointer transition-colors ${
+                              nameGradAngle === deg ? 'bg-purple-500 text-white font-bold' : 'ui-subtle hover:text-purple-400'
+                            }`}
+                          >
+                            {deg}°
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Glow Customization */}
+              <div className="pt-2 border-t space-y-3" style={{ borderColor: 'var(--border-subtle)' }}>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold ui-title flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-purple-400" /> Hiệu ứng phát sáng (Glow)
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold ui-dim hover:text-purple-400 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={nameUseGlow}
+                      onChange={(e) => setNameUseGlow(e.target.checked)}
+                      className="rounded accent-purple-500 cursor-pointer"
+                    />
+                    <span>Bật phát sáng</span>
+                  </label>
+                </div>
+
+                {nameUseGlow && (
+                  <div className="p-3 rounded-xl border bg-slate-500/5 space-y-2 animate-in fade-in duration-200" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <div className="flex items-center gap-3">
+                      <ColorPicker
+                        value={nameGlowColor}
+                        onChange={setNameGlowColor}
+                        size={32}
+                        round
+                        ariaLabel="Màu viền phát sáng"
+                      />
+                      <div className="flex-1">
+                        <span className="text-xs font-bold ui-title block">Màu Glow</span>
+                        <span className="font-mono text-xs uppercase ui-dim">{nameGlowColor}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Save Button */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => handleSaveNameStyle(false)}
+                  disabled={savingNameStyle}
+                  className="w-full py-2.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50"
+                >
+                  <Check className="w-4 h-4" /> {savingNameStyle ? 'Đang lưu...' : 'Lưu phong cách tên'}
+                </button>
               </div>
             </div>
           )}

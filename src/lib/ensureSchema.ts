@@ -15,6 +15,11 @@ async function columnSet(db: PrismaClient) {
         OR (table_name = 'Level' AND column_name = 'classicRank')
         OR (table_name = 'RedeemCode' AND column_name IN ('id', 'expiresAt'))
         OR (table_name = 'RedeemCodeUse' AND column_name = 'id')
+        OR (table_name = 'User' AND column_name IN ('nameColor', 'nameGradient', 'nameGlow', 'nameFont'))
+        OR (table_name = 'Clan' AND column_name = 'id')
+        OR (table_name = 'ClanMember' AND column_name = 'id')
+        OR (table_name = 'ClanJoinRequest' AND column_name = 'id')
+        OR (table_name = 'ClanSpContribution' AND column_name = 'id')
       )
   `;
   return new Set(rows.map((row) => `${row.table_name}.${row.column_name}`));
@@ -119,6 +124,96 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
       )
     `);
   }
+  if (!have.has('User.nameColor')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "nameColor" TEXT`);
+  }
+  if (!have.has('User.nameGradient')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "nameGradient" TEXT`);
+  }
+  if (!have.has('User.nameGlow')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "nameGlow" TEXT`);
+  }
+  if (!have.has('User.nameFont')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "nameFont" TEXT`);
+  }
+  if (!have.has('Clan.id')) {
+    await db.$executeRawUnsafe(`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ClanRole') THEN
+          CREATE TYPE "ClanRole" AS ENUM ('LEADER', 'MODERATOR', 'MEMBER');
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ClanRequestStatus') THEN
+          CREATE TYPE "ClanRequestStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
+        END IF;
+      END $$;
+    `).catch(() => {});
+    await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "Clan" (
+        "id" TEXT NOT NULL,
+        "name" TEXT NOT NULL,
+        "tag" TEXT NOT NULL,
+        "slug" TEXT NOT NULL,
+        "description" TEXT,
+        "avatarUrl" TEXT,
+        "coverUrl" TEXT,
+        "videoUrl" TEXT,
+        "favoriteLevelId" TEXT,
+        "color" TEXT NOT NULL DEFAULT '#0ea5e9',
+        "colorGradient" TEXT,
+        "themeColor" TEXT,
+        "themeGradient" TEXT,
+        "isSuspended" BOOLEAN NOT NULL DEFAULT false,
+        "gracePeriodUntil" TIMESTAMP(3),
+        "leaderId" TEXT NOT NULL,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "Clan_pkey" PRIMARY KEY ("id"),
+        CONSTRAINT "Clan_name_key" UNIQUE ("name"),
+        CONSTRAINT "Clan_tag_key" UNIQUE ("tag"),
+        CONSTRAINT "Clan_slug_key" UNIQUE ("slug")
+      )
+    `);
+  }
+  if (!have.has('ClanMember.id')) {
+    await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "ClanMember" (
+        "id" TEXT NOT NULL,
+        "clanId" TEXT NOT NULL,
+        "userId" TEXT NOT NULL,
+        "role" "ClanRole" NOT NULL DEFAULT 'MEMBER',
+        "joinedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "ClanMember_pkey" PRIMARY KEY ("id"),
+        CONSTRAINT "ClanMember_userId_key" UNIQUE ("userId")
+      )
+    `);
+  }
+  if (!have.has('ClanJoinRequest.id')) {
+    await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "ClanJoinRequest" (
+        "id" TEXT NOT NULL,
+        "clanId" TEXT NOT NULL,
+        "userId" TEXT NOT NULL,
+        "message" TEXT,
+        "status" "ClanRequestStatus" NOT NULL DEFAULT 'PENDING',
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "ClanJoinRequest_pkey" PRIMARY KEY ("id"),
+        CONSTRAINT "ClanJoinRequest_clanId_userId_key" UNIQUE ("clanId", "userId")
+      )
+    `);
+  }
+  if (!have.has('ClanSpContribution.id')) {
+    await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "ClanSpContribution" (
+        "id" TEXT NOT NULL,
+        "clanId" TEXT NOT NULL,
+        "userId" TEXT NOT NULL,
+        "spPledged" INTEGER NOT NULL DEFAULT 0,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "ClanSpContribution_pkey" PRIMARY KEY ("id"),
+        CONSTRAINT "ClanSpContribution_userId_key" UNIQUE ("userId")
+      )
+    `);
+  }
 }
 
 /** Indexes/FKs — do not block the request that needed the new columns. */
@@ -210,7 +305,12 @@ export async function applyPendingSchema(db: PrismaClient): Promise<void> {
     have.has('Level.classicRank') &&
     have.has('RedeemCode.id') &&
     have.has('RedeemCode.expiresAt') &&
-    have.has('RedeemCodeUse.id');
+    have.has('RedeemCodeUse.id') &&
+    have.has('Clan.id') &&
+    have.has('ClanMember.id') &&
+    have.has('ClanJoinRequest.id') &&
+    have.has('ClanSpContribution.id') &&
+    have.has('User.nameColor');
   if (complete) return;
   await addMissingColumns(db, have);
   void addIndexesInBackground(db);

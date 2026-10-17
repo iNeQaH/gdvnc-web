@@ -2,6 +2,7 @@ const en = {
   // Navigation & Sidebar
   'nav.leaderboard': 'Leaderboard',
   'nav.demonlist': 'Levels',
+  'nav.clan': 'Clan',
   'nav.challenges': 'Challenge List',
   'nav.submit': 'Submit',
   'nav.roulette': 'Roulette',

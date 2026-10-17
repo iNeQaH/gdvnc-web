@@ -9,7 +9,35 @@ const levelInclude = {
     where: { status: RecordStatus.APPROVED },
     include: {
       user: {
-        select: { id: true, username: true, gdUsername: true, avatarUrl: true, classicPp: true, platformerPp: true, gdVerified: true, supporterUntil: true },
+        select: {
+          id: true,
+          username: true,
+          gdUsername: true,
+          avatarUrl: true,
+          classicPp: true,
+          platformerPp: true,
+          gdVerified: true,
+          supporterUntil: true,
+          nameColor: true,
+          nameGradient: true,
+          nameGlow: true,
+          nameFont: true,
+          clanMember: {
+            select: {
+              role: true,
+              clan: {
+                select: {
+                  name: true,
+                  tag: true,
+                  color: true,
+                  colorGradient: true,
+                  slug: true,
+                  isSuspended: true,
+                },
+              },
+            },
+          },
+        },
       },
     },
     orderBy: [

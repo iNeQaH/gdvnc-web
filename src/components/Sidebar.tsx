@@ -23,6 +23,7 @@ import {
   ScrollText,
   Crown,
   Shield,
+  Users,
 } from 'lucide-react';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { useTheme } from './ThemeProvider';
@@ -234,6 +235,7 @@ export const Sidebar = () => {
     { href: '/announcements', label: t('nav.announcements'), icon: Bell },
     { href: '/', label: t('nav.leaderboard'), icon: Star },
     { href: '/levels', label: t('nav.demonlist'), icon: Folder },
+    { href: '/clan', label: t('nav.clan') || 'Clan', icon: Users },
     { href: '/changelog', label: t('nav.changelog'), icon: ScrollText },
     { href: '/guidelines', label: t('nav.guidelines'), icon: BookOpen },
     // { href: '/timeline', label: t('nav.timeline'), icon: History },

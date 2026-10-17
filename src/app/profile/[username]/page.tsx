@@ -8,6 +8,7 @@ import ImageEditorModal from '@/components/ImageEditorModal';
 import BadgePickerModal from '@/components/BadgePickerModal';
 import BadgeIcon from '@/components/BadgeIcon';
 import { AnimatedTabs } from '@/components/AnimatedTabs';
+import { UserDisplayName } from '@/components/UserDisplayName';
 import { useLanguage } from '@/components/LanguageContext';
 import { useTheme } from '@/components/ThemeProvider';
 import { useToast } from '@/components/GlobalToast';
@@ -794,7 +795,13 @@ export default function ProfilePage() {
             {/* Name & Badges BELOW avatar */}
             <div className="pt-12 px-2 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 flex-wrap">
               <div className="flex items-center gap-2">
-                <h1 className="text-xl md:text-2xl font-black ui-title drop-shadow-md">{data.username}</h1>
+                <UserDisplayName
+                  user={data}
+                  fallbackName={data.username}
+                  linkClan
+                  className="text-xl md:text-2xl font-black ui-title drop-shadow-md"
+                  tagClassName="text-sm md:text-base px-2 py-0.5 rounded-lg border border-black/10 dark:border-white/10"
+                />
               </div>
               {headerBadges.length > 0 && (
                 <div className="flex items-center gap-1.5 flex-wrap">

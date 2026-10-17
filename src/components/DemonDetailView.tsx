@@ -11,6 +11,7 @@ import LevelNeighborNav from '@/components/LevelNeighborNav';
 import { awardedPpForProgress } from '@/lib/ScoringEngine';
 import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
 import LevelFormModal from '@/components/LevelFormModal';
+import { UserDisplayName } from '@/components/UserDisplayName';
 
 const PAGE_SIZE = 5;
 
@@ -224,7 +225,7 @@ export default function DemonDetailView({
                                     {displayName[0]}
                                   </div>
                                 )}
-                                <span>{displayName}</span>
+                                <UserDisplayName user={rec.user} fallbackName={displayName} linkClan />
                                 {rec.user?.supporterUntil && new Date(rec.user.supporterUntil) > new Date() && (
                                   <span
                                     className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase shrink-0"

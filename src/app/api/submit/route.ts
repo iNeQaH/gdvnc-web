@@ -36,7 +36,7 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, username: true, gdUsername: true },
+      select: { id: true, username: true, gdUsername: true, role: true, supporterUntil: true },
     });
     if (!user) return NextResponse.json({ error: 'Không tìm thấy tài khoản người dùng.' }, { status: 404 });
 
@@ -97,6 +97,14 @@ export async function POST(req: Request) {
 
       return NextResponse.json({ success: true, record });
     } else if (type === 'CREATOR') {
+      const isSupporter = Boolean(user.supporterUntil && new Date(user.supporterUntil) > new Date());
+      const isStaff = user.role === 'ADMIN' || user.role === 'MODERATOR';
+      if (!isSupporter && !isStaff) {
+        return NextResponse.json(
+          { error: 'Tính năng nộp level / tác phẩm Creator chỉ dành cho Supporter và Ban Quản Trị.' },
+          { status: 403 }
+        );
+      }
       const gdIdRaw = parseInt(String(data.gdLevelId ?? ''), 10);
       const hasId = Number.isFinite(gdIdRaw) && gdIdRaw > 0;
       const description = clipText(data.description, 4000);
@@ -160,6 +168,14 @@ export async function POST(req: Request) {
 
       return NextResponse.json({ success: true, work });
     } else if (type === 'LEVEL') {
+      const isSupporter = Boolean(user.supporterUntil && new Date(user.supporterUntil) > new Date());
+      const isStaff = user.role === 'ADMIN' || user.role === 'MODERATOR';
+      if (!isSupporter && !isStaff) {
+        return NextResponse.json(
+          { error: 'Tính năng nộp level / tác phẩm Creator chỉ dành cho Supporter và Ban Quản Trị.' },
+          { status: 403 }
+        );
+      }
       const { gdLevelId, videoUrl, minPercent, placement, vnPlacement, mode, isVN, isChallenge, difficultyFace, ratingType } = data;
       if (!gdLevelId) {
         return NextResponse.json({ error: 'Vui lòng điền Level ID.' }, { status: 400 });

@@ -9,6 +9,7 @@ import { levelPath } from '@/lib/levelUrl';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/GlobalToast';
 import BadgeIcon from '@/components/BadgeIcon';
+import { UserDisplayName } from '@/components/UserDisplayName';
 
 import FloatingNav from '@/components/FloatingNav';
 import { AnimatedTabs } from '@/components/AnimatedTabs';
@@ -373,7 +374,7 @@ export default function HomePage() {
                           )}
                           <div>
                             <div className="font-bold ui-title flex items-center gap-1.5 flex-wrap">
-                              {displayName}
+                              <UserDisplayName user={player} fallbackName={displayName} linkClan />
                               
                               {/* Top Badges */}
                               {player.topBadges && player.topBadges.length > 0 && (

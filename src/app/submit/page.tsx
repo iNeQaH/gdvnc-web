@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send, CheckCircle, AlertCircle, Gamepad2, Hammer, Loader2, Pencil } from 'lucide-react';
+import { Send, CheckCircle, AlertCircle, Gamepad2, Hammer, Loader2, Pencil, Lock, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import LevelFormModal from '@/components/LevelFormModal';
 import ReviewStatusBadge from '@/components/ReviewStatusBadge';
@@ -50,6 +50,9 @@ function SubmitForm() {
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
   const isAdmin = currentUser?.role === 'ADMIN';
+  const isSupporter = Boolean(currentUser?.supporterUntil && new Date(currentUser.supporterUntil) > new Date());
+  const isStaff = currentUser?.role === 'ADMIN' || currentUser?.role === 'MODERATOR';
+  const canSubmitCreator = isSupporter || isStaff;
 
   const currentSubmitNoteHtml = tab === 'CREATOR' ? creatorNoteHtml : playerNoteHtml;
 
@@ -361,25 +364,50 @@ function SubmitForm() {
           </div>
         </div>
       ) : tab === 'CREATOR' ? (
-        <div className="space-y-4">
-          <LevelFormModal
-            isOpen
-            embedded
-            creatorSubmit
-            onClose={() => {}}
-            onSaved={() => {
-              setSuccess(true);
-              void loadRecent('CREATOR');
-            }}
-            submitUrl="/api/submit"
-            extraPayload={{
-              type: 'CREATOR',
-              userId: currentUser.id,
-              username: currentUser.gdUsername || currentUser.username,
-            }}
-            title={t('submit.tab_creator')}
-          />
-        </div>
+        !canSubmitCreator ? (
+          <div className="ui-card p-8 sm:p-10 text-center space-y-4 border border-amber-500/20 bg-amber-500/5">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto text-amber-400 shadow-inner">
+              <Lock className="w-7 h-7" />
+            </div>
+            <div className="space-y-1.5 max-w-md mx-auto">
+              <h2 className="text-base font-bold ui-title">Tính năng dành cho Supporter & BQT</h2>
+              <p className="text-xs ui-dim leading-relaxed">
+                Nộp đánh giá level hiện chỉ mở cho Supporter và Ban Quản Trị nhằm đảm bảo chất lượng kiểm duyệt. Nâng cấp Supporter để mở khoá tính năng này cùng nhiều đặc quyền khác!
+              </p>
+            </div>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => router.push('/support')}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] inline-flex items-center gap-2 cursor-pointer transition-transform hover:scale-105 shadow-md"
+                style={{ backgroundColor: 'var(--accent)' }}
+              >
+                <Sparkles className="w-4 h-4" />
+                Nâng cấp Supporter
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <LevelFormModal
+              isOpen
+              embedded
+              creatorSubmit
+              onClose={() => {}}
+              onSaved={() => {
+                setSuccess(true);
+                void loadRecent('CREATOR');
+              }}
+              submitUrl="/api/submit"
+              extraPayload={{
+                type: 'CREATOR',
+                userId: currentUser.id,
+                username: currentUser.gdUsername || currentUser.username,
+              }}
+              title={t('submit.tab_creator')}
+            />
+          </div>
+        )
       ) : (
         <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
