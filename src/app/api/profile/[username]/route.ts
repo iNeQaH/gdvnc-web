@@ -1,6 +1,7 @@
 import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { sanitizeUserClan } from '@/lib/clan';
 import { RecordStatus, LevelMode } from '@prisma/client';
 import { awardedPpForProgress, getWeightedPpBreakdown, UNRANKED_MIN_PP } from '@/lib/ScoringEngine';
 import {
@@ -64,6 +65,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
                 color: true,
                 colorGradient: true,
                 isSuspended: true,
+                contributions: {
+                  select: {
+                    userId: true,
+                    spPledged: true,
+                    user: { select: { supporterUntil: true } },
+                  },
+                },
+                members: {
+                  select: { userId: true },
+                },
               },
             },
           },
@@ -254,7 +265,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         nameGradient: user.nameGradient,
         nameGlow: user.nameGlow,
         nameFont: user.nameFont,
-        clanMember: user.clanMember,
+        clanMember: user.clanMember
+          ? {
+              ...user.clanMember,
+              clan: sanitizeUserClan(user.clanMember.clan),
+            }
+          : null,
         classicRank,
         platformerRank,
         creatorRank,
@@ -294,7 +310,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
 
     const current = await prisma.user.findUnique({
       where: { username },
-      select: { id: true, role: true, username: true, gdVerified: true, gdUsername: true, avatarUrl: true, coverUrl: true, supporterUntil: true },
+      select: {
+        id: true,
+        role: true,
+        username: true,
+        gdVerified: true,
+        gdUsername: true,
+        avatarUrl: true,
+        coverUrl: true,
+        supporterUntil: true,
+        profileConfig: true,
+      },
     });
     if (!current) {
       return NextResponse.json({ error: 'Không tìm thấy người chơi.' }, { status: 404 });
@@ -316,10 +342,37 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
     }
 
     if (body.profileConfig !== undefined && !isSupporterOrOwner) {
-      return NextResponse.json(
-        { error: 'Tùy biến giao diện yêu cầu đặc quyền Supporter.' },
-        { status: 403 }
-      );
+      const currentCfg = (current.profileConfig as Record<string, any>) || {};
+      const newCfg = (body.profileConfig as Record<string, any>) || {};
+
+      const supporterKeys = [
+        'backgroundUrl',
+        'customThemeColor',
+        'customThemeColors',
+        'customThemeAngle',
+        'customBorderColors',
+        'customBorderAnimation',
+        'customBorderGlowEnabled',
+        'customBorderGlowColor',
+        'customBorderGlowColors',
+        'customBorderGlowAngle',
+      ];
+
+      const hasUnauthorizedPerk = supporterKeys.some((k) => {
+        const val = newCfg[k];
+        const oldVal = currentCfg[k];
+        if (val !== undefined && val !== null && val !== false) {
+          return JSON.stringify(val) !== JSON.stringify(oldVal);
+        }
+        return false;
+      });
+
+      if (hasUnauthorizedPerk) {
+        return NextResponse.json(
+          { error: 'Tùy biến giao diện này yêu cầu đặc quyền Supporter.' },
+          { status: 403 }
+        );
+      }
     }
 
     const hasNameCustomization =
@@ -392,6 +445,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
       staleRefs.push(current.coverUrl);
     }
 
+    let nextProfileConfig = body.profileConfig !== undefined ? body.profileConfig : undefined;
+    if (body.profileMode !== undefined) {
+      const baseCfg = (nextProfileConfig !== undefined ? nextProfileConfig : ((current.profileConfig as Record<string, any>) || {})) || {};
+      nextProfileConfig = {
+        ...baseCfg,
+        profileMode: body.profileMode === 'light' ? 'light' : 'dark',
+      };
+    }
+
     const updated = await prisma.user.update({
       where: { username },
       data: {
@@ -402,7 +464,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         gdUsername: nextGdUsername,
         gdVerified: nextGdVerified,
         discordTag: body.discordTag !== undefined ? clipText(body.discordTag, 80) : undefined,
-        profileConfig: body.profileConfig !== undefined ? body.profileConfig : undefined,
+        profileConfig: nextProfileConfig !== undefined ? nextProfileConfig : undefined,
         profileTheme: body.profileTheme !== undefined ? body.profileTheme : undefined,
         nameColor: body.nameColor !== undefined ? (clipText(body.nameColor, 30)?.trim() || null) : undefined,
         nameGradient: body.nameGradient !== undefined ? (clipText(body.nameGradient, 120)?.trim() || null) : undefined,

@@ -159,7 +159,7 @@ export default function ImageEditorModal({
       return;
     }
 
-    const isGif = file.type === 'image/gif';
+    const isGif = file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif');
     setIsGifSource(isGif);
     gifFileRef.current = isGif ? file : null;
 
@@ -189,7 +189,7 @@ export default function ImageEditorModal({
     setBlurAmount(0);
   };
 
-    const handleSave = async () => {
+  const handleSave = async () => {
     if (!imageSrc) return;
 
     setIsSaving(true);
@@ -197,8 +197,7 @@ export default function ImageEditorModal({
       let file: File;
       if (isGifSource && gifFileRef.current) {
         const orig = gifFileRef.current;
-        const ext = (orig.name.split('.').pop() || 'gif').replace(/[^a-z0-9]/gi, '') || 'gif';
-        file = new File([orig], `${type}-${Date.now()}.${ext}`, { type: orig.type || 'image/gif' });
+        file = new File([orig], `${type}-${Date.now()}.gif`, { type: 'image/gif' });
       } else {
         const canvas = canvasRef.current;
         if (!canvas) return;

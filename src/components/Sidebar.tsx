@@ -382,7 +382,7 @@ export const Sidebar = () => {
                         <span
                           className="font-mono font-black text-xs shrink-0 px-1 py-0.2 rounded bg-black/10 dark:bg-black/30"
                           style={
-                            myClan.colorGradient
+                            myClan.colorGradient && ((myClan as any).tier === undefined || (myClan as any).tier >= 2)
                               ? {
                                   backgroundImage: myClan.colorGradient,
                                   WebkitBackgroundClip: 'text',

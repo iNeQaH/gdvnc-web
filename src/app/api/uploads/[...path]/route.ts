@@ -4,7 +4,13 @@ import path from 'path';
 import { getUserDataDir } from '@/lib/localFileStorage';
 import { Readable } from 'stream';
 
-function getMimeType(filePath: string): string {
+function getMimeType(filePath: string, buffer?: Buffer): string {
+  if (buffer && buffer.length >= 4) {
+    if (buffer.subarray(0, 3).toString('ascii') === 'GIF') return 'image/gif';
+    if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'image/jpeg';
+    if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) return 'image/png';
+    if (buffer.length >= 12 && buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP') return 'image/webp';
+  }
   const ext = path.extname(filePath).toLowerCase();
   switch (ext) {
     case '.jpg':
@@ -62,8 +68,17 @@ export async function GET(req: Request, { params }: { params: Promise<{ path: st
       return new NextResponse('Not Found', { status: 404 });
     }
 
+    // Read initial bytes to accurately detect mime type even for extensionless files (e.g. UploadThing legacy or GIFs)
+    let headerBuf: Buffer | undefined;
+    try {
+      const fd = await fs.promises.open(targetPath, 'r');
+      headerBuf = Buffer.alloc(16);
+      await fd.read(headerBuf, 0, 16, 0);
+      await fd.close();
+    } catch {}
+
     // Security check: reject potentially dangerous files (XSS vectors)
-    const mimeType = getMimeType(targetPath);
+    const mimeType = getMimeType(targetPath, headerBuf);
     if (mimeType === 'image/svg+xml' || mimeType.includes('html')) {
       return new NextResponse('Forbidden File Type', { status: 403 });
     }

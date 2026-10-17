@@ -113,18 +113,19 @@ export default function ProfilePage() {
   const isLavender = (data?.profileTheme ? data.profileTheme === 'lavender' : theme === 'lavender');
 
   useEffect(() => {
-    if (data?.profileTheme && setOverrideTheme) {
+    if (!data) return;
+    if (data.profileTheme && setOverrideTheme) {
       setOverrideTheme(data.profileTheme);
       document.documentElement.setAttribute('data-theme', data.profileTheme);
     }
-    const profileMode = data?.profileConfig?.profileMode;
-    if (profileMode && setOverrideMode) {
+    const profileMode = data.profileConfig?.profileMode === 'light' ? 'light' : 'dark';
+    if (setOverrideMode) {
       setOverrideMode(profileMode);
     }
-    if (typeof window !== 'undefined' && data) {
+    if (typeof window !== 'undefined') {
       const overrideObj: any = {};
       if (data.profileTheme) overrideObj.theme = data.profileTheme;
-      if (profileMode) overrideObj.mode = profileMode;
+      overrideObj.mode = profileMode;
       if (data.profileConfig?.backgroundUrl) overrideObj.backgroundUrl = data.profileConfig.backgroundUrl;
       if (data.profileConfig?.customThemeColor) overrideObj.customThemeColor = data.profileConfig.customThemeColor;
       (window as any).__profileOverride = overrideObj;
@@ -150,7 +151,6 @@ export default function ProfilePage() {
   const canEditInfo = isOwner || isSuperAdmin;
 
   // Direct editing states
-  const [showThemeModal, setShowThemeModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [verifyingGd, setVerifyingGd] = useState(false);
 
@@ -866,7 +866,8 @@ export default function ProfilePage() {
                     <span
                       className="font-bold font-mono inline-block"
                       style={
-                        data.clanMember.clan.colorGradient
+                        data.clanMember.clan.colorGradient &&
+                        ((data.clanMember.clan as any).tier === undefined || (data.clanMember.clan as any).tier >= 2)
                           ? {
                               backgroundImage: data.clanMember.clan.colorGradient,
                               WebkitBackgroundClip: 'text',
@@ -2119,105 +2120,6 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
-          {showThemeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="ui-card p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl relative" style={{ backgroundColor: 'var(--bg-card)' }}>
-            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
-              <div className="font-bold text-sm flex items-center gap-2 ui-title">
-                <Sparkles className="w-4 h-4 text-purple-500" /> {t('profile.theme_modal_title')}
-              </div>
-              <button onClick={() => setShowThemeModal(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800"><X className="w-4 h-4" /></button>
-            </div>
-            <p className="text-xs ui-dim">{t('profile.theme_modal_desc')}</p>
-            {/* Profile Mode Option (Light / Dark) */}
-            <div className="pt-1 pb-1 border-b space-y-1.5" style={{ borderColor: 'var(--border-subtle)' }}>
-              <div className="text-xs font-bold ui-title flex items-center justify-between">
-                <span>{isEn ? 'Profile View Mode' : 'Chế độ Sáng / Tối khi xem'}</span>
-                <span className="text-[10px] ui-dim">{isEn ? 'Capped for visitors' : 'Khóa chế độ này'}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-1.5">
-                {[
-                  { id: null, label: isEn ? 'Auto' : 'Theo khách', icon: Sparkles },
-                  { id: 'dark', label: isEn ? 'Dark' : 'Tối', icon: Moon },
-                  { id: 'light', label: isEn ? 'Light' : 'Sáng', icon: Sun },
-                ].map((m) => {
-                  const isModeSelected = (data.profileConfig?.profileMode || null) === m.id;
-                  return (
-                    <button
-                      key={String(m.id)}
-                      type="button"
-                      onClick={async () => {
-                        const nextConfig = { ...(data.profileConfig || {}), profileMode: m.id };
-                        setData((prev: any) => ({ ...prev, profileConfig: nextConfig }));
-                        if (setOverrideMode) setOverrideMode(m.id as any);
-                        await updateProfileField({ profileConfig: nextConfig });
-                        showToast(isEn ? 'Profile mode updated' : 'Đã cập nhật chế độ sáng/tối cho trang cá nhân', 'success');
-                      }}
-                      className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border flex items-center justify-center gap-1 transition-all cursor-pointer ${
-                        isModeSelected
-                          ? 'ring-2 ring-purple-500 bg-purple-500/15 border-purple-500 text-purple-600 dark:text-purple-300'
-                          : 'hover:bg-black/5 dark:hover:bg-white/5 ui-dim'
-                      }`}
-                      style={!isModeSelected ? { borderColor: 'var(--border-ui)' } : {}}
-                    >
-                      <m.icon className="w-3.5 h-3.5" />
-                      <span>{m.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="text-xs font-bold ui-title pt-1">
-              {isEn ? 'Profile Palette' : 'Bảng màu giao diện'}
-            </div>
-
-            <div className="grid grid-cols-1 gap-2 max-h-56 overflow-y-auto pr-1">
-              {[
-                { id: 'sky', label: t('theme.sky') || 'Sky', color: 'bg-sky-500', desc: 'Classic sky blue' },
-                { id: 'sakura', label: t('theme.sakura') || 'Sakura', color: 'bg-pink-400', desc: 'Cherry blossom pink' },
-                { id: 'mono', label: 'Mono', color: 'bg-zinc-500', desc: 'Minimal monochrome' },
-                { id: 'mint', label: t('theme.mint') || 'Rgb', color: 'bg-emerald-400', desc: 'RGB shifting theme' },
-                { id: 'custom', label: t('theme.custom') || 'Custom', color: 'bg-gradient-to-r from-pink-500 to-sky-500', desc: 'Custom supporter theme' },
-                { id: 'lavender', label: 'iNeQaH', color: 'bg-purple-500', desc: 'Tsumiki 3D pastel' },
-              ].map((th) => {
-                const isSelected = (data.profileTheme || 'sky') === th.id;
-                return (
-                  <button
-                    key={th.id}
-                    onClick={async () => {
-                      setData((prev: any) => ({ ...prev, profileTheme: th.id }));
-                      if (setOverrideTheme) setOverrideTheme(th.id as any);
-                      document.documentElement.setAttribute('data-theme', th.id);
-                      await updateProfileField({ profileTheme: th.id });
-                      if (currentUser && currentUser.username === username) {
-                        const updatedUser = { ...currentUser, profileTheme: th.id };
-                        localStorage.setItem('gdvnc_user', JSON.stringify(updatedUser));
-                        window.dispatchEvent(new Event('gdvnc_user_update'));
-                      }
-                      setShowThemeModal(false);
-                      showToast(t('profile.theme_saved'), 'success');
-                    }}
-                    className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                      isSelected ? 'ring-2 ring-purple-500 bg-purple-500/10 border-purple-500/30' : 'hover:bg-slate-50 dark:hover:bg-zinc-800/50'
-                    }`}
-                    style={!isSelected ? { borderColor: 'var(--border-ui)' } : {}}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className={`w-3.5 h-3.5 rounded-full shrink-0 ${th.color}`} />
-                      <div>
-                        <div className="text-xs font-bold ui-title">{th.label}</div>
-                        <div className="text-[10px] ui-dim">{th.desc}</div>
-                      </div>
-                    </div>
-                    {isSelected && <Check className="w-4 h-4 text-purple-500 shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
-}
+}

@@ -34,16 +34,9 @@ export function validateImageUpload(
   buffer: Buffer,
   filename: string
 ): { ok: true; ext: string } | { ok: false; error: string } {
-  const extFromName = allowedImageExtension(filename);
-  if (!extFromName) {
-    return { ok: false, error: 'Chỉ chấp nhận ảnh .jpg, .jpeg, .png, .webp, .gif.' };
-  }
   const kind = detectImageKind(buffer);
   if (!kind) {
-    return { ok: false, error: 'Nội dung file không phải ảnh hợp lệ.' };
-  }
-  if (kind !== extFromName) {
-    return { ok: false, error: 'Phần mở rộng file không khớp nội dung ảnh.' };
+    return { ok: false, error: 'Nội dung file không phải ảnh hợp lệ (chỉ chấp nhận JPG, PNG, WEBP, GIF).' };
   }
   return { ok: true, ext: kind };
 }

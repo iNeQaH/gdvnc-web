@@ -4,6 +4,7 @@ import { pickDecoAndLayoutBadges, cpFromVnLevels } from '@/lib/creatorPoints';
 import { calculateModePp, pickHardestLevel, type HardestLevel } from '@/lib/recordUtils';
 import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 import { isSuperAdminUser } from '@/lib/roles';
+import { sanitizeUserClan } from '@/lib/clan';
 
 export const publicUser = {
   id: true,
@@ -29,6 +30,16 @@ export const publicUser = {
           color: true,
           colorGradient: true,
           isSuspended: true,
+          contributions: {
+            select: {
+              userId: true,
+              spPledged: true,
+              user: { select: { supporterUntil: true } },
+            },
+          },
+          members: {
+            select: { userId: true },
+          },
         },
       },
     },
@@ -242,7 +253,7 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER' | 'CHA
         nameGradient: player.nameGradient,
         nameGlow: player.nameGlow,
         nameFont: player.nameFont,
-        clan: player.clanMember?.clan?.isSuspended ? null : player.clanMember?.clan,
+        clan: sanitizeUserClan(player.clanMember?.clan),
         clanRole: player.clanMember?.role,
         classicPp: mode === 'CLASSIC' ? calculatedPp : player.classicPp,
         platformerPp: mode === 'PLATFORMER' ? calculatedPp : player.platformerPp,
@@ -339,7 +350,7 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER' | 'CHA
       nameGradient: player.nameGradient,
       nameGlow: player.nameGlow,
       nameFont: player.nameFont,
-      clan: player.clanMember?.clan?.isSuspended ? null : player.clanMember?.clan,
+      clan: sanitizeUserClan(player.clanMember?.clan),
       clanRole: player.clanMember?.role,
       classicPp: player.classicPp,
       platformerPp: player.platformerPp,
@@ -459,7 +470,7 @@ export async function getCreatorLeaderboard() {
       const merged = Array.from(byId.values());
       return {
         ...rest,
-        clan: creator.clanMember?.clan?.isSuspended ? null : creator.clanMember?.clan,
+        clan: sanitizeUserClan(creator.clanMember?.clan),
         clanRole: creator.clanMember?.role,
         creatorPoints: creator.creatorPoints || 0,
         isSuperAdmin: isSuperAdminUser(creator),

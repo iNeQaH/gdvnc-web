@@ -32,9 +32,12 @@ import {
   Flame,
   AlertTriangle,
   Shuffle,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageContext';
+import { useTheme } from '@/components/ThemeProvider';
 import { useToast } from '@/components/GlobalToast';
 import { logoutClient } from '@/lib/sessionClient';
 import ImageEditorModal from '@/components/ImageEditorModal';
@@ -46,6 +49,7 @@ import { UserDisplayName, SETTINGS_FONT_PRESETS } from '@/components/UserDisplay
 
 export default function SettingsPage() {
   const { t, language } = useLanguage();
+  const { mode, setMode } = useTheme();
   const router = useRouter();
   const { showToast, showConfirm } = useToast();
 
@@ -53,6 +57,61 @@ export default function SettingsPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'general' | 'profile' | 'appearance' | 'name_style'>('general');
+  const [profileMode, setProfileMode] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('gdvnc_user');
+        if (raw) {
+          const u = JSON.parse(raw);
+          if (u?.profileConfig?.profileMode === 'light') return 'light';
+        }
+      } catch {}
+    }
+    return 'dark';
+  });
+
+  const handleToggleProfileMode = async (forceMode?: 'light' | 'dark') => {
+    const nextMode: 'light' | 'dark' = forceMode || (profileMode === 'dark' ? 'light' : 'dark');
+    if (forceMode && nextMode === profileMode) return;
+
+    setProfileMode(nextMode);
+    setMode(nextMode);
+
+    const nextConfig = {
+      ...(data?.profileConfig || {}),
+      profileMode: nextMode,
+    };
+    setData((prev: any) => ({ ...prev, profileConfig: nextConfig }));
+
+    const updatedUser = { ...currentUser, profileConfig: nextConfig };
+    setCurrentUser(updatedUser);
+    localStorage.setItem('gdvnc_user', JSON.stringify(updatedUser));
+    window.dispatchEvent(new Event('gdvnc_user_update'));
+
+    try {
+      const res = await fetch(`/api/profile/${currentUser.username}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profileMode: nextMode,
+          profileConfig: nextConfig,
+        }),
+      });
+      if (res.ok) {
+        showToast(
+          language === 'en'
+            ? `Profile display fixed to ${nextMode === 'dark' ? 'Dark' : 'Light'} mode`
+            : `Đã lưu trang cá nhân ở chế độ ${nextMode === 'dark' ? 'Tối' : 'Sáng'}!`,
+          'success'
+        );
+      } else {
+        const err = await res.json();
+        showToast(err.error || 'Lỗi lưu chế độ giao diện', 'error');
+      }
+    } catch {
+      showToast('Lỗi kết nối máy chủ', 'error');
+    }
+  };
 
   // States
   const [gdUsername, setGdUsername] = useState('');
@@ -140,6 +199,7 @@ export default function SettingsPage() {
         setBio(json.user.bio || '');
 
         const cfg = json.user.profileConfig || {};
+        setProfileMode(cfg.profileMode === 'light' ? 'light' : 'dark');
         const initColors =
           cfg.customThemeColors && Array.isArray(cfg.customThemeColors) && cfg.customThemeColors.length > 0
             ? cfg.customThemeColors
@@ -1029,6 +1089,75 @@ export default function SettingsPage() {
       {/* Tab 3: Appearance (Giao Diện) */}
       {activeTab === 'appearance' && (
         <div className="space-y-6 animate-in fade-in-50 duration-200">
+          {/* Profile Theme Mode (Light / Dark Switch) */}
+          <div className="ui-card p-6 space-y-4">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-bold flex items-center gap-2 text-sky-500 dark:text-sky-400">
+                    {profileMode === 'dark' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                    {t('settings.theme_mode_title')}
+                  </h2>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
+                    {t('settings.theme_mode_free')}
+                  </span>
+                </div>
+                <p className="text-xs ui-dim mt-0.5 max-w-xl">
+                  {t('settings.theme_mode_desc')}
+                </p>
+              </div>
+
+              {/* Light / Dark Switch Button */}
+              <div className="flex items-center gap-3 bg-slate-500/5 p-2 px-3.5 rounded-2xl border" style={{ borderColor: 'var(--border-subtle)' }}>
+                <button
+                  type="button"
+                  onClick={() => { if (profileMode !== 'light') handleToggleProfileMode('light'); }}
+                  className={`flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer ${
+                    profileMode === 'light'
+                      ? 'text-amber-500 dark:text-amber-400 scale-105'
+                      : 'ui-dim hover:text-amber-400 opacity-60'
+                  }`}
+                >
+                  <Sun className="w-4 h-4" />
+                  <span>{t('settings.theme_mode_light')}</span>
+                </button>
+
+                {/* Switch Toggle */}
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={profileMode === 'dark'}
+                  onClick={() => handleToggleProfileMode()}
+                  className={`w-14 h-7 rounded-full p-0.5 transition-colors duration-300 ease-in-out cursor-pointer relative focus:outline-none shrink-0 ${
+                    profileMode === 'dark' ? 'bg-indigo-600' : 'bg-amber-400'
+                  }`}
+                  title={language === 'en' ? 'Switch Light / Dark' : 'Chuyển đổi Sáng / Tối'}
+                >
+                  <div
+                    className={`w-6 h-6 rounded-full bg-white shadow-md transform transition-transform duration-300 ease-in-out flex items-center justify-center ${
+                      profileMode === 'dark' ? 'translate-x-7 text-indigo-600' : 'translate-x-0 text-amber-500'
+                    }`}
+                  >
+                    {profileMode === 'dark' ? <Moon className="w-3.5 h-3.5 fill-current" /> : <Sun className="w-3.5 h-3.5 fill-current" />}
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { if (profileMode !== 'dark') handleToggleProfileMode('dark'); }}
+                  className={`flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer ${
+                    profileMode === 'dark'
+                      ? 'text-indigo-400 scale-105'
+                      : 'ui-dim hover:text-indigo-400 opacity-60'
+                  }`}
+                >
+                  <Moon className="w-4 h-4" />
+                  <span>{t('settings.theme_mode_dark')}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Profile Theme Card */}
           <div className="ui-card p-6 space-y-4">
             <div className="border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
@@ -1128,7 +1257,7 @@ export default function SettingsPage() {
                   )}
                 </div>
                 <p className="text-xs ui-dim mt-0.5">
-                  Tùy biến dải màu chủ đạo, góc xoay gradient, hiệu ứng phát sáng viền và ảnh nền cho theme Custom
+                  Tùy biến dải màu chủ đạo, góc xoay gradient và hiệu ứng phát sáng viền cho theme Custom
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -1464,66 +1593,114 @@ export default function SettingsPage() {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
 
-              {/* Background Image Section */}
-              <div className="pt-4 border-t space-y-3" style={{ borderColor: 'var(--border-subtle)' }}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-xs font-bold ui-title block">{t('settings.bg_label')}</label>
-                    <p className="text-xs ui-dim mt-0.5">{t('settings.bg_desc')}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setImageModal({ open: true, type: 'background' })}
-                      className="px-3.5 py-1.5 bg-pink-500/10 text-pink-500 rounded-xl text-xs font-bold hover:bg-pink-500/20 flex gap-1.5 items-center cursor-pointer transition-colors border border-pink-500/20"
-                    >
-                      <ImageIcon className="w-3.5 h-3.5" /> {t('settings.change_bg')}
-                    </button>
-                    {data.profileConfig?.backgroundUrl && (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const newConfig = { ...(data.profileConfig || {}), backgroundUrl: null };
-                          setData({ ...data, profileConfig: newConfig });
-                          await fetch('/api/profile/' + currentUser.username, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ profileConfig: newConfig }),
-                          });
-                          const updatedUser = { ...currentUser, profileConfig: newConfig };
-                          setCurrentUser(updatedUser);
-                          localStorage.setItem('gdvnc_user', JSON.stringify(updatedUser));
-                          window.dispatchEvent(new Event('gdvnc_user_update'));
-                          showToast(t('settings.bg_removed'), 'success');
-                        }}
-                        className="px-3 py-1.5 bg-red-500/10 text-red-500 rounded-xl text-xs font-bold hover:bg-red-500/20 flex gap-1 items-center cursor-pointer border border-red-500/20"
-                      >
-                        <X className="w-3.5 h-3.5" /> {t('settings.remove_bg')}
-                      </button>
-                    )}
-                  </div>
+          {/* Web Background Card (Ảnh Nền Web) */}
+          <div className="ui-card p-6 space-y-6 border-pink-500/20 relative">
+            <div className="border-b pb-3 flex items-center justify-between gap-3 flex-wrap" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-sm font-bold flex items-center gap-2 text-pink-500">
+                    <ImageIcon className="w-4 h-4" /> {t('settings.bg_label')}
+                  </h2>
+                  {!canAccessSupporter && (
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-pink-500/15 text-pink-400 border border-pink-500/30 flex items-center gap-1">
+                      <Lock className="w-3 h-3" />
+                      {language === 'en' ? 'Supporter Required' : 'Yêu cầu Supporter'}
+                    </span>
+                  )}
                 </div>
-
-                {data.profileConfig?.backgroundUrl && (
-                  <div
-                    className="flex items-center gap-3 p-2.5 rounded-xl border bg-slate-500/5"
-                    style={{ borderColor: 'var(--border-ui)' }}
+                <p className="text-xs ui-dim mt-0.5">
+                  {t('settings.bg_desc')}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {!canAccessSupporter && (
+                  <Link
+                    href="/support"
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-pink-500 hover:bg-pink-600 text-white flex items-center gap-1.5 transition-all shadow-xs"
                   >
-                    <div
-                      className="w-20 h-12 rounded-lg overflow-hidden border shrink-0"
-                      style={{ borderColor: 'var(--border-subtle)' }}
-                    >
-                      <img
-                        src={data.profileConfig.backgroundUrl}
-                        alt="Background preview"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <span className="text-xs ui-dim truncate font-mono">{t('settings.current_bg')}</span>
-                  </div>
+                    <Heart className="w-3.5 h-3.5" />
+                    <span>{language === 'en' ? 'Upgrade Supporter' : 'Nâng cấp Supporter'}</span>
+                  </Link>
                 )}
               </div>
+            </div>
+
+            {/* Background Controls Body */}
+            <div className={`space-y-4 ${!canAccessSupporter ? 'opacity-60 pointer-events-none select-none' : ''}`}>
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <span className="text-xs ui-dim">
+                  {language === 'en'
+                    ? 'Image uploaded will be used as full-page backdrop for the website and your profile.'
+                    : 'Ảnh tải lên sẽ được dùng làm nền toàn trang cho website và trang cá nhân của bạn.'}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!canAccessSupporter) {
+                        showToast(
+                          language === 'en'
+                            ? 'Supporter role required to set web background.'
+                            : 'Cần có đặc quyền Supporter để đặt ảnh nền web.',
+                          'error'
+                        );
+                        return;
+                      }
+                      setImageModal({ open: true, type: 'background' });
+                    }}
+                    className="px-3.5 py-1.5 bg-pink-500/10 text-pink-500 rounded-xl text-xs font-bold hover:bg-pink-500/20 flex gap-1.5 items-center cursor-pointer transition-colors border border-pink-500/20"
+                  >
+                    <ImageIcon className="w-3.5 h-3.5" /> {t('settings.change_bg')}
+                  </button>
+                  {data?.profileConfig?.backgroundUrl && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const newConfig = { ...(data.profileConfig || {}), backgroundUrl: null };
+                        setData({ ...data, profileConfig: newConfig });
+                        await fetch('/api/profile/' + currentUser.username, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ profileConfig: newConfig }),
+                        });
+                        const updatedUser = { ...currentUser, profileConfig: newConfig };
+                        setCurrentUser(updatedUser);
+                        localStorage.setItem('gdvnc_user', JSON.stringify(updatedUser));
+                        window.dispatchEvent(new Event('gdvnc_user_update'));
+                        showToast(t('settings.bg_removed'), 'success');
+                      }}
+                      className="px-3 py-1.5 bg-red-500/10 text-red-500 rounded-xl text-xs font-bold hover:bg-red-500/20 flex gap-1 items-center cursor-pointer border border-red-500/20"
+                    >
+                      <X className="w-3.5 h-3.5" /> {t('settings.remove_bg')}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {data?.profileConfig?.backgroundUrl && (
+                <div
+                  className="flex items-center gap-3 p-3 rounded-2xl border bg-slate-500/5"
+                  style={{ borderColor: 'var(--border-ui)' }}
+                >
+                  <div
+                    className="w-24 h-14 rounded-xl overflow-hidden border shrink-0 shadow-inner"
+                    style={{ borderColor: 'var(--border-subtle)' }}
+                  >
+                    <img
+                      src={data.profileConfig.backgroundUrl}
+                      alt="Web background preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold ui-title block">{t('settings.current_bg')}</span>
+                    <span className="text-[11px] ui-dim truncate font-mono block mt-0.5 max-w-md">{data.profileConfig.backgroundUrl}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1946,6 +2123,15 @@ export default function SettingsPage() {
         }
         onClose={() => setImageModal({ open: false, type: 'avatar' })}
         onSave={async (url: string) => {
+          if (imageModal.type === 'background' && !canAccessSupporter) {
+            showToast(
+              language === 'en'
+                ? 'Supporter role required to set web background.'
+                : 'Cần có đặc quyền Supporter để đặt ảnh nền web.',
+              'error'
+            );
+            return;
+          }
           const nextData = { ...data };
           if (imageModal.type === 'avatar') nextData.avatarUrl = url;
           else if (imageModal.type === 'background') {

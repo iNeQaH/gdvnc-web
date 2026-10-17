@@ -8,6 +8,7 @@ import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { publicApiError } from '@/lib/apiError';
 import { logAudit } from '@/lib/audit';
 import { isSuperAdminUser } from '@/lib/roles';
+import { sanitizeUserClan } from '@/lib/clan';
 
 /** Constant-time padding when user is missing (mitigates login enumeration). */
 const DUMMY_PASSWORD_HASH = '$2b$10$20mcQhifvE3Tbmulxl25WuJKjcwe0FOqBxWVDK08snzvv.UgK.lbK';
@@ -84,6 +85,16 @@ export async function POST(req: Request) {
                     color: true,
                     colorGradient: true,
                     isSuspended: true,
+                    contributions: {
+                      select: {
+                        userId: true,
+                        spPledged: true,
+                        user: { select: { supporterUntil: true } },
+                      },
+                    },
+                    members: {
+                      select: { userId: true },
+                    },
                   },
                 },
               },
@@ -227,7 +238,12 @@ export async function POST(req: Request) {
       nameGradient: user.nameGradient,
       nameGlow: user.nameGlow,
       nameFont: user.nameFont,
-      clanMember: user.clanMember,
+      clanMember: user.clanMember
+        ? {
+            role: user.clanMember.role,
+            clan: sanitizeUserClan(user.clanMember.clan),
+          }
+        : null,
     };
 
     // Check 2FA TOTP

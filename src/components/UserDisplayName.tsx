@@ -75,6 +75,7 @@ export interface UserDisplayNameProps {
       colorGradient?: string | null;
       slug?: string | null;
       isSuspended?: boolean | null;
+      tier?: number;
     } | null;
     clanMember?: {
       role?: string | null;
@@ -84,6 +85,7 @@ export interface UserDisplayNameProps {
         colorGradient?: string | null;
         slug?: string | null;
         isSuspended?: boolean | null;
+        tier?: number;
       } | null;
     } | null;
   } | null;
@@ -129,7 +131,8 @@ export function UserDisplayName({
   const clanTagStyle: React.CSSProperties = {
     display: 'inline-block',
   };
-  if (clan?.colorGradient) {
+  const isTagGradient = Boolean(clan?.colorGradient && (clan.tier === undefined || clan.tier >= 2));
+  if (isTagGradient && clan?.colorGradient) {
     clanTagStyle.backgroundImage = clan.colorGradient;
     clanTagStyle.WebkitBackgroundClip = 'text';
     clanTagStyle.WebkitTextFillColor = 'transparent';

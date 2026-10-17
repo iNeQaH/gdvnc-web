@@ -315,9 +315,9 @@ function ClanHardestSlideshow({
       </div>
 
       {/* Main Slide Canvas */}
-      <div className="relative h-60 sm:h-64 w-full overflow-hidden bg-slate-950 flex flex-col justify-between p-4 sm:p-5 flex-1">
+      <div className="relative h-60 sm:h-64 w-full overflow-hidden bg-slate-950 flex flex-col flex-1">
         {embedVideo && embedUrl ? (
-          <div className="absolute inset-0 z-20 bg-black flex flex-col">
+          <div className="absolute inset-0 z-30 bg-black flex flex-col">
             <div className="p-2 bg-black/80 flex items-center justify-between border-b border-white/10 px-4">
               <span className="text-xs font-bold text-white truncate">{lvl.name}</span>
               <button
@@ -339,137 +339,167 @@ function ClanHardestSlideshow({
               />
             </div>
           </div>
-        ) : (
-          <>
-            {/* Background Thumbnail */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <img
-                key={lvl.id || currentIndex}
-                src={highResThumb}
-                alt={lvl.name || ''}
-                className="w-full h-full object-cover transition-all duration-700 ease-out"
-                style={{ filter: 'brightness(0.45) contrast(1.15)' }}
-                onError={(e) => {
-                  if (ytId && (e.currentTarget as HTMLImageElement).src.includes('maxresdefault')) {
-                    (e.currentTarget as HTMLImageElement).src = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
-                  } else {
-                    (e.currentTarget as HTMLImageElement).src =
-                      'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
-                  }
-                }}
-              />
-            </div>
+        ) : null}
 
-            {/* Vignette Overlays */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-transparent pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/30 to-transparent pointer-events-none" />
+        {/* Sliding Horizontal Track */}
+        <div
+          className="flex w-full h-full transition-transform duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
+          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+        >
+          {topBeaten.map((item, idx) => {
+            const level = item.level;
+            const videoSource = item.videoUrl || level.videoUrl;
+            const ytMatch = videoSource
+              ? videoSource.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/)
+              : null;
+            const ytId = level.youtubeId || (ytMatch ? ytMatch[1] : null);
+            const highResThumb = ytId
+              ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`
+              : 'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
 
-            {/* Top Badges */}
-            <div className="relative z-10 flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-2.5">
-                <span className="px-2.5 py-1 rounded-xl text-xs font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 backdrop-blur-md shadow-sm">
-                  {rankLabel}
-                </span>
-                <DifficultyRatingIcon
-                  difficultyFace={lvl.difficultyFace}
-                  ratingType={lvl.ratingType}
-                  className="w-7 h-7 drop-shadow-md"
-                />
-                <span className="font-mono text-xs font-black text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-xl backdrop-blur-md">
-                  {lvl.basePp || 0} Pt
-                </span>
-              </div>
-            </div>
+            const rankLabel = level.classicRank
+              ? `#${level.classicRank}`
+              : level.placement
+              ? `#${level.placement}`
+              : level.vnPlacement
+              ? `#${level.vnPlacement} VN`
+              : (isEn ? 'Unranked' : 'Chưa xếp hạng');
 
-            {/* Bottom Content */}
-            <div className="relative z-10 space-y-2 max-w-xl">
-              <div>
-                <Link
-                  href={levelPath(lvl)}
-                  className="text-lg sm:text-xl font-black text-white hover:text-amber-300 drop-shadow-md tracking-tight block transition-colors truncate"
-                >
-                  {lvl.name}
-                </Link>
+            return (
+              <div
+                key={item.id || idx}
+                className="w-full h-full shrink-0 relative flex flex-col justify-between p-4 sm:p-5 overflow-hidden select-none"
+              >
+                {/* Background Thumbnail */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                  <img
+                    src={highResThumb}
+                    alt={level.name || ''}
+                    className="w-full h-full object-cover"
+                    style={{ filter: 'brightness(0.45) contrast(1.15)' }}
+                    onError={(e) => {
+                      if (ytId && (e.currentTarget as HTMLImageElement).src.includes('maxresdefault')) {
+                        (e.currentTarget as HTMLImageElement).src = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+                      } else {
+                        (e.currentTarget as HTMLImageElement).src =
+                          'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
+                      }
+                    }}
+                  />
+                </div>
 
-                <div className="flex items-center gap-2 text-xs text-slate-300 mt-0.5 flex-wrap">
-                  <span className="flex items-center gap-1">
-                    <span className="ui-dim">{isEn ? 'Conquered by:' : 'Người chinh phục:'}</span>
-                    <strong className="text-white font-bold">
-                      <UserDisplayName user={currentItem.user} showClanTag={false} />
-                    </strong>
-                  </span>
-                  {lvl.creatorName && (
-                    <span className="flex items-center gap-1 border-l border-white/20 pl-2 ui-dim">
-                      <span>{isEn ? 'by' : 'bởi'} {lvl.creatorName}</span>
+                {/* Vignette Overlays */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/30 to-transparent pointer-events-none" />
+
+                {/* Top Badges */}
+                <div className="relative z-10 flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2.5">
+                    <span className="px-2.5 py-1 rounded-xl text-xs font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 backdrop-blur-md shadow-sm">
+                      {rankLabel}
                     </span>
-                  )}
+                    <DifficultyRatingIcon
+                      difficultyFace={level.difficultyFace}
+                      ratingType={level.ratingType}
+                      className="w-7 h-7 drop-shadow-md"
+                    />
+                    <span className="font-mono text-xs font-black text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-xl backdrop-blur-md">
+                      {level.basePp || 0} Pt
+                    </span>
+                  </div>
+                </div>
+
+                {/* Bottom Content */}
+                <div className="relative z-10 space-y-2 max-w-xl">
+                  <div>
+                    <Link
+                      href={levelPath(level)}
+                      className="text-lg sm:text-xl font-black text-white hover:text-amber-300 drop-shadow-md tracking-tight block transition-colors truncate"
+                    >
+                      {level.name}
+                    </Link>
+
+                    <div className="flex items-center gap-2 text-xs text-slate-300 mt-0.5 flex-wrap">
+                      <span className="flex items-center gap-1">
+                        <span className="ui-dim">{isEn ? 'Conquered by:' : 'Người chinh phục:'}</span>
+                        <strong className="text-white font-bold">
+                          <UserDisplayName user={item.user} showClanTag={false} />
+                        </strong>
+                      </span>
+                      {level.creatorName && (
+                        <span className="flex items-center gap-1 border-l border-white/20 pl-2 ui-dim">
+                          <span>{isEn ? 'by' : 'bởi'} {level.creatorName}</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2 pt-0.5 flex-wrap">
+                    {ytId && (
+                      <button
+                        type="button"
+                        onClick={() => setEmbedVideo(true)}
+                        className="px-3 py-1 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-500 text-white flex items-center gap-1.5 shadow-sm hover:scale-105 transition-all cursor-pointer"
+                      >
+                        <Play className="w-3 h-3 fill-white" />
+                        <span>{isEn ? 'Watch Video' : 'Xem Video Ngay'}</span>
+                      </button>
+                    )}
+
+                    <Link
+                      href={levelPath(level)}
+                      className="px-3 py-1 rounded-xl text-xs font-bold border border-white/20 bg-black/40 hover:bg-black/60 text-white backdrop-blur-md flex items-center gap-1 transition-all"
+                    >
+                      <span>{isEn ? 'Level Details' : 'Chi tiết màn chơi'}</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
                 </div>
               </div>
+            );
+          })}
+        </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2 pt-0.5 flex-wrap">
-                {ytId && (
-                  <button
-                    type="button"
-                    onClick={() => setEmbedVideo(true)}
-                    className="px-3 py-1 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-500 text-white flex items-center gap-1.5 shadow-sm hover:scale-105 transition-all cursor-pointer"
-                  >
-                    <Play className="w-3 h-3 fill-white" />
-                    <span>{isEn ? 'Watch Video' : 'Xem Video Ngay'}</span>
-                  </button>
-                )}
-
-                <Link
-                  href={levelPath(lvl)}
-                  className="px-3 py-1 rounded-xl text-xs font-bold border border-white/20 bg-black/40 hover:bg-black/60 text-white backdrop-blur-md flex items-center gap-1 transition-all"
-                >
-                  <span>{isEn ? 'Level Details' : 'Chi tiết màn chơi'}</span>
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Navigation Arrows */}
-            {topBeaten.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  onClick={handlePrev}
-                  className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/15 backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 cursor-pointer z-20 shadow-xl"
-                  title={isEn ? 'Previous demon' : 'Demon trước'}
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/15 backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 cursor-pointer z-20 shadow-xl"
-                  title={isEn ? 'Next demon' : 'Demon kế tiếp'}
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </>
-            )}
-
-            {/* Dots Indicator */}
-            {topBeaten.length > 1 && (
-              <div className="absolute bottom-2.5 right-4 flex items-center gap-1.5 z-20">
-                {topBeaten.map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => handleSelectSlide(i)}
-                    className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                      i === currentIndex
-                        ? 'w-5 bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.6)]'
-                        : 'w-1.5 bg-white/35 hover:bg-white/70'
-                    }`}
-                    title={`Slide ${i + 1}`}
-                  />
-                ))}
-              </div>
-            )}
+        {/* Navigation Arrows */}
+        {topBeaten.length > 1 && !embedVideo && (
+          <>
+            <button
+              type="button"
+              onClick={handlePrev}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/15 backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 cursor-pointer z-20 shadow-xl"
+              title={isEn ? 'Previous demon' : 'Demon trước'}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={handleNext}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/15 backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 cursor-pointer z-20 shadow-xl"
+              title={isEn ? 'Next demon' : 'Demon kế tiếp'}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </>
+        )}
+
+        {/* Dots Indicator */}
+        {topBeaten.length > 1 && !embedVideo && (
+          <div className="absolute bottom-2.5 right-4 flex items-center gap-1.5 z-20">
+            {topBeaten.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => handleSelectSlide(i)}
+                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                  i === currentIndex
+                    ? 'w-5 bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.6)]'
+                    : 'w-1.5 bg-white/35 hover:bg-white/70'
+                }`}
+                title={`Slide ${i + 1}`}
+              />
+            ))}
+          </div>
         )}
       </div>
 
@@ -555,9 +585,9 @@ function CompactClanLevelsSlideshow({
       </div>
 
       {/* Main Slide Canvas */}
-      <div className="relative h-44 sm:h-52 w-full overflow-hidden bg-slate-950 flex flex-col justify-between p-3 sm:p-4 flex-1">
+      <div className="relative h-44 sm:h-52 w-full overflow-hidden bg-slate-950 flex flex-col flex-1">
         {embedVideo && embedUrl ? (
-          <div className="absolute inset-0 z-20 bg-black flex flex-col">
+          <div className="absolute inset-0 z-30 bg-black flex flex-col">
             <div className="p-1 bg-black/80 flex items-center justify-between border-b border-white/10 px-3">
               <span className="text-xs font-bold text-white truncate">{currentWork.levelName}</span>
               <button
@@ -579,136 +609,159 @@ function CompactClanLevelsSlideshow({
               />
             </div>
           </div>
-        ) : (
-          <>
-            {/* Background Thumbnail */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <img
-                key={currentWork.id || currentIndex}
-                src={highResThumb}
-                alt={currentWork.levelName || ''}
-                className="w-full h-full object-cover transition-all duration-700 ease-out"
-                style={{ filter: 'brightness(0.48) contrast(1.15)' }}
-                onError={(e) => {
-                  if (ytId && (e.currentTarget as HTMLImageElement).src.includes('maxresdefault')) {
-                    (e.currentTarget as HTMLImageElement).src = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
-                  } else {
-                    (e.currentTarget as HTMLImageElement).src =
-                      'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
-                  }
-                }}
-              />
-            </div>
+        ) : null}
 
-            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-transparent pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/30 to-transparent pointer-events-none" />
+        {/* Sliding Horizontal Track */}
+        <div
+          className="flex w-full h-full transition-transform duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
+          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+        >
+          {works.map((item, idx) => {
+            const yIdFromUrl = item.videoUrl
+              ? (item.videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/) || [])[1]
+              : null;
+            const yId = item.youtubeId || yIdFromUrl;
+            const highResThumb = yId
+              ? `https://img.youtube.com/vi/${yId}/maxresdefault.jpg`
+              : item.imageUrl || 'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
 
-            {/* Top Badges */}
-            <div className="relative z-10 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5">
-                <DifficultyRatingIcon
-                  difficultyFace={currentWork.difficultyFace || 0}
-                  ratingType={currentWork.ratingType || 'NONE'}
-                  className="w-6 h-6 drop-shadow-sm"
-                />
-                <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-white/90 border border-white/15 backdrop-blur-xs">
-                  ID: {currentWork.gdLevelId || '—'}
-                </span>
-                {matchedLevel?.basePp ? (
-                  <span className="font-mono font-bold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px]">
-                    {matchedLevel.basePp} Pt
-                  </span>
-                ) : null}
-              </div>
-            </div>
+            const mLevel = item.matchedLevel;
+            const tUrl = mLevel ? levelPath(mLevel) : item.gdLevelId ? `/levels?search=${item.gdLevelId}` : null;
 
-            {/* Bottom Row */}
-            <div className="relative z-10 space-y-1 max-w-lg">
-              <div>
-                {targetLevelUrl ? (
-                  <Link
-                    href={targetLevelUrl}
-                    className="text-base sm:text-lg font-black text-white hover:text-sky-300 drop-shadow-md tracking-tight block truncate transition-colors"
-                  >
-                    {currentWork.levelName || 'Untitled Level'}
-                  </Link>
-                ) : (
-                  <h3 className="text-base sm:text-lg font-black text-white drop-shadow-md tracking-tight truncate">
-                    {currentWork.levelName || 'Untitled Level'}
-                  </h3>
-                )}
-                <div className="text-[11px] text-slate-300 flex items-center gap-2 flex-wrap">
-                  <span>{isEn ? 'by' : 'bởi'} <strong className="text-white font-bold">{currentWork.user?.username || currentWork.creatorName || 'GD Creator'}</strong></span>
-                  {matchedLevel?.verifier && (
-                    <span className="border-l border-white/20 pl-2 ui-dim">Verifier: <strong className="text-white">{matchedLevel.verifier}</strong></span>
-                  )}
+            return (
+              <div
+                key={item.id || idx}
+                className="w-full h-full shrink-0 relative flex flex-col justify-between p-3 sm:p-4 overflow-hidden select-none"
+              >
+                {/* Background Thumbnail */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                  <img
+                    src={highResThumb}
+                    alt={item.levelName || ''}
+                    className="w-full h-full object-cover"
+                    style={{ filter: 'brightness(0.48) contrast(1.15)' }}
+                    onError={(e) => {
+                      if (yId && (e.currentTarget as HTMLImageElement).src.includes('maxresdefault')) {
+                        (e.currentTarget as HTMLImageElement).src = `https://img.youtube.com/vi/${yId}/hqdefault.jpg`;
+                      } else {
+                        (e.currentTarget as HTMLImageElement).src =
+                          'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
+                      }
+                    }}
+                  />
+                </div>
+
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/30 to-transparent pointer-events-none" />
+
+                {/* Top Badges */}
+                <div className="relative z-10 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <DifficultyRatingIcon
+                      difficultyFace={item.difficultyFace || 0}
+                      ratingType={item.ratingType || 'NONE'}
+                      className="w-6 h-6 drop-shadow-sm"
+                    />
+                    <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-white/90 border border-white/15 backdrop-blur-xs">
+                      ID: {item.gdLevelId || '—'}
+                    </span>
+                    {mLevel?.basePp ? (
+                      <span className="font-mono font-bold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px]">
+                        {mLevel.basePp} Pt
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+
+                {/* Bottom Row */}
+                <div className="relative z-10 space-y-1 max-w-lg">
+                  <div>
+                    {tUrl ? (
+                      <Link
+                        href={tUrl}
+                        className="text-base sm:text-lg font-black text-white hover:text-sky-300 drop-shadow-md tracking-tight block truncate transition-colors"
+                      >
+                        {item.levelName || 'Untitled Level'}
+                      </Link>
+                    ) : (
+                      <h3 className="text-base sm:text-lg font-black text-white drop-shadow-md tracking-tight truncate">
+                        {item.levelName || 'Untitled Level'}
+                      </h3>
+                    )}
+                    <div className="text-[11px] text-slate-300 flex items-center gap-2 flex-wrap">
+                      <span>{isEn ? 'by' : 'bởi'} <strong className="text-white font-bold">{item.user?.username || item.creatorName || 'GD Creator'}</strong></span>
+                      {mLevel?.verifier && (
+                        <span className="border-l border-white/20 pl-2 ui-dim">Verifier: <strong className="text-white">{mLevel.verifier}</strong></span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2 pt-0.5 flex-wrap">
+                    {yId && (
+                      <button
+                        type="button"
+                        onClick={() => setEmbedVideo(true)}
+                        className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-red-600 hover:bg-red-500 text-white flex items-center gap-1 cursor-pointer shadow-xs"
+                      >
+                        <Play className="w-2.5 h-2.5 fill-white" />
+                        <span>{isEn ? 'Watch Video' : 'Xem Video'}</span>
+                      </button>
+                    )}
+
+                    {tUrl && (
+                      <Link
+                        href={tUrl}
+                        className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold border border-white/20 bg-black/40 hover:bg-black/60 text-white backdrop-blur-xs flex items-center gap-1"
+                      >
+                        <span>{isEn ? 'Details' : 'Chi tiết'}</span>
+                        <ArrowRight className="w-2.5 h-2.5" />
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </div>
+            );
+          })}
+        </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2 pt-0.5 flex-wrap">
-                {ytId && (
-                  <button
-                    type="button"
-                    onClick={() => setEmbedVideo(true)}
-                    className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-red-600 hover:bg-red-500 text-white flex items-center gap-1 cursor-pointer shadow-xs"
-                  >
-                    <Play className="w-2.5 h-2.5 fill-white" />
-                    <span>{isEn ? 'Watch Video' : 'Xem Video'}</span>
-                  </button>
-                )}
-
-                {targetLevelUrl && (
-                  <Link
-                    href={targetLevelUrl}
-                    className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold border border-white/20 bg-black/40 hover:bg-black/60 text-white backdrop-blur-xs flex items-center gap-1"
-                  >
-                    <span>{isEn ? 'Details' : 'Chi tiết'}</span>
-                    <ArrowRight className="w-2.5 h-2.5" />
-                  </Link>
-                )}
-              </div>
-            </div>
-
-            {/* Navigation Arrows */}
-            {works.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  onClick={handlePrev}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/15 backdrop-blur-xs flex items-center justify-center transition-all hover:scale-110 cursor-pointer z-20 shadow-md"
-                  title={isEn ? 'Previous' : 'Trước'}
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/15 backdrop-blur-xs flex items-center justify-center transition-all hover:scale-110 cursor-pointer z-20 shadow-md"
-                  title={isEn ? 'Next' : 'Sau'}
-                >
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </>
-            )}
-
-            {/* Dots Indicator */}
-            {works.length > 1 && (
-              <div className="absolute bottom-2 right-3 flex items-center gap-1 z-20">
-                {works.map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => handleSelectSlide(i)}
-                    className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                      i === currentIndex ? 'w-4 bg-sky-400' : 'w-1.5 bg-white/35 hover:bg-white/70'
-                    }`}
-                    title={`Slide ${i + 1}`}
-                  />
-                ))}
-              </div>
-            )}
+        {/* Navigation Arrows */}
+        {works.length > 1 && !embedVideo && (
+          <>
+            <button
+              type="button"
+              onClick={handlePrev}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/15 backdrop-blur-xs flex items-center justify-center transition-all hover:scale-110 cursor-pointer z-20 shadow-md"
+              title={isEn ? 'Previous' : 'Trước'}
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={handleNext}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 hover:bg-black/80 text-white border border-white/15 backdrop-blur-xs flex items-center justify-center transition-all hover:scale-110 cursor-pointer z-20 shadow-md"
+              title={isEn ? 'Next' : 'Sau'}
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </>
+        )}
+
+        {/* Dots Indicator */}
+        {works.length > 1 && !embedVideo && (
+          <div className="absolute bottom-2 right-3 flex items-center gap-1 z-20">
+            {works.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => handleSelectSlide(i)}
+                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                  i === currentIndex ? 'w-4 bg-sky-400' : 'w-1.5 bg-white/35 hover:bg-white/70'
+                }`}
+                title={`Slide ${i + 1}`}
+              />
+            ))}
+          </div>
         )}
       </div>
 

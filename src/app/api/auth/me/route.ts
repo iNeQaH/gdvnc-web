@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser } from '@/lib/auth';
 import { isSuperAdminUser } from '@/lib/roles';
+import { sanitizeUserClan } from '@/lib/clan';
 
 export async function GET() {
   const session = await getSessionUser();
@@ -43,6 +44,16 @@ export async function GET() {
               color: true,
               colorGradient: true,
               isSuspended: true,
+              contributions: {
+                select: {
+                  userId: true,
+                  spPledged: true,
+                  user: { select: { supporterUntil: true } },
+                },
+              },
+              members: {
+                select: { userId: true },
+              },
             },
           },
         },
@@ -55,10 +66,19 @@ export async function GET() {
   }
 
   const { tokenVersion: _tokenVersion, ...publicUser } = user;
+  const sanitizedClan = sanitizeUserClan(user.clanMember?.clan);
+  const clanMember = user.clanMember
+    ? {
+        role: user.clanMember.role,
+        clan: sanitizedClan,
+      }
+    : null;
+
   return NextResponse.json({
     success: true,
     user: {
       ...publicUser,
+      clanMember,
       isSuperAdmin: isSuperAdminUser(user),
     },
   });
