@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Bell, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
@@ -90,17 +91,14 @@ export default function AnnouncementsPage() {
           <p className="text-xs ui-dim mt-1">{t('announce.desc')}</p>
         </div>
         {isAdmin && (
-          <button
-            onClick={() => {
-              setCreating(true);
-              setEditing(null);
-            }}
-            className="px-3 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] flex items-center gap-1.5"
+          <Link
+            href="/announcements/new"
+            className="px-3 py-2 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] flex items-center gap-1.5 transition-all shadow-sm hover:opacity-95"
             style={{ backgroundColor: 'var(--accent)' }}
           >
             <Plus className="w-3.5 h-3.5" />
             {t('announce.create')}
-          </button>
+          </Link>
         )}
       </div>
 
@@ -114,11 +112,10 @@ export default function AnnouncementsPage() {
       ) : (
         <div className="ui-zebra-list flex flex-col rounded-2xl overflow-hidden border" style={{ borderColor: 'var(--border-ui)' }}>
           {items.map((item) => (
-            <button
+            <Link
               key={item.id}
-              type="button"
-              onClick={() => setSelected(item)}
-              className="text-left px-4 py-3.5 flex flex-col gap-1 hover:opacity-90"
+              href={`/announcements/${item.id}`}
+              className="text-left px-4 py-3.5 flex flex-col gap-1 hover:opacity-90 transition-opacity"
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-extrabold ui-title truncate">{item.title}</span>
@@ -130,7 +127,7 @@ export default function AnnouncementsPage() {
                 {t('announce.by')} {item.author} · {audienceLabel(item.audience)}
               </div>
               <p className="text-xs ui-title/80 line-clamp-2 leading-relaxed">{item.excerpt}</p>
-            </button>
+            </Link>
           ))}
         </div>
       )}

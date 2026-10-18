@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Star, Moon, Wrench, Swords, Search, CheckCircle2, User, Trash2, Gamepad2, Crosshair, X, Trophy, Crown, Heart } from 'lucide-react';
+import { Star, Moon, Wrench, Swords, Search, CheckCircle2, User, Trash2, Gamepad2, Crosshair, X, Trophy, Crown, Heart, Monitor, Smartphone } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { formatCp } from '@/lib/creatorPoints';
 import { levelPath } from '@/lib/levelUrl';
@@ -110,7 +110,7 @@ function LeaderboardPodium({
             const pedestalBorder = isRank1
               ? 'border-t-4 border-amber-300 dark:border-amber-400 bg-gradient-to-b from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 shadow-md'
               : isRank2
-              ? 'border-t-4 border-slate-100 dark:border-white bg-gradient-to-b from-slate-100 via-slate-300 to-slate-400 shadow-[0_0_20px_rgba(255,255,255,0.4)]'
+              ? 'border-t-4 border-slate-200 dark:border-slate-300 bg-gradient-to-b from-slate-100 via-slate-300 to-slate-400 shadow-md'
               : isRank3
               ? 'border-t-4 border-amber-500 dark:border-amber-600 bg-gradient-to-b from-amber-700 to-amber-800 dark:from-amber-800 dark:to-amber-900 shadow-md'
               : 'border-t-2 border-slate-400 dark:border-slate-500 bg-gradient-to-b from-slate-600 to-slate-700 dark:from-slate-700 dark:to-slate-800 shadow-sm';
@@ -118,7 +118,7 @@ function LeaderboardPodium({
             const avatarSize = isRank1
               ? 'w-13 h-13 sm:w-16 sm:h-16 ring-3 ring-amber-500 dark:ring-amber-400 shadow-[0_0_16px_rgba(245,158,11,0.35)]'
               : isRank2
-              ? 'w-11 h-11 sm:w-12 sm:h-12 ring-3 ring-slate-100 dark:ring-white shadow-[0_0_16px_rgba(255,255,255,0.4)]'
+              ? 'w-11 h-11 sm:w-12 sm:h-12 ring-3 ring-slate-200 dark:ring-white/80 shadow-md'
               : isRank3
               ? 'w-10 h-10 sm:w-11 sm:h-11 ring-2 ring-amber-600 shadow-md'
               : 'w-8 h-8 sm:w-9 sm:h-9 ring-1 ring-slate-400 dark:ring-white/20';
@@ -742,40 +742,43 @@ export default function HomePage() {
 
         {/* Device Filter (Hidden in CREATOR mode) */}
         {mode !== 'CREATOR' && (
-          <div className="flex items-center gap-1 p-1 rounded-2xl border shrink-0" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-            <button
-              onClick={() => setDeviceFilter('ALL')}
-              className="px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer"
-              style={{
-                backgroundColor: deviceFilter === 'ALL' ? 'var(--bg-card)' : 'transparent',
-                color: deviceFilter === 'ALL' ? 'var(--accent)' : 'var(--text-dim)',
-                boxShadow: deviceFilter === 'ALL' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-              }}
-            >
-              Tất cả
-            </button>
-            <button
-              onClick={() => setDeviceFilter('PC')}
-              className="px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer"
-              style={{
-                backgroundColor: deviceFilter === 'PC' ? 'var(--bg-card)' : 'transparent',
-                color: deviceFilter === 'PC' ? 'var(--accent)' : 'var(--text-dim)',
-                boxShadow: deviceFilter === 'PC' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-              }}
-            >
-              PC
-            </button>
-            <button
-              onClick={() => setDeviceFilter('MOBILE')}
-              className="px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer"
-              style={{
-                backgroundColor: deviceFilter === 'MOBILE' ? 'var(--bg-card)' : 'transparent',
-                color: deviceFilter === 'MOBILE' ? 'var(--accent)' : 'var(--text-dim)',
-                boxShadow: deviceFilter === 'MOBILE' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-              }}
-            >
-              Mobile
-            </button>
+          <div
+            className="flex items-center gap-1.5 p-1 rounded-2xl border shrink-0 shadow-inner"
+            style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+          >
+            {[
+              { id: 'ALL', label: 'Tất cả', icon: null },
+              { id: 'PC', label: 'PC', icon: <Monitor className="w-3.5 h-3.5" /> },
+              { id: 'MOBILE', label: 'Mobile', icon: <Smartphone className="w-3.5 h-3.5" /> },
+            ].map((btn) => {
+              const isActive = deviceFilter === btn.id;
+              return (
+                <button
+                  key={btn.id}
+                  type="button"
+                  onClick={() => setDeviceFilter(btn.id as any)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    isActive
+                      ? isLavender
+                        ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-md shadow-purple-500/30 border border-white/20 scale-[1.02]'
+                        : 'text-white shadow-md border border-white/20 scale-[1.02]'
+                      : 'ui-dim hover:text-white/90 hover:bg-white/5 border border-transparent'
+                  }`}
+                  style={
+                    isActive && !isLavender
+                      ? {
+                          backgroundColor: 'var(--accent)',
+                          color: 'var(--accent-fg, #ffffff)',
+                          boxShadow: '0 4px 12px var(--border-glow, rgba(14,165,233,0.3))',
+                        }
+                      : undefined
+                  }
+                >
+                  {btn.icon}
+                  <span>{btn.label}</span>
+                </button>
+              );
+            })}
           </div>
         )}
 

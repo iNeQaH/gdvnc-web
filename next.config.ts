@@ -57,6 +57,16 @@ const nextConfig: NextConfig = {
         destination: '/profile/:username',
         permanent: true,
       },
+      {
+        source: '/annoucements',
+        destination: '/announcements',
+        permanent: true,
+      },
+      {
+        source: '/annoucements/:path*',
+        destination: '/announcements/:path*',
+        permanent: true,
+      },
     ];
   },
   // Allow LAN / public IP / tunnels to load /_next JS in `next dev`.

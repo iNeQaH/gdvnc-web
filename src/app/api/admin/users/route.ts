@@ -16,6 +16,7 @@ const userSelect = {
   platformerPp: true,
   creatorPoints: true,
   createdAt: true,
+  updatedAt: true,
   gdUsername: true,
   gdVerified: true,
   isBanned: true,
@@ -52,6 +53,8 @@ export async function GET(req: Request) {
     const where: Prisma.UserWhereInput | undefined = and.length ? { AND: and } : undefined;
     const staffTake = roleParam === 'ADMIN' || roleParam === 'MODERATOR' || roleParam === 'SUPPORTER' ? 200 : 50;
 
+    let users: any[] = [];
+
     if (roleParam === 'ALL' && !query) {
       const [staff, recent] = await Promise.all([
         prisma.user.findMany({
@@ -63,27 +66,43 @@ export async function GET(req: Request) {
           where: { role: Role.USER },
           select: userSelect,
           orderBy: { createdAt: 'desc' },
-          take: 50,
+          take: 60,
         }),
       ]);
       const staffIds = new Set(staff.map((u) => u.id));
-      const allUsers = [...staff, ...recent.filter((u) => !staffIds.has(u.id))];
-      return NextResponse.json({
-        success: true,
-        users: allUsers.map((u) => ({ ...u, isSuperAdmin: isSuperAdminUser(u) })),
+      users = [...staff, ...recent.filter((u) => !staffIds.has(u.id))];
+    } else {
+      users = await prisma.user.findMany({
+        where,
+        select: userSelect,
+        orderBy: { createdAt: 'desc' },
+        take: staffTake,
       });
     }
 
-    const users = await prisma.user.findMany({
-      where,
-      select: userSelect,
-      orderBy: { createdAt: 'desc' },
-      take: staffTake,
-    });
+    // Attach latest activity from PageVisit
+    const userIds = users.map((u) => u.id);
+    let visitMap = new Map<string, Date>();
+    if (userIds.length > 0) {
+      try {
+        const visits = await prisma.pageVisit.groupBy({
+          by: ['ipHash'],
+          _max: { createdAt: true },
+          where: { ipHash: { in: userIds.map((id) => `usr_${id}`) } },
+        });
+        visitMap = new Map(visits.map((v) => [v.ipHash.replace('usr_', ''), v._max.createdAt!]));
+      } catch {}
+    }
+
+    const enrichedUsers = users.map((u) => ({
+      ...u,
+      isSuperAdmin: isSuperAdminUser(u),
+      lastActiveAt: visitMap.get(u.id) || u.updatedAt || u.createdAt,
+    }));
 
     return NextResponse.json({
       success: true,
-      users: users.map((u) => ({ ...u, isSuperAdmin: isSuperAdminUser(u) })),
+      users: enrichedUsers,
     });
   } catch (error: any) {
     return publicApiError(error, 'Lỗi tìm kiếm người dùng.', 500);
@@ -99,15 +118,37 @@ export async function DELETE(req: Request) {
   }
 
   try {
-    const { id, reason } = await req.json();
-    if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get('userId');
+    const reason = searchParams.get('reason') || '';
 
-    const result = await deleteUserAccount(actor.userId, id, reason);
-    if ('error' in result) {
-      return NextResponse.json({ error: result.error }, { status: result.status });
+    if (!userId) {
+      return NextResponse.json({ error: 'Thiếu userId cần xóa.' }, { status: 400 });
     }
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return publicApiError(error);
+
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, username: true, role: true },
+    });
+
+    if (!targetUser) {
+      return NextResponse.json({ error: 'Người dùng không tồn tại.' }, { status: 404 });
+    }
+
+    if (isSuperAdminUser(targetUser)) {
+      return NextResponse.json({ error: 'Không thể xóa tài khoản Super Admin.' }, { status: 403 });
+    }
+
+    const delResult = await deleteUserAccount(actor.userId, targetUser.id, reason);
+    if ('error' in delResult && delResult.error) {
+      return NextResponse.json({ error: delResult.error }, { status: delResult.status || 400 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Đã xóa vĩnh viễn tài khoản ${targetUser.username}.`,
+    });
+  } catch (error: any) {
+    return publicApiError(error, 'Lỗi khi xóa tài khoản.', 500);
   }
 }

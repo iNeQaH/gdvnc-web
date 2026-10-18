@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import { pageMetadata } from '@/lib/pageMeta';
 
 export const metadata = pageMetadata(
-  'GDVN Submission',
-  'Nộp bằng chứng, gửi level của bạn tại đây',
+  'Nộp',
+  'Gửi record của bạn! Nhớ đọc luật trước khi gửi nha.',
   '/submit'
 );
 

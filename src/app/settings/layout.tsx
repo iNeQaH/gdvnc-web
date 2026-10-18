@@ -1,10 +1,12 @@
-import { Metadata } from 'next';
+import type { ReactNode } from 'react';
+import { pageMetadata } from '@/lib/pageMeta';
 
-export const metadata: Metadata = {
-  title: 'Cài đặt cá nhân - GDVN',
-  description: 'Quản lý tài khoản và bảo mật GDVN',
-};
+export const metadata = pageMetadata(
+  'Cài đặt cá nhân',
+  'Vào đây sửa thông tin với làm đẹp nha',
+  '/settings'
+);
 
-export default function SettingsLayout({ children }: { children: React.ReactNode }) {
-  return children;
+export default function SettingsLayout({ children }: { children: ReactNode }) {
+  return <>{children}</>;
 }

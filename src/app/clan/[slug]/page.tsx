@@ -871,7 +871,7 @@ function ClanPodiumLeaderboard({
             const pedestalBorder = isRank1
               ? 'border-t-4 border-amber-300 dark:border-amber-400 bg-gradient-to-b from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 shadow-md'
               : isRank2
-              ? 'border-t-4 border-slate-100 dark:border-white bg-gradient-to-b from-slate-100 via-slate-300 to-slate-400 shadow-[0_0_20px_rgba(255,255,255,0.4)]'
+              ? 'border-t-4 border-slate-200 dark:border-slate-300 bg-gradient-to-b from-slate-100 via-slate-300 to-slate-400 shadow-md'
               : isRank3
               ? 'border-t-4 border-amber-500 dark:border-amber-600 bg-gradient-to-b from-amber-700 to-amber-800 dark:from-amber-800 dark:to-amber-900 shadow-md'
               : 'border-t-2 border-slate-400 dark:border-slate-500 bg-gradient-to-b from-slate-600 to-slate-700 dark:from-slate-700 dark:to-slate-800 shadow-sm';
@@ -879,7 +879,7 @@ function ClanPodiumLeaderboard({
             const avatarSize = isRank1
               ? 'w-13 h-13 sm:w-16 sm:h-16 ring-3 ring-amber-500 dark:ring-amber-400 shadow-[0_0_16px_rgba(245,158,11,0.35)]'
               : isRank2
-              ? 'w-11 h-11 sm:w-12 sm:h-12 ring-3 ring-slate-100 dark:ring-white shadow-[0_0_16px_rgba(255,255,255,0.4)]'
+              ? 'w-11 h-11 sm:w-12 sm:h-12 ring-3 ring-slate-200 dark:ring-white/80 shadow-md'
               : isRank3
               ? 'w-10 h-10 sm:w-11 sm:h-11 ring-2 ring-amber-600 shadow-md'
               : 'w-8 h-8 sm:w-9 sm:h-9 ring-1 ring-slate-400 dark:ring-white/20';

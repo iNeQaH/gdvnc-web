@@ -79,10 +79,26 @@ function AdminListPager({
   );
 }
 
+function formatRelativeTime(dateStr?: string | Date | null, isEn?: boolean): string {
+  if (!dateStr) return isEn ? 'Never' : 'Chưa có';
+  const d = new Date(dateStr);
+  const diff = Date.now() - d.getTime();
+  if (isNaN(diff)) return '—';
+  if (diff < 60_000) return isEn ? 'Just now' : 'Vừa xong';
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 60) return isEn ? `${mins}m ago` : `${mins} phút trước`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return isEn ? `${hours}h ago` : `${hours} giờ trước`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return isEn ? `${days}d ago` : `${days} ngày trước`;
+  return d.toLocaleDateString(isEn ? 'en-US' : 'vi-VN');
+}
+
 export default function UsersTab({ currentUser }: { currentUser: any }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { showToast, showConfirm } = useToast();
   const router = useRouter();
+  const locale = language === 'en' ? 'en-US' : 'vi-VN';
 
   // User management state
   const [userQuery, setUserQuery] = useState('');
@@ -91,7 +107,7 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [userSortOrder, setUserSortOrder] = useState<'asc' | 'desc'>('asc');
   const [userPage, setUserPage] = useState(1);
-  const [userSort, setUserSort] = useState<'createdAt' | 'role' | 'pp'>('createdAt');
+  const [userSort, setUserSort] = useState<'createdAt' | 'role' | 'pp' | 'lastActive'>('createdAt');
 
   const [deleteUserTarget, setDeleteUserTarget] = useState<{ id: string; username: string } | null>(null);
   const [deleteUserReason, setDeleteUserReason] = useState('');
@@ -420,6 +436,10 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
       return userSortOrder === 'desc' ? weightB - weightA : weightA - weightB;
     } else if (userSort === 'pp') {
       return userSortOrder === 'desc' ? b.classicPp - a.classicPp : a.classicPp - b.classicPp;
+    } else if (userSort === 'lastActive') {
+      const timeA = new Date(a.lastActiveAt || a.updatedAt || a.createdAt).getTime();
+      const timeB = new Date(b.lastActiveAt || b.updatedAt || b.createdAt).getTime();
+      return userSortOrder === 'desc' ? timeB - timeA : timeA - timeB;
     } else {
       const timeA = new Date(a.createdAt).getTime();
       const timeB = new Date(b.createdAt).getTime();
@@ -457,11 +477,16 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
               <span className="ui-dim font-semibold">{t('admin.sort')}</span>
               <select
                 value={userSort}
-                onChange={(e) => setUserSort(e.target.value as any)}
+                onChange={(e) => {
+                  const val = e.target.value as any;
+                  setUserSort(val);
+                  if (val === 'lastActive' || val === 'pp') setUserSortOrder('desc');
+                }}
                 className="px-2.5 py-1.5 rounded-xl border text-xs font-semibold"
                 style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
               >
                 <option value="createdAt">{t('admin.sort_created')}</option>
+                <option value="lastActive">{language === 'en' ? 'Last Active' : 'Lần cuối hoạt động'}</option>
                 <option value="role">{t('admin.sort_role')}</option>
                 <option value="pp">Classic Points</option>
               </select>
@@ -514,6 +539,7 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
                   <tr className="border-b text-[11px] font-bold uppercase ui-dim" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
                     <th className="px-5 py-3">{t('leaderboard.player')}</th>
                     <th className="px-5 py-3">{t('admin.sort_role')}</th>
+                    <th className="px-5 py-3">{language === 'en' ? 'Last Active' : 'Hoạt động'}</th>
                     <th className="px-5 py-3">GD</th>
                     <th className="px-5 py-3 text-right">{t('leaderboard.classic')}</th>
                     <th className="px-5 py-3 text-right">Thao tác</th>
@@ -580,6 +606,14 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
                               </span>
                             )}
                           </div>
+                        </td>
+                        <td className="px-5 py-3.5 whitespace-nowrap">
+                          <span
+                            className="text-xs ui-dim font-medium"
+                            title={user.lastActiveAt ? new Date(user.lastActiveAt).toLocaleString(locale) : undefined}
+                          >
+                            {formatRelativeTime(user.lastActiveAt, language === 'en')}
+                          </span>
                         </td>
                         <td className="px-5 py-3.5">
                           <div className="flex flex-col gap-1">

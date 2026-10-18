@@ -8,10 +8,10 @@ import {
 import { isSuperAdminUser } from '@/lib/roles';
 
 export function getSiteBaseUrl() {
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
+  if (process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.startsWith('http')) {
     return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
   }
-  return 'http://localhost:8088';
+  return 'https://geodat.vn';
 }
 
 export function toAbsoluteUrl(url?: string | null) {
@@ -53,6 +53,14 @@ export interface ProfileEmbedData {
   pointLines: string[];
   hardestLines: string[];
   showBadgeRow: boolean;
+  clanTag?: string | null;
+  rankClassic?: number | null;
+  rankPlatformer?: number | null;
+  rankCreator?: number | null;
+  themeColor: string;
+  bio?: string | null;
+  title: string;
+  description: string;
 }
 
 export async function getProfileEmbedData(username: string): Promise<ProfileEmbedData | null> {
@@ -61,6 +69,17 @@ export async function getProfileEmbedData(username: string): Promise<ProfileEmbe
   const user = await prisma.user.findUnique({
     where: { username: decodedUsername },
     include: {
+      clanMember: {
+        include: {
+          clan: {
+            select: {
+              tag: true,
+              name: true,
+              isSuspended: true,
+            },
+          },
+        },
+      },
       records: {
         where: { status: RecordStatus.APPROVED },
         include: { level: true },
@@ -133,6 +152,49 @@ export async function getProfileEmbedData(username: string): Promise<ProfileEmbe
   if (hardestClassic) hardestLines.push(`Classic Hardest: ${hardestClassic.name}`);
   if (hardestPlatformer) hardestLines.push(`Platformer Hardest: ${hardestPlatformer.name}`);
 
+  // Query ranks for categories where points > 0
+  const [rankClassic, rankPlatformer, rankCreator] = await Promise.all([
+    user.classicPp > 0.005
+      ? prisma.user.count({ where: { isBanned: false, classicPp: { gt: user.classicPp } } }).then((c) => c + 1)
+      : Promise.resolve(null),
+    user.platformerPp > 0.005
+      ? prisma.user.count({ where: { isBanned: false, platformerPp: { gt: user.platformerPp } } }).then((c) => c + 1)
+      : Promise.resolve(null),
+    user.creatorPoints > 0.005
+      ? prisma.user.count({ where: { isBanned: false, creatorPoints: { gt: user.creatorPoints } } }).then((c) => c + 1)
+      : Promise.resolve(null),
+  ]);
+
+  const clan = user.clanMember?.clan;
+  const clanTag = clan && !clan.isSuspended && clan.tag ? clan.tag : null;
+
+  // Title: "[{clan.tag}] {username}" if clan exists, else "{username}"
+  const title = clanTag ? `[${clanTag}] ${user.username}` : user.username;
+
+  // Description: "Classic: #{rank classic} | Platformer: #{rank platformer} | Creator: #{rank creator}"
+  // ONLY include items where points > 0!
+  const rankParts: string[] = [];
+  if (rankClassic !== null) rankParts.push(`Classic: #${rankClassic}`);
+  if (rankPlatformer !== null) rankParts.push(`Platformer: #${rankPlatformer}`);
+  if (rankCreator !== null) rankParts.push(`Creator: #${rankCreator}`);
+
+  const description = rankParts.length > 0 ? rankParts.join(' | ') : (user.bio?.trim() || 'Hồ sơ người chơi GDVN');
+
+  // Determine user's active theme color for Discord embed border
+  let themeColor = '#0ea5e9';
+  if (user.profileTheme === 'sakura') themeColor = '#ec4899';
+  else if (user.profileTheme === 'lavender') themeColor = '#a855f7';
+  else if (user.profileTheme === 'mint') themeColor = '#10b981';
+  else if (user.profileTheme === 'peach') themeColor = '#f43f5e';
+  else if (user.profileTheme === 'mono') themeColor = '#71717a';
+  else if (user.profileTheme === 'custom') {
+    const cfg = user.profileConfig as any;
+    if (cfg?.customThemeColors?.[0]) themeColor = cfg.customThemeColors[0];
+    else if (cfg?.customThemeColor) themeColor = cfg.customThemeColor;
+  } else if (user.nameColor && user.nameColor.startsWith('#')) {
+    themeColor = user.nameColor;
+  }
+
   return {
     username: user.username,
     role: isSuperAdmin ? ('SUPER_ADMIN' as any) : user.role,
@@ -148,10 +210,17 @@ export async function getProfileEmbedData(username: string): Promise<ProfileEmbe
     pointLines,
     hardestLines,
     showBadgeRow,
+    clanTag,
+    rankClassic,
+    rankPlatformer,
+    rankCreator,
+    themeColor,
+    bio: user.bio,
+    title,
+    description,
   };
 }
 
 export function buildProfileEmbedDescription(data: ProfileEmbedData) {
-  const lines = [...data.pointLines, ...data.hardestLines];
-  return lines.length > 0 ? lines.join(' · ') : `GDVN profile — ${data.username}`;
+  return data.description;
 }
