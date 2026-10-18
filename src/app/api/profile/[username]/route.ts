@@ -21,6 +21,7 @@ import {
 import { deleteUserAccount } from '@/lib/deleteUser';
 import { isSuperAdminUser, isStaffRole } from '@/lib/roles';
 import { clearLeaderboardCache } from '@/lib/leaderboard';
+import { validateBioContent } from '@/lib/contentFilter';
 
 export const dynamic = 'force-dynamic';
 
@@ -556,6 +557,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         ...baseCfg,
         profileMode: body.profileMode === 'light' ? 'light' : 'dark',
       };
+    }
+
+    if (body.bio !== undefined && body.bio !== null) {
+      const bioText = String(body.bio).trim();
+      if (bioText.length > 0) {
+        const bioCheck = validateBioContent(bioText);
+        if (!bioCheck.ok) {
+          return NextResponse.json({ error: bioCheck.errorVi }, { status: 400 });
+        }
+      }
     }
 
     const updated = await prisma.user.update({

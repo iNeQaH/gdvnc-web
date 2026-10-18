@@ -29,6 +29,8 @@ export function reservedUsernames(): Set<string> {
   return new Set([...STATIC_RESERVED, ...extra, 'ineqah']);
 }
 
+import { validateUsernameContent } from './contentFilter';
+
 export function validateUsername(raw: unknown): { ok: true; value: string } | { ok: false; errorEn: string; errorVi: string } {
   const value = String(raw ?? '').trim();
   if (value.length < MIN_LEN || value.length > MAX_LEN) {
@@ -50,6 +52,14 @@ export function validateUsername(raw: unknown): { ok: true; value: string } | { 
       ok: false,
       errorEn: 'This username is reserved.',
       errorVi: 'Tên người dùng này đã được dành riêng.',
+    };
+  }
+  const contentCheck = validateUsernameContent(value);
+  if (!contentCheck.ok) {
+    return {
+      ok: false,
+      errorEn: contentCheck.errorEn || 'Username contains sensitive or prohibited words.',
+      errorVi: contentCheck.errorVi || 'Tên người dùng chứa từ ngữ nhạy cảm hoặc bị cấm.',
     };
   }
   return { ok: true, value };

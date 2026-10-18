@@ -551,8 +551,12 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ gdUsername, discordTag, country, bio }),
       });
-      if (res.ok) showToast(t('settings.save_info_success'), 'success');
-      else showToast(t('settings.save_info_error'), 'error');
+      if (res.ok) {
+        showToast(t('settings.save_info_success'), 'success');
+      } else {
+        const errData = await res.json().catch(() => null);
+        showToast(errData?.error || t('settings.save_info_error'), 'error');
+      }
     } catch (e) {
       showToast(t('settings.save_info_error'), 'error');
     }
