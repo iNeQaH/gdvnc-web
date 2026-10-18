@@ -154,6 +154,7 @@ const vi: Record<DictKey, string> = {
   'levelslist.legacy_player': 'Người chơi cũ',
   'levelslist.achievement': 'Thành tích',
   'levelslist.player': 'Người chơi',
+  'levelslist.device': 'Thiết bị',
   'levelslist.delete_record': 'Xoá kỷ lục',
   'levelslist.delete_record_confirm': 'Xoá kỷ lục này?',
 
@@ -388,6 +389,7 @@ const vi: Record<DictKey, string> = {
   'profile.col_weight': 'Tỷ Trọng',
   'profile.col_pp': 'Points',
   'profile.col_progress': 'Tiến độ',
+  'profile.col_device': 'Thiết bị',
   'profile.col_time': 'Thời gian (Clear Time)',
   'profile.no_records': 'Chưa có kỷ lục được duyệt.',
   'profile.update_fail': 'Lỗi cập nhật hồ sơ.',

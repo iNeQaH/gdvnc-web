@@ -17,12 +17,14 @@ import {
   Crown,
   Sparkles,
   Lock,
+  Users,
 } from 'lucide-react';
 import ColorPicker from '@/components/ColorPicker';
 import { CircularAnglePicker } from '@/components/CircularAnglePicker';
 import { useToast } from '@/components/GlobalToast';
 import { useLanguage } from '@/components/LanguageContext';
 import { handleMarkdownKeyDown, handleMarkdownPaste } from '@/lib/markdownShortcuts';
+import { getClanTier } from '@/lib/clanTypes';
 
 interface ClanSettingsModalProps {
   isOpen: boolean;
@@ -72,6 +74,7 @@ export default function ClanSettingsModal({
   const [color, setColor] = useState(clan.color || '#f59e0b');
 
   // Gradient & Theme options for Tier 2+
+  const tierInfo = getClanTier(clan.totalSp || clan.effectiveSp || 0);
   const isTier2OrHigher = Boolean(clan.tier >= 2 || (clan.totalSp || clan.effectiveSp || 0) >= 10);
   const isTier3 = Boolean(clan.tier === 3 || (clan.totalSp || clan.effectiveSp || 0) >= 20);
   const [useTagGradient, setUseTagGradient] = useState(Boolean(clan.colorGradient));
@@ -482,6 +485,26 @@ export default function ClanSettingsModal({
                 placeholder={isEn ? 'Geometry Dash Level ID' : 'ID màn chơi'}
                 className="w-full px-3 py-2 rounded-xl text-xs ui-input"
               />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold ui-title flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-sky-400" />
+                  <span>{isEn ? 'Clan Members' : 'Số lượng thành viên'}</span>
+                </span>
+                <span className="text-xs font-bold ui-title">
+                  {clan.memberCount ?? clan.members?.length ?? 1} / {tierInfo.maxMembers} {isEn ? 'members' : 'thành viên'}
+                </span>
+              </label>
+              <div className="w-full px-3 py-2 rounded-xl text-xs flex items-center justify-between bg-black/20 border" style={{ borderColor: 'var(--border-subtle)' }}>
+                <span className="ui-title font-medium">
+                  {clan.memberCount ?? clan.members?.length ?? 1} / {tierInfo.maxMembers} {isEn ? 'members' : 'thành viên'}
+                </span>
+                <span className="text-[11px] ui-dim">
+                  {tierInfo.name} ({isEn ? `Max ${tierInfo.maxMembers}` : `Tối đa ${tierInfo.maxMembers}`})
+                </span>
+              </div>
             </div>
 
             <div className="space-y-1">

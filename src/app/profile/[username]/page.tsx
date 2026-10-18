@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Star, Sparkles, Moon, Sun, Medal, Play, Globe, MessageSquare, Gamepad2, ArrowLeft, Camera, Check, X, Pencil, ShieldCheck, Heart, Trash2, Hammer, User as UserIcon, Shield, Crown, Trophy, Award, Zap, Flame, Diamond, StarHalf, CheckCircle, ChevronDown, RotateCcw, UserCheck, MapPin, Edit, ShieldAlert, RefreshCw, Ban, Unlock, Lock, FileText, Save, Minus, Plus } from 'lucide-react';
@@ -19,6 +19,7 @@ import { isFullAdminRole, isStaffRole, isSuperAdminUser } from '@/lib/roles';
 import GdUnverifiedNotice from '@/components/GdUnverifiedNotice';
 import { logoutClient } from '@/lib/sessionClient';
 import { calculateUserSp } from '@/lib/clanTypes';
+import DeviceBadge from '@/components/DeviceBadge';
 
 const RECORD_PAGE_SIZE = 10;
 
@@ -627,15 +628,35 @@ export default function ProfilePage() {
 
   const hardest = data.hardestClassic;
   const breakdown = data.classicBreakdown;
-  const classicRecords = data.classicRecords || breakdown?.items || [];
+  const ppByRecordId = useMemo(() => {
+    return new Map<string, any>(
+      [...(breakdown?.items || []), ...(breakdown?.unused || [])].map((item: any) => [item.recordId, item])
+    );
+  }, [breakdown]);
+
+  const classicRecords = useMemo(() => {
+    const list = [...(data.classicRecords || breakdown?.items || [])];
+    return list.sort((a: any, b: any) => {
+      const ppA = ppByRecordId.get(a.recordId)?.weightedPp ?? (a.qualifiesForPp ? (a.awardedPp ?? 0) : 0);
+      const ppB = ppByRecordId.get(b.recordId)?.weightedPp ?? (b.qualifiesForPp ? (b.awardedPp ?? 0) : 0);
+      if (ppB !== ppA) return ppB - ppA;
+      const awA = a.qualifiesForPp ? (a.awardedPp ?? 0) : 0;
+      const awB = b.qualifiesForPp ? (b.awardedPp ?? 0) : 0;
+      if (awB !== awA) return awB - awA;
+      const progA = a.progress ?? 0;
+      const progB = b.progress ?? 0;
+      if (progB !== progA) return progB - progA;
+      const plA = a.placement ?? 999999;
+      const plB = b.placement ?? 999999;
+      return plA - plB;
+    });
+  }, [data?.classicRecords, breakdown, ppByRecordId]);
+
   const platformerRecords = data.platformerCompletions || [];
   const createdLevels = data.createdLevels || [];
   const pagedClassic = classicRecords.slice((recordPage - 1) * RECORD_PAGE_SIZE, recordPage * RECORD_PAGE_SIZE);
   const pagedPlatformer = platformerRecords.slice((recordPage - 1) * RECORD_PAGE_SIZE, recordPage * RECORD_PAGE_SIZE);
   const pagedCreated = createdLevels.slice((recordPage - 1) * RECORD_PAGE_SIZE, recordPage * RECORD_PAGE_SIZE);
-  const ppByRecordId = new Map<string, any>(
-    (breakdown?.items || []).map((item: any) => [item.recordId, item])
-  );
 
   const isTargetSuperAdmin = Boolean(data?.isSuperAdmin || isSuperAdminUser(data));
   const isSupporter = Boolean(data?.supporterUntil && new Date(data.supporterUntil) > new Date());
@@ -1180,6 +1201,7 @@ export default function ProfilePage() {
                 <tr className="border-b text-[11px] font-bold uppercase ui-dim" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
                   <th className="px-4 py-2.5 w-12 text-center">#</th>
                   <th className="px-4 py-2.5">{t("profile.col_level")}</th>
+                  <th className="px-3 py-2.5 text-center w-24">{t("profile.col_device") || 'Thiết bị'}</th>
                   <th className="px-4 py-2.5 text-center">{t("profile.col_progress")}</th>
                   <th className="px-4 py-2.5 text-right">Base Points</th>
                   <th className="px-4 py-2.5 text-center">{t("profile.col_weight")}</th>
@@ -1190,15 +1212,16 @@ export default function ProfilePage() {
               <tbody className="ui-zebra">
                 {classicRecords.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-5 py-8 text-center ui-dim italic">
+                    <td colSpan={8} className="px-5 py-8 text-center ui-dim italic">
                       {t('profile.no_records')}
                     </td>
                   </tr>
                 ) : pagedClassic.map((item: any, idx: number) => {
                   const pp = ppByRecordId.get(item.recordId);
+                  const rankNum = (recordPage - 1) * RECORD_PAGE_SIZE + idx + 1;
                   return (
                   <tr key={item.recordId || item.id || `breakdown-${idx}`} className="hover:opacity-90">
-                    <td className="px-4 py-2.5 text-center font-bold ui-dim">{pp?.rankInProfile ?? (recordPage - 1) * RECORD_PAGE_SIZE + idx + 1}</td>
+                    <td className="px-4 py-2.5 text-center font-bold ui-dim">{rankNum}</td>
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-1.5">
                         {item.placement != null ? (
@@ -1214,6 +1237,9 @@ export default function ProfilePage() {
                           <span className="font-bold ui-title">{item.name || item.levelName}</span>
                         )}
                       </div>
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      <DeviceBadge device={item.device} />
                     </td>
                     <td className="px-4 py-2.5 text-center font-semibold ui-title">
                       {item.progress != null ? `${item.progress}%` : '—'}
@@ -1232,7 +1258,7 @@ export default function ProfilePage() {
                         <span className="text-[10px] ui-dim">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 text-right font-black" style={{ color: pp ? 'var(--accent)' : 'var(--text-dim)' }}>
+                    <td className="px-4 py-2.5 text-right font-black" style={{ color: pp && pp.weightedPp > 0 ? 'var(--accent)' : 'var(--text-dim)' }}>
                       {pp ? pp.weightedPp.toFixed(2) : '—'}
                     </td>
                     <td className="px-4 py-2.5 text-center">
@@ -1266,15 +1292,26 @@ export default function ProfilePage() {
             <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="border-b text-[11px] font-bold uppercase ui-dim" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                  <th className="px-4 py-2.5 w-12 text-center">#</th>
                   <th className="px-4 py-2.5">{t("profile.col_level")}</th>
+                  <th className="px-3 py-2.5 text-center w-24">{t("profile.col_device") || 'Thiết bị'}</th>
                   <th className="px-4 py-2.5 text-center">{t("profile.col_time")}</th>
                   <th className="px-4 py-2.5 text-right">Base Points</th>
                   <th className="px-4 py-2.5 text-center">Video</th>
                 </tr>
               </thead>
               <tbody className="ui-zebra">
-                {pagedPlatformer.map((rec: any, idx: number) => (
+                {platformerRecords.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-8 text-center ui-dim italic">
+                      {t('profile.no_records')}
+                    </td>
+                  </tr>
+                ) : pagedPlatformer.map((rec: any, idx: number) => {
+                  const rankNum = (recordPage - 1) * RECORD_PAGE_SIZE + idx + 1;
+                  return (
                   <tr key={rec.recordId || rec.id || `plat-${idx}`} className="hover:opacity-90">
+                    <td className="px-4 py-2.5 text-center font-bold ui-dim">{rankNum}</td>
                     <td className="px-4 py-2.5">
                       {rec.gdLevelId ? (
                         <Link href={levelPath({ gdLevelId: rec.gdLevelId })} className="font-bold ui-title hover:underline" style={{ color: 'var(--accent)' }}>
@@ -1283,6 +1320,9 @@ export default function ProfilePage() {
                       ) : (
                         <span className="font-bold ui-title">{rec.name}</span>
                       )}
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      <DeviceBadge device={rec.device} />
                     </td>
                     <td className="px-4 py-2.5 text-center font-mono font-bold" style={{ color: 'var(--badge-green-text)' }}>
                       {(rec.timeMs / 1000).toFixed(3)}s
@@ -1305,7 +1345,7 @@ export default function ProfilePage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                );})}
               </tbody>
             </table>
           </div>

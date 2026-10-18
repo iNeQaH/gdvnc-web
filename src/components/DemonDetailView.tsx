@@ -14,6 +14,7 @@ import LevelFormModal from '@/components/LevelFormModal';
 import { UserDisplayName } from '@/components/UserDisplayName';
 import { useTheme } from '@/components/ThemeProvider';
 import { getUserListRowStyle } from '@/lib/userListRowStyle';
+import DeviceBadge from '@/components/DeviceBadge';
 
 const PAGE_SIZE = 5;
 
@@ -204,6 +205,7 @@ export default function DemonDetailView({
                       <tr className="border-b" style={{ borderColor: 'var(--border-subtle)', backgroundColor: 'var(--bg-subtle)' }}>
                         <th className="px-5 py-3.5 text-xs font-bold ui-dim uppercase tracking-wider w-16 text-center">{t('leaderboard.rank')}</th>
                         <th className="px-5 py-3.5 text-xs font-bold ui-dim uppercase tracking-wider">{t('levelslist.player')}</th>
+                        <th className="px-4 py-3.5 text-xs font-bold ui-dim uppercase tracking-wider text-center w-28">{t('levelslist.device') || 'Thiết bị'}</th>
                         <th className="px-5 py-3.5 text-xs font-bold ui-dim uppercase tracking-wider text-right">{t('levelslist.achievement')}</th>
                         <th className="px-5 py-3.5 text-xs font-bold ui-dim uppercase tracking-wider text-right">{t('levelslist.video')}</th>
                       </tr>
@@ -252,6 +254,9 @@ export default function DemonDetailView({
                                 </span>
                               </span>
                             )}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <DeviceBadge device={rec.device} />
                           </td>
                           <td className="px-5 py-3 text-right font-semibold ui-dim">
                             {level.mode === 'PLATFORMER' ? (

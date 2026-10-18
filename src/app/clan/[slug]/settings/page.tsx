@@ -621,7 +621,7 @@ export default function ClanSettingsPage({
             }`}
           >
             <ShieldAlert className="w-4 h-4" />
-            <span>{isEn ? 'Advanced & Ownership' : 'Nâng cao & Sở hữu'}</span>
+            <span>{isEn ? 'Danger Zone' : 'Vùng nguy hiểm'}</span>
           </button>
         )}
       </div>
@@ -660,6 +660,30 @@ export default function ClanSettingsPage({
                 >
                   [{clan.tag}]
                 </div>
+              </div>
+            </div>
+
+            {/* Member Count */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold ui-title flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Users className="w-3.5 h-3.5 text-sky-400" />
+                  <span>{isEn ? 'Clan Members' : 'Số lượng thành viên'}</span>
+                </span>
+                <span className="text-xs font-extrabold ui-title">
+                  {clan.memberCount ?? (1 + (clan.membersGrouped?.mods?.length || 0) + (clan.membersGrouped?.members?.length || 0))} / {tierInfo.maxMembers} {isEn ? 'members' : 'thành viên'}
+                </span>
+              </label>
+              <div className="w-full px-4 py-2.5 rounded-xl border text-xs font-bold flex items-center justify-between bg-slate-50 dark:bg-black/30 border-slate-200 dark:border-white/10">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-sky-400" />
+                  <span className="ui-title">
+                    {clan.memberCount ?? (1 + (clan.membersGrouped?.mods?.length || 0) + (clan.membersGrouped?.members?.length || 0))} / {tierInfo.maxMembers} {isEn ? 'members' : 'thành viên'}
+                  </span>
+                </div>
+                <span className="text-[11px] ui-dim font-medium">
+                  {tierInfo.name} ({isEn ? `Max ${tierInfo.maxMembers}` : `Tối đa ${tierInfo.maxMembers}`})
+                </span>
               </div>
             </div>
 

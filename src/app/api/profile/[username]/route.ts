@@ -148,14 +148,28 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         submittedAt: r.submittedAt,
       }));
 
-    classicRecords.sort((a, b) => {
-      const pa = a.placement ?? Number.POSITIVE_INFINITY;
-      const pb = b.placement ?? Number.POSITIVE_INFINITY;
-      return pa - pb || b.basePp - a.basePp;
-    });
-
     const classicForPp = classicRecords.filter((r) => r.qualifiesForPp);
     const classicBreakdown = getWeightedPpBreakdown(classicForPp);
+
+    const weightedPpByRecordId = new Map<string, number>();
+    for (const item of classicBreakdown.items) {
+      if (item.recordId) weightedPpByRecordId.set(item.recordId, item.weightedPp);
+    }
+
+    classicRecords.sort((a, b) => {
+      const wA = weightedPpByRecordId.get(a.recordId) ?? 0;
+      const wB = weightedPpByRecordId.get(b.recordId) ?? 0;
+      if (wB !== wA) return wB - wA;
+      const awA = a.qualifiesForPp ? (a.awardedPp ?? 0) : 0;
+      const awB = b.qualifiesForPp ? (b.awardedPp ?? 0) : 0;
+      if (awB !== awA) return awB - awA;
+      const progA = a.progress ?? 0;
+      const progB = b.progress ?? 0;
+      if (progB !== progA) return progB - progA;
+      const pa = a.placement ?? Number.POSITIVE_INFINITY;
+      const pb = b.placement ?? Number.POSITIVE_INFINITY;
+      return pa - pb;
+    });
 
     const platformerCompletions = dedupedRecords
       .filter((r) => r.level.mode === LevelMode.PLATFORMER && isQualifyingPlatformerRecord(r))

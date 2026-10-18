@@ -18,10 +18,12 @@ import {
   Clock,
   ChevronDown,
   Check,
+  HelpCircle,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useTheme } from '@/components/ThemeProvider';
 import CreateClanModal from '@/components/clan/CreateClanModal';
+import ClanInfoModal from '@/components/clan/ClanInfoModal';
 import { calculateUserSp, getClanTier } from '@/lib/clanTypes';
 
 function hexToRgba(hex: string, alpha: number): string {
@@ -64,6 +66,7 @@ export default function ClanListPage() {
   const sortRef = useRef<HTMLDivElement>(null);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isClanInfoOpen, setIsClanInfoOpen] = useState(false);
 
   useEffect(() => {
     const raw = localStorage.getItem('gdvnc_user');
@@ -151,7 +154,18 @@ export default function ClanListPage() {
             </h1>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setIsClanInfoOpen(true)}
+              title="Tìm hiểu về Clan & Quyền lợi Tier"
+              className="p-2.5 rounded-xl border flex items-center justify-center transition-all hover:opacity-100 hover:scale-105 shadow-sm cursor-pointer shrink-0 ui-dim"
+              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+              aria-label="Tìm hiểu về Clan"
+            >
+              <HelpCircle className="w-4 h-4" />
+            </button>
+
             {userClan ? (
               <Link
                 href={`/clan/${userClan.slug}`}
@@ -604,6 +618,12 @@ export default function ClanListPage() {
         onCreated={() => {
           fetchClans();
         }}
+      />
+
+      {/* Clan Info & Tier Guide Modal */}
+      <ClanInfoModal
+        isOpen={isClanInfoOpen}
+        onClose={() => setIsClanInfoOpen(false)}
       />
     </div>
   );

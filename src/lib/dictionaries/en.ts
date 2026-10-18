@@ -157,6 +157,7 @@ const en = {
   'levelslist.legacy_player': 'Legacy player',
   'levelslist.achievement': 'Result',
   'levelslist.player': 'Player',
+  'levelslist.device': 'Device',
   'levelslist.delete_record': 'Delete record',
   'levelslist.delete_record_confirm': 'Delete this record?',
 
@@ -393,6 +394,7 @@ const en = {
   'profile.col_weight': 'Weight',
   'profile.col_pp': 'Points Earned',
   'profile.col_progress': 'Progress',
+  'profile.col_device': 'Device',
   'profile.col_time': 'Clear Time',
   'profile.no_records': 'No approved records yet.',
   'profile.update_fail': 'Failed to update profile.',
