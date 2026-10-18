@@ -72,9 +72,71 @@ export async function POST(req: Request) {
     }
 
     const now = new Date();
+    const isSpCoin = redeemCode.rewardType === 'SP_COIN';
+
+    if (isSpCoin) {
+      const spAmount = redeemCode.spAmount > 0 ? redeemCode.spAmount : 1;
+      const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const formattedExpiresDate = expiresAt.toLocaleDateString('vi-VN');
+
+      await prisma.$transaction(async (tx) => {
+        // 1. Create SP Grant for user
+        await tx.userSpGrant.create({
+          data: {
+            userId: user.id,
+            amount: spAmount,
+            expiresAt,
+            reason: `REDEEM_CODE:${redeemCode.code}`,
+          },
+        });
+
+        // 2. Increment code used count and toggle isActive if limit reached
+        const newUsedCount = redeemCode.usedCount + 1;
+        await tx.redeemCode.update({
+          where: { id: redeemCode.id },
+          data: {
+            usedCount: { increment: 1 },
+            isActive: isUnlimited ? true : newUsedCount < (redeemCode.maxUses ?? 1),
+          },
+        });
+
+        // 3. Record code usage
+        await tx.redeemCodeUse.create({
+          data: {
+            codeId: redeemCode.id,
+            userId: user.id,
+            months: 0,
+            rewardType: 'SP_COIN',
+            days: 0,
+            spAmount,
+          },
+        });
+
+        // 4. Send notification to user (no emoji)
+        await tx.notification.create({
+          data: {
+            userId: user.id,
+            title: 'Nhận SP Coin thành công',
+            message: `Bạn đã đổi thành công mã "${redeemCode.code}". Tài khoản của bạn được cộng +${spAmount} điểm SP Coin (có hạn sử dụng 1 tháng, đến ngày ${formattedExpiresDate}) dùng để duy trì hoặc nâng cấp Clan. Cảm ơn bạn đã đồng hành cùng GDVN!`,
+          },
+        });
+      });
+
+      return NextResponse.json({
+        success: true,
+        rewardType: 'SP_COIN',
+        spAmount,
+        expiresAt: expiresAt.toISOString(),
+        message: `Đổi mã thành công! Bạn nhận được +${spAmount} SP Coin (có hạn sử dụng 1 tháng đến ${formattedExpiresDate}).`,
+      });
+    }
+
+    // Gói số ngày Supporter (SUPPORTER_DAYS)
+    const daysToGrant = redeemCode.days > 0 ? redeemCode.days : (redeemCode.months > 0 ? redeemCode.months * 30 : 30);
     const currentUntil = user.supporterUntil;
     const baseDate = currentUntil && new Date(currentUntil) > now ? new Date(currentUntil) : now;
-    const nextDate = new Date(baseDate.getTime() + redeemCode.months * 30 * 24 * 60 * 60 * 1000);
+    const nextDate = new Date(baseDate.getTime() + daysToGrant * 24 * 60 * 60 * 1000);
+    const formattedDate = nextDate.toLocaleDateString('vi-VN');
 
     const updatedUser = await prisma.$transaction(async (tx) => {
       // 1. Update user supporter date
@@ -106,17 +168,19 @@ export async function POST(req: Request) {
         data: {
           codeId: redeemCode.id,
           userId: user.id,
-          months: redeemCode.months,
+          months: Math.max(1, Math.round(daysToGrant / 30)),
+          rewardType: 'SUPPORTER_DAYS',
+          days: daysToGrant,
+          spAmount: 0,
         },
       });
 
-      // 4. Send notification to user
-      const formattedDate = nextDate.toLocaleDateString('vi-VN');
+      // 4. Send notification to user (no emoji)
       await tx.notification.create({
         data: {
           userId: user.id,
-          title: '🎉 Kích hoạt Supporter thành công',
-          message: `Bạn đã đổi thành công mã "${redeemCode.code}". Tài khoản của bạn được cộng ${redeemCode.months} tháng Supporter (có hiệu lực đến ngày ${formattedDate}). Cảm ơn bạn đã đồng hành cùng GDVN!`,
+          title: 'Kích hoạt Supporter thành công',
+          message: `Bạn đã đổi thành công mã "${redeemCode.code}". Tài khoản của bạn được cộng ${daysToGrant} ngày Supporter (có hiệu lực đến ngày ${formattedDate}). Cảm ơn bạn đã đồng hành cùng GDVN!`,
         },
       });
 
@@ -125,10 +189,12 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      months: redeemCode.months,
+      rewardType: 'SUPPORTER_DAYS',
+      days: daysToGrant,
+      months: Math.max(1, Math.round(daysToGrant / 30)),
       supporterUntil: nextDate.toISOString(),
       user: updatedUser,
-      message: `Kích hoạt thành công ${redeemCode.months} tháng Supporter!`,
+      message: `Kích hoạt thành công ${daysToGrant} ngày Supporter!`,
     });
   } catch (error) {
     return publicApiError(error, 'Đã xảy ra lỗi khi kích hoạt mã đổi thưởng.', 500);

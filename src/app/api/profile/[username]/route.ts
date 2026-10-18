@@ -26,103 +26,132 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request, { params }: { params: Promise<{ username: string }> }) {
   try {
-    const { username } = await params;
+    const { username: rawUsername } = await params;
+    const username = decodeURIComponent(rawUsername);
 
-    const user = await prisma.user.findUnique({
-      where: { username },
-      select: {
-        id: true,
-        username: true,
-        role: true,
-        bio: true,
-        avatarUrl: true,
-        coverUrl: true,
-        supporterUntil: true,
-        isBanned: true,
-        profileTheme: true,
-        profileConfig: true,
-        banReason: true,
-        discordTag: true,
-        gdUsername: true,
-        gdVerified: true,
-        country: true,
-        classicPp: true,
-        platformerPp: true,
-        creatorPoints: true,
-        totpEnabled: true,
-        nameColor: true,
-        nameGradient: true,
-        nameGlow: true,
-        nameFont: true,
-        clanMember: {
-          include: {
-            clan: {
-              select: {
-                id: true,
-                name: true,
-                tag: true,
-                slug: true,
-                color: true,
-                colorGradient: true,
-                isSuspended: true,
-                contributions: {
-                  select: {
-                    userId: true,
-                    spPledged: true,
-                    user: { select: { supporterUntil: true } },
+    const userSelect = {
+      id: true,
+      username: true,
+      role: true,
+      bio: true,
+      avatarUrl: true,
+      coverUrl: true,
+      supporterUntil: true,
+      spGrants: {
+        where: {
+          expiresAt: { gt: new Date() },
+        },
+        select: {
+          id: true,
+          amount: true,
+          expiresAt: true,
+          reason: true,
+        },
+      },
+      isBanned: true,
+      profileTheme: true,
+      profileConfig: true,
+      banReason: true,
+      discordTag: true,
+      gdUsername: true,
+      gdVerified: true,
+      country: true,
+      classicPp: true,
+      platformerPp: true,
+      creatorPoints: true,
+      totpEnabled: true,
+      nameColor: true,
+      nameGradient: true,
+      nameGlow: true,
+      nameFont: true,
+      clanMember: {
+        include: {
+          clan: {
+            select: {
+              id: true,
+              name: true,
+              tag: true,
+              slug: true,
+              color: true,
+              colorGradient: true,
+              isSuspended: true,
+              contributions: {
+                select: {
+                  userId: true,
+                  spPledged: true,
+                  user: {
+                    select: {
+                      supporterUntil: true,
+                      spGrants: {
+                        where: { expiresAt: { gt: new Date() } },
+                        select: { amount: true, expiresAt: true },
+                      },
+                    },
                   },
                 },
-                members: {
-                  select: { userId: true },
-                },
+              },
+              members: {
+                select: { userId: true },
               },
             },
           },
         },
-        records: {
-          where: { status: RecordStatus.APPROVED },
-          include: {
-            level: true,
-          },
-          orderBy: {
-            submittedAt: 'desc',
-          },
+      },
+      records: {
+        where: { status: RecordStatus.APPROVED },
+        include: {
+          level: true,
         },
-        createdLevels: {
-          select: {
-            id: true,
-            gdLevelId: true,
-            name: true,
-            mode: true,
-            placement: true,
-            basePp: true,
-            difficulty: true,
-            ratingType: true,
-            youtubeId: true,
-            difficultyFace: true,
-            isVN: true,
-            isChallenge: true,
-          },
-        },
-        creatorWorks: {
-          where: { status: RecordStatus.APPROVED },
-          orderBy: { submittedAt: 'desc' },
-          select: {
-            id: true,
-            levelName: true,
-            gdLevelId: true,
-            submittedAt: true,
-            badgeGranted: true,
-            cpGranted: true,
-          },
-        },
-        userBadges: {
-          include: {
-            badge: { include: { badgeCategory: true } },
-          }
+        orderBy: {
+          submittedAt: 'desc',
         },
       },
+      createdLevels: {
+        select: {
+          id: true,
+          gdLevelId: true,
+          name: true,
+          mode: true,
+          placement: true,
+          basePp: true,
+          difficulty: true,
+          ratingType: true,
+          youtubeId: true,
+          difficultyFace: true,
+          isVN: true,
+          isChallenge: true,
+        },
+      },
+      creatorWorks: {
+        where: { status: RecordStatus.APPROVED },
+        orderBy: { submittedAt: 'desc' },
+        select: {
+          id: true,
+          levelName: true,
+          gdLevelId: true,
+          submittedAt: true,
+          badgeGranted: true,
+          cpGranted: true,
+        },
+      },
+      userBadges: {
+        include: {
+          badge: { include: { badgeCategory: true } },
+        },
+      },
+    } as const;
+
+    let user = await prisma.user.findUnique({
+      where: { username },
+      select: userSelect,
     });
+
+    if (!user) {
+      user = await prisma.user.findFirst({
+        where: { username: { equals: username, mode: 'insensitive' } },
+        select: userSelect,
+      });
+    }
 
     if (!user) {
       return NextResponse.json({ error: 'Không tìm thấy người chơi.' }, { status: 404 });

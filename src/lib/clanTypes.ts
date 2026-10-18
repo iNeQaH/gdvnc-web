@@ -5,16 +5,36 @@ export const CLAN_TIER_CONFIG = {
 } as const;
 
 /**
- * Tính số điểm SP Coin của người dùng dựa trên thời hạn Supporter còn lại.
- * Mỗi chu kỳ 30 ngày tương đương 1 điểm SP. Hết hạn = 0 SP.
+ * Tính số điểm SP Coin của người dùng dựa trên thời hạn Supporter còn lại và các gói SP Coin đang có hiệu lực.
+ * Mỗi chu kỳ 30 ngày Supporter tương đương 1 điểm SP. Kèm theo số SP Coin thưởng/đổi mã (UserSpGrant).
  */
-export function calculateUserSp(user?: { supporterUntil?: Date | string | null } | null): number {
-  if (!user?.supporterUntil) return 0;
-  const target = new Date(user.supporterUntil).getTime();
-  const now = Date.now();
-  const diff = target - now;
-  if (diff <= 0) return 0;
-  return Math.max(1, Math.round(diff / (30 * 24 * 60 * 60 * 1000)));
+export function calculateUserSp(
+  user?: {
+    supporterUntil?: Date | string | null;
+    spGrants?: Array<{ amount: number; expiresAt: Date | string }> | null;
+  } | null
+): number {
+  let baseSp = 0;
+  if (user?.supporterUntil) {
+    const target = new Date(user.supporterUntil).getTime();
+    const now = Date.now();
+    const diff = target - now;
+    if (diff > 0) {
+      baseSp = Math.max(1, Math.round(diff / (30 * 24 * 60 * 60 * 1000)));
+    }
+  }
+
+  let bonusSp = 0;
+  if (user?.spGrants && Array.isArray(user.spGrants)) {
+    const now = Date.now();
+    for (const grant of user.spGrants) {
+      if (new Date(grant.expiresAt).getTime() > now) {
+        bonusSp += Number(grant.amount) || 0;
+      }
+    }
+  }
+
+  return baseSp + bonusSp;
 }
 
 /**

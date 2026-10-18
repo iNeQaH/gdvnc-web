@@ -324,7 +324,7 @@ const en = {
   'support.original_price': 'Original Price:',
   'support.discount_label': 'Discount ({percent}% off):',
   'support.total_price': 'Total:',
-  'support.discount_hint': '* Promo: 5% discount for every 3 months. Support status will be automatically removed upon expiration.',
+  'support.discount_hint': '* Promo: 5% discount and +2 SP Coins for every 3 months. Supporter status will automatically expire at the end of the duration.',
   'support.qr_label': 'Auto-Supporter QR Code',
   'support.no_account_title': 'Account Not Specified',
   'support.no_account_desc': 'Please log in or enter a username to generate the QR code.',
@@ -860,7 +860,7 @@ const en = {
   'settings.profile_theme_saved': 'Profile theme saved!',
 
   'settings.redeem_title': 'Redeem Gift Code',
-  'settings.redeem_desc': 'Enter a gift code to redeem Supporter subscription months.',
+  'settings.redeem_desc': 'Enter a gift code to redeem Supporter days or Clan SP Coins.',
   'settings.redeem_placeholder': 'e.g. GDVN-SUPPORTER',
   'settings.redeem_btn': 'Activate',
   'settings.redeem_checking': 'Checking...',

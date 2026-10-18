@@ -21,10 +21,17 @@ export function calculateSupportPrice(months: number) {
   if (discountPercent > 60) discountPercent = 60;
   
   const totalPrice = (basePrice * months) * (1 - discountPercent / 100);
+  const bonusSp = Math.floor(months / 3) * 2;
+  const baseSp = months;
+  const totalSp = baseSp + bonusSp;
+
   return {
     originalPrice: basePrice * months,
     discountPercent,
-    totalPrice
+    totalPrice,
+    bonusSp,
+    baseSp,
+    totalSp,
   };
 }
 

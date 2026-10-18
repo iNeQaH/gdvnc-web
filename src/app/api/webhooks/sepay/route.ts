@@ -171,20 +171,37 @@ export async function POST(req: Request) {
       data: { supporterUntil: nextDate },
     });
 
+    const bonusSpCoins = Math.floor(monthsToGrant / 3) * 2;
+    if (bonusSpCoins > 0) {
+      await prisma.userSpGrant.create({
+        data: {
+          userId: targetUser.id,
+          amount: bonusSpCoins,
+          expiresAt: nextDate,
+          reason: `SUPPORT_${monthsToGrant}M_BONUS`,
+        },
+      });
+    }
+
+    const bonusMsg = bonusSpCoins > 0
+      ? ` Đồng thời bạn được tặng thêm +${bonusSpCoins} điểm SP Coin duy trì Clan (thời hạn đến ngày ${nextDate.toLocaleDateString('vi-VN')}).`
+      : '';
+
     await prisma.notification.create({
       data: {
         userId: targetUser.id,
-        title: '🎉 Quyên góp thành công',
-        message: `Hệ thống đã nhận được ${transferAmount.toLocaleString('vi-VN')}đ. Tài khoản của bạn được cấp ${monthsToGrant} tháng danh hiệu Supporter. Cảm ơn vì sự ủng hộ!`,
+        title: 'Quyên góp thành công',
+        message: `Hệ thống đã nhận được ${transferAmount.toLocaleString('vi-VN')}đ. Tài khoản của bạn được cấp ${monthsToGrant} tháng danh hiệu Supporter.${bonusMsg} Cảm ơn bạn đã đồng hành và ủng hộ GDVN!`,
       },
     });
 
-    console.log(`[SePay Webhook] Granted ${monthsToGrant} months to ${targetUser.username} (matched '${matchedCandidate}'). Next expiry: ${nextDate.toISOString()}`);
+    console.log(`[SePay Webhook] Granted ${monthsToGrant} months (+${bonusSpCoins} SP) to ${targetUser.username} (matched '${matchedCandidate}'). Next expiry: ${nextDate.toISOString()}`);
 
     return NextResponse.json({
       success: true,
       user: targetUser.username,
       monthsAdded: monthsToGrant,
+      bonusSpAdded: bonusSpCoins,
       supporterUntil: nextDate.toISOString(),
     });
 

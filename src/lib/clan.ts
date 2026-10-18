@@ -49,7 +49,12 @@ export async function syncAndGetClanSp(clanId: string) {
       contributions: {
         include: {
           user: {
-            select: { id: true, username: true, supporterUntil: true },
+            select: {
+              id: true,
+              username: true,
+              supporterUntil: true,
+              spGrants: { where: { expiresAt: { gt: new Date() } } },
+            },
           },
         },
       },

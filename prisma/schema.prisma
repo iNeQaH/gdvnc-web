@@ -85,6 +85,7 @@ model User {
   reviewedLevelSubs LevelSubmission[] @relation("LevelSubReviewer")
   createdRedeemCodes RedeemCode[]     @relation("RedeemCodeCreator")
   redeemedCodes      RedeemCodeUse[]  @relation("UserRedeemUses")
+  spGrants           UserSpGrant[]
 
   // Supporter name customization
   nameColor          String?
@@ -467,7 +468,10 @@ model AuditLog {
 model RedeemCode {
   id          String          @id @default(uuid())
   code        String          @unique
-  months      Int
+  months      Int             @default(0)
+  rewardType  String          @default("SUPPORTER_DAYS")
+  days        Int             @default(30)
+  spAmount    Int             @default(0)
   maxUses     Int?            @default(1)
   usedCount   Int             @default(0)
   isActive    Boolean         @default(true)
@@ -486,7 +490,10 @@ model RedeemCodeUse {
   id         String     @id @default(uuid())
   codeId     String
   userId     String
-  months     Int
+  months     Int        @default(0)
+  rewardType String     @default("SUPPORTER_DAYS")
+  days       Int        @default(0)
+  spAmount   Int        @default(0)
   redeemedAt DateTime   @default(now())
   code       RedeemCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
   user       User       @relation("UserRedeemUses", fields: [userId], references: [id], onDelete: Cascade)
@@ -599,6 +606,19 @@ model ClanBan {
 
   @@unique([clanId, userId])
   @@index([clanId])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model UserSpGrant {
+  id        String   @id @default(uuid())
+  userId    String
+  amount    Int
+  expiresAt DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([expiresAt])
 }

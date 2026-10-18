@@ -45,7 +45,6 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     let rawCode = typeof body?.code === 'string' ? body.code.trim() : '';
-    const months = parseInt(body?.months, 10);
     if (!rawCode) {
       return NextResponse.json({ error: 'Vui lòng nhập mã code.' }, { status: 400 });
     }
@@ -56,8 +55,28 @@ export async function POST(req: Request) {
 
     const code = rawCode.toUpperCase();
 
-    if (isNaN(months) || months < 1 || months > 120) {
-      return NextResponse.json({ error: 'Số tháng phải là số nguyên từ 1 đến 120 (tối đa 10 năm).' }, { status: 400 });
+    const rewardType = body?.rewardType === 'SP_COIN' ? 'SP_COIN' : 'SUPPORTER_DAYS';
+    let days = 30;
+    let months = 1;
+    let spAmount = 0;
+
+    if (rewardType === 'SP_COIN') {
+      spAmount = parseInt(body?.spAmount, 10);
+      if (isNaN(spAmount) || spAmount < 1 || spAmount > 10000) {
+        return NextResponse.json({ error: 'Số lượng SP Coin phải từ 1 đến 10,000.' }, { status: 400 });
+      }
+      days = 30;
+      months = 0;
+    } else {
+      if (body?.days !== undefined && body?.days !== null && body?.days !== '') {
+        days = parseInt(body.days, 10);
+      } else if (body?.months !== undefined && body?.months !== null && body?.months !== '') {
+        days = parseInt(body.months, 10) * 30;
+      }
+      if (isNaN(days) || days < 1 || days > 36500) {
+        return NextResponse.json({ error: 'Số ngày Supporter phải từ 1 đến 36,500 ngày (tối đa 100 năm).' }, { status: 400 });
+      }
+      months = Math.max(1, Math.round(days / 30));
     }
 
     let maxUses: number | null = null;
@@ -102,7 +121,10 @@ export async function POST(req: Request) {
     const created = await prisma.redeemCode.create({
       data: {
         code,
+        rewardType,
+        days,
         months,
+        spAmount,
         maxUses,
         expiresAt,
         createdById: adminUser.userId,

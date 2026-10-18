@@ -628,29 +628,24 @@ export default function ProfilePage() {
 
   const hardest = data.hardestClassic;
   const breakdown = data.classicBreakdown;
-  const ppByRecordId = useMemo(() => {
-    return new Map<string, any>(
-      [...(breakdown?.items || []), ...(breakdown?.unused || [])].map((item: any) => [item.recordId, item])
-    );
-  }, [breakdown]);
+  const ppByRecordId = new Map<string, any>(
+    [...(breakdown?.items || []), ...(breakdown?.unused || [])].map((item: any) => [item.recordId, item])
+  );
 
-  const classicRecords = useMemo(() => {
-    const list = [...(data.classicRecords || breakdown?.items || [])];
-    return list.sort((a: any, b: any) => {
-      const ppA = ppByRecordId.get(a.recordId)?.weightedPp ?? (a.qualifiesForPp ? (a.awardedPp ?? 0) : 0);
-      const ppB = ppByRecordId.get(b.recordId)?.weightedPp ?? (b.qualifiesForPp ? (b.awardedPp ?? 0) : 0);
-      if (ppB !== ppA) return ppB - ppA;
-      const awA = a.qualifiesForPp ? (a.awardedPp ?? 0) : 0;
-      const awB = b.qualifiesForPp ? (b.awardedPp ?? 0) : 0;
-      if (awB !== awA) return awB - awA;
-      const progA = a.progress ?? 0;
-      const progB = b.progress ?? 0;
-      if (progB !== progA) return progB - progA;
-      const plA = a.placement ?? 999999;
-      const plB = b.placement ?? 999999;
-      return plA - plB;
-    });
-  }, [data?.classicRecords, breakdown, ppByRecordId]);
+  const classicRecords = [...(data.classicRecords || breakdown?.items || [])].sort((a: any, b: any) => {
+    const ppA = ppByRecordId.get(a.recordId)?.weightedPp ?? (a.qualifiesForPp ? (a.awardedPp ?? 0) : 0);
+    const ppB = ppByRecordId.get(b.recordId)?.weightedPp ?? (b.qualifiesForPp ? (b.awardedPp ?? 0) : 0);
+    if (ppB !== ppA) return ppB - ppA;
+    const awA = a.qualifiesForPp ? (a.awardedPp ?? 0) : 0;
+    const awB = b.qualifiesForPp ? (b.awardedPp ?? 0) : 0;
+    if (awB !== awA) return awB - awA;
+    const progA = a.progress ?? 0;
+    const progB = b.progress ?? 0;
+    if (progB !== progA) return progB - progA;
+    const plA = a.placement ?? 999999;
+    const plB = b.placement ?? 999999;
+    return plA - plB;
+  });
 
   const platformerRecords = data.platformerCompletions || [];
   const createdLevels = data.createdLevels || [];

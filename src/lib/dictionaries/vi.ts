@@ -319,7 +319,7 @@ const vi: Record<DictKey, string> = {
   'support.original_price': 'Mức giá gốc:',
   'support.discount_label': 'Chiết khấu (Giảm {percent}%):',
   'support.total_price': 'Thành tiền:',
-  'support.discount_hint': '* Ưu đãi: Mỗi 3 tháng tặng kèm 5% chiết khấu. Support sẽ tự động gỡ bỏ khi hết hạn.',
+  'support.discount_hint': '* Ưu đãi: Mỗi 3 tháng giảm thêm 5% giá và tặng thêm 2 điểm SP Coin duy trì Clan. Supporter sẽ tự động gỡ bỏ khi hết hạn.',
   'support.qr_label': 'Mã QR Auto-Supporter',
   'support.no_account_title': 'Chưa xác định tài khoản',
   'support.no_account_desc': 'Vui lòng đăng nhập hoặc nhập tên người dùng để tạo mã QR.',
@@ -851,7 +851,7 @@ const vi: Record<DictKey, string> = {
   'settings.profile_theme_saved': 'Đã lưu giao diện trang cá nhân!',
 
   'settings.redeem_title': 'Đổi Mã Quà Tặng',
-  'settings.redeem_desc': 'Nhập mã đổi thưởng để quy đổi sang số tháng thời hạn Supporter.',
+  'settings.redeem_desc': 'Nhập mã đổi thưởng để nhận ngày Supporter hoặc điểm SP Coin duy trì Clan.',
   'settings.redeem_placeholder': 'VD: GDVN-SUPPORTER',
   'settings.redeem_btn': 'Kích Hoạt',
   'settings.redeem_checking': 'Đang kiểm tra...',

@@ -118,6 +118,9 @@ export default function LevelsTab({
   const [redeemCodes, setRedeemCodes] = useState<any[]>([]);
   const [loadingCodes, setLoadingCodes] = useState(false);
   const [newCodeText, setNewCodeText] = useState('');
+  const [newCodeRewardType, setNewCodeRewardType] = useState<'SUPPORTER_DAYS' | 'SP_COIN'>('SUPPORTER_DAYS');
+  const [newCodeDays, setNewCodeDays] = useState(30);
+  const [newCodeSpAmount, setNewCodeSpAmount] = useState(1);
   const [newCodeMonths, setNewCodeMonths] = useState(1);
   const [newCodeUsersPreset, setNewCodeUsersPreset] = useState<'all' | '1' | '5' | '10' | '50' | '100' | 'custom'>('all');
   const [newCodeCustomMaxUses, setNewCodeCustomMaxUses] = useState(1);
@@ -148,8 +151,12 @@ export default function LevelsTab({
       showToast('Vui lòng nhập mã code!', 'error');
       return;
     }
-    if (newCodeMonths < 1) {
-      showToast('Số tháng phải từ 1 trở lên!', 'error');
+    if (newCodeRewardType === 'SUPPORTER_DAYS' && newCodeDays < 1) {
+      showToast('Số ngày Supporter phải từ 1 trở lên!', 'error');
+      return;
+    }
+    if (newCodeRewardType === 'SP_COIN' && newCodeSpAmount < 1) {
+      showToast('Số lượng SP Coin phải từ 1 trở lên!', 'error');
       return;
     }
 
@@ -178,16 +185,24 @@ export default function LevelsTab({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           code,
-          months: newCodeMonths,
+          rewardType: newCodeRewardType,
+          days: newCodeRewardType === 'SUPPORTER_DAYS' ? newCodeDays : 30,
+          spAmount: newCodeRewardType === 'SP_COIN' ? newCodeSpAmount : 0,
+          months: newCodeRewardType === 'SUPPORTER_DAYS' ? Math.max(1, Math.round(newCodeDays / 30)) : 0,
           maxUses,
           expiresInDays,
         }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        showToast(`Đã kích hoạt mã "${data.code.code}" (${data.code.months} tháng)!`, 'success');
+        const rewardDesc = data.code.rewardType === 'SP_COIN'
+          ? `+${data.code.spAmount} SP Coin`
+          : `+${data.code.days || (data.code.months ? data.code.months * 30 : 30)} ngày Supporter`;
+        showToast(`Đã kích hoạt mã "${data.code.code}" (${rewardDesc})!`, 'success');
         setNewCodeText('');
-        setNewCodeMonths(1);
+        setNewCodeRewardType('SUPPORTER_DAYS');
+        setNewCodeDays(30);
+        setNewCodeSpAmount(1);
         setNewCodeUsersPreset('all');
         setNewCodeCustomMaxUses(1);
         setNewCodeExpiryPreset('30');
@@ -1004,7 +1019,7 @@ export default function LevelsTab({
               <Plus className="w-3.5 h-3.5 text-pink-500" />
               Tạo Mã Mới
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-start">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-start">
               <div>
                 <label className="block text-[11px] font-bold ui-dim mb-1.5 h-4 leading-4">Mã Code (Tự đặt tuỳ chọn)</label>
                 <div className="relative">
@@ -1021,18 +1036,46 @@ export default function LevelsTab({
                 </div>
               </div>
               <div>
-                <label className="block text-[11px] font-bold ui-dim mb-1.5 h-4 leading-4">Số tháng Supporter</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="120"
-                  value={newCodeMonths}
-                  onChange={(e) => setNewCodeMonths(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                  className="w-full h-[38px] px-3 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none"
+                <label className="block text-[11px] font-bold ui-dim mb-1.5 h-4 leading-4">Loại phần thưởng</label>
+                <select
+                  value={newCodeRewardType}
+                  onChange={(e) => setNewCodeRewardType(e.target.value as any)}
+                  className="w-full h-[38px] px-2.5 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none cursor-pointer"
                   style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                  required
-                />
+                >
+                  <option value="SUPPORTER_DAYS">Số ngày Supporter</option>
+                  <option value="SP_COIN">SP Coin (Hạn 1 tháng)</option>
+                </select>
               </div>
+              {newCodeRewardType === 'SUPPORTER_DAYS' ? (
+                <div>
+                  <label className="block text-[11px] font-bold ui-dim mb-1.5 h-4 leading-4">Số ngày Supporter</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="36500"
+                    value={newCodeDays}
+                    onChange={(e) => setNewCodeDays(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    className="w-full h-[38px] px-3 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none"
+                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                    required
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-[11px] font-bold ui-dim mb-1.5 h-4 leading-4">Số lượng SP Coin</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10000"
+                    value={newCodeSpAmount}
+                    onChange={(e) => setNewCodeSpAmount(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    className="w-full h-[38px] px-3 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none"
+                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                    required
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-[11px] font-bold ui-dim mb-1.5 h-4 leading-4">Số người dùng</label>
                 <div className="flex gap-1.5">
@@ -1098,7 +1141,7 @@ export default function LevelsTab({
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
               <div className="text-[11px] ui-dim leading-relaxed">
-                💡 <b>Số người dùng</b>: Chọn <i>"Toàn bộ người dùng"</i> để bất kỳ ai cũng có thể kích hoạt, hoặc giới hạn số lượng người nhận (mỗi tài khoản chỉ dùng được mã 1 lần).
+                💡 <b>Số người dùng</b>: Chọn <i>"Toàn bộ người dùng"</i> để bất kỳ ai cũng có thể kích hoạt, hoặc giới hạn số lượng người nhận (mỗi tài khoản chỉ dùng được mã 1 lần). SP Coin có thời hạn sử dụng 1 tháng kể từ ngày người dùng đổi mã.
               </div>
               <button
                 type="submit"
@@ -1130,7 +1173,7 @@ export default function LevelsTab({
               <div className="p-6 text-center text-xs ui-dim">Đang tải danh sách mã...</div>
             ) : redeemCodes.length === 0 ? (
               <div className="p-6 text-center text-xs ui-dim border rounded-2xl" style={{ borderColor: 'var(--border-ui)' }}>
-                Chưa có mã Redeem nào. Hãy nhập mã và số tháng ở trên để kích hoạt!
+                Chưa có mã Redeem nào. Hãy nhập mã và thiết lập phần thưởng ở trên để kích hoạt!
               </div>
             ) : (
               <div className="space-y-2">
@@ -1161,7 +1204,15 @@ export default function LevelsTab({
                         </button>
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs font-bold text-pink-500">+{c.months} tháng Supporter</span>
+                            {c.rewardType === 'SP_COIN' ? (
+                              <span className="text-xs font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20">
+                                +{c.spAmount} SP Coin (Hạn 1 tháng)
+                              </span>
+                            ) : (
+                              <span className="text-xs font-bold text-pink-500 bg-pink-500/10 px-2 py-0.5 rounded-lg border border-pink-500/20">
+                                +{c.days || (c.months ? c.months * 30 : 30)} ngày Supporter
+                              </span>
+                            )}
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                               !c.isActive
                                 ? 'bg-zinc-500/10 text-zinc-500'

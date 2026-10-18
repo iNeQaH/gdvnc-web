@@ -66,29 +66,38 @@ export interface ProfileEmbedData {
 export async function getProfileEmbedData(username: string): Promise<ProfileEmbedData | null> {
   const decodedUsername = decodeURIComponent(username);
 
-  const user = await prisma.user.findUnique({
-    where: { username: decodedUsername },
-    include: {
-      clanMember: {
-        include: {
-          clan: {
-            select: {
-              tag: true,
-              name: true,
-              isSuspended: true,
-            },
+  const userInclude = {
+    clanMember: {
+      include: {
+        clan: {
+          select: {
+            tag: true,
+            name: true,
+            isSuspended: true,
           },
         },
       },
-      records: {
-        where: { status: RecordStatus.APPROVED },
-        include: { level: true },
-      },
-      userBadges: {
-        include: { badge: true },
-      },
     },
+    records: {
+      where: { status: RecordStatus.APPROVED },
+      include: { level: true },
+    },
+    userBadges: {
+      include: { badge: true },
+    },
+  };
+
+  let user = await prisma.user.findUnique({
+    where: { username: decodedUsername },
+    include: userInclude,
   });
+
+  if (!user) {
+    user = await prisma.user.findFirst({
+      where: { username: { equals: decodedUsername, mode: 'insensitive' } },
+      include: userInclude,
+    });
+  }
 
   if (!user) return null;
 

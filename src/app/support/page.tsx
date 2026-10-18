@@ -151,8 +151,13 @@ export default function SupportPage() {
             <div className="space-y-4 pt-2">
               <label className="block text-xs font-bold uppercase ui-dim flex justify-between items-center">
                 <span>{t('support.duration_months')}</span>
-                <span className="text-pink-600 dark:text-pink-400 text-sm font-black uppercase">
-                  {t('support.n_months', { n: months })} + {months} SP COIN
+                <span className="text-pink-600 dark:text-pink-400 text-sm font-black uppercase flex items-center gap-1.5 flex-wrap justify-end">
+                  <span>{t('support.n_months', { n: months })} + {priceInfo.totalSp} SP COIN</span>
+                  {priceInfo.bonusSp > 0 && (
+                    <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                      (+{priceInfo.bonusSp} SP tặng kèm)
+                    </span>
+                  )}
                 </span>
               </label>
               <input 
@@ -166,7 +171,7 @@ export default function SupportPage() {
               />
               <div className="flex justify-between text-[10px] ui-dim font-medium">
                 <span>{t('support.1_month')} (+1 SP)</span>
-                <span>{t('support.36_months')} (+36 SP)</span>
+                <span>{t('support.36_months')} (+{calculateSupportPrice(36).totalSp} SP)</span>
               </div>
             </div>
 
@@ -179,6 +184,12 @@ export default function SupportPage() {
                 <div className="flex justify-between items-center text-pink-500">
                   <span className="font-semibold">{t('support.discount_label', { percent: priceInfo.discountPercent })}</span>
                   <span>-{(priceInfo.originalPrice - priceInfo.totalPrice).toLocaleString('vi-VN')}đ</span>
+                </div>
+              )}
+              {priceInfo.bonusSp > 0 && (
+                <div className="flex justify-between items-center text-amber-500 font-semibold text-xs">
+                  <span>Tặng kèm SP Coin (Mỗi 3 tháng +2 SP):</span>
+                  <span className="font-bold">+{priceInfo.bonusSp} SP Coin</span>
                 </div>
               )}
               <div className="flex justify-between items-center text-pink-600 font-black text-lg pt-2 border-t border-pink-500/20">

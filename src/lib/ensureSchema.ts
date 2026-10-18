@@ -13,8 +13,9 @@ async function columnSet(db: PrismaClient) {
         OR (table_name = 'PageVisit' AND column_name = 'id')
         OR (table_name = 'ListChangeLog' AND column_name = 'id')
         OR (table_name = 'Level' AND column_name = 'classicRank')
-        OR (table_name = 'RedeemCode' AND column_name IN ('id', 'expiresAt'))
-        OR (table_name = 'RedeemCodeUse' AND column_name = 'id')
+        OR (table_name = 'RedeemCode' AND column_name IN ('id', 'expiresAt', 'rewardType', 'days', 'spAmount'))
+        OR (table_name = 'RedeemCodeUse' AND column_name IN ('id', 'rewardType', 'days', 'spAmount'))
+        OR (table_name = 'UserSpGrant' AND column_name = 'id')
         OR (table_name = 'User' AND column_name IN ('nameColor', 'nameGradient', 'nameGlow', 'nameFont'))
         OR (table_name = 'Clan' AND column_name = 'id')
         OR (table_name = 'ClanMember' AND column_name = 'id')
@@ -112,6 +113,11 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
     await db.$executeRawUnsafe(`ALTER TABLE "RedeemCode" ADD COLUMN IF NOT EXISTS "expiresAt" TIMESTAMP(3)`);
   }
   await db.$executeRawUnsafe(`ALTER TABLE "RedeemCode" ALTER COLUMN "maxUses" DROP NOT NULL`).catch(() => {});
+  if (!have.has('RedeemCode.rewardType')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "RedeemCode" ADD COLUMN IF NOT EXISTS "rewardType" TEXT NOT NULL DEFAULT 'SUPPORTER_DAYS'`);
+    await db.$executeRawUnsafe(`ALTER TABLE "RedeemCode" ADD COLUMN IF NOT EXISTS "days" INTEGER NOT NULL DEFAULT 30`);
+    await db.$executeRawUnsafe(`ALTER TABLE "RedeemCode" ADD COLUMN IF NOT EXISTS "spAmount" INTEGER NOT NULL DEFAULT 0`);
+  }
   if (!have.has('RedeemCodeUse.id')) {
     await db.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "RedeemCodeUse" (
@@ -119,9 +125,30 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
         "codeId" TEXT NOT NULL,
         "userId" TEXT NOT NULL,
         "months" INTEGER NOT NULL,
+        "rewardType" TEXT NOT NULL DEFAULT 'SUPPORTER_DAYS',
+        "days" INTEGER NOT NULL DEFAULT 0,
+        "spAmount" INTEGER NOT NULL DEFAULT 0,
         "redeemedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT "RedeemCodeUse_pkey" PRIMARY KEY ("id"),
         CONSTRAINT "RedeemCodeUse_codeId_userId_key" UNIQUE ("codeId", "userId")
+      )
+    `);
+  } else if (!have.has('RedeemCodeUse.rewardType')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "RedeemCodeUse" ADD COLUMN IF NOT EXISTS "rewardType" TEXT NOT NULL DEFAULT 'SUPPORTER_DAYS'`);
+    await db.$executeRawUnsafe(`ALTER TABLE "RedeemCodeUse" ADD COLUMN IF NOT EXISTS "days" INTEGER NOT NULL DEFAULT 0`);
+    await db.$executeRawUnsafe(`ALTER TABLE "RedeemCodeUse" ADD COLUMN IF NOT EXISTS "spAmount" INTEGER NOT NULL DEFAULT 0`);
+  }
+  if (!have.has('UserSpGrant.id')) {
+    await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "UserSpGrant" (
+        "id" TEXT NOT NULL,
+        "userId" TEXT NOT NULL,
+        "amount" INTEGER NOT NULL,
+        "expiresAt" TIMESTAMP(3) NOT NULL,
+        "reason" TEXT,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "UserSpGrant_pkey" PRIMARY KEY ("id"),
+        CONSTRAINT "UserSpGrant_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
       )
     `);
   }
@@ -272,6 +299,8 @@ async function addIndexesInBackground(db: PrismaClient) {
     `CREATE INDEX IF NOT EXISTS "RedeemCode_expiresAt_idx" ON "RedeemCode"("expiresAt")`,
     `CREATE INDEX IF NOT EXISTS "RedeemCodeUse_userId_idx" ON "RedeemCodeUse"("userId")`,
     `CREATE INDEX IF NOT EXISTS "RedeemCodeUse_codeId_idx" ON "RedeemCodeUse"("codeId")`,
+    `CREATE INDEX IF NOT EXISTS "UserSpGrant_userId_idx" ON "UserSpGrant"("userId")`,
+    `CREATE INDEX IF NOT EXISTS "UserSpGrant_expiresAt_idx" ON "UserSpGrant"("expiresAt")`,
     `DO $$ BEGIN
       IF EXISTS (
         SELECT 1 FROM pg_constraint WHERE conname = 'SiteAnnouncement_authorId_fkey'
@@ -324,7 +353,9 @@ export async function applyPendingSchema(db: PrismaClient): Promise<void> {
     have.has('Level.classicRank') &&
     have.has('RedeemCode.id') &&
     have.has('RedeemCode.expiresAt') &&
+    have.has('RedeemCode.rewardType') &&
     have.has('RedeemCodeUse.id') &&
+    have.has('UserSpGrant.id') &&
     have.has('Clan.id') &&
     have.has('ClanMember.id') &&
     have.has('ClanJoinRequest.id') &&
