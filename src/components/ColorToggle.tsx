@@ -18,7 +18,7 @@ export default function ColorToggle({
       type="button"
       aria-pressed={pressed}
       onClick={onToggle}
-      className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold cursor-pointer transition-colors ${pressed ? "tsumiki-btn text-white" : ""} ${className}`}
+      className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold cursor-pointer transition-colors ${pressed ? "tsumiki-btn" : ""} ${className}`}
       style={
         pressed
           ? {

@@ -1,5 +1,5 @@
 /* Tsumiki Animated Tabs CSS */
-.tsumiki-indicator .tsumiki-front {
+[data-theme="lavender"] .tsumiki-indicator .tsumiki-front {
   display: block;
   box-sizing: border-box;
   position: relative;
@@ -40,7 +40,7 @@
 
 
 
-.tsumiki-indicator.is-moving .tsumiki-front {
+[data-theme="lavender"] .tsumiki-indicator.is-moving .tsumiki-front {
   transform: translateY(-3px); 
   background-color: #f1bdf1;
   background-image: 
@@ -72,8 +72,7 @@
 [data-theme="lavender"] button[type="submit"],
 [data-theme="lavender"] button[class*="bg-sky-500"],
 [data-theme="lavender"] button.gd-btn-primary,
-[data-theme="lavender"] .tsumiki-btn,
-.tsumiki-btn {
+[data-theme="lavender"] .tsumiki-btn {
   border: 2px solid #3f3f3f !important;
   background-color: #c4a1fb !important;
   background-image: 
@@ -100,8 +99,7 @@
 .dark[data-theme="lavender"] button[type="submit"],
 .dark[data-theme="lavender"] button[class*="bg-sky-500"],
 .dark[data-theme="lavender"] button.gd-btn-primary,
-.dark[data-theme="lavender"] .tsumiki-btn,
-.dark .tsumiki-btn {
+.dark[data-theme="lavender"] .tsumiki-btn {
   border-color: #1a1a1a !important;
   background-color: #8c60d9 !important;
   background-image: 
@@ -120,8 +118,7 @@
 [data-theme="lavender"] button[type="submit"]:active,
 [data-theme="lavender"] button[class*="bg-sky-500"]:active,
 [data-theme="lavender"] button.gd-btn-primary:active,
-[data-theme="lavender"] .tsumiki-btn:active,
-.tsumiki-btn:active {
+[data-theme="lavender"] .tsumiki-btn:active {
   transform: translateY(0px) !important;
   box-shadow: 
     0 0px 0 0 #a983e3,
@@ -140,8 +137,7 @@
 .dark[data-theme="lavender"] button[type="submit"]:active,
 .dark[data-theme="lavender"] button[class*="bg-sky-500"]:active,
 .dark[data-theme="lavender"] button.gd-btn-primary:active,
-.dark[data-theme="lavender"] .tsumiki-btn:active,
-.dark .tsumiki-btn:active {
+.dark[data-theme="lavender"] .tsumiki-btn:active {
   box-shadow: 
     0 0px 0 0 #6d42af,
     0 0px 0 2px #1a1a1a,

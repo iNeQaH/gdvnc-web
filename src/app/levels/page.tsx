@@ -209,7 +209,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
               setEditingLevel(isChallengeList ? { isChallenge: true } : null);
               setIsFormOpen(true);
             }}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer tsumiki-btn"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer hover:opacity-90 active:scale-95 tsumiki-btn"
             style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-fg)' }}
           >
             <Plus className="w-4 h-4" />
@@ -270,8 +270,12 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
 
             <button
               onClick={() => setIsFilterModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ui-subtle hover:bg-black/5 dark:hover:bg-white/5 shrink-0 cursor-pointer tsumiki-btn"
-              style={{ borderColor: 'var(--border-ui)' }}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 active:scale-95 tsumiki-btn"
+              style={{
+                backgroundColor: 'var(--bg-subtle)',
+                borderColor: 'var(--border-ui)',
+                color: 'var(--text-title)',
+              }}
             >
               <Settings className="w-3.5 h-3.5" />
               <span>Filters</span>
@@ -284,7 +288,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
           <div className="flex items-center justify-end gap-2 shrink-0">
             <button
               onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
-              className="p-2 rounded-xl border transition-all flex items-center justify-center cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 tsumiki-btn"
+              className="p-2 rounded-xl border transition-all flex items-center justify-center cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 active:scale-95 tsumiki-btn"
               style={{
                 backgroundColor: 'var(--bg-subtle)',
                 borderColor: 'var(--border-ui)',

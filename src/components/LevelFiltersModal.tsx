@@ -135,7 +135,7 @@ export default function LevelFiltersModal({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 pt-2">
+        <div className="flex items-center gap-2 pt-2 border-t border-[var(--border-ui)]">
           <button
             onClick={() => {
               setFilterModes([]);
@@ -145,14 +145,19 @@ export default function LevelFiltersModal({
               setFilterChallenge?.(false);
               setFilterUnranked?.(false);
             }}
-            className="flex-1 py-2.5 rounded-xl border text-xs font-bold hover:bg-black/5 tsumiki-btn"
+            className="flex-1 py-2.5 rounded-xl border text-xs font-bold transition-all ui-subtle hover:bg-black/5 dark:hover:bg-white/5 active:scale-95 tsumiki-btn"
+            style={{
+              backgroundColor: 'var(--bg-subtle)',
+              borderColor: 'var(--border-ui)',
+              color: 'var(--text-body)',
+            }}
           >
             {t('filters.reset')}
           </button>
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl text-xs font-bold text-[color:var(--accent-fg)] tsumiki-btn"
-            style={{ backgroundColor: 'var(--accent)' }}
+            className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer hover:opacity-90 active:scale-95 tsumiki-btn"
+            style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-fg)' }}
           >
             {t('filters.done')}
           </button>
