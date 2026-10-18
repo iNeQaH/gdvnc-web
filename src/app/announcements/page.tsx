@@ -7,6 +7,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import type { DictKey } from '@/lib/dictionaries';
 import { sanitizeFaqHtml } from '@/lib/faqSanitize';
+import { handleMarkdownKeyDown, handleMarkdownPaste } from '@/lib/markdownShortcuts';
 
 type Announcement = {
   id: string;
@@ -392,13 +393,15 @@ function AnnouncementForm({
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
+            onKeyDown={(e) => handleMarkdownKeyDown(e, body, setBody)}
+            onPaste={(e) => handleMarkdownPaste(e, body, setBody)}
             placeholder={t('announce.field.body')}
             rows={8}
             className="w-full px-3 py-2 rounded-xl border text-sm"
             style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
             required
           />
-          <div className="text-[10px] ui-dim">Hỗ trợ HTML và embed (iframe)</div>
+          <div className="text-[10px] ui-dim">Hỗ trợ Discord Markdown & phím tắt Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+K, paste URL</div>
         </div>
         <select
           value={audience}

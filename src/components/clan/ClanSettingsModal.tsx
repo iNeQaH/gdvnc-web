@@ -22,6 +22,7 @@ import ColorPicker from '@/components/ColorPicker';
 import { CircularAnglePicker } from '@/components/CircularAnglePicker';
 import { useToast } from '@/components/GlobalToast';
 import { useLanguage } from '@/components/LanguageContext';
+import { handleMarkdownKeyDown, handleMarkdownPaste } from '@/lib/markdownShortcuts';
 
 interface ClanSettingsModalProps {
   isOpen: boolean;
@@ -492,6 +493,8 @@ export default function ClanSettingsModal({
                 maxLength={500}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                onKeyDown={(e) => handleMarkdownKeyDown(e, description, setDescription)}
+                onPaste={(e) => handleMarkdownPaste(e, description, setDescription)}
                 placeholder={isEn ? 'Introduce your clan, Discord link, rules...' : 'Giới thiệu về Clan của bạn, link Discord, quy định...'}
                 className="w-full px-3 py-2 rounded-xl text-xs resize-y ui-input"
               />

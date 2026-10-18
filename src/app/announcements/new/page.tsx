@@ -9,7 +9,6 @@ import {
   Eye,
   Edit3,
   Columns,
-  Upload,
   Save,
   Bold,
   Italic,
@@ -28,14 +27,12 @@ import {
   ShieldAlert,
   Loader2,
   FileText,
-  Copy,
-  Check,
-  X,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import DiscordMarkdown from '@/components/DiscordMarkdown';
 import { htmlToDiscordMarkdown } from '@/lib/htmlToDiscordMarkdown';
+import { handleMarkdownKeyDown, handleMarkdownPaste } from '@/lib/markdownShortcuts';
 import type { DictKey } from '@/lib/dictionaries';
 
 const AUDIENCES = ['ALL', 'ADMIN', 'MODERATOR', 'SUPPORTER', 'USERS'] as const;
@@ -61,17 +58,10 @@ function AnnouncementEditorContent() {
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [error, setError] = useState('');
 
-  // Import HTML & Format Copy State
-  const [isImportHtmlModalOpen, setIsImportHtmlModalOpen] = useState(false);
-  const [importHtmlText, setImportHtmlText] = useState('');
-  const [importHtmlMode, setImportHtmlMode] = useState<'replace' | 'append'>('replace');
-  const [copiedMarkdown, setCopiedMarkdown] = useState(false);
-
   // UI View Mode: 'edit' | 'preview' | 'split'
   const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'split'>('split');
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check auth
   useEffect(() => {
@@ -164,95 +154,25 @@ function AnnouncementEditorContent() {
     }, 10);
   };
 
-  // Handle file import
-  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      if (!content) return;
-
-      if (file.name.endsWith('.json')) {
-        try {
-          const parsed = JSON.parse(content);
-          if (parsed.title) setTitle(parsed.title);
-          if (parsed.excerpt) setExcerpt(parsed.excerpt);
-          if (parsed.body) setBody(parsed.body);
-          if (parsed.audience && AUDIENCES.includes(parsed.audience)) setAudience(parsed.audience);
-          showToast('Đã nhập thông báo từ file JSON thành công!');
-          return;
-        } catch {
-          showToast('File JSON không hợp lệ, chèn toàn bộ nội dung thô.');
-        }
-      }
-
-      if (file.name.endsWith('.html') || file.name.endsWith('.htm')) {
-        const converted = htmlToDiscordMarkdown(content);
-        setBody((prev) => (prev ? `${prev}\n\n${converted}` : converted));
-        showToast(`Đã chuyển đổi HTML từ file ${file.name} sang Markdown thành công!`, 'success');
-        return;
-      }
-
-      // If Markdown or Text
-      setBody((prev) => (prev ? `${prev}\n\n${content}` : content));
-      showToast(`Đã nhập nội dung từ file ${file.name}!`);
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  };
-
-  const handleConfirmImportHtml = () => {
-    if (!importHtmlText.trim()) {
-      showToast('Vui lòng dán mã HTML cần nhập.', 'error');
-      return;
-    }
-    const converted = htmlToDiscordMarkdown(importHtmlText.trim());
-    if (importHtmlMode === 'replace') {
-      setBody(converted);
-    } else {
-      setBody((prev) => (prev ? `${prev}\n\n${converted}` : converted));
-    }
-    showToast('Đã chuyển đổi HTML sang Markdown thành công!', 'success');
-    setIsImportHtmlModalOpen(false);
-    setImportHtmlText('');
-  };
-
-  const handleCopyMarkdown = async () => {
-    if (!body) {
-      showToast('Nội dung đang trống.', 'error');
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(body);
-      setCopiedMarkdown(true);
-      showToast('Đã sao chép nội dung định dạng Markdown!', 'success');
-      setTimeout(() => setCopiedMarkdown(false), 2000);
-    } catch {
-      showToast('Không thể sao chép.', 'error');
-    }
-  };
-
-  // Quick Template Injector
+  // Quick Template Injector - Clean, natural and concise
   const applyTemplate = (type: 'update' | 'event' | 'maintenance') => {
     if (type === 'update') {
-      setTitle('Bản Cập Nhật Mới GDVN');
-      setExcerpt('Các tính năng mới, cải tiến hiệu năng và sửa lỗi hệ thống.');
+      setTitle('Cập nhật hệ thống GDVN');
+      setExcerpt('Các thay đổi và sửa lỗi mới nhất trên web.');
       setBody(
-        `# Bản Cập Nhật Hệ Thống GDVN ✨\n\nChào toàn thể các bạn! Đội ngũ phát triển GDVN xin giới thiệu các thay đổi mới nhất:\n\n### 🚀 Tính Năng Mới\n- **Giao diện hiện đại**: Hỗ trợ đầy đủ Discord Markdown & Embeds.\n- **Hồ sơ cá nhân**: Tối ưu hiển thị thứ hạng và huy hiệu thời gian thực.\n\n### 🛠️ Cải Tiến & Sửa Lỗi\n- Khắc phục các vấn đề hiển thị ảnh đại diện GIF.\n- Cân bằng bục Podium và hệ thống xếp hạng theo thiết bị (PC / Mobile).\n\n> Nhớ ghé qua mục **[Luật & Quy định](/guidelines)** để nắm rõ các thể thức nộp record nhé!\n\n-# Thông báo phát hành bởi GDVN Admin Team.`
+        `# Cập nhật hệ thống\n\nMột số thay đổi mới trên web:\n- Bổ sung phím tắt định dạng văn bản cho ô nhập thông báo.\n- Cải thiện hiển thị avatar và giao diện trang cá nhân.\n- Sửa một số lỗi hiển thị và tối ưu hiệu năng.\n\nNếu gặp lỗi trong quá trình sử dụng, các bạn hãy báo lại tại mục [Hỗ trợ](/helps).`
       );
     } else if (type === 'event') {
-      setTitle('Sự Kiện Cộng Đồng GDVN');
-      setExcerpt('Tham gia sự kiện đặc biệt để nhận huy hiệu và phần thưởng giá trị!');
+      setTitle('Sự kiện cộng đồng GDVN');
+      setExcerpt('Thông tin thể lệ và thời gian diễn ra sự kiện.');
       setBody(
-        `# 🏆 Sự Kiện Cộng Đồng: Đại Chiến Demon\n\n**Thời gian diễn ra:** Từ hôm nay đến hết tuần sau.\n\n### 📜 Thể Lệ Sự Kiện\n1. Vượt qua ít nhất 3 màn chơi trong danh sách thách đấu.\n2. Quay video có âm thanh clicks/taps rõ ràng.\n3. Gửi record qua trang **[Nộp Bằng Chứng](/submit)**.\n\n### 🎁 Phần Thưởng\n- **Hạng 1:** ||1 Tháng Supporter + Huy hiệu Champion||\n- **Hạng 2 & 3:** ||Huy hiệu sự kiện độc quyền||\n\n*Chúc mọi người chơi vui vẻ và đạt thành tích cao nhất!*`
+        `# Sự kiện cộng đồng\n\n- **Thời gian:** Từ ngày ... đến ngày ...\n- **Mục tiêu:** Vượt qua các level được chỉ định trong danh sách sự kiện.\n- **Yêu cầu:** Gửi video kèm clicks/taps qua trang [Nộp](/submit).\n\n### Phần thưởng\n- Top 1: Supporter 1 tháng\n- Top 2 - 3: Huy hiệu sự kiện`
       );
     } else if (type === 'maintenance') {
-      setTitle('Thông Báo Bảo Trì Hệ Thống');
-      setExcerpt('Hệ thống sẽ tạm thời bảo trì để nâng cấp máy chủ.');
+      setTitle('Thông báo bảo trì hệ thống');
+      setExcerpt('Bảo trì máy chủ để nâng cấp hệ thống.');
       setBody(
-        `# ⚠️ Thông Báo Bảo Trì Định Kỳ\n\nWebsite GDVN sẽ tiến hành bảo trì hệ thống máy chủ cơ sở dữ liệu:\n\n- **Thời gian:** 02:00 - 04:00 (Sáng mai)\n- **Thời lượng dự kiến:** 120 phút\n\n> Trong thời gian bảo trì, một số tính năng nộp record và chỉnh sửa thông tin có thể tạm gián đoạn. Dữ liệu xếp hạng của các bạn hoàn toàn an toàn.\n\n*Rất xin lỗi vì sự bất tiện này.*`
+        `# Thông báo bảo trì\n\nWebsite GDVN sẽ tạm dừng hoạt động để bảo trì và nâng cấp hệ thống:\n- **Thời gian:** 02:00 - 04:00 (ngày ...)\n- **Thời lượng dự kiến:** khoảng 2 tiếng\n\nTrong thời gian này, các tính năng nộp record và cập nhật thông tin sẽ tạm khóa. Dữ liệu tài khoản của các bạn không bị ảnh hưởng.`
       );
     }
     showToast('Đã áp dụng mẫu thông báo!');
@@ -344,15 +264,6 @@ function AnnouncementEditorContent() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
-      {/* Hidden File Input for Import */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".md,.txt,.json,.html,.htm"
-        className="hidden"
-        onChange={handleFileImport}
-      />
-
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -369,49 +280,13 @@ function AnnouncementEditorContent() {
               {editId ? 'Chỉnh Sửa Thông Báo' : 'Tạo Thông Báo Mới'}
             </h1>
             <p className="text-xs ui-dim mt-0.5">
-              Hỗ trợ đầy đủ Discord Markdown, xem trước trực tiếp, nhập HTML ngược lại và nhập tệp.
+              Hỗ trợ đầy đủ Discord Markdown và xem trước trực tiếp.
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Import File Button */}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold ui-dim hover:text-white hover:border-white/20 transition-all cursor-pointer"
-            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
-            title="Nhập từ tệp .md, .txt, .json hoặc .html"
-          >
-            <Upload className="w-3.5 h-3.5 text-sky-400" />
-            <span>Import Tệp</span>
-          </button>
-
-          {/* Import HTML Button */}
-          <button
-            type="button"
-            onClick={() => setIsImportHtmlModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold text-purple-400 hover:bg-purple-400/10 hover:border-purple-400/30 transition-all cursor-pointer"
-            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
-            title="Dán hoặc nhập mã HTML để tự động chuyển đổi sang Markdown"
-          >
-            <Code className="w-3.5 h-3.5 text-purple-400" />
-            <span>Nhập HTML</span>
-          </button>
-
-          {/* Copy Markdown Button */}
-          <button
-            type="button"
-            onClick={handleCopyMarkdown}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold ui-dim hover:text-white hover:border-white/20 transition-all cursor-pointer"
-            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
-            title="Sao chép toàn bộ nội dung định dạng Markdown"
-          >
-            {copiedMarkdown ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-emerald-400" />}
-            <span>{copiedMarkdown ? 'Đã sao chép' : 'Sao chép mã'}</span>
-          </button>
-
-          {/* Templates Dropdown Buttons */}
+          {/* Templates Buttons */}
           <div className="flex items-center gap-1 border rounded-xl p-0.5 text-xs font-bold" style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}>
             <span className="px-2 text-[10px] uppercase font-black ui-dim flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-amber-400" /> Mẫu:
@@ -689,15 +564,6 @@ function AnnouncementEditorContent() {
               >
                 <Link2 className="w-3.5 h-3.5" />
               </button>
-              <div className="w-[1px] h-4 bg-white/10 mx-1" />
-              <button
-                type="button"
-                onClick={handleCopyMarkdown}
-                className="p-1.5 rounded-lg border border-white/5 hover:bg-white/10 text-emerald-400 hover:text-emerald-300 transition-colors"
-                title="Sao chép toàn bộ mã Markdown"
-              >
-                {copiedMarkdown ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              </button>
             </div>
           </div>
 
@@ -710,15 +576,17 @@ function AnnouncementEditorContent() {
                   ref={textareaRef}
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
-                  placeholder="Nhập nội dung thông báo... Hỗ trợ Discord markdown (**đậm**, *nghiêng*, ||spoiler||, # heading, > quote, ```code```) và mã nhúng."
+                  onKeyDown={(e) => handleMarkdownKeyDown(e, body, setBody)}
+                  onPaste={(e) => handleMarkdownPaste(e, body, setBody)}
+                  placeholder="Nhập nội dung thông báo... Hỗ trợ phím tắt: Ctrl+B (đậm), Ctrl+I (nghiêng), Ctrl+U (gạch chân), Ctrl+K (link), bôi đen rồi paste link để tạo [text](url)..."
                   rows={18}
                   className="w-full flex-1 bg-transparent border-0 focus:outline-none font-mono text-sm leading-relaxed resize-y"
                   style={{ color: 'var(--text-title)' }}
                   required
                 />
-                <div className="pt-2 text-[11px] ui-dim flex items-center justify-between border-t border-white/5">
+                <div className="pt-2 text-[11px] ui-dim flex items-center justify-between border-t border-white/5 flex-wrap gap-1">
                   <span>{body.length} ký tự · {body.split(/\s+/).filter(Boolean).length} từ</span>
-                  <span className="text-amber-400/80 font-medium">Hỗ trợ Discord Markdown & HTML Sanitized</span>
+                  <span className="text-amber-400/80 font-medium">Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+K · Bôi đen + dán URL</span>
                 </div>
               </div>
             )}
@@ -793,97 +661,6 @@ function AnnouncementEditorContent() {
           </button>
         </div>
       </form>
-
-      {/* Import HTML Modal */}
-      {isImportHtmlModalOpen && (
-        <div
-          className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
-          onClick={() => setIsImportHtmlModalOpen(false)}
-        >
-          <div
-            className="ui-card p-6 w-full max-w-xl space-y-4 shadow-2xl rounded-2xl border"
-            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
-              <div className="flex items-center gap-2 text-purple-400 font-black text-base">
-                <Code className="w-5 h-5" />
-                <span>Nhập & Chuyển đổi mã HTML</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsImportHtmlModalOpen(false)}
-                className="p-1 rounded-lg ui-dim hover:text-white cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <p className="text-xs ui-dim leading-relaxed">
-              Dán mã HTML từ website, bài viết cũ hoặc Discord webhook vào đây. Hệ thống sẽ tự động bóc tách và chuyển đổi các thẻ HTML sang định dạng Discord Markdown chuẩn để bạn dễ dàng chỉnh sửa.
-            </p>
-
-            <textarea
-              value={importHtmlText}
-              onChange={(e) => setImportHtmlText(e.target.value)}
-              placeholder="<p>Chào các bạn! <b>Thông báo mới</b>...</p>"
-              rows={8}
-              className="w-full p-3 rounded-xl border text-xs font-mono focus:outline-none"
-              style={{
-                backgroundColor: 'var(--bg-subtle)',
-                borderColor: 'var(--border-ui)',
-                color: 'var(--text-title)',
-              }}
-            />
-
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-3 text-xs font-semibold ui-dim">
-                <span>Chế độ:</span>
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="importHtmlMode"
-                    value="replace"
-                    checked={importHtmlMode === 'replace'}
-                    onChange={() => setImportHtmlMode('replace')}
-                    className="accent-purple-500"
-                  />
-                  <span>Ghi đè nội dung</span>
-                </label>
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="importHtmlMode"
-                    value="append"
-                    checked={importHtmlMode === 'append'}
-                    onChange={() => setImportHtmlMode('append')}
-                    className="accent-purple-500"
-                  />
-                  <span>Chèn tiếp vào sau</span>
-                </label>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsImportHtmlModalOpen(false)}
-                  className="px-3 py-1.5 rounded-xl border text-xs font-bold ui-dim hover:text-white cursor-pointer"
-                  style={{ borderColor: 'var(--border-ui)' }}
-                >
-                  Hủy
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmImportHtml}
-                  className="px-4 py-1.5 rounded-xl text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 transition-colors shadow-sm cursor-pointer"
-                >
-                  Chuyển sang Markdown & Nhập
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

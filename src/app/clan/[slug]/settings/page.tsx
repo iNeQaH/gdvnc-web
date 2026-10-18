@@ -36,6 +36,7 @@ import { UserDisplayName } from '@/components/UserDisplayName';
 import ColorPicker from '@/components/ColorPicker';
 import { CircularAnglePicker } from '@/components/CircularAnglePicker';
 import { getClanTier } from '@/lib/clanTypes';
+import { handleMarkdownKeyDown, handleMarkdownPaste } from '@/lib/markdownShortcuts';
 
 function hexToRgba(hex: string, alpha: number): string {
   const m = String(hex || '').trim().match(/^#?([0-9a-fA-F]{3,8})$/);
@@ -674,6 +675,8 @@ export default function ClanSettingsPage({
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                onKeyDown={(e) => handleMarkdownKeyDown(e, description, setDescription)}
+                onPaste={(e) => handleMarkdownPaste(e, description, setDescription)}
                 disabled={!canEditInfo}
                 maxLength={1000}
                 rows={4}

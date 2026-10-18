@@ -216,6 +216,76 @@
       isTypingMd = false;
     });
 
+    mdInput.addEventListener('paste', function(e) {
+      var clip = (e.clipboardData || window.clipboardData).getData('text');
+      if (!clip) return;
+      var trimmed = clip.trim();
+      var isUrl = /^https?:\/\/[^\s]+$/i.test(trimmed) || /^www\.[a-z0-9-]+(\.[a-z0-9-]+)+[^\s]*$/i.test(trimmed);
+      if (!isUrl) return;
+      var start = mdInput.selectionStart;
+      var end = mdInput.selectionEnd;
+      if (start === end) return;
+      e.preventDefault();
+      var selected = mdInput.value.substring(start, end);
+      var targetUrl = /^www\./i.test(trimmed) ? 'https://' + trimmed : trimmed;
+      var rep = '[' + selected + '](' + targetUrl + ')';
+      mdInput.setRangeText(rep, start, end, 'end');
+      isTypingMd = true;
+      renderFromMd();
+      isTypingMd = false;
+    });
+
+    mdInput.addEventListener('keydown', function(e) {
+      var isCtrl = e.ctrlKey || e.metaKey;
+      var key = e.key.toLowerCase();
+      function wrap(prefix, suffix) {
+        e.preventDefault();
+        var start = mdInput.selectionStart;
+        var end = mdInput.selectionEnd;
+        var val = mdInput.value;
+        var pLen = prefix.length;
+        var sLen = suffix.length;
+        if (start >= pLen && end + sLen <= val.length && val.substring(start - pLen, start) === prefix && val.substring(end, end + sLen) === suffix) {
+          mdInput.setSelectionRange(start - pLen, end + sLen);
+          mdInput.setRangeText(val.substring(start, end), start - pLen, end + sLen, 'select');
+        } else {
+          var sel = val.substring(start, end);
+          var rep = prefix + sel + suffix;
+          mdInput.setRangeText(rep, start, end, 'end');
+          if (sel) {
+            mdInput.setSelectionRange(start + pLen, start + pLen + sel.length);
+          } else {
+            mdInput.setSelectionRange(start + pLen, start + pLen);
+          }
+        }
+        isTypingMd = true;
+        renderFromMd();
+        isTypingMd = false;
+      }
+      if (isCtrl && !e.shiftKey && !e.altKey && key === 'b') { wrap('**', '**'); }
+      else if (isCtrl && !e.shiftKey && !e.altKey && key === 'i') { wrap('*', '*'); }
+      else if (isCtrl && !e.shiftKey && !e.altKey && key === 'u') { wrap('__', '__'); }
+      else if (isCtrl && e.shiftKey && (key === 'x' || key === 's')) { wrap('~~', '~~'); }
+      else if ((isCtrl && e.shiftKey && key === 'p') || (isCtrl && e.altKey && key === 's')) { wrap('||', '||'); }
+      else if (isCtrl && !e.shiftKey && (key === 'e' || e.key === '`')) { wrap('`', '`'); }
+      else if (isCtrl && !e.shiftKey && !e.altKey && key === 'k') {
+        e.preventDefault();
+        var start = mdInput.selectionStart;
+        var end = mdInput.selectionEnd;
+        var sel = mdInput.value.substring(start, end);
+        var rep = '[' + (sel || '') + '](url)';
+        mdInput.setRangeText(rep, start, end, 'end');
+        if (sel) {
+          mdInput.setSelectionRange(start + sel.length + 3, start + sel.length + 6);
+        } else {
+          mdInput.setSelectionRange(start + 1, start + 1);
+        }
+        isTypingMd = true;
+        renderFromMd();
+        isTypingMd = false;
+      }
+    });
+
     htmlInput.addEventListener('input', function() {
       isTypingHtml = true;
       renderFromHtml();
