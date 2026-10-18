@@ -96,15 +96,13 @@ export async function generateMetadata({
   const displayTag = rawTag ? (rawTag.startsWith('[') ? rawTag : `[${rawTag}]`) : '';
   const title = displayTag ? `${displayTag} ${clan.name} - ${tierInfo.name}` : `${clan.name} - ${tierInfo.name}`;
 
-  // Description: "Leader: {clan.leader} |  Member: {clan.total.members}" + newline + "*{clan.description}*"
+  // Description: "Leader: {clan.leader} |  Member: {clan.total.members}"
   const leaderUsername = clan.leader?.username || 'Chưa có';
   const totalMembers = clan._count?.members ?? 0;
-  const statsLine = `Leader: ${leaderUsername} |  Member: ${totalMembers}`;
-  const descText = clan.description?.trim();
-  const description = descText ? `${statsLine}\n*${descText}*` : statsLine;
+  const description = `Leader: ${leaderUsername} |  Member: ${totalMembers}`;
 
   const base = getSiteBaseUrl();
-  const rawImage = clan.coverUrl || clan.avatarUrl;
+  const rawImage = clan.avatarUrl || clan.coverUrl;
   const imageUrl = rawImage ? toAbsoluteUrl(rawImage) : undefined;
   const themeColor = getClanEmbedThemeColor(clan);
 
@@ -119,10 +117,10 @@ export async function generateMetadata({
       url: `${base}/clan/${encodeURIComponent(slug)}`,
       siteName: 'GDVN',
       locale: 'vi_VN',
-      images: imageUrl ? [{ url: imageUrl }] : undefined,
+      images: imageUrl ? [{ url: imageUrl, width: 256, height: 256, alt: clan.name }] : undefined,
     },
     twitter: {
-      card: clan.coverUrl ? 'summary_large_image' : 'summary',
+      card: 'summary',
       title,
       description,
       images: imageUrl ? [imageUrl] : undefined,
