@@ -5,6 +5,8 @@ import { calculateUserSp, getClanTier, syncAndGetClanSp } from '@/lib/clan';
 import { isFullAdminRole, isStaffRole, isSuperAdminUser } from '@/lib/roles';
 import { clipText } from '@/lib/validate';
 import { publicApiError } from '@/lib/apiError';
+import { isAllowedImageRef } from '@/lib/uploadthing';
+import { clearLeaderboardCache } from '@/lib/leaderboard';
 
 export const dynamic = 'force-dynamic';
 
@@ -169,9 +171,22 @@ export async function POST(req: Request) {
     const name = clipText(body.name, 40).trim();
     const tag = clipText(body.tag, 4).trim().toUpperCase();
     const description = clipText(body.description, 500)?.trim() || null;
-    const color = (body.color || '#0ea5e9').trim();
-    const avatarUrl = clipText(body.avatarUrl, 500)?.trim() || null;
-    const coverUrl = clipText(body.coverUrl, 500)?.trim() || null;
+    let color = (body.color || '#0ea5e9').trim();
+    if (color.length > 50 || /[;<>{}]/.test(color)) {
+      color = '#0ea5e9';
+    }
+    const avatarUrlRaw = clipText(body.avatarUrl, 500)?.trim() || null;
+    const coverUrlRaw = clipText(body.coverUrl, 500)?.trim() || null;
+
+    if (avatarUrlRaw && !isAllowedImageRef(avatarUrlRaw)) {
+      return NextResponse.json({ error: 'URL ảnh đại diện Clan không hợp lệ.' }, { status: 400 });
+    }
+    if (coverUrlRaw && !isAllowedImageRef(coverUrlRaw)) {
+      return NextResponse.json({ error: 'URL ảnh bìa Clan không hợp lệ.' }, { status: 400 });
+    }
+
+    const avatarUrl = avatarUrlRaw;
+    const coverUrl = coverUrlRaw;
 
     if (!name || name.length < 2) {
       return NextResponse.json({ error: 'Tên Clan phải từ 2 đến 40 ký tự.' }, { status: 400 });
@@ -249,6 +264,8 @@ export async function POST(req: Request) {
 
       return c;
     });
+
+    clearLeaderboardCache();
 
     return NextResponse.json({
       success: true,

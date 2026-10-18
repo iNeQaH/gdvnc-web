@@ -357,8 +357,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
       return NextResponse.json({ error: 'Không có quyền sửa profile này' }, { status: 403 });
     }
 
-    const current = await prisma.user.findUnique({
-      where: { username },
+    const current = await prisma.user.findFirst({
+      where: { username: { equals: username, mode: 'insensitive' } },
       select: {
         id: true,
         role: true,
@@ -497,6 +497,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
     }
 
     let nextProfileConfig = body.profileConfig !== undefined ? body.profileConfig : undefined;
+    if (nextProfileConfig !== undefined) {
+      if (typeof nextProfileConfig !== 'object' || nextProfileConfig === null || Array.isArray(nextProfileConfig)) {
+        return NextResponse.json({ error: 'Cấu hình profile không hợp lệ.' }, { status: 400 });
+      }
+      const serialized = JSON.stringify(nextProfileConfig);
+      if (serialized.length > 16_384) {
+        return NextResponse.json({ error: 'Dung lượng cấu hình profile quá lớn (tối đa 16KB).' }, { status: 400 });
+      }
+    }
+
     if (body.profileMode !== undefined) {
       const baseCfg = (nextProfileConfig !== undefined ? nextProfileConfig : ((current.profileConfig as Record<string, any>) || {})) || {};
       nextProfileConfig = {
@@ -506,7 +516,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
     }
 
     const updated = await prisma.user.update({
-      where: { username },
+      where: { id: current.id },
       data: {
         bio: body.bio !== undefined ? clipText(body.bio, 2000) : undefined,
         avatarUrl: nextAvatar,
@@ -573,8 +583,8 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ usern
   try {
     const auth = await requireAuth();
     const { username } = await params;
-    const targetUser = await prisma.user.findUnique({
-      where: { username },
+    const targetUser = await prisma.user.findFirst({
+      where: { username: { equals: username, mode: 'insensitive' } },
       select: { id: true, username: true, role: true },
     });
     if (!targetUser) {

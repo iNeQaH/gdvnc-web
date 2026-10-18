@@ -3,6 +3,9 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { isSuperAdminUser } from '@/lib/roles';
 import { publicApiError } from '@/lib/apiError';
+import { clearLeaderboardCache } from '@/lib/leaderboard';
+import { logAudit } from '@/lib/audit';
+import { getClientIp } from '@/lib/requestIp';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   let actorJwt;
@@ -57,6 +60,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         },
       });
 
+      clearLeaderboardCache();
+
+      void logAudit(actor.id, 'BAN_USER', {
+        targetId: target.id,
+        targetUsername: target.username,
+        reason: banReason,
+      }, getClientIp(req));
+
       return NextResponse.json({
         success: true,
         isBanned: true,
@@ -78,6 +89,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           message: `Tài khoản của bạn đã được Admin "${actor.username}" gỡ đình chỉ hoạt động.`,
         },
       });
+
+      clearLeaderboardCache();
+
+      void logAudit(actor.id, 'UNBAN_USER', {
+        targetId: target.id,
+        targetUsername: target.username,
+      }, getClientIp(req));
 
       return NextResponse.json({
         success: true,

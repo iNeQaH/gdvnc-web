@@ -5,6 +5,8 @@ import { calculateUserSp, getClanTier, syncAndGetClanSp } from '@/lib/clan';
 import { isFullAdminRole, isSuperAdminUser } from '@/lib/roles';
 import { clipText, isHttpsUrl } from '@/lib/validate';
 import { publicApiError } from '@/lib/apiError';
+import { isAllowedImageRef } from '@/lib/uploadthing';
+import { clearLeaderboardCache } from '@/lib/leaderboard';
 import { RecordStatus } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
@@ -304,7 +306,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ slug: 
       include: {
         members: { where: { userId: auth.userId } },
         contributions: {
-          include: { user: { select: { supporterUntil: true } } },
+          include: {
+            user: {
+              select: {
+                supporterUntil: true,
+                spGrants: {
+                  where: { expiresAt: { gt: new Date() } },
+                  select: { amount: true, expiresAt: true },
+                },
+              },
+            },
+          },
         },
       },
     });
@@ -331,16 +343,52 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ slug: 
 
     const updateData: any = {};
     if (body.description !== undefined) updateData.description = clipText(body.description, 1000)?.trim() || null;
-    if (body.avatarUrl !== undefined) updateData.avatarUrl = clipText(body.avatarUrl, 500)?.trim() || null;
-    if (body.coverUrl !== undefined) updateData.coverUrl = clipText(body.coverUrl, 500)?.trim() || null;
-    if (body.color !== undefined) updateData.color = clipText(body.color, 30)?.trim() || '#0ea5e9';
-    if (body.videoUrl !== undefined) updateData.videoUrl = clipText(body.videoUrl, 200)?.trim() || null;
+
+    if (body.avatarUrl !== undefined) {
+      const av = clipText(body.avatarUrl, 500)?.trim() || null;
+      if (av && !isAllowedImageRef(av)) {
+        return NextResponse.json({ error: 'URL ảnh đại diện Clan không hợp lệ.' }, { status: 400 });
+      }
+      updateData.avatarUrl = av;
+    }
+
+    if (body.coverUrl !== undefined) {
+      const cv = clipText(body.coverUrl, 500)?.trim() || null;
+      if (cv && !isAllowedImageRef(cv)) {
+        return NextResponse.json({ error: 'URL ảnh bìa Clan không hợp lệ.' }, { status: 400 });
+      }
+      updateData.coverUrl = cv;
+    }
+
+    if (body.color !== undefined) {
+      const c = clipText(body.color, 30)?.trim() || '#0ea5e9';
+      updateData.color = (c.length > 50 || /[;<>{}]/.test(c)) ? '#0ea5e9' : c;
+    }
+
+    if (body.videoUrl !== undefined) {
+      const vid = clipText(body.videoUrl, 200)?.trim() || null;
+      if (vid && !isHttpsUrl(vid)) {
+        return NextResponse.json({ error: 'URL video Clan phải là đường dẫn HTTPS hợp lệ.' }, { status: 400 });
+      }
+      updateData.videoUrl = vid;
+    }
+
     if (body.favoriteLevelId !== undefined) updateData.favoriteLevelId = body.favoriteLevelId || null;
-    if (body.themeColor !== undefined) updateData.themeColor = clipText(body.themeColor, 60)?.trim() || null;
+
+    if (body.themeColor !== undefined) {
+      const tc = clipText(body.themeColor, 60)?.trim() || null;
+      updateData.themeColor = (tc && (tc.length > 80 || /[;<>{}]/.test(tc.replace(/\/\*glow:\d+:\d+\*\//g, '')))) ? null : tc;
+    }
 
     if (tierInfo.tier >= 2) {
-      if (body.colorGradient !== undefined) updateData.colorGradient = clipText(body.colorGradient, 100)?.trim() || null;
-      if (body.themeGradient !== undefined) updateData.themeGradient = clipText(body.themeGradient, 160)?.trim() || null;
+      if (body.colorGradient !== undefined) {
+        const cg = clipText(body.colorGradient, 100)?.trim() || null;
+        updateData.colorGradient = (cg && (cg.length > 120 || /[;<>{}]/.test(cg))) ? null : cg;
+      }
+      if (body.themeGradient !== undefined) {
+        const tg = clipText(body.themeGradient, 160)?.trim() || null;
+        updateData.themeGradient = (tg && (tg.length > 200 || /[;<>{}]/.test(tg.replace(/\/\*glow:\d+:\d+\*\//g, '')))) ? null : tg;
+      }
     }
 
     // Yêu cầu: Clan phải lên Tier 3 mới có Glow trong settings
@@ -363,6 +411,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ slug: 
       where: { id: clan.id },
       data: updateData,
     });
+
+    clearLeaderboardCache();
 
     return NextResponse.json({ success: true, clan: updated });
   } catch (error) {
@@ -403,6 +453,8 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ slug:
     await prisma.clan.delete({
       where: { id: clan.id },
     });
+
+    clearLeaderboardCache();
 
     return NextResponse.json({ success: true, message: 'Đã giải tán Clan.' });
   } catch (error) {

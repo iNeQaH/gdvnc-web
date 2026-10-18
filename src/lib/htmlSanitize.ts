@@ -7,6 +7,8 @@ const ALLOWED_IFRAME_HOSTS = new Set([
   'player.vimeo.com',
   'discord.com',
   'open.spotify.com',
+  'drive.google.com',
+  'docs.google.com',
 ]);
 
 const VOID_TAGS = new Set(['br', 'img', 'hr', 'source']);

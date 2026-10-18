@@ -23,12 +23,21 @@ export async function POST(req: Request) {
     );
   }
 
+  const contentLength = Number(req.headers.get('content-length') || 0);
+  if (contentLength > 25 * 1024 * 1024) {
+    return NextResponse.json({ error: 'Dung lượng tải lên vượt quá giới hạn cho phép (tối đa 25MB).' }, { status: 413 });
+  }
+
   try {
     const formData = await req.formData();
     const files = formData.getAll('file');
 
     if (!files || files.length === 0) {
       return NextResponse.json({ error: 'No files provided' }, { status: 400 });
+    }
+
+    if (files.length > 5) {
+      return NextResponse.json({ error: 'Chỉ được tải lên tối đa 5 tệp mỗi lần.' }, { status: 400 });
     }
 
     const uploadedUrls: string[] = [];

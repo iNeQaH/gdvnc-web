@@ -3,12 +3,15 @@ import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { isSuperAdminUser } from '@/lib/roles';
 import { clipText } from '@/lib/validate';
+import { syncAndGetClanSp } from '@/lib/clan';
+import { clearLeaderboardCache } from '@/lib/leaderboard';
+import { logAudit } from '@/lib/audit';
 
 export async function deleteUserAccount(
   actorId: string,
   targetId: string,
   reason: string,
-  options?: { password?: string }
+  options?: { password?: string; ipAddress?: string }
 ) {
   const trimmedReason = clipText(reason, 500);
   if (!trimmedReason || trimmedReason.length < 3) {
@@ -17,7 +20,26 @@ export async function deleteUserAccount(
 
   const [actor, target] = await Promise.all([
     prisma.user.findUnique({ where: { id: actorId } }),
-    prisma.user.findUnique({ where: { id: targetId } }),
+    prisma.user.findUnique({
+      where: { id: targetId },
+      include: {
+        clanMember: {
+          include: {
+            clan: {
+              include: {
+                members: {
+                  where: { userId: { not: targetId } },
+                  orderBy: [
+                    { role: 'asc' }, // LEADER, MODERATOR, MEMBER (alphabetical: LEADER, MEMBER, MODERATOR - we sort manually below)
+                    { joinedAt: 'asc' },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+    }),
   ]);
 
   if (!actor) {
@@ -56,6 +78,32 @@ export async function deleteUserAccount(
 
   const actorName = actor.username;
   const targetName = target.username;
+  const userClan = target.clanMember?.clan;
+  const clanIdToSync = userClan?.id;
+
+  // Xử lý chuyển quyền Leader Clan nếu target là Leader và Clan còn thành viên khác
+  if (userClan && userClan.leaderId === targetId) {
+    const otherMembers = userClan.members;
+    if (otherMembers.length > 0) {
+      // Ưu tiên MODERATOR trước, rồi đến MEMBER theo thời gian tham gia sớm nhất
+      const nextLeader = [...otherMembers].sort((a, b) => {
+        if (a.role === 'MODERATOR' && b.role !== 'MODERATOR') return -1;
+        if (b.role === 'MODERATOR' && a.role !== 'MODERATOR') return 1;
+        return a.joinedAt.getTime() - b.joinedAt.getTime();
+      })[0];
+
+      await prisma.$transaction([
+        prisma.clanMember.update({
+          where: { id: nextLeader.id },
+          data: { role: 'LEADER' },
+        }),
+        prisma.clan.update({
+          where: { id: userClan.id },
+          data: { leaderId: nextLeader.userId },
+        }),
+      ]);
+    }
+  }
 
   await prisma.$transaction([
     prisma.record.updateMany({
@@ -69,6 +117,7 @@ export async function deleteUserAccount(
     prisma.creatorWork.updateMany({ where: { reviewerId: targetId }, data: { reviewerId: null } }),
     prisma.levelSubmission.updateMany({ where: { reviewerId: targetId }, data: { reviewerId: null } }),
     prisma.level.updateMany({ where: { creatorId: targetId }, data: { creatorId: null } }),
+    prisma.clanSpContribution.deleteMany({ where: { userId: targetId } }),
     prisma.helpRequest.create({
       data: {
         userId: null,
@@ -79,6 +128,21 @@ export async function deleteUserAccount(
     }),
     prisma.user.delete({ where: { id: targetId } }),
   ]);
+
+  if (clanIdToSync) {
+    try {
+      await syncAndGetClanSp(clanIdToSync);
+    } catch {}
+  }
+
+  clearLeaderboardCache();
+
+  void logAudit(actor.id, 'DELETE_USER', {
+    targetId,
+    targetUsername: targetName,
+    reason: trimmedReason,
+    isSelf,
+  }, options?.ipAddress);
 
   return { success: true as const };
 }

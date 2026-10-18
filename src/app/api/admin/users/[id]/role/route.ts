@@ -4,6 +4,10 @@ import prisma from '@/lib/prisma';
 import { Role } from '@prisma/client';
 import { isSuperAdminUser } from '@/lib/roles';
 import { publicApiError } from '@/lib/apiError';
+import { syncAndGetClanSp } from '@/lib/clan';
+import { clearLeaderboardCache } from '@/lib/leaderboard';
+import { logAudit } from '@/lib/audit';
+import { getClientIp } from '@/lib/requestIp';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   let actorJwt;
@@ -84,14 +88,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
       isSupporterChanged = true;
       supporterMonthsVal = months;
-      if (months < 0) {
+      const now = new Date();
+      const current = target.supporterUntil;
+      const base = current && current > now ? current : now;
+      const nextTime = base.getTime() + months * 30 * 24 * 60 * 60 * 1000;
+      if (nextTime <= now.getTime()) {
         updatedData.supporterUntil = null;
       } else {
-        const now = new Date();
-        const current = target.supporterUntil;
-        const base = current && current > now ? current : now;
-        const next = new Date(base.getTime() + months * 30 * 24 * 60 * 60 * 1000);
-        updatedData.supporterUntil = next;
+        updatedData.supporterUntil = new Date(nextTime);
       }
     }
 
@@ -144,6 +148,29 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         },
       });
     }
+
+    if (isSupporterChanged) {
+      const userClanMember = await prisma.clanMember.findUnique({
+        where: { userId: target.id },
+        select: { clanId: true },
+      });
+      if (userClanMember) {
+        try {
+          await syncAndGetClanSp(userClanMember.clanId);
+        } catch {}
+      }
+    }
+
+    clearLeaderboardCache();
+
+    void logAudit(actor.id, 'UPDATE_USER_ROLE_OR_SUPPORTER', {
+      targetId: target.id,
+      targetUsername: target.username,
+      newRole: newRole || target.role,
+      isSupporterChanged,
+      supporterMonthsVal,
+      newSupporterUntil: updated.supporterUntil,
+    }, getClientIp(req));
 
     return NextResponse.json({ success: true, user: updated });
   } catch (error) {
