@@ -61,31 +61,82 @@ function RecordPager({
   );
 }
 
+function extractSafeFavoriteEmbedSrc(rawInput: string): { src: string; title: string } | null {
+  const input = rawInput.trim();
+  // If user pasted an <iframe ...> tag, extract the src="..." attribute
+  let candidateUrl = input;
+  if (/<iframe\b/i.test(input)) {
+    const srcMatch = input.match(/\bsrc\s*=\s*(?:["']([^"']+)["']|([^\s>]+))/i);
+    if (!srcMatch) return null;
+    candidateUrl = (srcMatch[1] || srcMatch[2] || '').trim().replace(/&amp;/g, '&');
+  }
+
+  // 1. Check YouTube (watch, youtu.be, shorts, embed, youtube-nocookie)
+  const ytMatch = candidateUrl.match(
+    /(?:youtu\.be\/|(?:www\.)?youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/))([a-zA-Z0-9_-]{11})/i
+  );
+  if (ytMatch && ytMatch[1]) {
+    return {
+      src: `https://www.youtube.com/embed/${ytMatch[1]}`,
+      title: 'YouTube video player',
+    };
+  }
+
+  // 2. Check Google Drive (file/d/<id>/view, file/d/<id>/preview, open?id=<id>, uc?id=<id>)
+  const driveFileMatch =
+    candidateUrl.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/i) ||
+    candidateUrl.match(/docs\.google\.com\/(?:file|presentation|document|spreadsheets)\/d\/([a-zA-Z0-9_-]+)/i) ||
+    candidateUrl.match(/drive\.google\.com\/(?:open|uc|thumbnail)\?(?:.*&)?id=([a-zA-Z0-9_-]+)/i);
+  if (driveFileMatch && driveFileMatch[1]) {
+    return {
+      src: `https://drive.google.com/file/d/${driveFileMatch[1]}/preview`,
+      title: 'Google Drive media player',
+    };
+  }
+
+  // 3. If it was an explicit <iframe>, allow other safe HTTPS embed hosts in CSP (Spotify, Vimeo)
+  if (/<iframe\b/i.test(input)) {
+    try {
+      const parsed = new URL(candidateUrl);
+      const allowedHosts = new Set([
+        'www.youtube.com',
+        'youtube.com',
+        'www.youtube-nocookie.com',
+        'drive.google.com',
+        'docs.google.com',
+        'player.vimeo.com',
+        'open.spotify.com',
+      ]);
+      if (parsed.protocol === 'https:' && allowedHosts.has(parsed.hostname.toLowerCase())) {
+        return {
+          src: parsed.toString(),
+          title: 'Embedded media player',
+        };
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
 function renderFavoriteContent(raw: string | undefined | null) {
   if (!raw || !raw.trim()) {
     return <span className="text-xs font-bold ui-dim p-4 text-center">Chưa có gì ở đây cả</span>;
   }
   const content = raw.trim();
 
-  if (content.includes('<iframe') && content.includes('</iframe>')) {
-    return (
-      <div
-        className="w-full h-full flex items-center justify-center [&>iframe]:w-full [&>iframe]:h-full [&>iframe]:aspect-video [&>iframe]:rounded-xl"
-        dangerouslySetInnerHTML={{ __html: content }}
-      />
-    );
-  }
-
-  const ytMatch = content.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([a-zA-Z0-9_-]{11})/);
-  if (ytMatch && ytMatch[1]) {
-    const videoId = ytMatch[1];
+  const safeEmbed = extractSafeFavoriteEmbedSrc(content);
+  if (safeEmbed) {
     return (
       <iframe
-        src={`https://www.youtube.com/embed/${videoId}`}
-        title="YouTube video player"
+        src={safeEmbed.src}
+        title={safeEmbed.title}
         className="w-full h-full aspect-video rounded-xl border-0"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowFullScreen
+         referrerPolicy="strict-origin-when-cross-origin"
       />
     );
   }

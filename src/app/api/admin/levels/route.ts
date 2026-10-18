@@ -5,7 +5,7 @@ import prisma from '@/lib/prisma';
 import { calculateBasePp } from '@/lib/ScoringEngine';
 import { upsertLevelFromForm, triggerBackgroundPpRecalc } from '@/lib/upsertLevel';
 import { schedulePersistLocalListSnapshot } from '@/lib/listSnapshot';
-import { LevelMode, Prisma } from '@prisma/client';
+import { LevelMode, Prisma, RecordStatus } from '@prisma/client';
 import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 
 export async function POST(req: Request) {
@@ -64,6 +64,16 @@ export async function DELETE(req: Request) {
     const oldClassicRank = (level as any).classicRank as number | null;
     const mode = level.mode;
     let affectedLevelIds: string[] = [];
+
+    // Fetch users who had an approved record on this level BEFORE cascade delete removes them
+    const deletedLevelRecords = await prisma.record.findMany({
+      where: { levelId: id, status: RecordStatus.APPROVED },
+      select: { userId: true },
+      distinct: ['userId'],
+    });
+    const deletedLevelUserIds = deletedLevelRecords
+      .map((r) => r.userId)
+      .filter((uid): uid is string => Boolean(uid));
 
     await prisma.$transaction(async (tx) => {
       await tx.level.delete({ where: { id } });
@@ -124,7 +134,16 @@ export async function DELETE(req: Request) {
       }
     }, { maxWait: 15000, timeout: 30000 });
 
-    await triggerBackgroundPpRecalc([id, ...affectedLevelIds], mode);
+    if (deletedLevelUserIds.length > 0) {
+      const { recalculateUserPp } = await import('@/lib/recordUtils');
+      for (let i = 0; i < deletedLevelUserIds.length; i += 5) {
+        const chunk = deletedLevelUserIds.slice(i, i + 5);
+        await Promise.all(chunk.map((uid) => recalculateUserPp(uid)));
+      }
+    }
+    if (affectedLevelIds.length > 0) {
+      await triggerBackgroundPpRecalc(affectedLevelIds, mode);
+    }
 
     bustPublicCache(CACHE_TAGS.levels, CACHE_TAGS.highlights, CACHE_TAGS.leaderboard);
 

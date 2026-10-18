@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
-import { detectMonthsFromAmount } from '@/lib/supportPayment';
+import { calculateSupportPrice, detectMonthsFromAmount } from '@/lib/supportPayment';
+import { logAudit } from '@/lib/audit';
 
 function verifySePayAuth(req: Request, rawBody: string, secret: string): boolean {
   if (!secret) return false;
@@ -115,11 +116,13 @@ export async function POST(req: Request) {
     }
 
     const body = JSON.parse(rawBody);
+    const sepayTxId = body.id ? String(body.id) : body.referenceCode ? String(body.referenceCode) : null;
     const transferAmount = parseInt(body.transferAmount || body.amount || '0', 10) || 0;
     const transactionContent = String(body.content || body.transactionContent || body.description || '').toUpperCase();
     const transferType = String(body.transferType || '').toLowerCase();
 
     console.log('[SePay Webhook] Received:', {
+      sepayTxId,
       transferAmount,
       transferType,
       transactionContent,
@@ -127,6 +130,24 @@ export async function POST(req: Request) {
 
     if (transferType && transferType !== 'in') {
       return NextResponse.json({ success: true, note: 'Ignore outbound transfer' });
+    }
+
+    // Idempotency check: prevent duplicate webhook processing for the same SePay transaction ID
+    if (sepayTxId) {
+      const existingTx = await prisma.auditLog.findFirst({
+        where: {
+          action: 'SEPAY_WEBHOOK',
+          details: {
+            path: ['sepayTxId'],
+            equals: sepayTxId,
+          },
+        },
+        select: { id: true },
+      });
+      if (existingTx) {
+        console.log(`[SePay Webhook] Duplicate transaction ${sepayTxId} ignored.`);
+        return NextResponse.json({ success: true, note: 'Duplicate transaction already processed' });
+      }
     }
 
     const { candidates, monthsFromMemo } = parseTransactionMemo(transactionContent);
@@ -152,9 +173,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, note: 'User not found', checkedCandidates: candidates });
     }
 
-    // Determine months to grant
+    // Determine months to grant strictly bounded by actual transferAmount
     const detectedFromPrice = detectMonthsFromAmount(transferAmount);
-    let monthsToGrant = monthsFromMemo > 0 ? Math.max(monthsFromMemo, detectedFromPrice) : detectedFromPrice;
+    let monthsToGrant = detectedFromPrice;
+    if (monthsFromMemo > 0 && monthsFromMemo <= 120) {
+      const expectedTotal = calculateSupportPrice(monthsFromMemo).totalPrice;
+      if (transferAmount >= expectedTotal) {
+        monthsToGrant = Math.max(monthsFromMemo, detectedFromPrice);
+      }
+    }
 
     if (monthsToGrant <= 0) {
       console.log(`[SePay Webhook] Amount ${transferAmount} too small to grant any supporter months.`);
@@ -194,6 +221,19 @@ export async function POST(req: Request) {
         message: `Hệ thống đã nhận được ${transferAmount.toLocaleString('vi-VN')}đ. Tài khoản của bạn được cấp ${monthsToGrant} tháng danh hiệu Supporter.${bonusMsg} Cảm ơn bạn đã đồng hành và ủng hộ GDVN!`,
       },
     });
+
+    await logAudit(
+      targetUser.id,
+      'SEPAY_WEBHOOK',
+      {
+        sepayTxId,
+        transferAmount,
+        monthsGranted: monthsToGrant,
+        bonusSpCoins,
+        transactionContent,
+      },
+      req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for') || null
+    );
 
     console.log(`[SePay Webhook] Granted ${monthsToGrant} months (+${bonusSpCoins} SP) to ${targetUser.username} (matched '${matchedCandidate}'). Next expiry: ${nextDate.toISOString()}`);
 

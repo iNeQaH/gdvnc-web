@@ -249,6 +249,339 @@ function LeaderboardPodium({
   );
 }
 
+function QuickStatsGrid({
+  highlights,
+  isLavender,
+  isDark,
+  t,
+}: {
+  highlights: any;
+  isLavender: boolean;
+  isDark: boolean;
+  t: (key: any, vars?: Record<string, string | number>) => string;
+}) {
+  const [card1Step, setCard1Step] = useState(0);
+  const [card2Step, setCard2Step] = useState(0);
+  const [card3Step, setCard3Step] = useState(0);
+  const [card4Step, setCard4Step] = useState(0);
+  const [tick, setTick] = useState(0);
+  const [isCardsHovered, setIsCardsHovered] = useState(false);
+
+  // Staggered ticker every 2.5s -> each of the 4 cards updates once every 10s sequentially!
+  useEffect(() => {
+    if (isCardsHovered) return;
+    const timer = setInterval(() => {
+      setTick((prev) => prev + 1);
+    }, 2500);
+    return () => clearInterval(timer);
+  }, [isCardsHovered]);
+
+  useEffect(() => {
+    if (tick === 0) return;
+    const mod = tick % 4;
+    if (mod === 1) setCard1Step((s) => s + 1);
+    else if (mod === 2) setCard2Step((s) => s + 1);
+    else if (mod === 3) setCard3Step((s) => s + 1);
+    else if (mod === 0) setCard4Step((s) => s + 1);
+  }, [tick]);
+
+  return (
+    <div
+      className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2"
+      onMouseEnter={() => setIsCardsHovered(true)}
+      onMouseLeave={() => setIsCardsHovered(false)}
+    >
+      {/* Card 1: Top 1 Classic Demon / Top 1 Player Classic (Màu CAM / VÀNG) */}
+      {(() => {
+        const isPlayer = (card1Step % 2) === 1;
+        const p = highlights?.topPlayer;
+        const lvl = highlights?.topClassicLevel;
+        const href = isPlayer
+          ? (p?.username ? `/profile/${p.username}` : '#')
+          : (lvl ? levelPath(lvl) : '/levels');
+        const hasLink = href && href !== '#';
+
+        const cardClasses = isLavender
+          ? 'tsumiki-card tsumiki-btn-yellow p-3.5 sm:p-4 rounded-2xl relative overflow-hidden transition-all select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between'
+          : 'p-3.5 sm:p-4 rounded-2xl border border-amber-500/35 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-transparent hover:border-amber-500/60 shadow-[0_4px_20px_-4px_rgba(245,158,11,0.2)] hover:shadow-[0_8px_28px_-4px_rgba(245,158,11,0.3)] transition-all relative overflow-hidden group select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between';
+
+        const CardWrapper = hasLink ? Link : 'div';
+        const wrapperProps = hasLink ? { href } : {};
+
+        return (
+          <CardWrapper {...(wrapperProps as any)} className={cardClasses}>
+            <div key={`card1-${isPlayer ? 'player' : 'demon'}-${card1Step}`} className="animate-card-slide-up flex flex-col justify-between h-full space-y-1.5">
+              {/* Header: Label + Icon */}
+              <div className={`text-[11px] font-extrabold uppercase tracking-wide flex items-center gap-1.5 ${
+                isLavender
+                  ? (isDark ? 'text-white/95 drop-shadow-xs' : 'text-amber-950')
+                  : 'text-amber-500 dark:text-amber-400'
+              }`}>
+                {isPlayer ? (
+                  <User className={`w-3.5 h-3.5 shrink-0 ${isLavender ? (isDark ? 'text-white' : 'text-amber-950') : 'text-amber-500'}`} />
+                ) : (
+                  <Star className={`w-3.5 h-3.5 shrink-0 ${isLavender ? (isDark ? 'fill-white text-white' : 'fill-amber-950 text-amber-950') : 'fill-amber-500 text-amber-500'}`} />
+                )}
+                <span className="truncate">
+                  {isPlayer ? t('leaderboard.stats.top_classic_player') : t('leaderboard.stats.top_classic_demon')}
+                </span>
+              </div>
+
+              {/* Body: Name & Points/Creator */}
+              <div className="space-y-0.5">
+                <div className={`text-base font-black truncate ${
+                  isLavender
+                    ? (isDark ? 'text-white drop-shadow-sm' : 'text-amber-950')
+                    : 'ui-title group-hover:text-amber-500 transition-colors'
+                }`}>
+                  {isPlayer
+                    ? (p?.displayName || p?.gdUsername || p?.username || t('leaderboard.stats.no_data'))
+                    : (lvl?.name || t('leaderboard.stats.no_data'))}
+                </div>
+                <div className={`text-[11px] truncate ${
+                  isLavender
+                    ? (isDark ? 'text-white/90 drop-shadow-xs font-semibold' : 'text-amber-900/90 font-semibold')
+                    : 'ui-dim'
+                }`}>
+                  {isPlayer
+                    ? (p ? `${Number(p.classicPp || 0).toFixed(2)} ${t('leaderboard.points')}` : '—')
+                    : (lvl?.creatorName
+                        ? `${t('common.by')} ${lvl.creatorName}`
+                        : lvl?.vnPlacement
+                          ? `#${lvl.vnPlacement}`
+                          : '—')}
+                </div>
+              </div>
+            </div>
+          </CardWrapper>
+        );
+      })()}
+
+      {/* Card 2: Top 1 Platformer Demon / Top 1 Player Platformer (Màu XANH DƯƠNG NHẠT) */}
+      {(() => {
+        const isPlayer = (card2Step % 2) === 1;
+        const p = highlights?.topPlatformerPlayer;
+        const lvl = highlights?.topPlatformerLevel;
+        const href = isPlayer
+          ? (p?.username ? `/profile/${p.username}` : '#')
+          : (lvl ? levelPath(lvl) : '/levels');
+        const hasLink = href && href !== '#';
+
+        const cardClasses = isLavender
+          ? 'tsumiki-card tsumiki-btn-blue p-3.5 sm:p-4 rounded-2xl relative overflow-hidden transition-all select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between'
+          : 'p-3.5 sm:p-4 rounded-2xl border border-sky-500/35 bg-gradient-to-br from-sky-500/15 via-sky-500/5 to-transparent hover:border-sky-500/60 shadow-[0_4px_20px_-4px_rgba(14,165,233,0.2)] hover:shadow-[0_8px_28px_-4px_rgba(14,165,233,0.3)] transition-all relative overflow-hidden group select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between';
+
+        const CardWrapper = hasLink ? Link : 'div';
+        const wrapperProps = hasLink ? { href } : {};
+
+        return (
+          <CardWrapper {...(wrapperProps as any)} className={cardClasses}>
+            <div key={`card2-${isPlayer ? 'player' : 'demon'}-${card2Step}`} className="animate-card-slide-up flex flex-col justify-between h-full space-y-1.5">
+              {/* Header: Label + Icon */}
+              <div className={`text-[11px] font-extrabold uppercase tracking-wide flex items-center gap-1.5 ${
+                isLavender
+                  ? 'text-white/95 drop-shadow-xs'
+                  : 'text-sky-500 dark:text-sky-400'
+              }`}>
+                {isPlayer ? (
+                  <Gamepad2 className={`w-3.5 h-3.5 shrink-0 ${isLavender ? 'text-white' : 'text-sky-500'}`} />
+                ) : (
+                  <Moon className={`w-3.5 h-3.5 shrink-0 -rotate-12 ${isLavender ? 'fill-white text-white' : 'fill-sky-500 text-sky-500'}`} />
+                )}
+                <span className="truncate">
+                  {isPlayer ? t('leaderboard.stats.top_plat_player') : t('leaderboard.stats.top_plat_demon')}
+                </span>
+              </div>
+
+              {/* Body: Name & Points/Creator */}
+              <div className="space-y-0.5">
+                <div className={`text-base font-black truncate ${
+                  isLavender
+                    ? 'text-white drop-shadow-sm'
+                    : 'ui-title group-hover:text-sky-500 transition-colors'
+                }`}>
+                  {isPlayer
+                    ? (p?.displayName || p?.gdUsername || p?.username || t('leaderboard.stats.no_data'))
+                    : (lvl?.name || t('leaderboard.stats.no_data'))}
+                </div>
+                <div className={`text-[11px] truncate ${
+                  isLavender
+                    ? 'text-white/90 drop-shadow-xs font-semibold'
+                    : 'ui-dim'
+                }`}>
+                  {isPlayer
+                    ? (p ? `${Number(p.platformerPp || 0).toFixed(2)} ${t('leaderboard.points')}` : '—')
+                    : (lvl?.creatorName
+                        ? `${t('common.by')} ${lvl.creatorName}`
+                        : lvl
+                          ? t('leaderboard.speedrun')
+                          : '—')}
+                </div>
+              </div>
+            </div>
+          </CardWrapper>
+        );
+      })()}
+
+      {/* Card 3: Clan nhiều điểm nhất (5 tiêu chí) (Màu XANH LÁ) */}
+      {(() => {
+        const clanConfigs = [
+          {
+            id: 0,
+            key: 'clan-classic',
+            icon: (cls: string) => <Swords className={`w-3.5 h-3.5 shrink-0 ${cls}`} />,
+            title: t('leaderboard.stats.clan_classic'),
+            data: highlights?.topClans?.classic,
+            formatVal: (val: number) => `${Number(val || 0).toFixed(2)} Classic Pt`,
+          },
+          {
+            id: 1,
+            key: 'clan-platformer',
+            icon: (cls: string) => <Gamepad2 className={`w-3.5 h-3.5 shrink-0 ${cls}`} />,
+            title: t('leaderboard.stats.clan_plat'),
+            data: highlights?.topClans?.platformer,
+            formatVal: (val: number) => `${Number(val || 0).toFixed(2)} Plat Pt`,
+          },
+          {
+            id: 2,
+            key: 'clan-creator',
+            icon: (cls: string) => <Wrench className={`w-3.5 h-3.5 shrink-0 ${cls}`} />,
+            title: t('leaderboard.stats.clan_creator'),
+            data: highlights?.topClans?.creator,
+            formatVal: (val: number) => `${formatCp(val || 0)} CP`,
+          },
+          {
+            id: 3,
+            key: 'clan-sp',
+            icon: (cls: string) => <Star className={`w-3.5 h-3.5 shrink-0 fill-current ${cls}`} />,
+            title: t('leaderboard.stats.clan_sp'),
+            data: highlights?.topClans?.sp,
+            formatVal: (val: number) => `${Number(val || 0).toLocaleString()} SP Coin`,
+          },
+          {
+            id: 4,
+            key: 'clan-members',
+            icon: (cls: string) => <User className={`w-3.5 h-3.5 shrink-0 ${cls}`} />,
+            title: t('leaderboard.stats.clan_members'),
+            data: highlights?.topClans?.members,
+            formatVal: (val: number) => t('leaderboard.stats.members_count', { n: val || 0 }),
+          },
+        ];
+
+        const clanPhase = card3Step % 5;
+        const current = clanConfigs[clanPhase];
+        const clanInfo = current.data?.clan;
+        const href = clanInfo?.slug ? `/clan/${clanInfo.slug}` : '/clan';
+        const hasLink = Boolean(clanInfo?.slug);
+        const displayName = clanInfo?.name ? `[${clanInfo.tag}] ${clanInfo.name}` : t('leaderboard.stats.no_data');
+
+        const cardClasses = isLavender
+          ? 'tsumiki-card tsumiki-btn-green p-3.5 sm:p-4 rounded-2xl relative overflow-hidden transition-all select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between'
+          : 'p-3.5 sm:p-4 rounded-2xl border border-emerald-500/35 bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent hover:border-emerald-500/60 shadow-[0_4px_20px_-4px_rgba(16,185,129,0.2)] hover:shadow-[0_8px_28px_-4px_rgba(16,185,129,0.3)] transition-all relative overflow-hidden group select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between';
+
+        const CardWrapper = hasLink ? Link : 'div';
+        const wrapperProps = hasLink ? { href } : {};
+
+        return (
+          <CardWrapper {...(wrapperProps as any)} className={cardClasses}>
+            <div key={`card3-${current.key}-${card3Step}`} className="animate-card-slide-up flex flex-col justify-between h-full space-y-1.5">
+              {/* Header: Label + Icon */}
+              <div className={`text-[11px] font-extrabold uppercase tracking-wide flex items-center gap-1.5 truncate ${
+                isLavender
+                  ? (isDark ? 'text-white/95 drop-shadow-xs' : 'text-emerald-950')
+                  : 'text-emerald-500 dark:text-emerald-400'
+              }`}>
+                {current.icon(isLavender ? (isDark ? 'text-white' : 'text-emerald-950') : 'text-emerald-500 dark:text-emerald-400')}
+                <span className="truncate">{current.title}</span>
+              </div>
+
+              {/* Body: Clan Name & Value */}
+              <div className="space-y-0.5">
+                <div className={`text-base font-black truncate ${
+                  isLavender
+                    ? (isDark ? 'text-white drop-shadow-sm' : 'text-emerald-950')
+                    : 'ui-title group-hover:text-emerald-500 transition-colors'
+                }`}>
+                  {displayName}
+                </div>
+                <div className={`text-[11px] truncate ${
+                  isLavender
+                    ? (isDark ? 'text-white/90 drop-shadow-xs font-semibold' : 'text-emerald-900/90 font-semibold')
+                    : 'ui-dim'
+                }`}>
+                  {clanInfo ? current.formatVal(current.data?.value) : '—'}
+                </div>
+              </div>
+            </div>
+          </CardWrapper>
+        );
+      })()}
+
+      {/* Card 4: Top 1 Creator / Top 1 Supporter (Màu HỒNG) */}
+      {(() => {
+        const isSupporter = (card4Step % 2) === 1;
+        const s = highlights?.topSupporter;
+        const c = highlights?.topCreator;
+        const href = isSupporter
+          ? (s?.username ? `/profile/${s.username}` : '#')
+          : (c?.username ? `/profile/${c.username}` : '#');
+        const hasLink = href && href !== '#';
+
+        const cardClasses = isLavender
+          ? 'tsumiki-card tsumiki-btn-pink p-3.5 sm:p-4 rounded-2xl relative overflow-hidden transition-all select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between'
+          : 'p-3.5 sm:p-4 rounded-2xl border border-pink-500/35 bg-gradient-to-br from-pink-500/15 via-pink-500/5 to-transparent hover:border-pink-500/60 shadow-[0_4px_20px_-4px_rgba(236,72,153,0.2)] hover:shadow-[0_8px_28px_-4px_rgba(236,72,153,0.3)] transition-all relative overflow-hidden group select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between';
+
+        const CardWrapper = hasLink ? Link : 'div';
+        const wrapperProps = hasLink ? { href } : {};
+
+        return (
+          <CardWrapper {...(wrapperProps as any)} className={cardClasses}>
+            <div key={`card4-${isSupporter ? 'supporter' : 'creator'}-${card4Step}`} className="animate-card-slide-up flex flex-col justify-between h-full space-y-1.5">
+              {/* Header: Label + Icon */}
+              <div className={`text-[11px] font-extrabold uppercase tracking-wide flex items-center gap-1.5 ${
+                isLavender
+                  ? (isDark ? 'text-white/95 drop-shadow-xs' : 'text-pink-950')
+                  : 'text-pink-500 dark:text-pink-400'
+              }`}>
+                {isSupporter ? (
+                  <Heart className={`w-3.5 h-3.5 shrink-0 ${isLavender ? (isDark ? 'fill-white text-white' : 'fill-pink-950 text-pink-950') : 'fill-pink-500 text-pink-500'}`} />
+                ) : (
+                  <Wrench className={`w-3.5 h-3.5 shrink-0 ${isLavender ? (isDark ? 'text-white' : 'text-pink-950') : 'text-pink-500'}`} />
+                )}
+                <span className="truncate">
+                  {isSupporter ? t('leaderboard.stats.top_supporter') : t('leaderboard.stats.top1_creator')}
+                </span>
+              </div>
+
+              {/* Body: User Name & Details */}
+              <div className="space-y-0.5">
+                <div className={`text-base font-black truncate ${
+                  isLavender
+                    ? (isDark ? 'text-white drop-shadow-sm' : 'text-pink-950')
+                    : 'ui-title group-hover:text-pink-500 transition-colors'
+                }`}>
+                  {isSupporter
+                    ? (s?.displayName || s?.gdUsername || s?.username || t('leaderboard.stats.no_data'))
+                    : (c?.displayName || c?.gdUsername || c?.username || t('leaderboard.stats.no_data'))}
+                </div>
+                <div className={`text-[11px] truncate ${
+                  isLavender
+                    ? (isDark ? 'text-white/90 drop-shadow-xs font-semibold' : 'text-pink-900/90 font-semibold')
+                    : 'ui-dim'
+                }`}>
+                  {isSupporter
+                    ? (s ? t('leaderboard.stats.donated_months', { n: s.totalMonths }) : '—')
+                    : (c ? `${formatCp(c.creatorPoints)} CP` : '—')}
+                </div>
+              </div>
+            </div>
+          </CardWrapper>
+        );
+      })()}
+    </div>
+  );
+}
+
 export default function HomePage() {
   const { t } = useLanguage();
   const { theme, resolvedMode } = useTheme();
@@ -264,14 +597,6 @@ export default function HomePage() {
   const [highlights, setHighlights] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const isStaff = currentUser?.role === 'ADMIN' || currentUser?.role === 'MODERATOR';
-
-  // Rotation states for 4 quick stats cards with independent offsets
-  const [card1Step, setCard1Step] = useState(0);
-  const [card2Step, setCard2Step] = useState(0);
-  const [card3Step, setCard3Step] = useState(0);
-  const [card4Step, setCard4Step] = useState(0);
-  const [tick, setTick] = useState(0);
-  const [isCardsHovered, setIsCardsHovered] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -294,24 +619,6 @@ export default function HomePage() {
       })
       .catch(() => {});
   }, []);
-
-  // Staggered ticker every 2.5s -> each of the 4 cards updates once every 10s sequentially!
-  useEffect(() => {
-    if (isCardsHovered) return;
-    const timer = setInterval(() => {
-      setTick((t) => t + 1);
-    }, 2500);
-    return () => clearInterval(timer);
-  }, [isCardsHovered]);
-
-  useEffect(() => {
-    if (tick === 0) return;
-    const mod = tick % 4;
-    if (mod === 1) setCard1Step((s) => s + 1);
-    else if (mod === 2) setCard2Step((s) => s + 1);
-    else if (mod === 3) setCard3Step((s) => s + 1);
-    else if (mod === 0) setCard4Step((s) => s + 1);
-  }, [tick]);
 
   // 1-second debounce after typing stops before submitting/filtering search
   useEffect(() => {
@@ -433,299 +740,7 @@ export default function HomePage() {
         </div>
 
         {/* Quick Stats Cards with staggered 10s slide-up animation and Tsumiki 3D block style for iNeQaH theme */}
-        <div 
-          className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2"
-          onMouseEnter={() => setIsCardsHovered(true)}
-          onMouseLeave={() => setIsCardsHovered(false)}
-        >
-          {/* Card 1: Top 1 Classic Demon / Top 1 Player Classic (Màu CAM / VÀNG) */}
-          {(() => {
-            const isPlayer = (card1Step % 2) === 1;
-            const p = highlights?.topPlayer;
-            const lvl = highlights?.topClassicLevel;
-            const href = isPlayer
-              ? (p?.username ? `/profile/${p.username}` : '#')
-              : (lvl ? levelPath(lvl) : '/levels');
-            const hasLink = href && href !== '#';
-
-            const cardClasses = isLavender
-              ? 'tsumiki-card tsumiki-btn-yellow p-3.5 sm:p-4 rounded-2xl relative overflow-hidden transition-all select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between'
-              : 'p-3.5 sm:p-4 rounded-2xl border border-amber-500/35 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-transparent hover:border-amber-500/60 shadow-[0_4px_20px_-4px_rgba(245,158,11,0.2)] hover:shadow-[0_8px_28px_-4px_rgba(245,158,11,0.3)] transition-all relative overflow-hidden group select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between';
-
-            const CardWrapper = hasLink ? Link : 'div';
-            const wrapperProps = hasLink ? { href } : {};
-
-            return (
-              <CardWrapper {...(wrapperProps as any)} className={cardClasses}>
-                <div key={`card1-${isPlayer ? 'player' : 'demon'}-${card1Step}`} className="animate-card-slide-up flex flex-col justify-between h-full space-y-1.5">
-                  {/* Header: Label + Icon */}
-                  <div className={`text-[11px] font-extrabold uppercase tracking-wide flex items-center gap-1.5 ${
-                    isLavender 
-                      ? (isDark ? 'text-white/95 drop-shadow-xs' : 'text-amber-950')
-                      : 'text-amber-500 dark:text-amber-400'
-                  }`}>
-                    {isPlayer ? (
-                      <User className={`w-3.5 h-3.5 shrink-0 ${isLavender ? (isDark ? 'text-white' : 'text-amber-950') : 'text-amber-500'}`} />
-                    ) : (
-                      <Star className={`w-3.5 h-3.5 shrink-0 ${isLavender ? (isDark ? 'fill-white text-white' : 'fill-amber-950 text-amber-950') : 'fill-amber-500 text-amber-500'}`} />
-                    )}
-                    <span className="truncate">
-                      {isPlayer ? t('leaderboard.stats.top_classic_player') : t('leaderboard.stats.top_classic_demon')}
-                    </span>
-                  </div>
-
-                  {/* Body: Name & Points/Creator */}
-                  <div className="space-y-0.5">
-                    <div className={`text-base font-black truncate ${
-                      isLavender
-                        ? (isDark ? 'text-white drop-shadow-sm' : 'text-amber-950')
-                        : 'ui-title group-hover:text-amber-500 transition-colors'
-                    }`}>
-                      {isPlayer
-                        ? (p?.displayName || p?.gdUsername || p?.username || t('leaderboard.stats.no_data'))
-                        : (lvl?.name || t('leaderboard.stats.no_data'))}
-                    </div>
-                    <div className={`text-[11px] truncate ${
-                      isLavender
-                        ? (isDark ? 'text-white/90 drop-shadow-xs font-semibold' : 'text-amber-900/90 font-semibold')
-                        : 'ui-dim'
-                    }`}>
-                      {isPlayer
-                        ? (p ? `${Number(p.classicPp || 0).toFixed(2)} ${t('leaderboard.points')}` : '—')
-                        : (lvl?.creatorName
-                            ? `${t('common.by')} ${lvl.creatorName}`
-                            : lvl?.vnPlacement
-                              ? `#${lvl.vnPlacement}`
-                              : '—')}
-                    </div>
-                  </div>
-                </div>
-              </CardWrapper>
-            );
-          })()}
-
-          {/* Card 2: Top 1 Platformer Demon / Top 1 Player Platformer (Màu XANH DƯƠNG NHẠT) */}
-          {(() => {
-            const isPlayer = (card2Step % 2) === 1;
-            const p = highlights?.topPlatformerPlayer;
-            const lvl = highlights?.topPlatformerLevel;
-            const href = isPlayer
-              ? (p?.username ? `/profile/${p.username}` : '#')
-              : (lvl ? levelPath(lvl) : '/levels');
-            const hasLink = href && href !== '#';
-
-            const cardClasses = isLavender
-              ? 'tsumiki-card tsumiki-btn-blue p-3.5 sm:p-4 rounded-2xl relative overflow-hidden transition-all select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between'
-              : 'p-3.5 sm:p-4 rounded-2xl border border-sky-500/35 bg-gradient-to-br from-sky-500/15 via-sky-500/5 to-transparent hover:border-sky-500/60 shadow-[0_4px_20px_-4px_rgba(14,165,233,0.2)] hover:shadow-[0_8px_28px_-4px_rgba(14,165,233,0.3)] transition-all relative overflow-hidden group select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between';
-
-            const CardWrapper = hasLink ? Link : 'div';
-            const wrapperProps = hasLink ? { href } : {};
-
-            return (
-              <CardWrapper {...(wrapperProps as any)} className={cardClasses}>
-                <div key={`card2-${isPlayer ? 'player' : 'demon'}-${card2Step}`} className="animate-card-slide-up flex flex-col justify-between h-full space-y-1.5">
-                  {/* Header: Label + Icon */}
-                  <div className={`text-[11px] font-extrabold uppercase tracking-wide flex items-center gap-1.5 ${
-                    isLavender 
-                      ? 'text-white/95 drop-shadow-xs'
-                      : 'text-sky-500 dark:text-sky-400'
-                  }`}>
-                    {isPlayer ? (
-                      <Gamepad2 className={`w-3.5 h-3.5 shrink-0 ${isLavender ? 'text-white' : 'text-sky-500'}`} />
-                    ) : (
-                      <Moon className={`w-3.5 h-3.5 shrink-0 -rotate-12 ${isLavender ? 'fill-white text-white' : 'fill-sky-500 text-sky-500'}`} />
-                    )}
-                    <span className="truncate">
-                      {isPlayer ? t('leaderboard.stats.top_plat_player') : t('leaderboard.stats.top_plat_demon')}
-                    </span>
-                  </div>
-
-                  {/* Body: Name & Points/Creator */}
-                  <div className="space-y-0.5">
-                    <div className={`text-base font-black truncate ${
-                      isLavender
-                        ? 'text-white drop-shadow-sm'
-                        : 'ui-title group-hover:text-sky-500 transition-colors'
-                    }`}>
-                      {isPlayer
-                        ? (p?.displayName || p?.gdUsername || p?.username || t('leaderboard.stats.no_data'))
-                        : (lvl?.name || t('leaderboard.stats.no_data'))}
-                    </div>
-                    <div className={`text-[11px] truncate ${
-                      isLavender
-                        ? 'text-white/90 drop-shadow-xs font-semibold'
-                        : 'ui-dim'
-                    }`}>
-                      {isPlayer
-                        ? (p ? `${Number(p.platformerPp || 0).toFixed(2)} ${t('leaderboard.points')}` : '—')
-                        : (lvl?.creatorName
-                            ? `${t('common.by')} ${lvl.creatorName}`
-                            : lvl
-                              ? t('leaderboard.speedrun')
-                              : '—')}
-                    </div>
-                  </div>
-                </div>
-              </CardWrapper>
-            );
-          })()}
-
-          {/* Card 3: Clan nhiều điểm nhất (5 tiêu chí) (Màu XANH LÁ) */}
-          {(() => {
-            const clanConfigs = [
-              {
-                id: 0,
-                key: 'clan-classic',
-                icon: (cls: string) => <Swords className={`w-3.5 h-3.5 shrink-0 ${cls}`} />,
-                title: t('leaderboard.stats.clan_classic'),
-                data: highlights?.topClans?.classic,
-                formatVal: (val: number) => `${Number(val || 0).toFixed(2)} Classic Pt`,
-              },
-              {
-                id: 1,
-                key: 'clan-platformer',
-                icon: (cls: string) => <Gamepad2 className={`w-3.5 h-3.5 shrink-0 ${cls}`} />,
-                title: t('leaderboard.stats.clan_plat'),
-                data: highlights?.topClans?.platformer,
-                formatVal: (val: number) => `${Number(val || 0).toFixed(2)} Plat Pt`,
-              },
-              {
-                id: 2,
-                key: 'clan-creator',
-                icon: (cls: string) => <Wrench className={`w-3.5 h-3.5 shrink-0 ${cls}`} />,
-                title: t('leaderboard.stats.clan_creator'),
-                data: highlights?.topClans?.creator,
-                formatVal: (val: number) => `${formatCp(val || 0)} CP`,
-              },
-              {
-                id: 3,
-                key: 'clan-sp',
-                icon: (cls: string) => <Star className={`w-3.5 h-3.5 shrink-0 fill-current ${cls}`} />,
-                title: t('leaderboard.stats.clan_sp'),
-                data: highlights?.topClans?.sp,
-                formatVal: (val: number) => `${Number(val || 0).toLocaleString()} SP Coin`,
-              },
-              {
-                id: 4,
-                key: 'clan-members',
-                icon: (cls: string) => <User className={`w-3.5 h-3.5 shrink-0 ${cls}`} />,
-                title: t('leaderboard.stats.clan_members'),
-                data: highlights?.topClans?.members,
-                formatVal: (val: number) => t('leaderboard.stats.members_count', { n: val || 0 }),
-              },
-            ];
-
-            const clanPhase = card3Step % 5;
-            const current = clanConfigs[clanPhase];
-            const clanInfo = current.data?.clan;
-            const href = clanInfo?.slug ? `/clan/${clanInfo.slug}` : '/clan';
-            const hasLink = Boolean(clanInfo?.slug);
-            const displayName = clanInfo?.name ? `[${clanInfo.tag}] ${clanInfo.name}` : t('leaderboard.stats.no_data');
-
-            const cardClasses = isLavender
-              ? 'tsumiki-card tsumiki-btn-green p-3.5 sm:p-4 rounded-2xl relative overflow-hidden transition-all select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between'
-              : 'p-3.5 sm:p-4 rounded-2xl border border-emerald-500/35 bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent hover:border-emerald-500/60 shadow-[0_4px_20px_-4px_rgba(16,185,129,0.2)] hover:shadow-[0_8px_28px_-4px_rgba(16,185,129,0.3)] transition-all relative overflow-hidden group select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between';
-
-            const CardWrapper = hasLink ? Link : 'div';
-            const wrapperProps = hasLink ? { href } : {};
-
-            return (
-              <CardWrapper {...(wrapperProps as any)} className={cardClasses}>
-                <div key={`card3-${current.key}-${card3Step}`} className="animate-card-slide-up flex flex-col justify-between h-full space-y-1.5">
-                  {/* Header: Label + Icon */}
-                  <div className={`text-[11px] font-extrabold uppercase tracking-wide flex items-center gap-1.5 truncate ${
-                    isLavender 
-                      ? (isDark ? 'text-white/95 drop-shadow-xs' : 'text-emerald-950')
-                      : 'text-emerald-500 dark:text-emerald-400'
-                  }`}>
-                    {current.icon(isLavender ? (isDark ? 'text-white' : 'text-emerald-950') : 'text-emerald-500 dark:text-emerald-400')}
-                    <span className="truncate">{current.title}</span>
-                  </div>
-
-                  {/* Body: Clan Name & Value */}
-                  <div className="space-y-0.5">
-                    <div className={`text-base font-black truncate ${
-                      isLavender
-                        ? (isDark ? 'text-white drop-shadow-sm' : 'text-emerald-950')
-                        : 'ui-title group-hover:text-emerald-500 transition-colors'
-                    }`}>
-                      {displayName}
-                    </div>
-                    <div className={`text-[11px] truncate ${
-                      isLavender
-                        ? (isDark ? 'text-white/90 drop-shadow-xs font-semibold' : 'text-emerald-900/90 font-semibold')
-                        : 'ui-dim'
-                    }`}>
-                      {clanInfo ? current.formatVal(current.data?.value) : '—'}
-                    </div>
-                  </div>
-                </div>
-              </CardWrapper>
-            );
-          })()}
-
-          {/* Card 4: Top 1 Creator / Top 1 Supporter (Màu HỒNG) */}
-          {(() => {
-            const isSupporter = (card4Step % 2) === 1;
-            const s = highlights?.topSupporter;
-            const c = highlights?.topCreator;
-            const href = isSupporter
-              ? (s?.username ? `/profile/${s.username}` : '#')
-              : (c?.username ? `/profile/${c.username}` : '#');
-            const hasLink = href && href !== '#';
-
-            const cardClasses = isLavender
-              ? 'tsumiki-card tsumiki-btn-pink p-3.5 sm:p-4 rounded-2xl relative overflow-hidden transition-all select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between'
-              : 'p-3.5 sm:p-4 rounded-2xl border border-pink-500/35 bg-gradient-to-br from-pink-500/15 via-pink-500/5 to-transparent hover:border-pink-500/60 shadow-[0_4px_20px_-4px_rgba(236,72,153,0.2)] hover:shadow-[0_8px_28px_-4px_rgba(236,72,153,0.3)] transition-all relative overflow-hidden group select-none min-h-[96px] sm:min-h-[102px] flex flex-col justify-between';
-
-            const CardWrapper = hasLink ? Link : 'div';
-            const wrapperProps = hasLink ? { href } : {};
-
-            return (
-              <CardWrapper {...(wrapperProps as any)} className={cardClasses}>
-                <div key={`card4-${isSupporter ? 'supporter' : 'creator'}-${card4Step}`} className="animate-card-slide-up flex flex-col justify-between h-full space-y-1.5">
-                  {/* Header: Label + Icon */}
-                  <div className={`text-[11px] font-extrabold uppercase tracking-wide flex items-center gap-1.5 ${
-                    isLavender 
-                      ? (isDark ? 'text-white/95 drop-shadow-xs' : 'text-pink-950')
-                      : 'text-pink-500 dark:text-pink-400'
-                  }`}>
-                    {isSupporter ? (
-                      <Heart className={`w-3.5 h-3.5 shrink-0 ${isLavender ? (isDark ? 'fill-white text-white' : 'fill-pink-950 text-pink-950') : 'fill-pink-500 text-pink-500'}`} />
-                    ) : (
-                      <Wrench className={`w-3.5 h-3.5 shrink-0 ${isLavender ? (isDark ? 'text-white' : 'text-pink-950') : 'text-pink-500'}`} />
-                    )}
-                    <span className="truncate">
-                      {isSupporter ? t('leaderboard.stats.top_supporter') : t('leaderboard.stats.top1_creator')}
-                    </span>
-                  </div>
-
-                  {/* Body: User Name & Details */}
-                  <div className="space-y-0.5">
-                    <div className={`text-base font-black truncate ${
-                      isLavender
-                        ? (isDark ? 'text-white drop-shadow-sm' : 'text-pink-950')
-                        : 'ui-title group-hover:text-pink-500 transition-colors'
-                    }`}>
-                      {isSupporter
-                        ? (s?.displayName || s?.gdUsername || s?.username || t('leaderboard.stats.no_data'))
-                        : (c?.displayName || c?.gdUsername || c?.username || t('leaderboard.stats.no_data'))}
-                    </div>
-                    <div className={`text-[11px] truncate ${
-                      isLavender
-                        ? (isDark ? 'text-white/90 drop-shadow-xs font-semibold' : 'text-pink-900/90 font-semibold')
-                        : 'ui-dim'
-                    }`}>
-                      {isSupporter
-                        ? (s ? t('leaderboard.stats.donated_months', { n: s.totalMonths }) : '—')
-                        : (c ? `${formatCp(c.creatorPoints)} CP` : '—')}
-                    </div>
-                  </div>
-                </div>
-              </CardWrapper>
-            );
-          })()}
-        </div>
+        <QuickStatsGrid highlights={highlights} isLavender={isLavender} isDark={isDark} t={t} />
       </section>
 
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">

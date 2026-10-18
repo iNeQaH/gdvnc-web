@@ -48,7 +48,15 @@ export async function GET() {
                 select: {
                   userId: true,
                   spPledged: true,
-                  user: { select: { supporterUntil: true } },
+                  user: {
+                    select: {
+                      supporterUntil: true,
+                      spGrants: {
+                        where: { expiresAt: { gt: new Date() } },
+                        select: { amount: true, expiresAt: true },
+                      },
+                    },
+                  },
                 },
               },
               members: {

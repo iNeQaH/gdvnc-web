@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getSessionUser } from '@/lib/auth';
+import { getSessionUser, signToken, setAuthCookie } from '@/lib/auth';
+import { logAudit } from '@/lib/audit';
+import { getClientIp } from '@/lib/requestIp';
 import { authenticator } from 'otplib';
 import QRCode from 'qrcode';
 
@@ -49,27 +51,29 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: session.userId },
-      select: { id: true, totpSecret: true, totpEnabled: true },
+      select: { id: true, username: true, role: true, totpSecret: true, totpEnabled: true },
     });
 
     if (!user?.totpSecret) return NextResponse.json({ error: '2FA not setup' }, { status: 400 });
     if (user.totpEnabled) return NextResponse.json({ error: 'Already enabled' }, { status: 400 });
 
-    const isValid = authenticator.check(token, user.totpSecret);
+    const isValid = authenticator.check(String(token).trim(), user.totpSecret);
     if (!isValid) return NextResponse.json({ error: 'Invalid 2FA token' }, { status: 400 });
 
-    await prisma.user.update({
+    const updated = await prisma.user.update({
       where: { id: user.id },
-      data: { totpEnabled: true },
+      data: { totpEnabled: true, tokenVersion: { increment: 1 } },
+      select: { tokenVersion: true },
     });
 
-    // We can call audit log here if we want
-    try {
-        const auditResponse = await fetch(`http://127.0.0.1:8088/api/admin/audit-logs`, {
-           method: 'POST',
-           body: JSON.stringify({ action: 'ENABLE_2FA', userId: user.id })
-        });
-    } catch (e) {}
+    const newJwt = await signToken({
+      userId: user.id,
+      username: user.username,
+      role: user.role,
+      tokenVersion: updated.tokenVersion,
+    });
+    await setAuthCookie(newJwt);
+    await logAudit(user.id, 'ENABLE_2FA', { username: user.username }, getClientIp(req));
 
     return NextResponse.json({ success: true, message: '2FA Enabled' });
   } catch (err) {
@@ -85,16 +89,39 @@ export async function DELETE(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: session.userId },
-      select: { id: true, totpEnabled: true },
+      select: { id: true, username: true, role: true, totpEnabled: true, totpSecret: true },
     });
 
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    
-    // Xoá Secret và set totpEnabled = false
-    await prisma.user.update({
+
+    // Optional TOTP verification if provided in request body
+    try {
+      const body = await req.json();
+      if (body?.token && user.totpSecret) {
+        const isValid = authenticator.check(String(body.token).trim(), user.totpSecret);
+        if (!isValid) {
+          return NextResponse.json({ error: 'Invalid 2FA token' }, { status: 400 });
+        }
+      }
+    } catch {
+      // No JSON body provided
+    }
+
+    // Xoá Secret, set totpEnabled = false, và tăng tokenVersion để thu hồi các phiên khác
+    const updated = await prisma.user.update({
       where: { id: user.id },
-      data: { totpEnabled: false, totpSecret: null },
+      data: { totpEnabled: false, totpSecret: null, tokenVersion: { increment: 1 } },
+      select: { tokenVersion: true },
     });
+
+    const newJwt = await signToken({
+      userId: user.id,
+      username: user.username,
+      role: user.role,
+      tokenVersion: updated.tokenVersion,
+    });
+    await setAuthCookie(newJwt);
+    await logAudit(user.id, 'DISABLE_2FA', { username: user.username }, getClientIp(req));
 
     return NextResponse.json({ success: true, message: '2FA Disabled' });
   } catch (err) {

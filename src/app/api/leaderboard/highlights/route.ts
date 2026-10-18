@@ -111,7 +111,16 @@ export async function GET() {
               },
               contributions: {
                 include: {
-                  user: { select: { id: true, supporterUntil: true } },
+                  user: {
+                    select: {
+                      id: true,
+                      supporterUntil: true,
+                      spGrants: {
+                        where: { expiresAt: { gt: new Date() } },
+                        select: { amount: true, expiresAt: true },
+                      },
+                    },
+                  },
                 },
               },
             },

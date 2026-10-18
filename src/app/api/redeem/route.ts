@@ -81,23 +81,35 @@ export async function POST(req: Request) {
       const formattedExpiresDate = expiresAt.toLocaleDateString('vi-VN');
 
       const updatedUser = await prisma.$transaction(async (tx) => {
-        // 1. Create SP Grant for user
+        // 1. Atomically increment code usedCount only if still active and under maxUses
+        const claimed = await tx.redeemCode.updateMany({
+          where: {
+            id: redeemCode.id,
+            isActive: true,
+            ...(isUnlimited || redeemCode.maxUses === null ? {} : { usedCount: { lt: redeemCode.maxUses } }),
+          },
+          data: {
+            usedCount: { increment: 1 },
+          },
+        });
+        if (claimed.count === 0) {
+          throw new Error('CODE_EXHAUSTED');
+        }
+
+        if (!isUnlimited && redeemCode.maxUses !== null && redeemCode.usedCount + 1 >= redeemCode.maxUses) {
+          await tx.redeemCode.updateMany({
+            where: { id: redeemCode.id, usedCount: { gte: redeemCode.maxUses } },
+            data: { isActive: false },
+          });
+        }
+
+        // 2. Create SP Grant for user
         await tx.userSpGrant.create({
           data: {
             userId: user.id,
             amount: spAmount,
             expiresAt,
             reason: `REDEEM_CODE:${redeemCode.code}`,
-          },
-        });
-
-        // 2. Increment code used count and toggle isActive if limit reached
-        const newUsedCount = redeemCode.usedCount + 1;
-        await tx.redeemCode.update({
-          where: { id: redeemCode.id },
-          data: {
-            usedCount: { increment: 1 },
-            isActive: isUnlimited ? true : newUsedCount < (redeemCode.maxUses ?? 1),
           },
         });
 
@@ -167,7 +179,29 @@ export async function POST(req: Request) {
     const formattedDate = nextDate.toLocaleDateString('vi-VN');
 
     const updatedUser = await prisma.$transaction(async (tx) => {
-      // 1. Update user supporter date
+      // 1. Atomically increment code usedCount only if still active and under maxUses
+      const claimed = await tx.redeemCode.updateMany({
+        where: {
+          id: redeemCode.id,
+          isActive: true,
+          ...(isUnlimited || redeemCode.maxUses === null ? {} : { usedCount: { lt: redeemCode.maxUses } }),
+        },
+        data: {
+          usedCount: { increment: 1 },
+        },
+      });
+      if (claimed.count === 0) {
+        throw new Error('CODE_EXHAUSTED');
+      }
+
+      if (!isUnlimited && redeemCode.maxUses !== null && redeemCode.usedCount + 1 >= redeemCode.maxUses) {
+        await tx.redeemCode.updateMany({
+          where: { id: redeemCode.id, usedCount: { gte: redeemCode.maxUses } },
+          data: { isActive: false },
+        });
+      }
+
+      // 2. Update user supporter date
       const updated = await tx.user.update({
         where: { id: user.id },
         data: { supporterUntil: nextDate },
@@ -183,16 +217,6 @@ export async function POST(req: Request) {
             where: { expiresAt: { gt: new Date() } },
             select: { id: true, amount: true, expiresAt: true, reason: true },
           },
-        },
-      });
-
-      // 2. Increment code used count and toggle isActive if limit reached
-      const newUsedCount = redeemCode.usedCount + 1;
-      await tx.redeemCode.update({
-        where: { id: redeemCode.id },
-        data: {
-          usedCount: { increment: 1 },
-          isActive: isUnlimited ? true : newUsedCount < (redeemCode.maxUses ?? 1),
         },
       });
 
@@ -232,7 +256,10 @@ export async function POST(req: Request) {
       },
       message: `Kích hoạt thành công ${daysToGrant} ngày Supporter!`,
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message === 'CODE_EXHAUSTED') {
+      return NextResponse.json({ error: 'Mã đổi thưởng này vừa hết lượt sử dụng.' }, { status: 400 });
+    }
     return publicApiError(error, 'Đã xảy ra lỗi khi kích hoạt mã đổi thưởng.', 500);
   }
 }

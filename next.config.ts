@@ -37,7 +37,7 @@ const nextConfig: NextConfig = {
               "img-src 'self' data: blob: https:",
               "font-src 'self' data: https: https://fonts.gstatic.com",
               "connect-src 'self' https: wss: ws:",
-              "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://open.spotify.com https://discord.com https://challenges.cloudflare.com",
+              "frame-src 'self' https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://drive.google.com https://docs.google.com https://player.vimeo.com https://open.spotify.com https://discord.com https://challenges.cloudflare.com",
               "media-src 'self' https: blob:",
               "worker-src 'self' blob:",
               "object-src 'none'",

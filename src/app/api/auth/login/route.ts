@@ -89,7 +89,15 @@ export async function POST(req: Request) {
                       select: {
                         userId: true,
                         spPledged: true,
-                        user: { select: { supporterUntil: true } },
+                        user: {
+                          select: {
+                            supporterUntil: true,
+                            spGrants: {
+                              where: { expiresAt: { gt: new Date() } },
+                              select: { amount: true, expiresAt: true },
+                            },
+                          },
+                        },
                       },
                     },
                     members: {
@@ -205,7 +213,51 @@ export async function POST(req: Request) {
       );
     }
 
-    // Reset failed login attempts on successful login
+    // Check 2FA TOTP BEFORE resetting failed login attempts
+    if (user.totpEnabled && user.totpSecret) {
+      if (!totpToken) {
+        return NextResponse.json({
+          error: en ? 'Two-factor authentication required.' : 'Yêu cầu xác thực hai yếu tố.',
+          requires2fa: true,
+        }, { status: 403 });
+      }
+
+      const { authenticator } = await import('otplib');
+      const isValidTotp = authenticator.check(String(totpToken).trim(), user.totpSecret);
+      if (!isValidTotp) {
+        const nextAttempts = (user.failedLoginAttempts || 0) + 1;
+        let retryAfterSec = 0;
+        let newLockedUntil: Date | null = null;
+        if (nextAttempts >= 20) {
+          retryAfterSec = 15 * 60;
+          newLockedUntil = new Date(Date.now() + retryAfterSec * 1000);
+        } else if (nextAttempts >= 15) {
+          retryAfterSec = 120;
+          newLockedUntil = new Date(Date.now() + retryAfterSec * 1000);
+        } else if (nextAttempts >= 10) {
+          retryAfterSec = 30;
+          newLockedUntil = new Date(Date.now() + retryAfterSec * 1000);
+        }
+        try {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              failedLoginAttempts: nextAttempts,
+              lockedUntil: newLockedUntil,
+              lastFailedLoginAt: new Date(),
+            },
+          });
+        } catch (dbErr) {
+          console.error('Failed to update 2FA login attempts:', dbErr);
+        }
+        await logAudit(user.id, 'LOGIN_FAILED', { reason: 'invalid_2fa', attempts: nextAttempts }, ip);
+        return NextResponse.json({
+          error: en ? 'Invalid 2FA code.' : 'Mã 2FA không hợp lệ.',
+        }, { status: retryAfterSec > 0 ? 429 : 401 });
+      }
+    }
+
+    // Reset failed login attempts on successful login (after password + 2FA)
     if (user.failedLoginAttempts > 0 || user.lockedUntil) {
       try {
         await prisma.user.update({
@@ -245,24 +297,6 @@ export async function POST(req: Request) {
           }
         : null,
     };
-
-    // Check 2FA TOTP
-    if (user.totpEnabled && user.totpSecret) {
-      if (!totpToken) {
-        return NextResponse.json({
-          error: en ? 'Two-factor authentication required.' : 'Yêu cầu xác thực hai yếu tố.',
-          requires2fa: true,
-        }, { status: 403 });
-      }
-      
-      const { authenticator } = await import('otplib');
-      const isValidTotp = authenticator.check(totpToken, user.totpSecret);
-      if (!isValidTotp) {
-        return NextResponse.json({
-          error: en ? 'Invalid 2FA code.' : 'Mã 2FA không hợp lệ.',
-        }, { status: 401 });
-      }
-    }
 
     const token = await signToken({
       userId: user.id,
