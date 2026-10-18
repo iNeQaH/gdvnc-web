@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { publicApiError } from '@/lib/apiError';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { calculateUserSp } from '@/lib/clanTypes';
 
 export async function POST(req: Request) {
   let auth;
@@ -79,7 +80,7 @@ export async function POST(req: Request) {
       const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
       const formattedExpiresDate = expiresAt.toLocaleDateString('vi-VN');
 
-      await prisma.$transaction(async (tx) => {
+      const updatedUser = await prisma.$transaction(async (tx) => {
         // 1. Create SP Grant for user
         await tx.userSpGrant.create({
           data: {
@@ -120,6 +121,29 @@ export async function POST(req: Request) {
             message: `Bạn đã đổi thành công mã "${redeemCode.code}". Tài khoản của bạn được cộng +${spAmount} điểm SP Coin (có hạn sử dụng 1 tháng, đến ngày ${formattedExpiresDate}) dùng để duy trì hoặc nâng cấp Clan. Cảm ơn bạn đã đồng hành cùng GDVN!`,
           },
         });
+
+        // 5. Update user spPoints and fetch updated user with active grants
+        const updated = await tx.user.update({
+          where: { id: user.id },
+          data: {
+            spPoints: { increment: spAmount },
+          },
+          select: {
+            id: true,
+            username: true,
+            supporterUntil: true,
+            spPoints: true,
+            role: true,
+            profileConfig: true,
+            profileTheme: true,
+            spGrants: {
+              where: { expiresAt: { gt: new Date() } },
+              select: { id: true, amount: true, expiresAt: true, reason: true },
+            },
+          },
+        });
+
+        return updated;
       });
 
       return NextResponse.json({
@@ -127,6 +151,10 @@ export async function POST(req: Request) {
         rewardType: 'SP_COIN',
         spAmount,
         expiresAt: expiresAt.toISOString(),
+        user: {
+          ...updatedUser,
+          userSp: calculateUserSp(updatedUser),
+        },
         message: `Đổi mã thành công! Bạn nhận được +${spAmount} SP Coin (có hạn sử dụng 1 tháng đến ${formattedExpiresDate}).`,
       });
     }
@@ -147,9 +175,14 @@ export async function POST(req: Request) {
           id: true,
           username: true,
           supporterUntil: true,
+          spPoints: true,
           role: true,
           profileConfig: true,
           profileTheme: true,
+          spGrants: {
+            where: { expiresAt: { gt: new Date() } },
+            select: { id: true, amount: true, expiresAt: true, reason: true },
+          },
         },
       });
 
@@ -193,7 +226,10 @@ export async function POST(req: Request) {
       days: daysToGrant,
       months: Math.max(1, Math.round(daysToGrant / 30)),
       supporterUntil: nextDate.toISOString(),
-      user: updatedUser,
+      user: {
+        ...updatedUser,
+        userSp: calculateUserSp(updatedUser),
+      },
       message: `Kích hoạt thành công ${daysToGrant} ngày Supporter!`,
     });
   } catch (error) {

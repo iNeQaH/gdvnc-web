@@ -12,6 +12,11 @@ const userSelect = {
   role: true,
   avatarUrl: true,
   supporterUntil: true,
+  spPoints: true,
+  spGrants: {
+    where: { expiresAt: { gt: new Date() } },
+    select: { id: true, amount: true, expiresAt: true, reason: true },
+  },
   classicPp: true,
   platformerPp: true,
   creatorPoints: true,

@@ -81,13 +81,20 @@ export async function POST(
     // 2. Thao tác ĐÓNG GÓP / NÂNG CẤP SP (Donate / Adjust)
     const user = await prisma.user.findUnique({
       where: { id: auth.userId },
-      select: { id: true, supporterUntil: true },
+      select: {
+        id: true,
+        supporterUntil: true,
+        spGrants: {
+          where: { expiresAt: { gt: new Date() } },
+          select: { amount: true, expiresAt: true },
+        },
+      },
     });
     const maxSp = calculateUserSp(user);
 
     if (maxSp <= 0 && currentPledged <= 0) {
       return NextResponse.json(
-        { error: 'Bạn hiện không có SP Coin nào (cần có gói Supporter còn hạn).' },
+        { error: 'Bạn hiện không có SP Coin nào (cần có gói Supporter hoặc SP Coin còn hạn).' },
         { status: 400 }
       );
     }

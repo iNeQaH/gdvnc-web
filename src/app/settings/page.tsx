@@ -46,6 +46,7 @@ import ColorPicker from '@/components/ColorPicker';
 import { CircularAnglePicker } from '@/components/CircularAnglePicker';
 import { AnimatedTabs } from '@/components/AnimatedTabs';
 import { UserDisplayName, SETTINGS_FONT_PRESETS } from '@/components/UserDisplayName';
+import { calculateUserSp } from '@/lib/clanTypes';
 
 export default function SettingsPage() {
   const { t, language } = useLanguage();
@@ -287,6 +288,7 @@ export default function SettingsPage() {
     (currentUser?.supporterUntil && new Date(currentUser.supporterUntil) > new Date()) ||
     (data?.supporterUntil && new Date(data.supporterUntil) > new Date())
   );
+  const userSp = calculateUserSp(data || currentUser);
   const isSuperAdmin = Boolean(
     currentUser?.role === 'ADMIN' ||
     (currentUser?.username && currentUser.username.toLowerCase() === 'ineqah')
@@ -697,11 +699,24 @@ export default function SettingsPage() {
         showToast(successMsg, 'success');
         setRedeemCode('');
         if (resJson.user) {
-          setData((prev: any) => ({ ...prev, supporterUntil: resJson.user.supporterUntil }));
-          setCurrentUser(resJson.user);
-          localStorage.setItem('gdvnc_user', JSON.stringify(resJson.user));
+          setData((prev: any) => ({
+            ...prev,
+            ...resJson.user,
+            supporterUntil: resJson.user.supporterUntil,
+            spGrants: resJson.user.spGrants,
+            spPoints: resJson.user.spPoints,
+          }));
+          setCurrentUser((prev: any) => ({
+            ...prev,
+            ...resJson.user,
+          }));
+          const existingUser = (() => {
+            try { return JSON.parse(localStorage.getItem('gdvnc_user') || '{}'); } catch { return {}; }
+          })();
+          localStorage.setItem('gdvnc_user', JSON.stringify({ ...existingUser, ...resJson.user }));
           window.dispatchEvent(new Event('gdvnc_user_update'));
         }
+        await loadData();
       } else {
         showToast(resJson.error || t('settings.redeem_error'), 'error');
       }
@@ -812,8 +827,14 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {/* Supporter status badge */}
-            <div className="flex items-center gap-2 self-start sm:self-end">
+            {/* Supporter status badge & SP Coin badge */}
+            <div className="flex flex-wrap items-center gap-2 self-start sm:self-end">
+              {userSp > 0 && (
+                <div className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30 flex items-center gap-1.5 shadow-xs">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>{userSp} SP Coin</span>
+                </div>
+              )}
               {isSupporter ? (
                 <div className="px-3 py-1.5 rounded-xl text-xs font-bold bg-pink-500/15 text-pink-400 border border-pink-500/30 flex items-center gap-1.5 shadow-xs">
                   <Heart className="w-3.5 h-3.5 fill-pink-500 text-pink-500" />

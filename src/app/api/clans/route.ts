@@ -112,24 +112,33 @@ export async function POST(req: Request) {
   try {
     const user = await prisma.user.findUnique({
       where: { id: auth.userId },
-      select: { id: true, username: true, role: true, supporterUntil: true },
+      select: {
+        id: true,
+        username: true,
+        role: true,
+        supporterUntil: true,
+        spGrants: {
+          where: { expiresAt: { gt: new Date() } },
+          select: { amount: true, expiresAt: true },
+        },
+      },
     });
     if (!user) return NextResponse.json({ error: 'Không tìm thấy người dùng.' }, { status: 404 });
 
     const isSupporter = Boolean(user.supporterUntil && new Date(user.supporterUntil) > new Date());
     const isStaff = isStaffRole(user.role);
+    const userSp = calculateUserSp(user);
 
-    if (!isSupporter && !isStaff) {
+    if (!isSupporter && userSp < 3 && !isStaff) {
       return NextResponse.json(
-        { error: 'Chỉ Supporter hoặc Ban Quản Trị mới có thể thành lập Clan.' },
+        { error: 'Bạn cần ít nhất 3 SP Coin (hoặc gói Supporter tương ứng) để thành lập Clan.' },
         { status: 403 }
       );
     }
 
-    const userSp = calculateUserSp(user);
     if (userSp < 3 && !isStaff) {
       return NextResponse.json(
-        { error: `Bạn cần ít nhất 3 tháng Supporter (3 SP Coin) để tạo Clan. Hiện bạn có ${userSp} SP Coin.` },
+        { error: `Bạn cần ít nhất 3 SP Coin để tạo Clan. Hiện bạn có ${userSp} SP Coin.` },
         { status: 400 }
       );
     }

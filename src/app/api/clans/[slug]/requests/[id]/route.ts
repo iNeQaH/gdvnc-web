@@ -40,7 +40,18 @@ export async function POST(
 
     const joinRequest = await prisma.clanJoinRequest.findUnique({
       where: { id: requestId },
-      include: { user: { select: { id: true, supporterUntil: true } } },
+      include: {
+        user: {
+          select: {
+            id: true,
+            supporterUntil: true,
+            spGrants: {
+              where: { expiresAt: { gt: new Date() } },
+              select: { amount: true, expiresAt: true },
+            },
+          },
+        },
+      },
     });
     if (!joinRequest || joinRequest.clanId !== clan.id) {
       return NextResponse.json({ error: 'Không tìm thấy đơn gia nhập.' }, { status: 404 });

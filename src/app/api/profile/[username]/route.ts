@@ -1,7 +1,7 @@
 import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { sanitizeUserClan } from '@/lib/clan';
+import { calculateUserSp, sanitizeUserClan } from '@/lib/clan';
 import { RecordStatus, LevelMode } from '@prisma/client';
 import { awardedPpForProgress, getWeightedPpBreakdown, UNRANKED_MIN_PP } from '@/lib/ScoringEngine';
 import {
@@ -48,6 +48,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
           reason: true,
         },
       },
+      spPoints: true,
       isBanned: true,
       profileTheme: true,
       profileConfig: true,
@@ -280,6 +281,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
     });
     const creatorRank = allCreatorRanks + 1;
 
+    const userSp = calculateUserSp({ supporterUntil: user.supporterUntil, spGrants: user.spGrants });
+
     return NextResponse.json(
       {
       success: true,
@@ -292,6 +295,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         avatarUrl: user.avatarUrl,
         coverUrl: user.coverUrl,
         supporterUntil: user.supporterUntil,
+        spGrants: user.spGrants || [],
+        spPoints: user.spPoints || 0,
+        userSp,
         profileTheme: user.profileTheme,
         profileConfig: user.profileConfig,
         isBanned: user.isBanned,

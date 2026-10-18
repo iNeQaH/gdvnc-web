@@ -46,7 +46,7 @@ export default function CreateClanModal({
       return;
     }
     if (userSp < 3) {
-      setError('Bạn cần tối thiểu 3 SP coin để tạo Clan (tương đương 3 tháng Supporter hoạt động).');
+      setError('Bạn cần tối thiểu 3 SP Coin để tạo Clan.');
       return;
     }
 

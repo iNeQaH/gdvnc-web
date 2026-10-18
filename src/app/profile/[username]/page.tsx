@@ -655,7 +655,8 @@ export default function ProfilePage() {
 
   const isTargetSuperAdmin = Boolean(data?.isSuperAdmin || isSuperAdminUser(data));
   const isSupporter = Boolean(data?.supporterUntil && new Date(data.supporterUntil) > new Date());
-  const supporterMonths = isSupporter ? calculateUserSp(data) : 0;
+  const userSp = typeof data?.userSp === 'number' ? data.userSp : calculateUserSp(data);
+  const supporterMonths = isSupporter ? userSp : 0;
 
   const roleBadges: Array<{
     id: string;
@@ -846,18 +847,34 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Supporter Duration Badge */}
-                {isSupporter && supporterMonths > 0 && (
+                {isSupporter && (
                   <div
                     className="ml-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider border shadow-xs"
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, #ec4899 14%, var(--bg-card))',
+                      borderColor: 'color-mix(in srgb, #ec4899 35%, var(--border-ui))',
+                      color: '#ec4899',
+                    }}
+                    title={isEn ? 'Supporter active' : 'Đang là Supporter'}
+                  >
+                    <Heart className="w-3.5 h-3.5 text-pink-500 fill-pink-500 shrink-0" />
+                    <span>Supporter</span>
+                  </div>
+                )}
+
+                {/* SP Coin Badge */}
+                {userSp > 0 && (
+                  <div
+                    className={`${isSupporter ? 'ml-2' : 'ml-auto'} shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider border shadow-xs`}
                     style={{
                       backgroundColor: 'color-mix(in srgb, #f59e0b 14%, var(--bg-card))',
                       borderColor: 'color-mix(in srgb, #f59e0b 35%, var(--border-ui))',
                       color: '#f59e0b',
                     }}
-                    title={isEn ? `Supporter: ${supporterMonths} month(s) remaining` : `Supporter: Còn lại ${supporterMonths} tháng`}
+                    title={isEn ? `${userSp} SP Coin available` : `Có ${userSp} điểm SP Coin`}
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    <span>Supporter {supporterMonths}{isEn ? 'M' : 'T'}</span>
+                    <span>{userSp} SP</span>
                   </div>
                 )}
               </div>
@@ -868,7 +885,7 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 pt-4 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
             {/* Left 7 Cols: Info Pills & All Badges */}
             <div className="md:col-span-7 space-y-3 flex flex-col justify-between">
-              {/* Metadata Pills Row (GD, Discord, Location, Clan) */}
+              {/* Metadata Pills Row (GD, Discord, Location, Clan, SP) */}
               <div className="flex items-center gap-2 flex-wrap">
                 {/* GD Username */}
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
@@ -920,6 +937,15 @@ export default function ProfilePage() {
                       {data.clanMember.clan.name}
                     </span>
                   </Link>
+                )}
+
+                {/* SP Coin Pill */}
+                {userSp > 0 && (
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span className="ui-dim font-bold text-[11px] uppercase">SP Coin:</span>
+                    <span className="ui-title font-semibold text-amber-500">{userSp} SP</span>
+                  </div>
                 )}
               </div>
 
