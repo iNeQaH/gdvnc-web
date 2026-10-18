@@ -53,7 +53,7 @@ export async function syncAndGetClanSp(clanId: string) {
               id: true,
               username: true,
               supporterUntil: true,
-              spGrants: { where: { expiresAt: { gt: new Date() } } },
+              spGrants: { select: { id: true, amount: true, expiresAt: true } },
             },
           },
         },

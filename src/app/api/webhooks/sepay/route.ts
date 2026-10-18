@@ -213,6 +213,12 @@ export async function POST(req: Request) {
       data: { supporterUntil: nextDate },
     });
 
+    // Đồng bộ thời hạn các SP Coin đã có của user theo hạn Supporter mới
+    await prisma.userSpGrant.updateMany({
+      where: { userId: targetUser.id },
+      data: { expiresAt: nextDate },
+    });
+
     const bonusSpCoins = Math.floor(monthsToGrant / 3) * 2;
     if (bonusSpCoins > 0) {
       await prisma.userSpGrant.create({

@@ -311,7 +311,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ slug: 
               select: {
                 supporterUntil: true,
                 spGrants: {
-                  where: { expiresAt: { gt: new Date() } },
                   select: { amount: true, expiresAt: true },
                 },
               },

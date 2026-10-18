@@ -77,8 +77,11 @@ export async function POST(req: Request) {
 
     if (isSpCoin) {
       const spAmount = redeemCode.spAmount > 0 ? redeemCode.spAmount : 1;
-      const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-      const formattedExpiresDate = expiresAt.toLocaleDateString('vi-VN');
+      const isSupporter = Boolean(user.supporterUntil && new Date(user.supporterUntil) > now);
+      const expiresAt = isSupporter
+        ? new Date(user.supporterUntil!)
+        : new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000);
+      const formattedExpiresDate = isSupporter ? expiresAt.toLocaleDateString('vi-VN') : null;
 
       const updatedUser = await prisma.$transaction(async (tx) => {
         // 1. Atomically increment code usedCount only if still active and under maxUses
@@ -103,7 +106,7 @@ export async function POST(req: Request) {
           });
         }
 
-        // 2. Create SP Grant for user
+        // 2. Create SP Grant for user (đồng bộ thời hạn Supporter)
         await tx.userSpGrant.create({
           data: {
             userId: user.id,
@@ -126,15 +129,19 @@ export async function POST(req: Request) {
         });
 
         // 4. Send notification to user (no emoji)
+        const notifMsg = isSupporter
+          ? `Bạn đã đổi thành công mã "${redeemCode.code}". Tài khoản của bạn được cộng +${spAmount} điểm SP Coin dùng để duy trì hoặc nâng cấp Clan (hiệu lực theo thời hạn Supporter đến ngày ${formattedExpiresDate}). Cảm ơn bạn đã đồng hành cùng GDVN!`
+          : `Bạn đã đổi thành công mã "${redeemCode.code}". Tài khoản của bạn được cộng +${spAmount} điểm SP Coin dùng để duy trì hoặc nâng cấp Clan (sẽ có hiệu lực khi bạn sở hữu danh hiệu Supporter). Cảm ơn bạn đã đồng hành cùng GDVN!`;
+
         await tx.notification.create({
           data: {
             userId: user.id,
             title: 'Nhận SP Coin thành công',
-            message: `Bạn đã đổi thành công mã "${redeemCode.code}". Tài khoản của bạn được cộng +${spAmount} điểm SP Coin (có hạn sử dụng 1 tháng, đến ngày ${formattedExpiresDate}) dùng để duy trì hoặc nâng cấp Clan. Cảm ơn bạn đã đồng hành cùng GDVN!`,
+            message: notifMsg,
           },
         });
 
-        // 5. Update user spPoints and fetch updated user with active grants
+        // 5. Update user spPoints and fetch updated user with grants
         const updated = await tx.user.update({
           where: { id: user.id },
           data: {
@@ -149,7 +156,6 @@ export async function POST(req: Request) {
             profileConfig: true,
             profileTheme: true,
             spGrants: {
-              where: { expiresAt: { gt: new Date() } },
               select: { id: true, amount: true, expiresAt: true, reason: true },
             },
           },
@@ -167,7 +173,9 @@ export async function POST(req: Request) {
           ...updatedUser,
           userSp: calculateUserSp(updatedUser),
         },
-        message: `Đổi mã thành công! Bạn nhận được +${spAmount} SP Coin (có hạn sử dụng 1 tháng đến ${formattedExpiresDate}).`,
+        message: isSupporter
+          ? `Đổi mã thành công! Bạn nhận được +${spAmount} SP Coin (tồn tại theo thời hạn Supporter của bạn).`
+          : `Đổi mã thành công! Bạn nhận được +${spAmount} SP Coin (hiệu lực đồng thời khi kích hoạt Supporter).`,
       });
     }
 
@@ -214,10 +222,15 @@ export async function POST(req: Request) {
           profileConfig: true,
           profileTheme: true,
           spGrants: {
-            where: { expiresAt: { gt: new Date() } },
             select: { id: true, amount: true, expiresAt: true, reason: true },
           },
         },
+      });
+
+      // 2b. Đồng bộ thời hạn toàn bộ SP Coin hiện có theo hạn Supporter mới
+      await tx.userSpGrant.updateMany({
+        where: { userId: user.id },
+        data: { expiresAt: nextDate },
       });
 
       // 3. Record code usage

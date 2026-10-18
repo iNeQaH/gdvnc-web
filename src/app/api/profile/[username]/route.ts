@@ -39,9 +39,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       coverUrl: true,
       supporterUntil: true,
       spGrants: {
-        where: {
-          expiresAt: { gt: new Date() },
-        },
         select: {
           id: true,
           amount: true,
@@ -86,7 +83,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
                     select: {
                       supporterUntil: true,
                       spGrants: {
-                        where: { expiresAt: { gt: new Date() } },
                         select: { amount: true, expiresAt: true },
                       },
                     },

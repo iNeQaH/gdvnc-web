@@ -117,6 +117,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       },
     });
 
+    if (isSupporterChanged && updated.supporterUntil) {
+      await prisma.userSpGrant.updateMany({
+        where: { userId: id },
+        data: { expiresAt: updated.supporterUntil },
+      });
+    }
+
     // Create notification for target user
     if (isSupporterChanged) {
       if (supporterMonthsVal && supporterMonthsVal > 0) {

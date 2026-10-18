@@ -32,7 +32,6 @@ export async function GET(req: Request) {
                 id: true,
                 supporterUntil: true,
                 spGrants: {
-                  where: { expiresAt: { gt: new Date() } },
                   select: { amount: true, expiresAt: true },
                 },
               },
@@ -129,7 +128,6 @@ export async function POST(req: Request) {
         role: true,
         supporterUntil: true,
         spGrants: {
-          where: { expiresAt: { gt: new Date() } },
           orderBy: { expiresAt: 'asc' },
           select: { id: true, amount: true, expiresAt: true },
         },

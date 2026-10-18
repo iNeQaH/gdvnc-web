@@ -46,7 +46,6 @@ export async function POST(
             id: true,
             supporterUntil: true,
             spGrants: {
-              where: { expiresAt: { gt: new Date() } },
               select: { amount: true, expiresAt: true },
             },
           },

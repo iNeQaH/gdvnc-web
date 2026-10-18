@@ -1044,7 +1044,7 @@ export default function LevelsTab({
                   style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                 >
                   <option value="SUPPORTER_DAYS">Số ngày Supporter</option>
-                  <option value="SP_COIN">SP Coin (Hạn 1 tháng)</option>
+                  <option value="SP_COIN">SP Coin (Theo hạn Supporter)</option>
                 </select>
               </div>
               {newCodeRewardType === 'SUPPORTER_DAYS' ? (
@@ -1141,7 +1141,7 @@ export default function LevelsTab({
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
               <div className="text-[11px] ui-dim leading-relaxed">
-                💡 <b>Số người dùng</b>: Chọn <i>"Toàn bộ người dùng"</i> để bất kỳ ai cũng có thể kích hoạt, hoặc giới hạn số lượng người nhận (mỗi tài khoản chỉ dùng được mã 1 lần). SP Coin có thời hạn sử dụng 1 tháng kể từ ngày người dùng đổi mã.
+                💡 <b>Số người dùng</b>: Chọn <i>"Toàn bộ người dùng"</i> để bất kỳ ai cũng có thể kích hoạt, hoặc giới hạn số lượng người nhận (mỗi tài khoản chỉ dùng được mã 1 lần). SP Coin tồn tại đồng thời theo thời hạn Supporter của người dùng.
               </div>
               <button
                 type="submit"
@@ -1206,7 +1206,7 @@ export default function LevelsTab({
                           <div className="flex items-center gap-2 flex-wrap">
                             {c.rewardType === 'SP_COIN' ? (
                               <span className="text-xs font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20">
-                                +{c.spAmount} SP Coin (Hạn 1 tháng)
+                                +{c.spAmount} SP Coin
                               </span>
                             ) : (
                               <span className="text-xs font-bold text-pink-500 bg-pink-500/10 px-2 py-0.5 rounded-lg border border-pink-500/20">

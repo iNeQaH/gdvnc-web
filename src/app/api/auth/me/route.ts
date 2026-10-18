@@ -52,7 +52,6 @@ export async function GET() {
                     select: {
                       supporterUntil: true,
                       spGrants: {
-                        where: { expiresAt: { gt: new Date() } },
                         select: { amount: true, expiresAt: true },
                       },
                     },

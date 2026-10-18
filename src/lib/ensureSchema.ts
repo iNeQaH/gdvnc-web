@@ -304,6 +304,12 @@ async function addIndexesInBackground(db: PrismaClient) {
     `CREATE INDEX IF NOT EXISTS "RedeemCodeUse_codeId_idx" ON "RedeemCodeUse"("codeId")`,
     `CREATE INDEX IF NOT EXISTS "UserSpGrant_userId_idx" ON "UserSpGrant"("userId")`,
     `CREATE INDEX IF NOT EXISTS "UserSpGrant_expiresAt_idx" ON "UserSpGrant"("expiresAt")`,
+    `UPDATE "UserSpGrant" g
+     SET "expiresAt" = u."supporterUntil"
+     FROM "User" u
+     WHERE g."userId" = u.id
+       AND u."supporterUntil" IS NOT NULL
+       AND u."supporterUntil" > g."expiresAt"`,
     `DO $$ BEGIN
       IF EXISTS (
         SELECT 1 FROM pg_constraint WHERE conname = 'SiteAnnouncement_authorId_fkey'
