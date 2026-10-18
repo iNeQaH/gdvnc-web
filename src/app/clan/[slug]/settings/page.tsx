@@ -28,6 +28,7 @@ import {
   Loader2,
   FileText,
   ShieldAlert,
+  ShieldCheck,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
@@ -118,6 +119,10 @@ export default function ClanSettingsPage({
   const [transferTargetId, setTransferTargetId] = useState('');
   const [transferring, setTransferring] = useState(false);
   const [disbanding, setDisbanding] = useState(false);
+
+  // Member management state
+  const [roleUpdatingId, setRoleUpdatingId] = useState<string | null>(null);
+  const [kickLoadingId, setKickLoadingId] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
@@ -487,6 +492,77 @@ export default function ClanSettingsPage({
     );
   };
 
+  // Handle Promote / Demote Member Role
+  const handleToggleMemberRole = async (memberId: string, currentRole: string, username: string) => {
+    if (!isLeader && !isOwnerWeb) {
+      showToast(isEn ? 'Only Clan Leader can manage roles.' : 'Chỉ Leader mới có quyền thay đổi vai trò.', 'error');
+      return;
+    }
+    const newRole = currentRole === 'MODERATOR' ? 'MEMBER' : 'MODERATOR';
+    const actionText = newRole === 'MODERATOR'
+      ? (isEn ? `Promote "${username}" to Clan Moderator?` : `Bổ nhiệm "${username}" làm Quản trị viên (Mod) Clan?`)
+      : (isEn ? `Demote "${username}" to regular Member?` : `Gỡ quyền Quản trị viên (Mod) của "${username}" về thành viên thường?`);
+
+    showConfirm(actionText, async () => {
+      setRoleUpdatingId(memberId);
+      try {
+        const res = await fetch(`/api/clans/${slug}/members/${memberId}/role`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role: newRole }),
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(
+            newRole === 'MODERATOR'
+              ? (isEn ? `Promoted "${username}" to Moderator!` : `Đã trao quyền Mod cho "${username}"!`)
+              : (isEn ? `Demoted "${username}" to Member.` : `Đã gỡ quyền Mod của "${username}".`),
+            'success'
+          );
+          await loadData();
+        } else {
+          showToast(data.error || (isEn ? 'Action failed.' : 'Thao tác thất bại.'), 'error');
+        }
+      } catch {
+        showToast(isEn ? 'Connection error.' : 'Lỗi kết nối máy chủ.', 'error');
+      } finally {
+        setRoleUpdatingId(null);
+      }
+    });
+  };
+
+  // Handle Kick Member
+  const handleKickMember = async (memberId: string, username: string) => {
+    const isMod = clan.membersGrouped?.mods?.some((m: any) => m.id === memberId);
+    if (!isLeader && !isOwnerWeb && (!isClanMod || isMod)) {
+      showToast(isEn ? 'You do not have permission to kick this member.' : 'Bạn không có quyền trục xuất thành viên này.', 'error');
+      return;
+    }
+
+    showConfirm(
+      isEn ? `Are you sure you want to kick "${username}" from the Clan?` : `Bạn có chắc chắn muốn trục xuất "${username}" khỏi Clan?`,
+      async () => {
+        setKickLoadingId(memberId);
+        try {
+          const res = await fetch(`/api/clans/${slug}/members/${memberId}`, {
+            method: 'DELETE',
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            showToast(data.message || (isEn ? `Kicked "${username}".` : `Đã trục xuất "${username}" khỏi Clan.`), 'success');
+            await loadData();
+          } else {
+            showToast(data.error || (isEn ? 'Failed to kick member.' : 'Trục xuất thất bại.'), 'error');
+          }
+        } catch {
+          showToast(isEn ? 'Connection error.' : 'Lỗi kết nối máy chủ.', 'error');
+        } finally {
+          setKickLoadingId(null);
+        }
+      }
+    );
+  };
+
   // Preview styling
   const previewBg = useThemeGradient
     ? `linear-gradient(${themeAngle}deg, ${themeGrad1}, ${themeGrad2})`
@@ -578,6 +654,22 @@ export default function ClanSettingsPage({
             <span>{isEn ? 'Appearance & Theme' : 'Giao diện & Theme'}</span>
           </button>
         )}
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('members')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'members'
+              ? 'bg-[color:var(--accent)] text-[color:var(--accent-fg)] shadow-sm'
+              : 'ui-dim hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>{isEn ? 'Members & Roles' : 'Thành viên & Trao quyền'}</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-black/10 dark:bg-white/10 text-current">
+            {clan.memberCount}
+          </span>
+        </button>
 
         <button
           type="button"
@@ -1023,6 +1115,211 @@ export default function ClanSettingsPage({
             )}
           </div>
         </form>
+      )}
+
+      {/* TAB: THÀNH VIÊN & TRAO QUYỀN (MEMBERS & ROLES) */}
+      {activeTab === 'members' && (
+        <div className="space-y-6">
+          <div className="ui-card p-6 rounded-2xl border space-y-4" style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div>
+                <h2 className="text-sm font-bold ui-title flex items-center gap-2 uppercase tracking-wider">
+                  <Users className="w-4 h-4 text-purple-400" />
+                  <span>{isEn ? 'Clan Members & Role Management' : 'Quản lý Thành viên & Phân quyền'}</span>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 font-mono">
+                    {clan.memberCount} / {tierInfo.maxMembers}
+                  </span>
+                </h2>
+                <p className="text-xs ui-dim mt-1">
+                  {isEn
+                    ? 'Promote or demote Clan Moderators, view contribution SP, and manage roster.'
+                    : 'Trao hoặc gỡ quyền Quản trị viên (Mod), theo dõi điểm SP đóng góp và quản lý thành viên.'}
+                </p>
+              </div>
+
+              {canEditInfo && (
+                <div className="flex items-center gap-2 text-xs ui-dim bg-black/5 dark:bg-white/5 px-3 py-1.5 rounded-xl border border-black/10 dark:border-white/10 shrink-0">
+                  <ShieldCheck className="w-3.5 h-3.5 text-purple-500" />
+                  <span>{isEn ? 'Leader Privilege Active' : 'Quyền Leader: Toàn quyền bổ nhiệm'}</span>
+                </div>
+              )}
+            </div>
+
+            {/* List of Members */}
+            <div className="space-y-3">
+              {(() => {
+                const leader = clan.membersGrouped?.leader;
+                const mods: any[] = clan.membersGrouped?.mods || [];
+                const regularMembers: any[] = clan.membersGrouped?.members || [];
+                const allList = [
+                  ...(leader ? [{ ...leader, role: 'LEADER' }] : []),
+                  ...mods.map((m) => ({ ...m, role: 'MODERATOR' })),
+                  ...regularMembers.map((m) => ({ ...m, role: 'MEMBER' })),
+                ];
+
+                if (allList.length === 0) {
+                  return (
+                    <div className="py-8 text-center text-xs ui-dim">
+                      {isEn ? 'No members found.' : 'Không có thành viên nào.'}
+                    </div>
+                  );
+                }
+
+                return allList.map((m) => {
+                  const u = m.user || {};
+                  const isThisLeader = m.role === 'LEADER' || m.userId === clan.leader?.id;
+                  const isThisMod = m.role === 'MODERATOR';
+                  const isSelf = m.userId === currentUser?.id;
+                  const isUpdatingRole = roleUpdatingId === m.id;
+                  const isKicking = kickLoadingId === m.id;
+
+                  // Find SP pledge
+                  const pledge = clan.contributions?.find((c: any) => c.userId === m.userId)?.spPledged || 0;
+
+                  return (
+                    <div
+                      key={m.id}
+                      className="p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all"
+                      style={{
+                        backgroundColor: isThisLeader
+                          ? 'rgba(245, 158, 11, 0.04)'
+                          : isThisMod
+                          ? 'rgba(168, 85, 247, 0.04)'
+                          : 'var(--bg-subtle)',
+                        borderColor: isThisLeader
+                          ? 'rgba(245, 158, 11, 0.3)'
+                          : isThisMod
+                          ? 'rgba(168, 85, 247, 0.3)'
+                          : 'var(--border-subtle)',
+                      }}
+                    >
+                      {/* Left: Avatar & Info */}
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <Link
+                          href={`/profile/${encodeURIComponent(u.username || '')}`}
+                          className="relative w-11 h-11 rounded-full overflow-hidden bg-slate-900 border-2 shrink-0 group hover:opacity-90 transition-opacity"
+                          style={{
+                            borderColor: isThisLeader ? '#f59e0b' : isThisMod ? '#a855f7' : 'var(--border-ui)',
+                          }}
+                        >
+                          {u.avatarUrl ? (
+                            <img src={u.avatarUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center font-bold text-xs ui-dim">
+                              {u.username?.[0]?.toUpperCase()}
+                            </div>
+                          )}
+                        </Link>
+
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Link
+                              href={`/profile/${encodeURIComponent(u.username || '')}`}
+                              className="font-bold text-sm ui-title hover:underline flex items-center gap-1.5"
+                            >
+                              <UserDisplayName user={u} showClanTag={false} />
+                            </Link>
+
+                            {/* Role Badge */}
+                            {isThisLeader ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                                <Crown className="w-3 h-3 text-amber-500" />
+                                {isEn ? 'Leader' : 'Trưởng Clan'}
+                              </span>
+                            ) : isThisMod ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30">
+                                <ShieldCheck className="w-3 h-3 text-purple-500" />
+                                {isEn ? 'Moderator' : 'Quản trị viên'}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-500/10 text-slate-500 dark:text-slate-400 border border-slate-500/20">
+                                {isEn ? 'Member' : 'Thành viên'}
+                              </span>
+                            )}
+
+                            {isSelf && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-500 border border-sky-500/20">
+                                {isEn ? 'You' : 'Bạn'}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-3 text-[11px] ui-dim flex-wrap font-medium">
+                            <span>
+                              {isEn ? 'Joined:' : 'Tham gia:'}{' '}
+                              {m.joinedAt ? new Date(m.joinedAt).toLocaleDateString(isEn ? 'en-US' : 'vi-VN') : '—'}
+                            </span>
+                            {pledge > 0 && (
+                              <span className="text-amber-600 dark:text-amber-400 font-mono font-bold">
+                                • {pledge} SP Coin
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: Actions */}
+                      <div className="flex items-center gap-2 shrink-0 flex-wrap sm:justify-end">
+                        {canEditInfo && !isThisLeader && !isSelf && (
+                          <>
+                            {isThisMod ? (
+                              <button
+                                type="button"
+                                disabled={isUpdatingRole || isKicking}
+                                onClick={() => handleToggleMemberRole(m.id, 'MODERATOR', u.username)}
+                                className="px-3.5 py-2 rounded-xl text-xs font-bold border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all shadow-xs"
+                                title={isEn ? 'Demote to regular member' : 'Gỡ quyền Quản trị viên của thành viên này'}
+                              >
+                                {isUpdatingRole ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldAlert className="w-3.5 h-3.5" />}
+                                <span>{isEn ? 'Demote Mod' : 'Gỡ Mod'}</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={isUpdatingRole || isKicking}
+                                onClick={() => handleToggleMemberRole(m.id, 'MEMBER', u.username)}
+                                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all shadow-xs"
+                                title={isEn ? 'Promote to Clan Moderator' : 'Bổ nhiệm thành viên này làm Quản trị viên Clan'}
+                              >
+                                {isUpdatingRole ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                                <span>{isEn ? 'Promote Mod' : 'Trao Mod'}</span>
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              disabled={isUpdatingRole || isKicking}
+                              onClick={() => handleKickMember(m.id, u.username)}
+                              className="px-3.5 py-2 rounded-xl text-xs font-bold border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all shadow-xs"
+                              title={isEn ? 'Kick member from Clan' : 'Trục xuất thành viên khỏi Clan'}
+                            >
+                              {isKicking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserX className="w-3.5 h-3.5" />}
+                              <span>{isEn ? 'Kick' : 'Trục xuất'}</span>
+                            </button>
+                          </>
+                        )}
+
+                        {/* Mod kicking regular member */}
+                        {!canEditInfo && isClanMod && !isThisLeader && !isThisMod && !isSelf && (
+                          <button
+                            type="button"
+                            disabled={isKicking}
+                            onClick={() => handleKickMember(m.id, u.username)}
+                            className="px-3.5 py-2 rounded-xl text-xs font-bold border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all shadow-xs"
+                            title={isEn ? 'Kick member from Clan' : 'Trục xuất thành viên khỏi Clan'}
+                          >
+                            {isKicking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserX className="w-3.5 h-3.5" />}
+                            <span>{isEn ? 'Kick' : 'Trục xuất'}</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* TAB 3: DUYỆT ĐƠN GIA NHẬP */}

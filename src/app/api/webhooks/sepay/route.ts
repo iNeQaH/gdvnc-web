@@ -92,6 +92,18 @@ function parseTransactionMemo(content: string) {
     }
   }
 
+  // Also include base names for candidates with trailing numbers (e.g. SOW205 -> SOW)
+  const baseCandidates: string[] = [];
+  for (const c of candidates) {
+    if (/\d+$/.test(c)) {
+      const stripped = c.replace(/\d+$/, '');
+      if (stripped.length >= 3 && !stopWords.has(stripped) && !candidates.includes(stripped) && !baseCandidates.includes(stripped)) {
+        baseCandidates.push(stripped);
+      }
+    }
+  }
+  candidates.push(...baseCandidates);
+
   return { candidates, monthsFromMemo };
 }
 
@@ -152,13 +164,16 @@ export async function POST(req: Request) {
 
     const { candidates, monthsFromMemo } = parseTransactionMemo(transactionContent);
 
-    // Find target user from candidate usernames
+    // Find target user from candidate usernames (supporting username or gdUsername)
     let targetUser: any = null;
     let matchedCandidate = '';
     for (const cand of candidates) {
       const u = await prisma.user.findFirst({
         where: {
-          username: { equals: cand, mode: 'insensitive' },
+          OR: [
+            { username: { equals: cand, mode: 'insensitive' } },
+            { gdUsername: { equals: cand, mode: 'insensitive' } },
+          ],
         },
       });
       if (u) {

@@ -102,6 +102,18 @@ export default function ClanDiscordMemberSidebar({
           </div>
         </div>
 
+        {canManage && (
+          <div className="px-2 pt-2 pb-1 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+            <Link
+              href={`/clan/${clan.slug}/settings?tab=members`}
+              className="w-full py-1.5 px-2.5 rounded-lg text-[11px] font-bold bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/25 flex items-center justify-center gap-1.5 transition-colors text-center"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{isEn ? 'Manage Roles & Mod' : 'Quản lý & Trao Mod'}</span>
+            </Link>
+          </div>
+        )}
+
         {/* Scrollable Members Roster */}
         <div className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
           {/* 1. Category: LEADER */}
