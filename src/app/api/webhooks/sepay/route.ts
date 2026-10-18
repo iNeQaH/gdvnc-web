@@ -51,10 +51,10 @@ function parseTransactionMemo(content: string) {
   const candidates: string[] = [];
   let monthsFromMemo = 0;
 
-  // 1. Extract explicit months: e.g. "SUPPORT 3T", "3T", "SUPPORT 3"
-  const m1 = clean.match(/SUPPORT\s*(\d{1,2})\s*T/);
-  const m2 = clean.match(/\b(\d{1,2})\s*T\b/);
-  const m3 = clean.match(/SUPPORT\s*(\d{1,2})\b/);
+  // 1. Extract explicit months: e.g. "SUPPORT 3T", "3T", "SUPPORT 3", "36T"
+  const m1 = clean.match(/SUPPORT\s*(\d+)\s*T/);
+  const m2 = clean.match(/\b(\d+)\s*T\b/);
+  const m3 = clean.match(/SUPPORT\s*(\d+)\b/);
   if (m1) {
     monthsFromMemo = parseInt(m1[1], 10);
   } else if (m2) {
@@ -77,7 +77,7 @@ function parseTransactionMemo(content: string) {
 
   // 4. Token fallback: split by non-word and collect likely usernames
   const stopWords = new Set([
-    'GDVN', 'SUPPORT', 'UNG', 'HO', 'THANH', 'TOAN', 'CHUYEN', 'KHOAN', 'NAP', 'TIEN',
+    'SEVQR', 'GDVN', 'SUPPORT', 'UNG', 'HO', 'THANH', 'TOAN', 'CHUYEN', 'KHOAN', 'NAP', 'TIEN',
     'VIETINBANK', 'TECHCOMBANK', 'MBBANK', 'MBVCB', 'VCB', 'ACB', 'BIDV', 'ICB', 'IBFT',
     'NAPAS', 'QR', 'VNPAY', 'MOMO', 'ZALOPAY', 'TRANSFER', 'FROM', 'TO', 'THE'
   ]);

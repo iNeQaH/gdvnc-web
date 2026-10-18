@@ -51,7 +51,7 @@ export function detectMonthsFromAmount(amount: number): number {
 
 export function supportTransferContent(username: string, months: number = 1) {
   const sanitized = sanitizeSupportUsername(username);
-  return sanitized ? `GDVN ${sanitized} SUPPORT ${months}T` : 'GDVN SUPPORT';
+  return sanitized ? `SEVQR GDVN ${sanitized} SUPPORT ${months}T` : 'SEVQR GDVN SUPPORT';
 }
 
 export function supportQrUrl(username: string, months: number = 1) {
