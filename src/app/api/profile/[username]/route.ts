@@ -50,6 +50,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       },
       spPoints: true,
       isBanned: true,
+      bannedUntil: true,
       profileTheme: true,
       profileConfig: true,
       banReason: true,
@@ -156,6 +157,47 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
 
     if (!user) {
       return NextResponse.json({ error: 'Không tìm thấy người chơi.' }, { status: 404 });
+    }
+
+    if (user.isBanned) {
+      if (user.bannedUntil && user.bannedUntil <= new Date()) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { isBanned: false, banReason: null, bannedUntil: null },
+        });
+        user.isBanned = false;
+        user.banReason = null;
+        user.bannedUntil = null;
+      } else {
+        // Return minimal suspension payload - hide avatar, cover, records, stats, clan, etc.
+        return NextResponse.json({
+          success: true,
+          user: {
+            id: user.id,
+            username: user.username,
+            role: user.role,
+            isBanned: true,
+            banReason: user.banReason,
+            bannedUntil: user.bannedUntil,
+            avatarUrl: null,
+            coverUrl: null,
+            bio: null,
+            country: null,
+            discordTag: null,
+            gdUsername: null,
+            classicPp: 0,
+            platformerPp: 0,
+            creatorPoints: 0,
+            records: [],
+            createdLevels: [],
+            badges: [],
+            clan: null,
+          },
+          isBanned: true,
+          banReason: user.banReason,
+          bannedUntil: user.bannedUntil,
+        });
+      }
     }
 
     const dedupedRecords = dedupeRecordsByLevel(user.records);
@@ -301,6 +343,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         profileTheme: user.profileTheme,
         profileConfig: user.profileConfig,
         isBanned: user.isBanned,
+        bannedUntil: user.bannedUntil,
         banReason: user.banReason,
         discordTag: user.discordTag,
         gdUsername: user.gdUsername,

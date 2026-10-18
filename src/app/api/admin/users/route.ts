@@ -25,6 +25,8 @@ const userSelect = {
   gdUsername: true,
   gdVerified: true,
   isBanned: true,
+  bannedUntil: true,
+  banReason: true,
 } satisfies Prisma.UserSelect;
 
 function searchClause(query: string): Prisma.UserWhereInput | undefined {

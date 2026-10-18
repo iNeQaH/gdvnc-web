@@ -48,6 +48,7 @@ model User {
   country       String?   @default("Vietnam")
   supporterUntil DateTime?
   isBanned       Boolean   @default(false)
+  bannedUntil    DateTime?
   profileTheme   String?   @default("sky")
   profileConfig  Json?
   banReason      String?   @db.Text

@@ -26,6 +26,8 @@ import {
   Medal,
   ShieldAlert,
   User as UserIcon,
+  Clock,
+  Calendar,
 } from 'lucide-react';
 import BadgeIcon, { IconGlyph } from '@/components/BadgeIcon';
 import BadgePickerModal from '@/components/BadgePickerModal';
@@ -153,6 +155,8 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
   // Ban / Unban Modal state
   const [banTarget, setBanTarget] = useState<any | null>(null);
   const [banReason, setBanReason] = useState('');
+  const [banDuration, setBanDuration] = useState<'permanent' | '1' | '3' | '7' | '30' | '90' | 'custom'>('permanent');
+  const [banCustomDays, setBanCustomDays] = useState<string>('14');
   const [banningUser, setBanningUser] = useState(false);
 
   useEffect(() => {
@@ -282,27 +286,32 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
     if (!banTarget) return;
     const action = banTarget.isBanned ? 'unban' : 'ban';
     if (action === 'ban' && !banReason.trim()) {
-      showToast('Vui lòng nhập lý do khoá tài khoản.', 'error');
+      showToast('Vui lòng nhập lý do đình chỉ tài khoản.', 'error');
       return;
     }
+    const durationDays = action === 'ban'
+      ? (banDuration === 'permanent' ? null : (banDuration === 'custom' ? Math.max(1, parseInt(banCustomDays, 10) || 1) : parseInt(banDuration, 10)))
+      : null;
     setBanningUser(true);
     try {
       const res = await fetch(`/api/admin/users/${banTarget.id}/ban`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, reason: banReason.trim() }),
+        body: JSON.stringify({ action, reason: banReason.trim(), durationDays }),
       });
       const json = await res.json();
       if (!res.ok || !json.success) {
         showToast(json.error || 'Thao tác thất bại.', 'error');
         return;
       }
-      showToast(action === 'ban' ? `Đã khoá tài khoản ${banTarget.username}` : `Đã mở khoá tài khoản ${banTarget.username}`, 'success');
+      showToast(json.message || (action === 'ban' ? `Đã đình chỉ tài khoản ${banTarget.username}` : `Đã mở khoá tài khoản ${banTarget.username}`), 'success');
       setBanTarget(null);
       setBanReason('');
+      setBanDuration('permanent');
+      setBanCustomDays('14');
       fetchUsers(userQuery);
     } catch {
-      showToast('Lỗi hệ thống khi khoá/mở tài khoản.', 'error');
+      showToast('Lỗi hệ thống khi đình chỉ/mở tài khoản.', 'error');
     } finally {
       setBanningUser(false);
     }
@@ -577,8 +586,12 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
                             )}
                             <span className="font-bold ui-title truncate">{user.username}</span>
                             {user.isBanned && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-red-500/15 text-red-500 border border-red-500/20 shrink-0">
-                                <Ban className="w-2.5 h-2.5" /> Banned
+                              <span
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-red-500/15 text-red-500 border border-red-500/20 shrink-0"
+                                title={user.bannedUntil ? `Đình chỉ đến: ${new Date(user.bannedUntil).toLocaleString('vi-VN')}${user.banReason ? ` - Lý do: ${user.banReason}` : ''}` : `Đình chỉ vĩnh viễn${user.banReason ? ` - Lý do: ${user.banReason}` : ''}`}
+                              >
+                                <Ban className="w-2.5 h-2.5" />
+                                {user.bannedUntil ? `Đình chỉ (${Math.max(1, Math.ceil((new Date(user.bannedUntil).getTime() - Date.now()) / 86400000))}d)` : 'Đình chỉ'}
                               </span>
                             )}
                           </div>
@@ -1440,24 +1453,115 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
               </button>
             </div>
 
-            <p className="text-xs ui-dim leading-relaxed">
-              {banTarget.isBanned
-                ? `Bạn có chắc chắn muốn mở khoá tài khoản cho ${banTarget.username}? Người dùng sẽ có thể đăng nhập và gửi kỷ lục trở lại bình thường.`
-                : `Khi bị khoá, người dùng ${banTarget.username} sẽ bị đăng xuất ngay lập tức và không thể truy cập các tính năng của tài khoản.`}
-            </p>
+            {banTarget.isBanned ? (
+              <div className="space-y-3">
+                <div className="p-3 rounded-2xl border text-xs space-y-1.5" style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', borderColor: 'rgba(239, 68, 68, 0.25)' }}>
+                  <div className="font-bold text-red-500 flex items-center gap-1.5">
+                    <ShieldAlert className="w-4 h-4 shrink-0" />
+                    Trạng thái: Đang bị đình chỉ hoạt động
+                  </div>
+                  <div className="ui-dim">
+                    <span className="font-semibold text-[color:var(--text-title)]">Thời hạn:</span>{' '}
+                    {banTarget.bannedUntil ? `Đến ${new Date(banTarget.bannedUntil).toLocaleString('vi-VN')} (${Math.max(1, Math.ceil((new Date(banTarget.bannedUntil).getTime() - Date.now()) / 86400000))} ngày nữa)` : 'Vĩnh viễn'}
+                  </div>
+                  {banTarget.banReason && (
+                    <div className="ui-dim">
+                      <span className="font-semibold text-[color:var(--text-title)]">Lý do:</span> {banTarget.banReason}
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs ui-dim leading-relaxed">
+                  Bạn có muốn mở khoá tài khoản cho <span className="font-bold text-[color:var(--text-title)]">{banTarget.username}</span> ngay bây giờ? Người dùng sẽ có thể đăng nhập và gửi kỷ lục trở lại bình thường.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3.5">
+                <p className="text-xs ui-dim leading-relaxed">
+                  Khi bị đình chỉ, người dùng <span className="font-bold text-[color:var(--text-title)]">{banTarget.username}</span> sẽ bị đăng xuất ngay lập tức, hồ sơ cá nhân sẽ bị ẩn toàn bộ thông tin với người ngoài và bị khoá các tính năng.
+                </p>
 
-            {!banTarget.isBanned && (
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold ui-title">Lý do khoá tài khoản:</label>
-                <textarea
-                  value={banReason}
-                  onChange={(e) => setBanReason(e.target.value)}
-                  placeholder="Nhập lý do khoá tài khoản..."
-                  rows={3}
-                  className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-red-500/50"
-                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                  autoFocus
-                />
+                {/* Duration selection */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold ui-title flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-red-500" />
+                    Thời hạn đình chỉ:
+                  </label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[
+                      { id: '1', label: '1 ngày' },
+                      { id: '3', label: '3 ngày' },
+                      { id: '7', label: '7 ngày' },
+                      { id: '30', label: '30 ngày' },
+                      { id: '90', label: '90 ngày' },
+                      { id: 'custom', label: 'Tuỳ chỉnh' },
+                      { id: 'permanent', label: 'Vĩnh viễn' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setBanDuration(opt.id as any)}
+                        className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
+                          banDuration === opt.id
+                            ? 'bg-red-500 text-white border-red-500 shadow-xs'
+                            : 'border-[color:var(--border-ui)] hover:bg-[color:var(--bg-card)] ui-dim'
+                        } ${opt.id === 'permanent' ? 'col-span-2' : ''}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {banDuration === 'custom' && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className="text-xs ui-dim shrink-0">Số ngày đình chỉ:</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="3650"
+                        value={banCustomDays}
+                        onChange={(e) => setBanCustomDays(e.target.value)}
+                        placeholder="Số ngày..."
+                        className="w-24 px-3 py-1.5 rounded-xl text-xs font-bold border focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                        style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                      />
+                      <span className="text-xs ui-dim">ngày</span>
+                    </div>
+                  )}
+
+                  {/* Expiration date preview box */}
+                  <div className="p-2.5 rounded-xl border text-[11px] flex items-center gap-2" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                    <Calendar className="w-4 h-4 text-red-500 shrink-0" />
+                    <span className="ui-dim">
+                      {banDuration === 'permanent' ? (
+                        <strong className="text-red-500">Đình chỉ vĩnh viễn không có thời hạn.</strong>
+                      ) : (
+                        <>
+                          Dự kiến tự động mở khoá:{' '}
+                          <strong className="text-[color:var(--text-title)]">
+                            {new Date(
+                              Date.now() +
+                                (banDuration === 'custom' ? Math.max(1, parseInt(banCustomDays, 10) || 1) : parseInt(banDuration, 10)) *
+                                  24 * 60 * 60 * 1000
+                            ).toLocaleDateString('vi-VN')}
+                          </strong>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold ui-title">Lý do đình chỉ tài khoản:</label>
+                  <textarea
+                    value={banReason}
+                    onChange={(e) => setBanReason(e.target.value)}
+                    placeholder="Nhập lý do đình chỉ tài khoản..."
+                    rows={3}
+                    className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                    autoFocus
+                  />
+                </div>
               </div>
             )}
 

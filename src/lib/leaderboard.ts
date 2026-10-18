@@ -235,7 +235,7 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER' | 'CHA
 
     const userIds = Array.from(byUser.keys());
     const users = await prisma.user.findMany({
-      where: { id: { in: userIds } },
+      where: { id: { in: userIds }, isBanned: false },
       select: {
         ...publicUser,
         classicPp: true,
@@ -285,7 +285,7 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER' | 'CHA
 
   const [players, orphanRecords, claimedUsers] = await Promise.all([
     prisma.user.findMany({
-      where: { [ppField]: { gt: 0 } },
+      where: { [ppField]: { gt: 0 }, isBanned: false },
       orderBy: { [ppField]: 'desc' },
       select: {
         ...publicUser,
@@ -316,6 +316,7 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER' | 'CHA
     prisma.user.findMany({
       where: {
         gdUsername: { not: null },
+        isBanned: false,
         OR: [{ [ppField]: { gt: 0 } }, { gdVerified: true }],
       },
       select: { gdUsername: true },
@@ -409,6 +410,7 @@ export async function getCreatorLeaderboard() {
   const [creators, vnLevels] = await Promise.all([
     prisma.user.findMany({
       where: {
+        isBanned: false,
         OR: [{ creatorPoints: { gt: 0 } }, { gdUsername: { not: null } }],
       },
       orderBy: { creatorPoints: 'desc' },

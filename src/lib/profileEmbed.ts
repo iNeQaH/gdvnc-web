@@ -101,6 +101,44 @@ export async function getProfileEmbedData(username: string): Promise<ProfileEmbe
 
   if (!user) return null;
 
+  if (user.isBanned) {
+    if (user.bannedUntil && user.bannedUntil <= new Date()) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { isBanned: false, banReason: null, bannedUntil: null },
+      });
+      user.isBanned = false;
+    } else {
+      const durationText = user.bannedUntil
+        ? `Đình chỉ tạm thời đến ${user.bannedUntil.toLocaleDateString('vi-VN')}`
+        : 'Đình chỉ vĩnh viễn';
+      return {
+        username: user.username,
+        role: user.role,
+        avatarUrl: null,
+        coverUrl: null,
+        classicPp: 0,
+        platformerPp: 0,
+        creatorPoints: 0,
+        supporterUntil: null,
+        badges: [],
+        hardestClassic: null,
+        hardestPlatformer: null,
+        pointLines: [],
+        hardestLines: [],
+        showBadgeRow: false,
+        clanTag: null,
+        rankClassic: null,
+        rankPlatformer: null,
+        rankCreator: null,
+        themeColor: '#ef4444',
+        bio: null,
+        title: `${user.username} (Đã bị đình chỉ)`,
+        description: `Tài khoản này đã bị đình chỉ hoạt động (${durationText}).`,
+      };
+    }
+  }
+
   const dedupedRecords = dedupeRecordsByLevel(user.records);
 
   const classicForPp = dedupedRecords

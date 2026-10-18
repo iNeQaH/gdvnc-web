@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Star, Sparkles, Moon, Sun, Medal, Play, Globe, MessageSquare, Gamepad2, ArrowLeft, Camera, Check, X, Pencil, ShieldCheck, Heart, Trash2, Hammer, User as UserIcon, Shield, Crown, Trophy, Award, Zap, Flame, Diamond, StarHalf, CheckCircle, ChevronDown, RotateCcw, UserCheck, MapPin, Edit, ShieldAlert, RefreshCw, Ban, Unlock, Lock, FileText, Save, Minus, Plus } from 'lucide-react';
+import { Star, Sparkles, Moon, Sun, Medal, Play, Globe, MessageSquare, Gamepad2, ArrowLeft, Camera, Check, X, Pencil, ShieldCheck, Heart, Trash2, Hammer, User as UserIcon, Shield, Crown, Trophy, Award, Zap, Flame, Diamond, StarHalf, CheckCircle, ChevronDown, RotateCcw, UserCheck, MapPin, Edit, ShieldAlert, RefreshCw, Ban, Unlock, Lock, FileText, Save, Minus, Plus, Clock, Calendar } from 'lucide-react';
 
 import BadgePickerModal from '@/components/BadgePickerModal';
 import BadgeIcon from '@/components/BadgeIcon';
@@ -213,6 +213,8 @@ export default function ProfilePage() {
   const [resettingPassword, setResettingPassword] = useState(false);
   const [showBanModal, setShowBanModal] = useState(false);
   const [banReasonInput, setBanReasonInput] = useState('');
+  const [banDuration, setBanDuration] = useState<'permanent' | '1' | '3' | '7' | '30' | '90' | 'custom'>('permanent');
+  const [banCustomDays, setBanCustomDays] = useState<string>('14');
   const [banningUser, setBanningUser] = useState(false);
 
   // Image Editor Modal state
@@ -633,20 +635,22 @@ export default function ProfilePage() {
     }
   };
 
-  const handleToggleBan = async (action: 'ban' | 'unban', reason?: string) => {
+  const handleToggleBan = async (action: 'ban' | 'unban', reason?: string, durationDays?: number | null) => {
     if (!currentUser || !isFullAdmin || !data) return;
     setBanningUser(true);
     try {
       const res = await fetch(`/api/admin/users/${data.id}/ban`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, reason }),
+        body: JSON.stringify({ action, reason, durationDays }),
       });
       const json = await res.json();
       if (res.ok && json.success) {
         showToast(json.message || 'Cập nhật trạng thái thành công!', 'success');
         setShowBanModal(false);
         setBanReasonInput('');
+        setBanDuration('permanent');
+        setBanCustomDays('14');
         fetchProfile();
       } else {
         showToast(json.error || 'Lỗi cập nhật trạng thái.', 'error');
@@ -673,6 +677,240 @@ export default function ProfilePage() {
         <Link href="/" className="inline-flex items-center gap-1.5 text-xs hover:underline" style={{ color: 'var(--accent)' }}>
           <ArrowLeft className="w-3.5 h-3.5" /> {t('profile.back')}
         </Link>
+      </div>
+    );
+  }
+
+  if (data.isBanned) {
+    const isTemp = Boolean(data.bannedUntil);
+    const bannedUntilDate = data.bannedUntil ? new Date(data.bannedUntil) : null;
+    const remainingMs = bannedUntilDate ? bannedUntilDate.getTime() - Date.now() : 0;
+    const remainingDays = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
+    const remainingHours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+    const timeRemainingStr = remainingDays > 0 ? `${remainingDays} ngày ${remainingHours} giờ` : `${Math.max(1, remainingHours)} giờ`;
+
+    return (
+      <div className="max-w-2xl mx-auto py-16 px-4 space-y-6 animate-in fade-in duration-300">
+        <div
+          className="rounded-3xl border p-8 sm:p-12 text-center space-y-6 shadow-xl relative overflow-hidden"
+          style={{ backgroundColor: 'var(--bg-card)', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+        >
+          {/* Subtle Red Ambient Glow */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-32 bg-red-500/10 blur-3xl pointer-events-none rounded-full" />
+
+          {/* Ban Icon */}
+          <div className="mx-auto w-20 h-20 rounded-3xl bg-red-500/10 border border-red-500/25 flex items-center justify-center text-red-500 shadow-lg shadow-red-500/10">
+            <Ban className="w-10 h-10" />
+          </div>
+
+          <div className="space-y-2 relative">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-red-500/15 text-red-500 border border-red-500/30">
+              <ShieldAlert className="w-3.5 h-3.5" /> Tài khoản bị đình chỉ
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black ui-title">
+              {data.username}
+            </h1>
+            <p className="text-xs sm:text-sm ui-dim max-w-md mx-auto leading-relaxed">
+              Tài khoản này đã bị đình chỉ hoạt động. Toàn bộ thông tin cá nhân, hình ảnh và kỷ lục đã bị ẩn theo quy định của hệ thống.
+            </p>
+          </div>
+
+          {/* Status Box */}
+          <div
+            className="p-5 rounded-2xl border text-left text-xs space-y-2.5 max-w-md mx-auto"
+            style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <span className="ui-dim font-medium">Thời hạn đình chỉ:</span>
+              <span className="font-bold text-right text-red-500">
+                {isTemp && bannedUntilDate
+                  ? `Đến ${bannedUntilDate.toLocaleDateString('vi-VN')} (${timeRemainingStr} nữa)`
+                  : 'Vĩnh viễn'}
+              </span>
+            </div>
+            {data.banReason && (
+              <div className="flex items-start justify-between gap-4 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                <span className="ui-dim font-medium shrink-0">Lý do:</span>
+                <span className="font-semibold text-right ui-title">
+                  {data.banReason}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-xs text-white"
+              style={{ backgroundColor: 'var(--accent)' }}
+            >
+              <ArrowLeft className="w-4 h-4" /> Về Trang Chủ
+            </Link>
+          </div>
+
+          {/* Admin Management Toolbar */}
+          {isFullAdmin && (
+            <div
+              className="mt-8 pt-6 border-t text-left space-y-3"
+              style={{ borderColor: 'var(--border-subtle)' }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-500 flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5" /> Bảng điều khiển Quản trị viên
+                </span>
+                <span className="text-[10px] ui-dim">Chỉ hiển thị cho Admin</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={banningUser}
+                  onClick={() => handleToggleBan('unban')}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-green-600 hover:bg-green-700 transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <Unlock className="w-3.5 h-3.5" /> Mở khoá tài khoản
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBanReasonInput(data.banReason || '');
+                    setShowBanModal(true);
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ui-title flex items-center gap-1.5"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+                >
+                  <Clock className="w-3.5 h-3.5" /> Thay đổi thời hạn đình chỉ
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Ban Duration Modal for Admin */}
+        {showBanModal && (
+          <div className="fixed inset-0 z-[999999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150" onClick={() => setShowBanModal(false)}>
+            <div
+              className="w-full max-w-md rounded-3xl border shadow-2xl p-6 space-y-4"
+              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+                <h3 className="font-extrabold text-sm sm:text-base ui-title text-red-500 flex items-center gap-2">
+                  <Flame className="w-5 h-5" />
+                  Đình chỉ tài khoản: {data.username}
+                </h3>
+                <button type="button" onClick={() => setShowBanModal(false)} className="p-1 rounded-xl border ui-dim cursor-pointer">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {/* Duration selection */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold ui-title flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-red-500" />
+                    Thời hạn đình chỉ:
+                  </label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[
+                      { id: '1', label: '1 ngày' },
+                      { id: '3', label: '3 ngày' },
+                      { id: '7', label: '7 ngày' },
+                      { id: '30', label: '30 ngày' },
+                      { id: '90', label: '90 ngày' },
+                      { id: 'custom', label: 'Tuỳ chỉnh' },
+                      { id: 'permanent', label: 'Vĩnh viễn' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setBanDuration(opt.id as any)}
+                        className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
+                          banDuration === opt.id
+                            ? 'bg-red-500 text-white border-red-500 shadow-xs'
+                            : 'border-[color:var(--border-ui)] hover:bg-[color:var(--bg-card)] ui-dim'
+                        } ${opt.id === 'permanent' ? 'col-span-2' : ''}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {banDuration === 'custom' && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className="text-xs ui-dim shrink-0">Số ngày:</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="3650"
+                        value={banCustomDays}
+                        onChange={(e) => setBanCustomDays(e.target.value)}
+                        placeholder="Số ngày..."
+                        className="w-24 px-3 py-1.5 rounded-xl text-xs font-bold border focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                        style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                      />
+                      <span className="text-xs ui-dim">ngày</span>
+                    </div>
+                  )}
+
+                  <div className="p-2.5 rounded-xl border text-[11px] flex items-center gap-2" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                    <Calendar className="w-4 h-4 text-red-500 shrink-0" />
+                    <span className="ui-dim">
+                      {banDuration === 'permanent' ? (
+                        <strong className="text-red-500">Đình chỉ vĩnh viễn không có thời hạn.</strong>
+                      ) : (
+                        <>
+                          Dự kiến mở khoá:{' '}
+                          <strong className="text-[color:var(--text-title)]">
+                            {new Date(
+                              Date.now() +
+                                (banDuration === 'custom' ? Math.max(1, parseInt(banCustomDays, 10) || 1) : parseInt(banDuration, 10)) *
+                                  24 * 60 * 60 * 1000
+                            ).toLocaleDateString('vi-VN')}
+                          </strong>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold ui-title">Lý do đình chỉ:</label>
+                  <textarea
+                    rows={3}
+                    value={banReasonInput}
+                    onChange={(e) => setBanReasonInput(e.target.value)}
+                    placeholder="Nhập lý do đình chỉ..."
+                    className="w-full px-3 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-red-500/50 resize-y"
+                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowBanModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold ui-dim border cursor-pointer"
+                  style={{ borderColor: 'var(--border-ui)' }}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  disabled={banningUser}
+                  onClick={() => {
+                    const days = banDuration === 'permanent' ? null : (banDuration === 'custom' ? Math.max(1, parseInt(banCustomDays, 10) || 1) : parseInt(banDuration, 10));
+                    handleToggleBan('ban', banReasonInput, days);
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  {banningUser ? 'Đang xử lý...' : 'Cập nhật đình chỉ'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -2206,7 +2444,7 @@ export default function ProfilePage() {
             style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
               <h3 className="font-extrabold text-sm sm:text-base ui-title text-red-500 flex items-center gap-2">
                 <Flame className="w-5 h-5" />
                 Đình chỉ tài khoản: {data.username}
@@ -2216,8 +2454,77 @@ export default function ProfilePage() {
               </button>
             </div>
 
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-500 leading-relaxed font-semibold">
-              Tài khoản bị đình chỉ sẽ không thể đăng nhập hoặc thao tác trên hệ thống. Phiên làm việc hiện tại của người dùng sẽ bị hủy ngay lập tức.
+            <p className="text-xs ui-dim leading-relaxed">
+              Khi bị đình chỉ, người dùng sẽ bị đăng xuất ngay lập tức, hồ sơ cá nhân sẽ bị ẩn toàn bộ thông tin với người ngoài và bị khóa các tính năng.
+            </p>
+
+            {/* Duration selection */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold ui-title flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-red-500" />
+                Thời hạn đình chỉ:
+              </label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[
+                  { id: '1', label: '1 ngày' },
+                  { id: '3', label: '3 ngày' },
+                  { id: '7', label: '7 ngày' },
+                  { id: '30', label: '30 ngày' },
+                  { id: '90', label: '90 ngày' },
+                  { id: 'custom', label: 'Tuỳ chỉnh' },
+                  { id: 'permanent', label: 'Vĩnh viễn' },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setBanDuration(opt.id as any)}
+                    className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
+                      banDuration === opt.id
+                        ? 'bg-red-500 text-white border-red-500 shadow-xs'
+                        : 'border-[color:var(--border-ui)] hover:bg-[color:var(--bg-card)] ui-dim'
+                    } ${opt.id === 'permanent' ? 'col-span-2' : ''}`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {banDuration === 'custom' && (
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="text-xs ui-dim shrink-0">Số ngày:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="3650"
+                    value={banCustomDays}
+                    onChange={(e) => setBanCustomDays(e.target.value)}
+                    placeholder="Số ngày..."
+                    className="w-24 px-3 py-1.5 rounded-xl text-xs font-bold border focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  />
+                  <span className="text-xs ui-dim">ngày</span>
+                </div>
+              )}
+
+              <div className="p-2.5 rounded-xl border text-[11px] flex items-center gap-2" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                <Calendar className="w-4 h-4 text-red-500 shrink-0" />
+                <span className="ui-dim">
+                  {banDuration === 'permanent' ? (
+                    <strong className="text-red-500">Đình chỉ vĩnh viễn không có thời hạn.</strong>
+                  ) : (
+                    <>
+                      Dự kiến mở khoá:{' '}
+                      <strong className="text-[color:var(--text-title)]">
+                        {new Date(
+                          Date.now() +
+                            (banDuration === 'custom' ? Math.max(1, parseInt(banCustomDays, 10) || 1) : parseInt(banDuration, 10)) *
+                              24 * 60 * 60 * 1000
+                        ).toLocaleDateString('vi-VN')}
+                      </strong>
+                    </>
+                  )}
+                </span>
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -2233,7 +2540,7 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
               <button
                 type="button"
                 onClick={() => setShowBanModal(false)}
@@ -2245,7 +2552,10 @@ export default function ProfilePage() {
               <button
                 type="button"
                 disabled={banningUser}
-                onClick={() => handleToggleBan('ban', banReasonInput)}
+                onClick={() => {
+                  const days = banDuration === 'permanent' ? null : (banDuration === 'custom' ? Math.max(1, parseInt(banCustomDays, 10) || 1) : parseInt(banDuration, 10));
+                  handleToggleBan('ban', banReasonInput, days);
+                }}
                 className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {banningUser ? 'Đang xử lý...' : 'Xác nhận đình chỉ'}

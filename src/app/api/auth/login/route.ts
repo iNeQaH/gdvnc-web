@@ -68,6 +68,7 @@ export async function POST(req: Request) {
             passwordHash: true,
             tokenVersion: true,
             isBanned: true,
+            bannedUntil: true,
             banReason: true,
             failedLoginAttempts: true,
             lockedUntil: true,
@@ -202,15 +203,37 @@ export async function POST(req: Request) {
     }
 
     if (user.isBanned) {
-      await logAudit(user.id, 'LOGIN_FAILED', { reason: 'account_banned' }, ip);
-      return NextResponse.json(
-        {
-          error: en
-            ? `Your account has been suspended.${user.banReason ? ' Reason: ' + user.banReason : ''}`
-            : `Tài khoản của bạn đã bị đình chỉ hoạt động.${user.banReason ? ' Lý do: ' + user.banReason : ''}`,
-        },
-        { status: 403 }
-      );
+      if (user.bannedUntil && user.bannedUntil <= new Date()) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { isBanned: false, banReason: null, bannedUntil: null },
+        });
+        user.isBanned = false;
+        user.banReason = null;
+        user.bannedUntil = null;
+      } else {
+        await logAudit(user.id, 'LOGIN_FAILED', { reason: 'account_banned' }, ip);
+        let durationMsg = '';
+        if (user.bannedUntil) {
+          const remainingMs = user.bannedUntil.getTime() - Date.now();
+          const remDays = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
+          const remHours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+          const timeStr = remDays > 0 ? `${remDays} ngày ${remHours} giờ` : `${Math.max(1, remHours)} giờ`;
+          durationMsg = en
+            ? ` Suspended until ${user.bannedUntil.toLocaleDateString()} (remaining: ${timeStr}).`
+            : ` Thời hạn đình chỉ đến ${user.bannedUntil.toLocaleDateString('vi-VN')} (còn lại ${timeStr}).`;
+        } else {
+          durationMsg = en ? ' Suspended permanently.' : ' Thời hạn: Vĩnh viễn.';
+        }
+        return NextResponse.json(
+          {
+            error: en
+              ? `Your account has been suspended.${durationMsg}${user.banReason ? ' Reason: ' + user.banReason : ''}`
+              : `Tài khoản của bạn đã bị đình chỉ hoạt động.${durationMsg}${user.banReason ? ' Lý do: ' + user.banReason : ''}`,
+          },
+          { status: 403 }
+        );
+      }
     }
 
     // Check 2FA TOTP BEFORE resetting failed login attempts

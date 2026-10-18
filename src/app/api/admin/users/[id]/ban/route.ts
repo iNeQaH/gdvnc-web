@@ -20,6 +20,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const body = await req.json();
     const action = body?.action === 'unban' ? 'unban' : 'ban';
     const reason = typeof body?.reason === 'string' ? body.reason.trim() : '';
+    const rawDays = typeof body?.durationDays === 'number' ? body.durationDays : null;
+    let bannedUntil: Date | null = null;
+    if (action === 'ban') {
+      if (typeof rawDays === 'number' && rawDays > 0) {
+        bannedUntil = new Date(Date.now() + Math.max(1, Math.round(rawDays)) * 24 * 60 * 60 * 1000);
+      } else if (typeof body?.bannedUntil === 'string' && body.bannedUntil) {
+        const d = new Date(body.bannedUntil);
+        if (!isNaN(d.getTime()) && d > new Date()) bannedUntil = d;
+      }
+    }
 
     const actor = await prisma.user.findUnique({
       where: { id: actorJwt.userId },
@@ -56,6 +66,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         data: {
           isBanned: true,
           banReason,
+          bannedUntil,
           tokenVersion: { increment: 1 }, // Revoke active sessions immediately
         },
       });
@@ -66,12 +77,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         targetId: target.id,
         targetUsername: target.username,
         reason: banReason,
+        durationDays: rawDays ?? (bannedUntil ? 'custom' : 'permanent'),
+        bannedUntil: bannedUntil ? bannedUntil.toISOString() : null,
       }, getClientIp(req));
+
+      const durationText = bannedUntil
+        ? `đến ${bannedUntil.toLocaleDateString('vi-VN')} (${Math.round(rawDays || (bannedUntil.getTime() - Date.now()) / 86400000)} ngày)`
+        : 'vĩnh viễn';
 
       return NextResponse.json({
         success: true,
         isBanned: true,
-        message: `Đã đình chỉ hoạt động tài khoản "${target.username}".`,
+        bannedUntil,
+        message: `Đã đình chỉ hoạt động tài khoản "${target.username}" ${durationText}.`,
       });
     } else {
       await prisma.user.update({
@@ -79,6 +97,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         data: {
           isBanned: false,
           banReason: null,
+          bannedUntil: null,
         },
       });
 

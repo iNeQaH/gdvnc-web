@@ -106,9 +106,19 @@ export async function getSessionUser(): Promise<JwtPayload | null> {
   if (!jwt?.userId) return null;
   const user = await prisma.user.findUnique({
     where: { id: jwt.userId },
-    select: { id: true, username: true, role: true, tokenVersion: true, isBanned: true },
+    select: { id: true, username: true, role: true, tokenVersion: true, isBanned: true, bannedUntil: true },
   });
-  if (!user || user.isBanned) return null;
+  if (!user) return null;
+  if (user.isBanned) {
+    if (user.bannedUntil && user.bannedUntil <= new Date()) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { isBanned: false, banReason: null, bannedUntil: null },
+      });
+    } else {
+      return null;
+    }
+  }
   if ((jwt.tokenVersion ?? 0) !== user.tokenVersion) return null;
   return {
     userId: user.id,
