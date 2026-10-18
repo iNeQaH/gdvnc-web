@@ -651,7 +651,7 @@ export default function ClanSettingsPage({
             }`}
           >
             <Palette className="w-4 h-4" />
-            <span>{isEn ? 'Appearance & Theme' : 'Giao diện & Theme'}</span>
+            <span>{isEn ? 'Decoration' : 'Trang trí'}</span>
           </button>
         )}
 
@@ -665,7 +665,7 @@ export default function ClanSettingsPage({
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>{isEn ? 'Members & Roles' : 'Thành viên & Trao quyền'}</span>
+          <span>{isEn ? 'Members' : 'Thành viên'}</span>
           <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-black/10 dark:bg-white/10 text-current">
             {clan.memberCount}
           </span>
@@ -681,7 +681,7 @@ export default function ClanSettingsPage({
           }`}
         >
           <UserCheck className="w-4 h-4" />
-          <span>{isEn ? 'Join Requests' : 'Duyệt đơn gia nhập'}</span>
+          <span>{isEn ? 'Applications' : 'Đơn xin'}</span>
           {pendingRequests.length > 0 && (
             <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-500 text-black">
               {pendingRequests.length}
