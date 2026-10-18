@@ -1,82 +1,164 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
+import { detectMonthsFromAmount } from '@/lib/supportPayment';
+
+function verifySePayAuth(req: Request, rawBody: string, secret: string): boolean {
+  if (!secret) return false;
+
+  // 1. Check Authorization header: Apikey <secret> or Bearer <secret>
+  const authHeader = req.headers.get('authorization') || req.headers.get('x-api-key') || '';
+  if (authHeader) {
+    const token = authHeader.replace(/^(Apikey|Bearer)\s+/i, '').trim();
+    if (token === secret || token === secret.replace(/^whsec_/, '')) {
+      return true;
+    }
+  }
+
+  // 2. Check X-SePay-Signature header
+  const signature = req.headers.get('x-sepay-signature');
+  if (signature) {
+    const cleanSig = signature.replace(/^sha256=/i, '').trim();
+    const timestamp = req.headers.get('x-sepay-timestamp') || '';
+
+    const secrets = [secret, secret.replace(/^whsec_/, '')];
+    const payloads = timestamp ? [`${timestamp}.${rawBody}`, rawBody] : [rawBody];
+
+    for (const sec of secrets) {
+      for (const payload of payloads) {
+        try {
+          const hmac = crypto.createHmac('sha256', sec);
+          hmac.update(payload);
+          const expected = hmac.digest('hex');
+
+          const sigBuf = Buffer.from(cleanSig, 'hex');
+          const expBuf = Buffer.from(expected, 'hex');
+          if (sigBuf.length > 0 && sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf)) {
+            return true;
+          }
+        } catch {
+          // ignore hex parsing errors
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+function parseTransactionMemo(content: string) {
+  const clean = content.toUpperCase();
+  const candidates: string[] = [];
+  let monthsFromMemo = 0;
+
+  // 1. Extract explicit months: e.g. "SUPPORT 3T", "3T", "SUPPORT 3"
+  const m1 = clean.match(/SUPPORT\s*(\d{1,2})\s*T/);
+  const m2 = clean.match(/\b(\d{1,2})\s*T\b/);
+  const m3 = clean.match(/SUPPORT\s*(\d{1,2})\b/);
+  if (m1) {
+    monthsFromMemo = parseInt(m1[1], 10);
+  } else if (m2) {
+    monthsFromMemo = parseInt(m2[1], 10);
+  } else if (m3) {
+    monthsFromMemo = parseInt(m3[1], 10);
+  }
+
+  // 2. Pattern 1: GDVN <username> ...
+  const gdvnMatch = clean.match(/GDVN\s+([A-Z0-9_.-]+)/);
+  if (gdvnMatch && gdvnMatch[1] && gdvnMatch[1] !== 'SUPPORT') {
+    candidates.push(gdvnMatch[1]);
+  }
+
+  // 3. Pattern 2: <username> SUPPORT ...
+  const supportMatch = clean.match(/([A-Z0-9_.-]+)\s+SUPPORT/);
+  if (supportMatch && supportMatch[1] && supportMatch[1] !== 'GDVN') {
+    candidates.push(supportMatch[1]);
+  }
+
+  // 4. Token fallback: split by non-word and collect likely usernames
+  const stopWords = new Set([
+    'GDVN', 'SUPPORT', 'UNG', 'HO', 'THANH', 'TOAN', 'CHUYEN', 'KHOAN', 'NAP', 'TIEN',
+    'VIETINBANK', 'TECHCOMBANK', 'MBBANK', 'MBVCB', 'VCB', 'ACB', 'BIDV', 'ICB', 'IBFT',
+    'NAPAS', 'QR', 'VNPAY', 'MOMO', 'ZALOPAY', 'TRANSFER', 'FROM', 'TO', 'THE'
+  ]);
+  const tokens = clean
+    .split(/[^A-Z0-9_.-]+/)
+    .filter((t) => t.length >= 3 && t.length <= 25 && !stopWords.has(t) && !/^\d+$/.test(t) && !/^\d+T$/.test(t));
+
+  for (const t of tokens) {
+    if (!candidates.includes(t)) {
+      candidates.push(t);
+    }
+  }
+
+  return { candidates, monthsFromMemo };
+}
 
 export async function POST(req: Request) {
   try {
     const rawBody = await req.text();
-    const signature = req.headers.get('x-sepay-signature');
-    
     const secret = process.env.SEPAY_WEBHOOK_SECRET;
+
     if (!secret) {
       console.error('SePay Webhook Error: SEPAY_WEBHOOK_SECRET is not configured on server.');
       return NextResponse.json({ error: 'Webhook secret not configured on server' }, { status: 500 });
     }
 
-    if (!signature) {
-      return NextResponse.json({ error: 'Missing signature' }, { status: 401 });
-    }
-
-    const hmac = crypto.createHmac('sha256', secret);
-    hmac.update(rawBody);
-    const expectedSignature = hmac.digest('hex');
-
-    const sigBuf = Buffer.from(signature);
-    const expBuf = Buffer.from(expectedSignature);
-    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+    const isAuthorized = verifySePayAuth(req, rawBody, secret);
+    if (!isAuthorized) {
+      console.warn('[SePay Webhook] Authentication failed. Headers:', {
+        auth: req.headers.get('authorization'),
+        signature: req.headers.get('x-sepay-signature'),
+        timestamp: req.headers.get('x-sepay-timestamp'),
+      });
+      return NextResponse.json({ error: 'Invalid authentication or signature' }, { status: 401 });
     }
 
     const body = JSON.parse(rawBody);
-    const transferAmount = parseInt(body.transferAmount) || 0;
-    const transactionContent = String(body.content || body.transactionContent || '').toUpperCase();
+    const transferAmount = parseInt(body.transferAmount || body.amount || '0', 10) || 0;
+    const transactionContent = String(body.content || body.transactionContent || body.description || '').toUpperCase();
     const transferType = String(body.transferType || '').toLowerCase();
+
+    console.log('[SePay Webhook] Received:', {
+      transferAmount,
+      transferType,
+      transactionContent,
+    });
 
     if (transferType && transferType !== 'in') {
       return NextResponse.json({ success: true, note: 'Ignore outbound transfer' });
     }
 
-    let targetUsername = '';
-    let monthsToGrant = 0;
+    const { candidates, monthsFromMemo } = parseTransactionMemo(transactionContent);
 
-    // Match new format: [USERNAME] SUPPORT [M]T
-    const matchNew = transactionContent.match(/([A-Z0-9_.-]+)\s+SUPPORT\s+(\d+)T/);
-    if (matchNew) {
-      targetUsername = matchNew[1];
-      monthsToGrant = parseInt(matchNew[2]);
-      
-      // Calculate expected price to verify
-      let discountPercent = Math.floor(monthsToGrant / 3) * 5;
-      if (discountPercent > 100) discountPercent = 100;
-      const expectedPrice = (20000 * monthsToGrant) * (1 - discountPercent / 100);
-      
-      if (transferAmount < expectedPrice - 1000) { // allow 1000 VND variance
-        // They didn't pay enough for the requested months, fallback to basic math without discount
-        monthsToGrant = Math.floor(transferAmount / 20000);
-      }
-    } else {
-      // Fallback old format: GDVN [USERNAME]
-      const matchOld = transactionContent.match(/GDVN\s+([A-Z0-9_.-]+)/);
-      if (matchOld) {
-        targetUsername = matchOld[1];
-        monthsToGrant = Math.floor(transferAmount / 20000);
-      } else {
-        return NextResponse.json({ success: true, note: 'Transaction content does not match any known format' });
+    // Find target user from candidate usernames
+    let targetUser: any = null;
+    let matchedCandidate = '';
+    for (const cand of candidates) {
+      const u = await prisma.user.findFirst({
+        where: {
+          username: { equals: cand, mode: 'insensitive' },
+        },
+      });
+      if (u) {
+        targetUser = u;
+        matchedCandidate = cand;
+        break;
       }
     }
-
-    if (monthsToGrant <= 0) {
-      return NextResponse.json({ success: true, note: 'Amount too small or 0 months calculated' });
-    }
-
-    const targetUser = await prisma.user.findFirst({
-      where: {
-        username: { equals: targetUsername, mode: 'insensitive' }
-      }
-    });
 
     if (!targetUser) {
-      return NextResponse.json({ success: true, note: 'User not found' });
+      console.warn('[SePay Webhook] User not found for candidates:', candidates, 'in content:', transactionContent);
+      return NextResponse.json({ success: true, note: 'User not found', checkedCandidates: candidates });
+    }
+
+    // Determine months to grant
+    const detectedFromPrice = detectMonthsFromAmount(transferAmount);
+    let monthsToGrant = monthsFromMemo > 0 ? Math.max(monthsFromMemo, detectedFromPrice) : detectedFromPrice;
+
+    if (monthsToGrant <= 0) {
+      console.log(`[SePay Webhook] Amount ${transferAmount} too small to grant any supporter months.`);
+      return NextResponse.json({ success: true, note: 'Amount too small' });
     }
 
     const now = new Date();
@@ -86,7 +168,7 @@ export async function POST(req: Request) {
 
     await prisma.user.update({
       where: { id: targetUser.id },
-      data: { supporterUntil: nextDate }
+      data: { supporterUntil: nextDate },
     });
 
     await prisma.notification.create({
@@ -94,13 +176,21 @@ export async function POST(req: Request) {
         userId: targetUser.id,
         title: '🎉 Quyên góp thành công',
         message: `Hệ thống đã nhận được ${transferAmount.toLocaleString('vi-VN')}đ. Tài khoản của bạn được cấp ${monthsToGrant} tháng danh hiệu Supporter. Cảm ơn vì sự ủng hộ!`,
-      }
+      },
     });
 
-    return NextResponse.json({ success: true, user: targetUser.username, monthsAdded: monthsToGrant });
+    console.log(`[SePay Webhook] Granted ${monthsToGrant} months to ${targetUser.username} (matched '${matchedCandidate}'). Next expiry: ${nextDate.toISOString()}`);
+
+    return NextResponse.json({
+      success: true,
+      user: targetUser.username,
+      monthsAdded: monthsToGrant,
+      supporterUntil: nextDate.toISOString(),
+    });
 
   } catch (error) {
     console.error('SePay Webhook Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+

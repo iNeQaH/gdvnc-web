@@ -28,9 +28,23 @@ export function calculateSupportPrice(months: number) {
   };
 }
 
+export function detectMonthsFromAmount(amount: number): number {
+  if (amount <= 0) return 0;
+  // Check exact/close matches from 36 down to 1
+  for (let m = 36; m >= 1; m--) {
+    const { totalPrice } = calculateSupportPrice(m);
+    // Allow up to 3,000 VND variance for rounding or slight differences
+    if (Math.abs(amount - totalPrice) <= 3000) {
+      return m;
+    }
+  }
+  // Fallback: standard 20k per month
+  return Math.floor(amount / 20000);
+}
+
 export function supportTransferContent(username: string, months: number = 1) {
   const sanitized = sanitizeSupportUsername(username);
-  return sanitized ? `${sanitized} SUPPORT ${months}T` : 'SUPPORT';
+  return sanitized ? `GDVN ${sanitized} SUPPORT ${months}T` : 'GDVN SUPPORT';
 }
 
 export function supportQrUrl(username: string, months: number = 1) {
