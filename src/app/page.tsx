@@ -742,44 +742,15 @@ export default function HomePage() {
 
         {/* Device Filter (Hidden in CREATOR mode) */}
         {mode !== 'CREATOR' && (
-          <div
-            className="flex items-center gap-1.5 p-1 rounded-2xl border shrink-0 shadow-inner"
-            style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
-          >
-            {[
-              { id: 'ALL', label: 'Tất cả', icon: null },
+          <AnimatedTabs
+            active={deviceFilter}
+            onChange={(val) => setDeviceFilter(val as any)}
+            options={[
+              { id: 'ALL', label: 'Tất cả' },
               { id: 'PC', label: 'PC', icon: <Monitor className="w-3.5 h-3.5" /> },
               { id: 'MOBILE', label: 'Mobile', icon: <Smartphone className="w-3.5 h-3.5" /> },
-            ].map((btn) => {
-              const isActive = deviceFilter === btn.id;
-              return (
-                <button
-                  key={btn.id}
-                  type="button"
-                  onClick={() => setDeviceFilter(btn.id as any)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                    isActive
-                      ? isLavender
-                        ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-md shadow-purple-500/30 border border-white/20 scale-[1.02]'
-                        : 'text-white shadow-md border border-white/20 scale-[1.02]'
-                      : 'ui-dim hover:text-white/90 hover:bg-white/5 border border-transparent'
-                  }`}
-                  style={
-                    isActive && !isLavender
-                      ? {
-                          backgroundColor: 'var(--accent)',
-                          color: 'var(--accent-fg, #ffffff)',
-                          boxShadow: '0 4px 12px var(--border-glow, rgba(14,165,233,0.3))',
-                        }
-                      : undefined
-                  }
-                >
-                  {btn.icon}
-                  <span>{btn.label}</span>
-                </button>
-              );
-            })}
-          </div>
+            ]}
+          />
         )}
 
         {/* Search Bar */}

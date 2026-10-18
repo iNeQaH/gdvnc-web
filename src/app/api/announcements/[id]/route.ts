@@ -1,15 +1,27 @@
 import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireFullAdmin } from '@/lib/auth';
+import { getSessionUser, requireFullAdmin } from '@/lib/auth';
 import { clipText } from '@/lib/validate';
 import {
+  canSeeAnnouncement,
   isAnnouncementAudience,
   serializeAnnouncement,
+  type Viewer,
 } from '@/lib/announcements';
 import type { AnnouncementAudience } from '@prisma/client';
 
 const authorSelect = { username: true } as const;
+
+async function loadViewer(): Promise<Viewer | null> {
+  const auth = await getSessionUser();
+  if (!auth) return null;
+  const user = await prisma.user.findUnique({
+    where: { id: auth.userId },
+    select: { id: true, role: true, supporterUntil: true },
+  });
+  return user;
+}
 
 async function resolveUsernames(raw: unknown): Promise<{ ids: string[]; error?: string }> {
   const names = Array.isArray(raw)
@@ -90,6 +102,30 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 }
 
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  try {
+    const viewer = await loadViewer();
+    const row = await prisma.siteAnnouncement.findUnique({
+      where: { id },
+      include: { author: { select: authorSelect } },
+    });
+    if (!row) {
+      return NextResponse.json({ error: 'Announcement not found.' }, { status: 404 });
+    }
+    const canSee = viewer?.role === 'ADMIN' || canSeeAnnouncement(viewer, row);
+    if (!canSee) {
+      return NextResponse.json({ error: 'Access denied.' }, { status: 403 });
+    }
+    return NextResponse.json({
+      success: true,
+      announcement: serializeAnnouncement(row, { includeTargets: viewer?.role === 'ADMIN' }),
+    });
+  } catch (error: any) {
+    return publicApiError(error, 'Failed to fetch announcement.', 500);
+  }
+}
+
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireFullAdmin();
@@ -99,9 +135,11 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
   const { id } = await params;
   try {
+    await prisma.announcementRead.deleteMany({ where: { announcementId: id } });
     await prisma.siteAnnouncement.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return publicApiError(error, 'Failed to delete announcement.', 500);
   }
 }
+

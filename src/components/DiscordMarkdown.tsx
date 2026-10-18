@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { sanitizeFaqHtml } from '@/lib/faqSanitize';
+import { htmlToDiscordMarkdown } from '@/lib/htmlToDiscordMarkdown';
 
 function InteractiveSpoiler({ text }: { text: string }) {
   const [revealed, setRevealed] = useState(false);
@@ -306,5 +307,7 @@ export default function DiscordMarkdown({
   className?: string;
 }) {
   if (!content) return null;
-  return <div className={`discord-markdown space-y-1 ${className}`}>{parseDiscordMarkdown(content)}</div>;
+  const hasHtml = /<\/?(p|div|b|strong|i|em|u|h[1-6]|ul|ol|li|br|blockquote|table|pre|code)[^>]*>/i.test(content);
+  const normalized = hasHtml ? htmlToDiscordMarkdown(content) : content;
+  return <div className={`discord-markdown space-y-1 ${className}`}>{parseDiscordMarkdown(normalized)}</div>;
 }

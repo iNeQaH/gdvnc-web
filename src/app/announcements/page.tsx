@@ -64,6 +64,23 @@ export default function AnnouncementsPage() {
     }
   };
 
+  const handleDeleteAnnouncement = (item: Announcement) => {
+    showConfirm('Bạn có chắc chắn muốn xóa thông báo này?', async () => {
+      try {
+        const res = await fetch(`/api/announcements/${item.id}`, { method: 'DELETE' });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+          showToast('Đã xóa thông báo thành công.', 'success');
+          load();
+        } else {
+          showToast(data.error || 'Lỗi khi xóa thông báo.', 'error');
+        }
+      } catch {
+        showToast('Lỗi khi xóa thông báo.', 'error');
+      }
+    });
+  };
+
   useEffect(() => {
     const userStr = localStorage.getItem('gdvnc_user');
     if (userStr) {
@@ -112,22 +129,54 @@ export default function AnnouncementsPage() {
       ) : (
         <div className="ui-zebra-list flex flex-col rounded-2xl overflow-hidden border" style={{ borderColor: 'var(--border-ui)' }}>
           {items.map((item) => (
-            <Link
+            <div
               key={item.id}
-              href={`/announcements/${item.id}`}
-              className="text-left px-4 py-3.5 flex flex-col gap-1 hover:opacity-90 transition-opacity"
+              className="relative group border-b last:border-b-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              style={{ borderColor: 'var(--border-subtle)' }}
             >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-extrabold ui-title truncate">{item.title}</span>
-                <span className="text-[10px] ui-dim shrink-0">
-                  {new Date(item.createdAt).toLocaleDateString(locale)}
-                </span>
-              </div>
-              <div className="text-[11px] ui-dim">
-                {t('announce.by')} {item.author} · {audienceLabel(item.audience)}
-              </div>
-              <p className="text-xs ui-title/80 line-clamp-2 leading-relaxed">{item.excerpt}</p>
-            </Link>
+              <Link
+                href={`/announcements/${item.id}`}
+                className="text-left px-4 py-3.5 flex flex-col gap-1 block"
+              >
+                <div className="flex items-center justify-between gap-2 pr-16 sm:pr-20">
+                  <span className="text-sm font-extrabold ui-title truncate">{item.title}</span>
+                  <span className="text-[10px] ui-dim shrink-0">
+                    {new Date(item.createdAt).toLocaleDateString(locale)}
+                  </span>
+                </div>
+                <div className="text-[11px] ui-dim">
+                  {t('announce.by')} {item.author} · {audienceLabel(item.audience)}
+                </div>
+                <p className="text-xs ui-title/80 line-clamp-2 leading-relaxed">{item.excerpt}</p>
+              </Link>
+
+              {isAdmin && (
+                <div className="absolute right-3 top-3 flex items-center gap-1.5 z-10">
+                  <Link
+                    href={`/announcements/new?edit=${item.id}`}
+                    onClick={(e) => e.stopPropagation()}
+                    title="Chỉnh sửa thông báo"
+                    className="p-1.5 rounded-lg border ui-dim hover:text-sky-400 hover:border-sky-400/30 transition-all cursor-pointer"
+                    style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDeleteAnnouncement(item);
+                    }}
+                    title="Xóa thông báo"
+                    className="p-1.5 rounded-lg border text-red-500/80 hover:text-red-500 hover:border-red-500/30 transition-all cursor-pointer"
+                    style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}

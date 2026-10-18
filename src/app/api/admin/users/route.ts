@@ -51,34 +51,13 @@ export async function GET(req: Request) {
     }
 
     const where: Prisma.UserWhereInput | undefined = and.length ? { AND: and } : undefined;
-    const staffTake = roleParam === 'ADMIN' || roleParam === 'MODERATOR' || roleParam === 'SUPPORTER' ? 200 : 50;
 
-    let users: any[] = [];
-
-    if (roleParam === 'ALL' && !query) {
-      const [staff, recent] = await Promise.all([
-        prisma.user.findMany({
-          where: { role: { in: [Role.ADMIN, Role.MODERATOR] } },
-          select: userSelect,
-          orderBy: { createdAt: 'desc' },
-        }),
-        prisma.user.findMany({
-          where: { role: Role.USER },
-          select: userSelect,
-          orderBy: { createdAt: 'desc' },
-          take: 60,
-        }),
-      ]);
-      const staffIds = new Set(staff.map((u) => u.id));
-      users = [...staff, ...recent.filter((u) => !staffIds.has(u.id))];
-    } else {
-      users = await prisma.user.findMany({
-        where,
-        select: userSelect,
-        orderBy: { createdAt: 'desc' },
-        take: staffTake,
-      });
-    }
+    const users = await prisma.user.findMany({
+      where,
+      select: userSelect,
+      orderBy: { createdAt: 'desc' },
+      take: 2000,
+    });
 
     // Attach latest activity from PageVisit
     const userIds = users.map((u) => u.id);
@@ -97,7 +76,7 @@ export async function GET(req: Request) {
     const enrichedUsers = users.map((u) => ({
       ...u,
       isSuperAdmin: isSuperAdminUser(u),
-      lastActiveAt: visitMap.get(u.id) || u.updatedAt || u.createdAt,
+      lastActiveAt: visitMap.get(u.id) || null,
     }));
 
     return NextResponse.json({

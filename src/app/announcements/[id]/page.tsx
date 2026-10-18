@@ -14,11 +14,13 @@ import {
   Check,
   Shield,
   Loader2,
+  Copy,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import DiscordMarkdown from '@/components/DiscordMarkdown';
 import type { DictKey } from '@/lib/dictionaries';
+import { isSuperAdminUser } from '@/lib/roles';
 
 type Announcement = {
   id: string;
@@ -46,9 +48,10 @@ export default function AnnouncementDetailPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copiedFormat, setCopiedFormat] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
+  const isAdmin = Boolean(currentUser && (currentUser.role === 'ADMIN' || isSuperAdminUser(currentUser)));
 
   useEffect(() => {
     const userStr = localStorage.getItem('gdvnc_user');
@@ -98,19 +101,32 @@ export default function AnnouncementDetailPage({
     }
   };
 
+  const handleCopyMarkdown = async () => {
+    if (!item?.body) return;
+    try {
+      await navigator.clipboard.writeText(item.body);
+      setCopiedFormat(true);
+      showToast('Đã sao chép nội dung định dạng thông báo!', 'success');
+      setTimeout(() => setCopiedFormat(false), 2000);
+    } catch {
+      showToast('Không thể sao chép nội dung.', 'error');
+    }
+  };
+
   const handleDelete = () => {
     if (!item) return;
     showConfirm('Bạn có chắc chắn muốn xóa thông báo này?', async () => {
       try {
         const res = await fetch(`/api/announcements/${item.id}`, { method: 'DELETE' });
-        if (res.ok) {
-          showToast('Đã xóa thông báo.');
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+          showToast('Đã xóa thông báo thành công.', 'success');
           router.push('/announcements');
         } else {
-          showToast('Lỗi khi xóa thông báo.');
+          showToast(data.error || 'Lỗi khi xóa thông báo.', 'error');
         }
       } catch {
-        showToast('Lỗi khi xóa thông báo.');
+        showToast('Lỗi khi xóa thông báo.', 'error');
       }
     });
   };
@@ -158,7 +174,7 @@ export default function AnnouncementDetailPage({
           <button
             type="button"
             onClick={handleShare}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer"
             style={{
               backgroundColor: 'var(--bg-card)',
               borderColor: 'var(--border-ui)',
@@ -168,6 +184,21 @@ export default function AnnouncementDetailPage({
           >
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
             <span>{copied ? 'Đã sao chép' : 'Chia sẻ'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleCopyMarkdown}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer"
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              borderColor: 'var(--border-ui)',
+              color: 'var(--text-title)',
+            }}
+            title="Sao chép nội dung định dạng (Markdown)"
+          >
+            {copiedFormat ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copiedFormat ? 'Đã chép mã' : 'Sao chép mã'}</span>
           </button>
 
           {isAdmin && (

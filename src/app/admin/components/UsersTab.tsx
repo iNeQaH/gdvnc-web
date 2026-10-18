@@ -437,8 +437,8 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
     } else if (userSort === 'pp') {
       return userSortOrder === 'desc' ? b.classicPp - a.classicPp : a.classicPp - b.classicPp;
     } else if (userSort === 'lastActive') {
-      const timeA = new Date(a.lastActiveAt || a.updatedAt || a.createdAt).getTime();
-      const timeB = new Date(b.lastActiveAt || b.updatedAt || b.createdAt).getTime();
+      const timeA = a.lastActiveAt ? new Date(a.lastActiveAt).getTime() : 0;
+      const timeB = b.lastActiveAt ? new Date(b.lastActiveAt).getTime() : 0;
       return userSortOrder === 'desc' ? timeB - timeA : timeA - timeB;
     } else {
       const timeA = new Date(a.createdAt).getTime();
@@ -446,6 +446,8 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
       return userSortOrder === 'desc' ? timeB - timeA : timeA - timeB;
     }
   });
+
+  const USERS_PAGE_SIZE = 20;
 
   return (
     <>
@@ -546,7 +548,7 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
                   </tr>
                 </thead>
                 <tbody className="ui-zebra">
-                  {sortedUsers.slice((userPage - 1) * 10, userPage * 10).map((user) => {
+                  {sortedUsers.slice((userPage - 1) * USERS_PAGE_SIZE, userPage * USERS_PAGE_SIZE).map((user) => {
                     const isTargetSuper = Boolean((user as any).isSuperAdmin || isSuperAdminUser(user));
                     const isSupporter = user.supporterUntil && new Date(user.supporterUntil) > new Date();
                     return (
@@ -703,7 +705,7 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
           )}
         </div>
 
-        <AdminListPager page={userPage} total={sortedUsers.length} onPage={setUserPage} t={t} />
+        <AdminListPager page={userPage} total={sortedUsers.length} onPage={setUserPage} t={t} pageSize={USERS_PAGE_SIZE} />
       </div>
 
       {isDeleteUserModalOpen && deleteUserTarget && (
