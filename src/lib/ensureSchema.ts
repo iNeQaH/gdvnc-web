@@ -16,7 +16,7 @@ async function columnSet(db: PrismaClient) {
         OR (table_name = 'RedeemCode' AND column_name IN ('id', 'expiresAt', 'rewardType', 'days', 'spAmount'))
         OR (table_name = 'RedeemCodeUse' AND column_name IN ('id', 'rewardType', 'days', 'spAmount'))
         OR (table_name = 'UserSpGrant' AND column_name = 'id')
-        OR (table_name = 'User' AND column_name IN ('nameColor', 'nameGradient', 'nameGlow', 'nameFont', 'hasGlitchTheme', 'easterEggCompleted', 'easterEggPoints', 'easterEggSpins', 'easterEggLastSlot', 'easterEggDailyCount', 'easterEggDailyDate'))
+        OR (table_name = 'User' AND column_name IN ('nameColor', 'nameGradient', 'nameGlow', 'nameFont', 'hasGlitchTheme', 'easterEggCompleted', 'easterEggPoints', 'easterEggCode', 'easterEggSpins', 'easterEggLastSlot', 'easterEggDailyCount', 'easterEggDailyDate'))
         OR (table_name = 'Clan' AND column_name = 'id')
         OR (table_name = 'ClanMember' AND column_name = 'id')
         OR (table_name = 'ClanJoinRequest' AND column_name = 'id')
@@ -177,6 +177,19 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
     await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "easterEggLastSlot" INTEGER NOT NULL DEFAULT 0`);
     await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "easterEggDailyCount" INTEGER NOT NULL DEFAULT 0`);
     await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "easterEggDailyDate" TEXT`);
+  }
+  if (!have.has('User.easterEggCode')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "easterEggCode" TEXT`);
+    try {
+      await db.$executeRawUnsafe(`
+        UPDATE "User" u
+        SET "easterEggCode" = r.code
+        FROM "RedeemCode" r
+        WHERE r."createdById" = u.id
+          AND r."rewardType" = 'GLITCH_THEME'
+          AND u."easterEggCode" IS NULL
+      `);
+    } catch {}
   }
   if (!have.has('Clan.id')) {
     await db.$executeRawUnsafe(`

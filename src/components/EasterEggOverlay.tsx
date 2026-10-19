@@ -61,14 +61,19 @@ export function EasterEggOverlay({ onClose }: EasterEggOverlayProps) {
         return;
       }
       const data = await res.json();
-      if ((data.completed || data.points >= 100) && !data.isOwner && !data.isTester) {
+      if (data.completed || data.code || data.points >= 100) {
         try {
           const raw = localStorage.getItem('gdvnc_user');
           if (raw) {
             const parsed = JSON.parse(raw);
             localStorage.setItem(
               'gdvnc_user',
-              JSON.stringify({ ...parsed, easterEggCompleted: true, easterEggPoints: 100 })
+              JSON.stringify({
+                ...parsed,
+                easterEggCompleted: true,
+                easterEggPoints: 100,
+                ...(data.code ? { easterEggCode: data.code } : {}),
+              })
             );
           }
         } catch {}
@@ -184,14 +189,19 @@ export function EasterEggOverlay({ onClose }: EasterEggOverlayProps) {
         setSpins(typeof data.spins === 'number' ? (isOwner || isTester ? 9999 : data.spins) : spins);
         setSpinning(false);
 
-        if (data.completed || data.points >= 100) {
+        if (data.completed || data.points >= 100 || data.code) {
           try {
             const raw = localStorage.getItem('gdvnc_user');
             if (raw) {
               const parsed = JSON.parse(raw);
               localStorage.setItem(
                 'gdvnc_user',
-                JSON.stringify({ ...parsed, easterEggCompleted: true })
+                JSON.stringify({
+                  ...parsed,
+                  easterEggCompleted: true,
+                  easterEggPoints: 100,
+                  ...(data.code ? { easterEggCode: data.code } : {}),
+                })
               );
             }
           } catch {

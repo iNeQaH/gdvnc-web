@@ -23,6 +23,7 @@ import {
   Crown,
   Shield,
   Users,
+  Copy,
 } from 'lucide-react';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { useTheme } from './ThemeProvider';
@@ -33,8 +34,10 @@ import { UserDisplayName } from './UserDisplayName';
 import { EasterEggOverlay } from './EasterEggOverlay';
 import { isStaffRole, isSuperAdminUser } from '@/lib/roles';
 import { refreshSessionUser, logoutClient } from '@/lib/sessionClient';
+import { useToast } from '@/components/GlobalToast';
 
 export const Sidebar = () => {
+  const { showToast } = useToast();
   const pathname = usePathname();
   const router = useRouter();
   const { theme, resolvedMode } = useTheme();
@@ -62,10 +65,7 @@ export const Sidebar = () => {
   const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (pathname !== '/') return;
     if (!currentUser) return;
-    const isTester = isStaffRole(currentUser?.role) || isSuperAdminUser(currentUser) || currentUser?.username?.toLowerCase() === 'ego';
-    if ((currentUser?.easterEggCompleted || (currentUser?.easterEggPoints ?? 0) >= 100) && !isTester) {
-      return;
-    }
+
     e.preventDefault();
     if (eggAlertMessage !== null) return;
 
@@ -75,6 +75,51 @@ export const Sidebar = () => {
 
     const next = eggClicksRef.current + 1;
     eggClicksRef.current = next;
+
+    const hasEggCode = Boolean(
+      currentUser?.easterEggCode ||
+      currentUser?.easterEggCompleted ||
+      (currentUser?.easterEggPoints ?? 0) >= 100
+    );
+
+    // Sau khi server gửi mã rồi (kể cả chưa đổi): khi nhấn 5 lần thì báo mã đổi thưởng và loop ở đó
+    if (hasEggCode) {
+      if (next >= 5) {
+        eggClicksRef.current = 0; // Loop ở đó! Không bao giờ lên 15 hay 25
+        const currentCode = currentUser?.easterEggCode;
+        if (currentCode) {
+          setEggAlertMessage(currentCode);
+        } else {
+          fetch('/api/easter-egg')
+            .then((res) => res.json())
+            .then((data) => {
+              const code = data?.code;
+              if (code) {
+                try {
+                  const raw = localStorage.getItem('gdvnc_user');
+                  if (raw) {
+                    const parsed = JSON.parse(raw);
+                    localStorage.setItem('gdvnc_user', JSON.stringify({ ...parsed, easterEggCode: code, easterEggCompleted: true }));
+                    setCurrentUser({ ...parsed, easterEggCode: code, easterEggCompleted: true });
+                  }
+                } catch {}
+                setEggAlertMessage(code);
+              } else {
+                setEggAlertMessage('Đã mở khoá');
+              }
+            })
+            .catch(() => {
+              setEggAlertMessage('Đã mở khoá');
+            });
+        }
+        return;
+      }
+
+      eggTimerRef.current = setTimeout(() => {
+        eggClicksRef.current = 0;
+      }, 4000);
+      return;
+    }
 
     if (next === 5) {
       setEggAlertMessage('Làm j v?');
@@ -611,8 +656,31 @@ export const Sidebar = () => {
               borderColor: 'var(--border-ui)',
             }}
           >
-            <div className="text-base font-bold ui-title select-none">
-              {eggAlertMessage}
+            <div className="min-w-0 flex-1">
+              {eggAlertMessage !== 'Làm j v?' && eggAlertMessage !== '...' ? (
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-wider ui-dim mb-1">
+                    Mã đổi thưởng
+                  </div>
+                  <div
+                    onClick={() => {
+                      if (navigator.clipboard) {
+                        navigator.clipboard.writeText(eggAlertMessage);
+                        showToast('Đã sao chép mã đổi thưởng!', 'success');
+                      }
+                    }}
+                    className="text-xl font-black font-mono tracking-widest text-violet-400 select-all cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-2"
+                    title="Click để sao chép mã"
+                  >
+                    <span>{eggAlertMessage}</span>
+                    <Copy className="w-4 h-4 ui-dim shrink-0" />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-base font-bold ui-title select-none">
+                  {eggAlertMessage}
+                </div>
+              )}
             </div>
             <button
               type="button"
@@ -631,7 +699,7 @@ export const Sidebar = () => {
       )}
 
       {/* Easter Egg Fullscreen Overlay (Covers everything on homepage, reset on reload) */}
-      {isEggOverlayOpen && (
+      {isEggOverlayOpen && !currentUser?.easterEggCode && !currentUser?.easterEggCompleted && (currentUser?.easterEggPoints ?? 0) < 100 && (
         <EasterEggOverlay onClose={() => setIsEggOverlayOpen(false)} />
       )}
     </>

@@ -34,6 +34,7 @@ export async function GET() {
       hasGlitchTheme: true,
       easterEggCompleted: true,
       easterEggPoints: true,
+      easterEggCode: true,
       tokenVersion: true,
       clanMember: {
         select: {
@@ -75,6 +76,22 @@ export async function GET() {
     return NextResponse.json({ success: false }, { status: 401 });
   }
 
+  let easterEggCode = user.easterEggCode;
+  if (!easterEggCode && (user.easterEggCompleted || user.easterEggPoints >= 100)) {
+    const rc = await prisma.redeemCode.findFirst({
+      where: { createdById: user.id, rewardType: 'GLITCH_THEME' },
+      orderBy: { createdAt: 'desc' },
+      select: { code: true },
+    });
+    if (rc) {
+      easterEggCode = rc.code;
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { easterEggCode: rc.code },
+      }).catch(() => {});
+    }
+  }
+
   const { tokenVersion: _tokenVersion, ...publicUser } = user;
   const sanitizedClan = sanitizeUserClan(user.clanMember?.clan);
   const clanMember = user.clanMember
@@ -88,6 +105,7 @@ export async function GET() {
     success: true,
     user: {
       ...publicUser,
+      easterEggCode: easterEggCode || null,
       clanMember,
       isSuperAdmin: isSuperAdminUser(user),
     },

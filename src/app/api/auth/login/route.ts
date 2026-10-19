@@ -67,6 +67,8 @@ export async function POST(req: Request) {
             nameFont: true,
             hasGlitchTheme: true,
             easterEggCompleted: true,
+            easterEggPoints: true,
+            easterEggCode: true,
             passwordHash: true,
             tokenVersion: true,
             isBanned: true,
@@ -316,6 +318,8 @@ export async function POST(req: Request) {
       nameFont: user.nameFont,
       hasGlitchTheme: user.hasGlitchTheme,
       easterEggCompleted: user.easterEggCompleted,
+      easterEggPoints: user.easterEggPoints,
+      easterEggCode: user.easterEggCode || null,
       clanMember: user.clanMember
         ? {
             role: user.clanMember.role,

@@ -53,6 +53,7 @@ async function syncUserEasterEggState(userId: string) {
       supporterUntil: true,
       easterEggCompleted: true,
       easterEggPoints: true,
+      easterEggCode: true,
       easterEggSpins: true,
       easterEggLastSlot: true,
       easterEggDailyCount: true,
@@ -137,12 +138,32 @@ export async function GET() {
     const owner = isEasterEggOwner(state);
     const tester = owner || isEasterEggTester(state);
 
-    if ((state.easterEggCompleted || state.easterEggPoints >= 100) && !tester) {
-      return NextResponse.json({ completed: true }, { status: 403 });
+    let eggCode = state.easterEggCode;
+    if (!eggCode && (state.easterEggCompleted || state.easterEggPoints >= 100)) {
+      const codeRecord = await prisma.redeemCode.findFirst({
+        where: { createdById: state.id, rewardType: 'GLITCH_THEME' },
+        orderBy: { createdAt: 'desc' },
+        select: { code: true },
+      });
+      if (codeRecord) {
+        eggCode = codeRecord.code;
+      }
+    }
+
+    if (eggCode || state.easterEggCompleted || state.easterEggPoints >= 100) {
+      return NextResponse.json({
+        completed: true,
+        code: eggCode || null,
+        points: state.easterEggPoints,
+        spins: 0,
+        isTester: tester,
+        isOwner: owner,
+      });
     }
 
     return NextResponse.json({
       completed: false,
+      code: null,
       points: state.easterEggPoints,
       spins: tester ? 9999 : state.easterEggSpins,
       dailyCount: state.easterEggDailyCount,
@@ -181,13 +202,26 @@ export async function POST(req: Request) {
           easterEggPoints: 0,
           easterEggSpins: 9999,
           easterEggCompleted: false,
+          easterEggCode: null,
         },
       });
-      return NextResponse.json({ success: true, points: 0, spins: 9999, completed: false });
+      return NextResponse.json({ success: true, points: 0, spins: 9999, completed: false, code: null });
     }
 
-    if ((state.easterEggCompleted || state.easterEggPoints >= 100) && !tester) {
-      return NextResponse.json({ completed: true }, { status: 403 });
+    let eggCode = state.easterEggCode;
+    if (!eggCode && (state.easterEggCompleted || state.easterEggPoints >= 100)) {
+      const codeRecord = await prisma.redeemCode.findFirst({
+        where: { createdById: state.id, rewardType: 'GLITCH_THEME' },
+        orderBy: { createdAt: 'desc' },
+        select: { code: true },
+      });
+      if (codeRecord) {
+        eggCode = codeRecord.code;
+      }
+    }
+
+    if (eggCode || state.easterEggCompleted || state.easterEggPoints >= 100) {
+      return NextResponse.json({ completed: true, code: eggCode }, { status: 403 });
     }
 
     if (action === 'spin') {
@@ -215,7 +249,7 @@ export async function POST(req: Request) {
               easterEggSpins: { decrement: 1 },
               easterEggPoints: nextPoints,
               easterEggLastSlot: state.slotIndex,
-              ...(reached100 ? { easterEggCompleted: true } : {}),
+              ...(reached100 ? { easterEggCompleted: true, easterEggPoints: 100 } : {}),
             },
           });
 
@@ -229,7 +263,7 @@ export async function POST(req: Request) {
               easterEggSpins: 9999,
               easterEggPoints: nextPoints,
               easterEggLastSlot: state.slotIndex,
-              ...(reached100 ? { easterEggCompleted: true } : {}),
+              ...(reached100 ? { easterEggCompleted: true, easterEggPoints: 100 } : {}),
             },
           });
         }
@@ -248,6 +282,15 @@ export async function POST(req: Request) {
             if (!existing) break;
           }
           generatedCode = codeCandidate;
+
+          await tx.user.update({
+            where: { id: state.id },
+            data: {
+              easterEggCode: generatedCode,
+              easterEggCompleted: true,
+              easterEggPoints: 100,
+            },
+          });
 
           await tx.redeemCode.create({
             data: {
@@ -283,6 +326,7 @@ export async function POST(req: Request) {
         points: nextPoints,
         spins: nextSpins,
         completed: reached100,
+        code: generatedCode || null,
       });
     }
 
