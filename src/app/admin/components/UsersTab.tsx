@@ -119,6 +119,7 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
   // Supporter state
   const [supporterTarget, setSupporterTarget] = useState<{ id: string; username: string } | null>(null);
   const [supporterMonths, setSupporterMonths] = useState('1');
+  const [supporterSpCoins, setSupporterSpCoins] = useState(0);
   const [isSupporterModalOpen, setIsSupporterModalOpen] = useState(false);
   const [givingSupporter, setGivingSupporter] = useState(false);
 
@@ -363,20 +364,23 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
     }
     setGivingSupporter(true);
     try {
+      const payload: any = { grantSupporterMonths: months };
+      if (supporterSpCoins > 0) payload.grantSpCoin = supporterSpCoins;
       const res = await fetch(`/api/admin/users/${supporterTarget.id}/role`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ grantSupporterMonths: months }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
         showToast(data.error || 'Cấp Supporter thất bại', 'error');
         return;
       }
-      showToast(`Đã cấp/sửa Supporter cho ${supporterTarget.username}`, 'success');
+      showToast(`Đã cấp/sửa Supporter & SP Coin cho ${supporterTarget.username}`, 'success');
       setIsSupporterModalOpen(false);
       setSupporterTarget(null);
       setSupporterMonths('1');
+      setSupporterSpCoins(0);
       fetchUsers(userQuery);
     } catch (err) {
       showToast('Lỗi hệ thống', 'error');
@@ -865,6 +869,21 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
                   <option value="1200">Trọn đời (100 năm)</option>
                   <option value="-1">Hủy Supporter ngay lập tức</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase ui-dim mb-1">Cấp thêm SP Coin (tùy chọn)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="10000"
+                  value={supporterSpCoins}
+                  onChange={(e) => setSupporterSpCoins(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                  placeholder="0"
+                  className="w-full px-3 py-2 rounded-xl border text-xs focus:outline-none focus:ring-2 focus:ring-pink-500 font-bold"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                />
+                <span className="text-[10px] ui-dim mt-1 block">Nhập số SP Coin muốn tặng trực tiếp cho thành viên (để duy trì/nâng cấp Clan).</span>
               </div>
             </div>
 

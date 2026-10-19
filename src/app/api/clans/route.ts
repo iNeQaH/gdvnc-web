@@ -207,9 +207,9 @@ export async function POST(req: Request) {
     }
 
     // Khởi tạo Clan và tự động gán người tạo làm LEADER
-    // Trừ 3 SP Coin phí tạo Clan (ưu tiên trừ từ spGrants sắp hết hạn trước, phần còn thiếu trừ vào supporterUntil)
+    // Khởi tạo Clan và tự động gán người tạo làm LEADER
+    // Trừ phí tạo Clan từ spGrants nếu có, tuyệt đối không trừ vào thời hạn supporterUntil của người dùng
     const now = new Date();
-    let newSupporterUntil = user.supporterUntil;
     const newClan = await prisma.$transaction(async (tx) => {
       let remainingCost = 3;
       for (const grant of user.spGrants || []) {
@@ -224,19 +224,6 @@ export async function POST(req: Request) {
           });
         }
         remainingCost -= deduct;
-      }
-
-      if (remainingCost > 0 && user.supporterUntil) {
-        const currentSupporter = new Date(user.supporterUntil);
-        if (currentSupporter > now) {
-          const deductedMs = remainingCost * 30 * 24 * 60 * 60 * 1000;
-          const newSupporterTime = Math.max(now.getTime(), currentSupporter.getTime() - deductedMs);
-          newSupporterUntil = new Date(newSupporterTime);
-          await tx.user.update({
-            where: { id: user.id },
-            data: { supporterUntil: newSupporterUntil },
-          });
-        }
       }
 
       const c = await tx.clan.create({
@@ -270,7 +257,7 @@ export async function POST(req: Request) {
       clan: newClan,
       user: {
         ...user,
-        supporterUntil: newSupporterUntil,
+        supporterUntil: user.supporterUntil,
       },
     });
   } catch (error) {

@@ -15,9 +15,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   try {
     const { id } = await params;
-    const { newRole, grantSupporterMonths, setSupporterMonths } = await req.json();
+    const { newRole, grantSupporterMonths, setSupporterMonths, grantSpCoin } = await req.json();
 
-    const isSupporterUpdate = grantSupporterMonths !== undefined || setSupporterMonths !== undefined;
+    const isSupporterUpdate = grantSupporterMonths !== undefined || setSupporterMonths !== undefined || grantSpCoin !== undefined;
     if (!isSupporterUpdate && !['USER', 'MODERATOR', 'ADMIN'].includes(newRole)) {
       return NextResponse.json({ error: 'Quyền (Role) không hợp lệ.' }, { status: 400 });
     }
@@ -122,6 +122,31 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         where: { userId: id },
         data: { expiresAt: updated.supporterUntil },
       });
+    }
+
+    let grantedSpVal = 0;
+    if (grantSpCoin !== undefined && grantSpCoin !== null && grantSpCoin !== '') {
+      const spParsed = parseInt(String(grantSpCoin), 10);
+      if (Number.isFinite(spParsed) && spParsed > 0) {
+        grantedSpVal = spParsed;
+        const grantExpiry = updated.supporterUntil || new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000);
+        await prisma.userSpGrant.create({
+          data: {
+            userId: id,
+            amount: spParsed,
+            expiresAt: grantExpiry,
+            reason: `ADMIN_GRANT:${actor.username}`,
+          },
+        });
+        await prisma.notification.create({
+          data: {
+            userId: target.id,
+            title: 'Cấp SP Coin từ Admin',
+            message: `Bạn vừa được Admin "${actor.username}" cấp thêm +${spParsed} điểm SP Coin duy trì Clan!`,
+          },
+        });
+        isSupporterChanged = true;
+      }
     }
 
     // Create notification for target user
