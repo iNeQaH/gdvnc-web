@@ -342,7 +342,7 @@ export function EasterEggOverlay({ onClose }: EasterEggOverlayProps) {
         {/* Thanh tiến độ (100 điểm đầy thanh, chỉ có thanh không hiện số không hiện mô tả) */}
         <div className="w-full h-5 rounded-full bg-zinc-900 border-2 border-zinc-800 overflow-hidden p-0.5 shadow-inner">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-fuchsia-500 to-emerald-400 transition-all duration-500"
+            className="h-full rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,0.6)] transition-all duration-500"
             style={{ width: `${Math.max(0, Math.min(100, points))}%` }}
           />
         </div>
