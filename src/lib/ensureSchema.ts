@@ -22,8 +22,6 @@ async function columnSet(db: PrismaClient) {
         OR (table_name = 'ClanJoinRequest' AND column_name = 'id')
         OR (table_name = 'ClanSpContribution' AND column_name = 'id')
         OR (table_name = 'ClanBan' AND column_name = 'id')
-        OR (table_name = 'ClanLevel' AND column_name = 'id')
-        OR (table_name = 'ClanLevelRun' AND column_name = 'id')
       )
   `;
   return new Set(rows.map((row) => `${row.table_name}.${row.column_name}`));
@@ -273,66 +271,11 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
       )
     `);
   }
-  if (!have.has('ClanLevel.id')) {
-    await db.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "ClanLevel" (
-        "id" TEXT NOT NULL,
-        "clanId" TEXT NOT NULL,
-        "gdLevelId" TEXT NOT NULL,
-        "name" TEXT NOT NULL,
-        "creator" TEXT NOT NULL DEFAULT 'Unknown',
-        "difficulty" TEXT NOT NULL DEFAULT 'Extreme Demon',
-        "videoUrl" TEXT,
-        "status" "ClanRequestStatus" NOT NULL DEFAULT 'APPROVED',
-        "isPinned" BOOLEAN NOT NULL DEFAULT false,
-        "isCompleted" BOOLEAN NOT NULL DEFAULT false,
-        "completedAt" TIMESTAMP(3),
-        "proposedById" TEXT,
-        "approvedById" TEXT,
-        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT "ClanLevel_pkey" PRIMARY KEY ("id"),
-        CONSTRAINT "ClanLevel_clanId_gdLevelId_key" UNIQUE ("clanId", "gdLevelId"),
-        CONSTRAINT "ClanLevel_clanId_fkey" FOREIGN KEY ("clanId") REFERENCES "Clan"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-        CONSTRAINT "ClanLevel_proposedById_fkey" FOREIGN KEY ("proposedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE,
-        CONSTRAINT "ClanLevel_approvedById_fkey" FOREIGN KEY ("approvedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
-      )
-    `);
-  }
-  if (!have.has('ClanLevelRun.id')) {
-    await db.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "ClanLevelRun" (
-        "id" TEXT NOT NULL,
-        "clanLevelId" TEXT NOT NULL,
-        "clanId" TEXT NOT NULL,
-        "userId" TEXT NOT NULL,
-        "startPercent" INTEGER NOT NULL DEFAULT 0,
-        "endPercent" INTEGER NOT NULL,
-        "videoUrl" TEXT NOT NULL,
-        "note" TEXT,
-        "status" "ClanRequestStatus" NOT NULL DEFAULT 'PENDING',
-        "reviewedById" TEXT,
-        "reviewedAt" TIMESTAMP(3),
-        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT "ClanLevelRun_pkey" PRIMARY KEY ("id"),
-        CONSTRAINT "ClanLevelRun_clanLevelId_fkey" FOREIGN KEY ("clanLevelId") REFERENCES "ClanLevel"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-        CONSTRAINT "ClanLevelRun_clanId_fkey" FOREIGN KEY ("clanId") REFERENCES "Clan"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-        CONSTRAINT "ClanLevelRun_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-        CONSTRAINT "ClanLevelRun_reviewedById_fkey" FOREIGN KEY ("reviewedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
-      )
-    `);
-  }
 }
 
 /** Indexes/FKs — do not block the request that needed the new columns. */
 async function addIndexesInBackground(db: PrismaClient) {
   const statements = [
-    `CREATE INDEX IF NOT EXISTS "ClanLevel_clanId_isPinned_idx" ON "ClanLevel"("clanId", "isPinned")`,
-    `CREATE INDEX IF NOT EXISTS "ClanLevel_clanId_isCompleted_idx" ON "ClanLevel"("clanId", "isCompleted")`,
-    `CREATE INDEX IF NOT EXISTS "ClanLevel_clanId_status_idx" ON "ClanLevel"("clanId", "status")`,
-    `CREATE INDEX IF NOT EXISTS "ClanLevelRun_clanLevelId_status_idx" ON "ClanLevelRun"("clanLevelId", "status")`,
-    `CREATE INDEX IF NOT EXISTS "ClanLevelRun_clanId_status_idx" ON "ClanLevelRun"("clanId", "status")`,
-    `CREATE INDEX IF NOT EXISTS "ClanLevelRun_userId_idx" ON "ClanLevelRun"("userId")`,
     `CREATE INDEX IF NOT EXISTS "ClanBan_clanId_idx" ON "ClanBan"("clanId")`,
     `CREATE INDEX IF NOT EXISTS "ClanBan_userId_idx" ON "ClanBan"("userId")`,
     `CREATE INDEX IF NOT EXISTS "ClanBan_expiresAt_idx" ON "ClanBan"("expiresAt")`,
@@ -439,8 +382,6 @@ export async function applyPendingSchema(db: PrismaClient): Promise<void> {
     have.has('ClanJoinRequest.id') &&
     have.has('ClanSpContribution.id') &&
     have.has('ClanBan.id') &&
-    have.has('ClanLevel.id') &&
-    have.has('ClanLevelRun.id') &&
     have.has('User.nameColor') &&
     have.has('User.hasGlitchTheme') &&
     have.has('User.easterEggCompleted');

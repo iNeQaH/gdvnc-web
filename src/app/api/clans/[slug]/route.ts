@@ -8,7 +8,6 @@ import { publicApiError } from '@/lib/apiError';
 import { isAllowedImageRef } from '@/lib/uploadthing';
 import { clearLeaderboardCache } from '@/lib/leaderboard';
 import { RecordStatus } from '@prisma/client';
-import { formatClanLevel } from './levels/route';
 
 export const dynamic = 'force-dynamic';
 
@@ -253,58 +252,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
       }
     }
 
-    const isClanStaff =
-      myMembership?.role === 'LEADER' ||
-      myMembership?.role === 'MODERATOR' ||
-      Boolean(sessionUser && isSuperAdminUser(sessionUser));
-
-    const userBriefSelect = {
-      id: true,
-      username: true,
-      avatarUrl: true,
-      supporterUntil: true,
-      nameColor: true,
-      nameGradient: true,
-      nameGlow: true,
-      nameFont: true,
-    } as const;
-
-    const rawClanLevels = await prisma.clanLevel.findMany({
-      where: {
-        clanId: rawClan.id,
-        ...(isClanStaff ? {} : { status: 'APPROVED' }),
-      },
-      include: {
-        proposedBy: { select: userBriefSelect },
-        approvedBy: { select: userBriefSelect },
-        runs: {
-          where: isClanStaff
-            ? { status: { in: ['APPROVED', 'PENDING'] } }
-            : sessionUser
-            ? { OR: [{ status: 'APPROVED' }, { userId: sessionUser.userId, status: 'PENDING' }] }
-            : { status: 'APPROVED' },
-          include: {
-            user: { select: userBriefSelect },
-            reviewedBy: { select: userBriefSelect },
-          },
-          orderBy: [{ startPercent: 'asc' }, { endPercent: 'desc' }, { createdAt: 'asc' }],
-        },
-      },
-      orderBy: [{ isPinned: 'desc' }, { updatedAt: 'desc' }],
-    });
-
-    const formattedClanLevels = rawClanLevels.map(formatClanLevel);
-    const pinnedLevel = formattedClanLevels.find((l) => l.isPinned && l.status === 'APPROVED') || null;
-    const completedLevels = formattedClanLevels
-      .filter((l) => l.isCompleted && l.status === 'APPROVED')
-      .sort((a, b) => {
-        const ta = a.completedAt ? new Date(a.completedAt).getTime() : 0;
-        const tb = b.completedAt ? new Date(b.completedAt).getTime() : 0;
-        return tb - ta;
-      });
-    const approvedLevels = formattedClanLevels.filter((l) => l.status === 'APPROVED');
-    const pendingLevels = isClanStaff ? formattedClanLevels.filter((l) => l.status === 'PENDING') : [];
-
     const tierInfo = getClanTier(clan.totalSp);
 
     return NextResponse.json({
@@ -319,10 +266,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         coverUrl: rawClan.coverUrl,
         videoUrl: rawClan.videoUrl,
         favoriteLevel: rawClan.favoriteLevel,
-        pinnedLevel,
-        completedLevels,
-        approvedLevels,
-        pendingLevels,
         color: rawClan.color,
         colorGradient: tierInfo.tier >= 2 ? rawClan.colorGradient : null,
         themeColor: rawClan.themeColor,

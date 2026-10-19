@@ -9,10 +9,15 @@ import { isSuperAdminUsername, isStaffRole } from '@/lib/roles';
 
 export const dynamic = 'force-dynamic';
 
+function isEasterEggOwner(user?: { role?: string | null; username?: string | null } | null) {
+  if (!user?.username) return false;
+  return isSuperAdminUsername(user.username) || user.username.toLowerCase() === 'ineqah';
+}
+
 function isEasterEggTester(user?: { role?: string | null; username?: string | null } | null) {
   if (!user) return false;
+  if (isEasterEggOwner(user)) return true;
   if (isStaffRole(user.role)) return true;
-  if (user.username && isSuperAdminUsername(user.username)) return true;
   if (user.username?.toLowerCase() === 'ego') return true;
   if (process.env.NODE_ENV !== 'production') return true;
   return false;
@@ -129,7 +134,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tester = isEasterEggTester(state);
+    const owner = isEasterEggOwner(state);
+    const tester = owner || isEasterEggTester(state);
 
     if (state.easterEggCompleted && !tester) {
       return NextResponse.json({ completed: true }, { status: 403 });
@@ -143,6 +149,7 @@ export async function GET() {
       userSp: state.userSp,
       nextSlotAt: state.nextSlotAt,
       isTester: tester,
+      isOwner: owner,
     });
   } catch (error: any) {
     if (error?.message === 'UNAUTHORIZED') {
@@ -163,7 +170,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tester = isEasterEggTester(state);
+    const owner = isEasterEggOwner(state);
+    const tester = owner || isEasterEggTester(state);
+    const force100 = Boolean(body?.force100 && owner);
 
     if (action === 'reset' && tester) {
       await prisma.user.update({
@@ -187,8 +196,8 @@ export async function POST(req: Request) {
       }
 
       const sliceIndex = crypto.randomInt(0, WHEEL_VALUES.length);
-      const delta = WHEEL_VALUES[sliceIndex];
-      const nextPoints = Math.max(0, Math.min(100, state.easterEggPoints + delta));
+      const delta = force100 ? 100 : WHEEL_VALUES[sliceIndex];
+      const nextPoints = force100 ? 100 : Math.max(0, Math.min(100, state.easterEggPoints + delta));
       const nextSpins = tester ? 9999 : state.easterEggSpins - 1;
       const reached100 = nextPoints >= 100;
 

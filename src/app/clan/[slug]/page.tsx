@@ -36,7 +36,6 @@ import { useToast } from '@/components/GlobalToast';
 import { UserDisplayName } from '@/components/UserDisplayName';
 import JoinClanModal from '@/components/clan/JoinClanModal';
 import ClanDiscordMemberSidebar from '@/components/clan/ClanDiscordMemberSidebar';
-import ClanCoopLevelSection from '@/components/clan/ClanCoopLevelSection';
 import { calculateUserSp, getClanTier } from '@/lib/clanTypes';
 import { useTheme } from '@/components/ThemeProvider';
 import { getCustomThemeVars } from '@/lib/customTheme';
@@ -1673,17 +1672,6 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
             </div>
           ) : null}
         </div>
-
-        {/* VICTORY BOX ("Clan [TAG] đánh bại {level.name}!") & PINNED CO-OP LEVEL CARD */}
-        <ClanCoopLevelSection
-          clan={clan}
-          myMembership={myMembership}
-          isLeader={isLeader || Boolean(currentUser?.isSuperAdmin)}
-          canManageClan={canManageClan}
-          isEn={isEn}
-          isDark={isDark}
-          onRefresh={loadClanData}
-        />
 
         {/* 3 STATS CARDS (LEADER, BEST PLAYER, BEST CREATOR) + MÔ TẢ CLAN (Tương tự Profile) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">

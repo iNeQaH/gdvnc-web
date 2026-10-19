@@ -176,45 +176,4 @@ export async function syncAllClans() {
   }
 }
 
-/**
- * Tính toán độ phủ tiến độ (0-100%) của một ClanLevel từ các đoạn chạy (runs) đã được duyệt (APPROVED).
- * Ghép các đoạn giao nhau hoặc nối tiếp nhau (ví dụ: 0-35%, 35-70%, 70-100% -> 0-100% = 100%).
- */
-export function computeClanLevelProgress(
-  approvedRuns: Array<{ startPercent: number; endPercent: number }>
-): {
-  mergedIntervals: Array<{ start: number; end: number }>;
-  coveragePercent: number;
-  isFull100: boolean;
-} {
-  const valid = approvedRuns
-    .map((r) => ({
-      start: Math.max(0, Math.min(100, Math.round(Number(r.startPercent) || 0))),
-      end: Math.max(0, Math.min(100, Math.round(Number(r.endPercent) || 0))),
-    }))
-    .filter((r) => r.end > r.start)
-    .sort((a, b) => a.start - b.start || b.end - a.end);
-
-  if (valid.length === 0) {
-    return { mergedIntervals: [], coveragePercent: 0, isFull100: false };
-  }
-
-  const merged: Array<{ start: number; end: number }> = [{ ...valid[0] }];
-  for (let i = 1; i < valid.length; i++) {
-    const cur = valid[i];
-    const last = merged[merged.length - 1];
-    if (cur.start <= last.end) {
-      last.end = Math.max(last.end, cur.end);
-    } else {
-      merged.push({ ...cur });
-    }
-  }
-
-  const total = merged.reduce((sum, seg) => sum + (seg.end - seg.start), 0);
-  const coveragePercent = Math.max(0, Math.min(100, total));
-  const isFull100 = merged.length === 1 && merged[0].start === 0 && merged[0].end === 100;
-
-  return { mergedIntervals: merged, coveragePercent, isFull100 };
-}
-
 

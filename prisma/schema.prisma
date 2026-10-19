@@ -104,16 +104,12 @@ model User {
   easterEggDailyDate  String?
 
   // Clan relationships
-  clanMember            ClanMember?
-  ledClans              Clan[]              @relation("ClanLeader")
-  clanRequests          ClanJoinRequest[]
-  clanSpContributed     ClanSpContribution?
-  clanBans              ClanBan[]           @relation("UserClanBans")
-  clanBansIssued        ClanBan[]           @relation("ClanBanIssuer")
-  clanLevelsProposed    ClanLevel[]         @relation("ClanLevelProposer")
-  clanLevelsApproved    ClanLevel[]         @relation("ClanLevelApprover")
-  clanLevelRuns         ClanLevelRun[]      @relation("ClanRunSubmitter")
-  clanLevelRunsReviewed ClanLevelRun[]      @relation("ClanRunReviewer")
+  clanMember         ClanMember?
+  ledClans           Clan[]              @relation("ClanLeader")
+  clanRequests       ClanJoinRequest[]
+  clanSpContributed  ClanSpContribution?
+  clanBans           ClanBan[]           @relation("UserClanBans")
+  clanBansIssued     ClanBan[]           @relation("ClanBanIssuer")
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -555,8 +551,6 @@ model Clan {
   requests        ClanJoinRequest[]
   contributions   ClanSpContribution[]
   bans            ClanBan[]
-  clanLevels      ClanLevel[]
-  clanLevelRuns   ClanLevelRun[]
 
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -637,56 +631,6 @@ model UserSpGrant {
 
   @@index([userId])
   @@index([expiresAt])
-}
-
-model ClanLevel {
-  id            String            @id @default(uuid())
-  clanId        String
-  clan          Clan              @relation(fields: [clanId], references: [id], onDelete: Cascade)
-  gdLevelId     String
-  name          String
-  creator       String            @default("Unknown")
-  difficulty    String            @default("Extreme Demon")
-  videoUrl      String?
-  status        ClanRequestStatus @default(APPROVED)
-  isPinned      Boolean           @default(false)
-  isCompleted   Boolean           @default(false)
-  completedAt   DateTime?
-  proposedById  String?
-  proposedBy    User?             @relation("ClanLevelProposer", fields: [proposedById], references: [id], onDelete: SetNull)
-  approvedById  String?
-  approvedBy    User?             @relation("ClanLevelApprover", fields: [approvedById], references: [id], onDelete: SetNull)
-  runs          ClanLevelRun[]
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-
-  @@unique([clanId, gdLevelId])
-  @@index([clanId, isPinned])
-  @@index([clanId, isCompleted])
-  @@index([clanId, status])
-}
-
-model ClanLevelRun {
-  id           String            @id @default(uuid())
-  clanLevelId  String
-  clanLevel    ClanLevel         @relation(fields: [clanLevelId], references: [id], onDelete: Cascade)
-  clanId       String
-  clan         Clan              @relation(fields: [clanId], references: [id], onDelete: Cascade)
-  userId       String
-  user         User              @relation("ClanRunSubmitter", fields: [userId], references: [id], onDelete: Cascade)
-  startPercent Int               @default(0)
-  endPercent   Int
-  videoUrl     String
-  note         String?           @db.Text
-  status       ClanRequestStatus @default(PENDING)
-  reviewedById String?
-  reviewedBy   User?             @relation("ClanRunReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
-  reviewedAt   DateTime?
-  createdAt    DateTime          @default(now())
-
-  @@index([clanLevelId, status])
-  @@index([clanId, status])
-  @@index([userId])
 }
 
 
