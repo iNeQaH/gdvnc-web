@@ -177,7 +177,11 @@ export default function ClanSettingsPage({
       setDescription(c.description || '');
       setCoverUrl(c.coverUrl || '');
       setVideoUrl(c.videoUrl || '');
-      setFavoriteLevelId(c.favoriteLevel?.id || c.favoriteLevelId || '');
+      setFavoriteLevelId(
+        c.favoriteLevel?.gdLevelId
+          ? String(c.favoriteLevel.gdLevelId)
+          : c.favoriteLevel?.id || c.favoriteLevelId || ''
+      );
       setColor(c.color || '#f59e0b');
 
       if (c.colorGradient) {

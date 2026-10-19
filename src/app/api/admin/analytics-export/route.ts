@@ -40,59 +40,82 @@ export async function GET(req: Request) {
     }
     startDate.setHours(0, 0, 0, 0);
 
-    const visits = await prisma.pageVisit.findMany({
-      where: { 
-        createdAt: { gte: startDate, lte: endDate } 
-      },
-      orderBy: { createdAt: 'asc' }
-    });
-
-    const viewsByTime: Record<string, number> = {};
-    const visitorsByTime: Record<string, Set<string>> = {};
-    const pathCounts: Record<string, number> = {};
-    const osCounts: Record<string, number> = {};
-    const deviceCounts: Record<string, number> = {};
+    const startIso = startDate.toISOString();
+    const endIso = endDate.toISOString();
 
     const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
     const isHourly = diffDays <= 1;
 
-    let totalViews = 0;
-    const allUniqueVisitors = new Set<string>();
+    const totalsRaw = await prisma.$queryRaw<Array<{ total_views: bigint; total_visitors: bigint }>>`
+      SELECT 
+        COUNT(CASE WHEN "path" NOT LIKE '__heartbeat%' THEN 1 END)::bigint AS total_views, 
+        COUNT(DISTINCT "ipHash")::bigint AS total_visitors
+      FROM "PageVisit"
+      WHERE "createdAt" >= ${startIso}::timestamp AND "createdAt" <= ${endIso}::timestamp
+    `;
+    const totalViews = Number(totalsRaw[0]?.total_views || 0);
+    const totalVisitors = Number(totalsRaw[0]?.total_visitors || 0);
 
-    visits.forEach(v => {
-      const isHeartbeat = v.path.startsWith('__heartbeat');
-      if (!isHeartbeat) {
-        totalViews++;
-      }
-      allUniqueVisitors.add(v.ipHash);
-      
-      const timeStr = isHourly 
-        ? v.createdAt.toLocaleDateString('en-GB') + ' ' + v.createdAt.getHours() + ':00'
-        : v.createdAt.toLocaleDateString('en-GB'); 
-        
-      if (!viewsByTime[timeStr]) {
-        viewsByTime[timeStr] = 0;
-        visitorsByTime[timeStr] = new Set();
-      }
-      if (!isHeartbeat) {
-        viewsByTime[timeStr]++;
-        pathCounts[v.path] = (pathCounts[v.path] || 0) + 1;
-      }
-      visitorsByTime[timeStr].add(v.ipHash);
-      
-      if (!isHeartbeat) {
-        const { os: osName, device } = parseUserAgent(v.userAgent || '');
-        osCounts[osName] = (osCounts[osName] || 0) + 1;
-        deviceCounts[device] = (deviceCounts[device] || 0) + 1;
-      }
+    type BucketRow = { bucket: Date; views: number; visitors: number };
+    const bucketRows = isHourly
+      ? await prisma.$queryRaw<BucketRow[]>`
+          SELECT date_trunc('hour', "createdAt") AS bucket,
+                 COUNT(CASE WHEN "path" NOT LIKE '__heartbeat%' THEN 1 END)::int AS views,
+                 COUNT(DISTINCT "ipHash")::int AS visitors
+          FROM "PageVisit"
+          WHERE "createdAt" >= ${startIso}::timestamp AND "createdAt" <= ${endIso}::timestamp
+          GROUP BY 1
+          ORDER BY 1 ASC
+        `
+      : await prisma.$queryRaw<BucketRow[]>`
+          SELECT date_trunc('day', "createdAt") AS bucket,
+                 COUNT(CASE WHEN "path" NOT LIKE '__heartbeat%' THEN 1 END)::int AS views,
+                 COUNT(DISTINCT "ipHash")::int AS visitors
+          FROM "PageVisit"
+          WHERE "createdAt" >= ${startIso}::timestamp AND "createdAt" <= ${endIso}::timestamp
+          GROUP BY 1
+          ORDER BY 1 ASC
+        `;
+
+    const pathRows = await prisma.$queryRaw<Array<{ path: string; count: number }>>`
+      SELECT path, COUNT(*)::int AS count
+      FROM "PageVisit"
+      WHERE "createdAt" >= ${startIso}::timestamp AND "createdAt" <= ${endIso}::timestamp
+        AND "path" NOT LIKE '__heartbeat%'
+      GROUP BY path
+      ORDER BY count DESC
+      LIMIT 50
+    `;
+
+    const uaRows = await prisma.$queryRaw<Array<{ userAgent: string | null; count: number }>>`
+      SELECT "userAgent", COUNT(*)::int AS count
+      FROM "PageVisit"
+      WHERE "createdAt" >= ${startIso}::timestamp AND "createdAt" <= ${endIso}::timestamp
+        AND "path" NOT LIKE '__heartbeat%'
+      GROUP BY "userAgent"
+    `;
+
+    const osCounts: Record<string, number> = {};
+    const deviceCounts: Record<string, number> = {};
+    for (const row of uaRows) {
+      const { os: osName, device } = parseUserAgent(row.userAgent || '');
+      osCounts[osName] = (osCounts[osName] || 0) + Number(row.count || 0);
+      deviceCounts[device] = (deviceCounts[device] || 0) + Number(row.count || 0);
+    }
+
+    const daily = bucketRows.map((row) => {
+      const d = new Date(row.bucket);
+      const timeStr = isHourly
+        ? d.toLocaleDateString('en-GB') + ' ' + d.getHours() + ':00'
+        : d.toLocaleDateString('en-GB');
+      const views = Number(row.views || 0);
+      return {
+        date: timeStr,
+        views,
+        visitors: Number(row.visitors || 0),
+        estimatedQueries: views * 12,
+      };
     });
-
-    const daily = Object.keys(viewsByTime).map(time => ({
-      date: time,
-      views: viewsByTime[time],
-      visitors: visitorsByTime[time].size,
-      estimatedQueries: viewsByTime[time] * 12
-    }));
 
     const report = {
       generatedAt: new Date().toISOString(),
@@ -101,12 +124,12 @@ export async function GET(req: Request) {
         end: endDate.toISOString().split('T')[0],
       },
       summary: {
-        totalVisitors: allUniqueVisitors.size,
+        totalVisitors,
         totalPageViews: totalViews,
         totalEstimatedQueries: totalViews * 12,
       },
       daily,
-      topPages: Object.entries(pathCounts).sort((a, b) => b[1] - a[1]).slice(0, 50).map(([path, count]) => ({ path, count })),
+      topPages: pathRows.map((r) => ({ path: r.path, count: Number(r.count || 0) })),
       os: Object.entries(osCounts).map(([name, count]) => ({ name, count })),
       devices: Object.entries(deviceCounts).map(([name, count]) => ({ name, count }))
     };

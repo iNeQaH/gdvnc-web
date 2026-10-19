@@ -177,14 +177,15 @@ export async function POST(req: Request) {
         );
       }
       const { gdLevelId, videoUrl, minPercent, placement, vnPlacement, mode, isVN, isChallenge, difficultyFace, ratingType } = data;
-      if (!gdLevelId) {
-        return NextResponse.json({ error: 'Vui lòng điền Level ID.' }, { status: 400 });
+      const parsedLevelGdId = parseSubmitGdLevelId(gdLevelId);
+      if (!parsedLevelGdId) {
+        return NextResponse.json({ error: 'Vui lòng điền Level ID hợp lệ.' }, { status: 400 });
       }
 
       const submission = await prisma.levelSubmission.create({
         data: {
           userId,
-          gdLevelId: parseInt(gdLevelId, 10),
+          gdLevelId: parsedLevelGdId,
           videoUrl: isHttpsUrl(videoUrl) ? clipText(videoUrl, 500) : null,
           minPercent: minPercent ? parseInt(String(minPercent), 10) : 100,
           placement: placement ? parseInt(String(placement), 10) : null,

@@ -164,7 +164,7 @@ export async function GET() {
         // 2. Tính toán Clan Stats cho từng hạng mục
         const clanStats = clans.map((c) => {
           const memberIds = new Set(c.members.map((m) => m.userId));
-          let totalSp = 3;
+          let totalSp = 0;
           for (const contrib of c.contributions) {
             if (!memberIds.has(contrib.userId)) continue;
             const userMax = calculateUserSp(contrib.user);

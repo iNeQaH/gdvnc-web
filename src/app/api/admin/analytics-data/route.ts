@@ -31,8 +31,17 @@ function parseUserAgent(ua: string) {
   return { os: osStr, device, browser };
 }
 
+let lastPageVisitPurgeAt = 0;
+
 export async function GET(req: Request) {
   try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
+
+  // Opportunistic retention cleanup: delete PageVisit rows older than 90 days (at most once per 6 hours)
+  if (Date.now() - lastPageVisitPurgeAt > 6 * 3600 * 1000) {
+    lastPageVisitPurgeAt = Date.now();
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 3600 * 1000);
+    prisma.pageVisit.deleteMany({ where: { createdAt: { lt: ninetyDaysAgo } } }).catch(() => {});
+  }
 
   try {
     const { searchParams } = new URL(req.url);
@@ -77,6 +86,10 @@ export async function GET(req: Request) {
       startDate.setDate(startDate.getDate() - 7);
     }
     startDate.setHours(0, 0, 0, 0);
+
+    // Use UTC ISO string with ::timestamp cast to match Prisma's UTC storage in "timestamp without time zone"
+    const startIso = startDate.toISOString();
+    const endIso = endDate.toISOString();
     
     const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
     const isHourly = diffDays <= 1;
@@ -86,7 +99,7 @@ export async function GET(req: Request) {
         COUNT(CASE WHEN "path" NOT LIKE '__heartbeat%' THEN 1 END)::bigint AS total_views, 
         COUNT(DISTINCT "ipHash")::bigint AS total_visitors
       FROM "PageVisit"
-      WHERE "createdAt" >= ${startDate} AND "createdAt" <= ${endDate}
+      WHERE "createdAt" >= ${startIso}::timestamp AND "createdAt" <= ${endIso}::timestamp
     `;
     const totalViews = Number(totalsRaw[0]?.total_views || 0);
     const totalVisitors = Number(totalsRaw[0]?.total_visitors || 0);
@@ -98,7 +111,7 @@ export async function GET(req: Request) {
                  COUNT(CASE WHEN "path" NOT LIKE '__heartbeat%' THEN 1 END)::int AS views,
                  COUNT(DISTINCT "ipHash")::int AS visitors
           FROM "PageVisit"
-          WHERE "createdAt" >= ${startDate} AND "createdAt" <= ${endDate}
+          WHERE "createdAt" >= ${startIso}::timestamp AND "createdAt" <= ${endIso}::timestamp
           GROUP BY 1
           ORDER BY 1 ASC
         `
@@ -107,7 +120,7 @@ export async function GET(req: Request) {
                  COUNT(CASE WHEN "path" NOT LIKE '__heartbeat%' THEN 1 END)::int AS views,
                  COUNT(DISTINCT "ipHash")::int AS visitors
           FROM "PageVisit"
-          WHERE "createdAt" >= ${startDate} AND "createdAt" <= ${endDate}
+          WHERE "createdAt" >= ${startIso}::timestamp AND "createdAt" <= ${endIso}::timestamp
           GROUP BY 1
           ORDER BY 1 ASC
         `;
@@ -115,7 +128,7 @@ export async function GET(req: Request) {
     const pathRows = await prisma.$queryRaw<Array<{ path: string; count: number }>>`
       SELECT path, COUNT(*)::int AS count
       FROM "PageVisit"
-      WHERE "createdAt" >= ${startDate} AND "createdAt" <= ${endDate}
+      WHERE "createdAt" >= ${startIso}::timestamp AND "createdAt" <= ${endIso}::timestamp
         AND "path" NOT LIKE '__heartbeat%'
         AND "path" NOT LIKE '/admin%'
       GROUP BY path
@@ -126,7 +139,7 @@ export async function GET(req: Request) {
     const uaRows = await prisma.$queryRaw<Array<{ userAgent: string | null; count: number }>>`
       SELECT "userAgent", COUNT(*)::int AS count
       FROM "PageVisit"
-      WHERE "createdAt" >= ${startDate} AND "createdAt" <= ${endDate}
+      WHERE "createdAt" >= ${startIso}::timestamp AND "createdAt" <= ${endIso}::timestamp
         AND "path" NOT LIKE '__heartbeat%'
       GROUP BY "userAgent"
     `;

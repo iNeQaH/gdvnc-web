@@ -69,7 +69,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         },
         contributions: {
           include: {
-            user: { select: { id: true, supporterUntil: true } },
+            user: {
+              select: {
+                id: true,
+                supporterUntil: true,
+                spGrants: { select: { amount: true, expiresAt: true } },
+              },
+            },
           },
         },
       },
@@ -372,7 +378,27 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ slug: 
       updateData.videoUrl = vid;
     }
 
-    if (body.favoriteLevelId !== undefined) updateData.favoriteLevelId = body.favoriteLevelId || null;
+    if (body.favoriteLevelId !== undefined) {
+      const rawFav = String(body.favoriteLevelId || '').trim();
+      if (!rawFav) {
+        updateData.favoriteLevelId = null;
+      } else {
+        const parsedGdId = /^\d+$/.test(rawFav) ? parseInt(rawFav, 10) : null;
+        const foundLevel = await prisma.level.findFirst({
+          where: parsedGdId
+            ? { OR: [{ gdLevelId: parsedGdId }, { id: rawFav }] }
+            : { OR: [{ id: rawFav }, { name: { equals: rawFav, mode: 'insensitive' } }] },
+          select: { id: true },
+        });
+        if (!foundLevel) {
+          return NextResponse.json(
+            { error: 'Không tìm thấy màn chơi này trên danh sách GDVN. Vui lòng nhập đúng GD Level ID có trong danh sách.' },
+            { status: 400 }
+          );
+        }
+        updateData.favoriteLevelId = foundLevel.id;
+      }
+    }
 
     if (body.themeColor !== undefined) {
       const tc = clipText(body.themeColor, 60)?.trim() || null;

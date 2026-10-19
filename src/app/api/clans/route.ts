@@ -43,10 +43,10 @@ export async function GET(req: Request) {
 
     const now = new Date();
 
-    // Tính toán SP, Tier, và trạng thái cho từng Clan (3 SP base từ phí tạo clan)
+    // Tính toán SP, Tier, và trạng thái cho từng Clan
     const clanList = clans.map((c) => {
       const memberIds = new Set(c.members.map((m) => m.userId));
-      let totalSp = 3;
+      let totalSp = 0;
       for (const contrib of c.contributions) {
         if (!memberIds.has(contrib.userId)) continue;
         const userMax = calculateUserSp(contrib.user);
@@ -206,26 +206,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Tên hoặc Tag Clan này đã được sử dụng.' }, { status: 400 });
     }
 
-    // Khởi tạo Clan và tự động gán người tạo làm LEADER
-    // Khởi tạo Clan và tự động gán người tạo làm LEADER
-    // Trừ phí tạo Clan từ spGrants nếu có, tuyệt đối không trừ vào thời hạn supporterUntil của người dùng
-    const now = new Date();
+    // Khởi tạo Clan, tự động gán người tạo làm LEADER và đóng góp 3 SP khởi tạo vào Clan
+    // Không xóa UserSpGrant và không trừ thời hạn supporterUntil của người dùng
+    const initialPledge = Math.max(0, Math.min(userSp, 3));
     const newClan = await prisma.$transaction(async (tx) => {
-      let remainingCost = 3;
-      for (const grant of user.spGrants || []) {
-        if (remainingCost <= 0) break;
-        const deduct = Math.min(remainingCost, grant.amount);
-        if (deduct >= grant.amount) {
-          await tx.userSpGrant.delete({ where: { id: grant.id } });
-        } else {
-          await tx.userSpGrant.update({
-            where: { id: grant.id },
-            data: { amount: { decrement: deduct } },
-          });
-        }
-        remainingCost -= deduct;
-      }
-
       const c = await tx.clan.create({
         data: {
           name,
@@ -247,9 +231,25 @@ export async function POST(req: Request) {
         },
       });
 
+      if (initialPledge > 0) {
+        await tx.clanSpContribution.upsert({
+          where: { userId: user.id },
+          create: {
+            clanId: c.id,
+            userId: user.id,
+            spPledged: initialPledge,
+          },
+          update: {
+            clanId: c.id,
+            spPledged: initialPledge,
+          },
+        });
+      }
+
       return c;
     });
 
+    await syncAndGetClanSp(newClan.id);
     clearLeaderboardCache();
 
     return NextResponse.json({

@@ -67,7 +67,10 @@ export async function generateMetadata({
           userId: true,
           spPledged: true,
           user: {
-            select: { supporterUntil: true },
+            select: {
+              supporterUntil: true,
+              spGrants: { select: { amount: true, expiresAt: true } },
+            },
           },
         },
       },
@@ -83,7 +86,7 @@ export async function generateMetadata({
 
   // Calculate clan SP & Tier
   const memberIds = new Set((clan.members || []).map((m) => m.userId));
-  let totalSp = 3;
+  let totalSp = 0;
   for (const contrib of clan.contributions || []) {
     if (!memberIds.has(contrib.userId)) continue;
     const userMax = calculateUserSp(contrib.user);

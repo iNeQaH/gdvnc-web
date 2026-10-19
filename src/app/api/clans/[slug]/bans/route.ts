@@ -1,6 +1,8 @@
 import { requireAuth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { syncAndGetClanSp } from '@/lib/clan';
+import { clearLeaderboardCache } from '@/lib/leaderboard';
 import { isSuperAdminUser } from '@/lib/roles';
 import { clipText } from '@/lib/validate';
 import { publicApiError } from '@/lib/apiError';
@@ -34,11 +36,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
       return NextResponse.json({ error: 'Không có quyền xem danh sách chặn.' }, { status: 403 });
     }
 
-    // Dọn dẹp các ban đã hết hạn
-    const now = new Date();
+    // Dọn dẹp các ban đã hết hạn (dùng UTC ISO string để tránh lệch múi giờ)
+    const nowIso = new Date().toISOString();
     await prisma.$executeRaw`
       DELETE FROM "ClanBan"
-      WHERE "clanId" = ${clan.id} AND "expiresAt" IS NOT NULL AND "expiresAt" < ${now}
+      WHERE "clanId" = ${clan.id} AND "expiresAt" IS NOT NULL AND "expiresAt" < ${nowIso}::timestamp
     `;
 
     // Lấy danh sách đang bị chặn
@@ -156,6 +158,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       durationDays && durationDays > 0
         ? new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000)
         : null;
+    const expiresAtIso = expiresAt ? expiresAt.toISOString() : null;
 
     // Trục xuất khỏi clan nếu đang là thành viên
     await prisma.$transaction(async (tx) => {
@@ -170,17 +173,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       });
     });
 
-    // Thêm vào ClanBan (Upsert bằng query raw an toàn)
+    // Thêm vào ClanBan (Upsert bằng query raw an toàn, dùng UTC ISO timestamp)
     await prisma.$executeRaw`
       INSERT INTO "ClanBan" ("id", "clanId", "userId", "reason", "bannedById", "expiresAt", "createdAt")
-      VALUES (gen_random_uuid(), ${clan.id}, ${targetUser.id}, ${reason}, ${auth.userId}, ${expiresAt}, CURRENT_TIMESTAMP)
+      VALUES (gen_random_uuid(), ${clan.id}, ${targetUser.id}, ${reason}, ${auth.userId}, ${expiresAtIso}::timestamp, CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
       ON CONFLICT ("clanId", "userId")
       DO UPDATE SET
         "reason" = EXCLUDED.reason,
         "bannedById" = EXCLUDED."bannedById",
         "expiresAt" = EXCLUDED."expiresAt",
-        "createdAt" = CURRENT_TIMESTAMP
+        "createdAt" = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
     `;
+
+    // Đồng bộ lại SP của Clan và xoá cache BXH sau khi chặn thành viên
+    await syncAndGetClanSp(clan.id);
+    clearLeaderboardCache();
 
     // Gửi thông báo đến mailbox người bị chặn
     try {

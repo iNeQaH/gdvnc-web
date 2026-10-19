@@ -2,6 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { syncAndGetClanSp } from '@/lib/clan';
+import { clearLeaderboardCache } from '@/lib/leaderboard';
 import { isSuperAdminUser } from '@/lib/roles';
 import { publicApiError } from '@/lib/apiError';
 
@@ -79,6 +80,7 @@ export async function DELETE(
 
     // Cập nhật lại SP của Clan sau khi thành viên rời
     await syncAndGetClanSp(clan.id);
+    clearLeaderboardCache();
 
     // Gửi thông báo nếu có SP coin được hoàn lại
     if (refundedSp > 0) {

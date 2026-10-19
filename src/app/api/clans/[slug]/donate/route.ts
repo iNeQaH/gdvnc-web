@@ -2,6 +2,7 @@ import { requireAuth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { calculateUserSp, syncAndGetClanSp } from '@/lib/clan';
+import { clearLeaderboardCache } from '@/lib/leaderboard';
 import { publicApiError } from '@/lib/apiError';
 
 export async function POST(
@@ -69,6 +70,7 @@ export async function POST(
       }
 
       const synced = await syncAndGetClanSp(clan.id);
+      clearLeaderboardCache();
 
       return NextResponse.json({
         success: true,
@@ -126,6 +128,7 @@ export async function POST(
     }
 
     const synced = await syncAndGetClanSp(clan.id);
+    clearLeaderboardCache();
 
     return NextResponse.json({
       success: true,

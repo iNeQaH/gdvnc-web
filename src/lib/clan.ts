@@ -13,7 +13,7 @@ export function getClanTierFromClan(clan: any): number {
     return clan.colorGradient ? 2 : 1;
   }
   const memberIds = new Set((clan.members || []).map((m: any) => m.userId));
-  let totalSp = 3;
+  let totalSp = 0;
   for (const contrib of clan.contributions || []) {
     if (!memberIds.has(contrib.userId)) continue;
     const userMax = calculateUserSp(contrib.user);
@@ -68,8 +68,8 @@ export async function syncAndGetClanSp(clanId: string) {
 
   const memberUserIds = new Set(clan.members.map((m) => m.userId));
 
-  // Clan có sẵn 3 SP từ phí tạo clan ban đầu (-3 xu SP) của Leader
-  let totalSp = 3;
+  // Tính tổng SP thực tế từ đóng góp của các thành viên hiện tại trong Clan
+  let totalSp = 0;
   for (const contrib of clan.contributions) {
     if (!memberUserIds.has(contrib.userId)) continue;
     const userMaxSp = calculateUserSp(contrib.user);
