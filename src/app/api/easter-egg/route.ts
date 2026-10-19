@@ -254,8 +254,8 @@ export async function POST(req: Request) {
           await tx.notification.create({
             data: {
               userId: state.id,
-              title: 'ERR_0x100',
-              message: `Mã bí mật của bạn: ${generatedCode} — Nhập mã tại mục Đổi mã (Cài đặt) để mở khoá Theme lỗi.`,
+              title: generatedCode,
+              message: generatedCode,
             },
           });
         }

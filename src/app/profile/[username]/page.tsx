@@ -1049,9 +1049,9 @@ export default function ProfilePage() {
 
 
       {/* Unified Hero Card */}
-      <div className="ui-card overflow-hidden shadow-sm">
+      <div className={`ui-card shadow-sm ${isGlitchTheme ? 'overflow-visible' : 'overflow-hidden'}`}>
         {/* Banner Cover */}
-        <div className="relative w-full h-36 sm:h-48 md:h-56 bg-slate-100 dark:bg-zinc-800">
+        <div data-glitch-cover className={`relative w-full h-36 sm:h-48 md:h-56 bg-slate-100 dark:bg-zinc-800 ${isGlitchTheme ? 'overflow-visible' : 'overflow-hidden'}`}>
           {data.coverUrl ? (
             <img
               src={data.coverUrl}
@@ -1073,12 +1073,12 @@ export default function ProfilePage() {
         <div className="px-5 pb-5 pt-0">
           <div className="flex flex-col sm:flex-row sm:items-start gap-4 mb-4">
             {/* Avatar */}
-            <div className="relative shrink-0 -mt-12 sm:-mt-14">
+            <div data-glitch-avatar className="relative shrink-0 -mt-12 sm:-mt-14">
               <div
                 className={`p-1 rounded-2xl shadow-xl ${isLavender ? 'tsumiki-btn !m-0 !p-1' : 'bg-white dark:bg-zinc-900 border'}`}
                 style={!isLavender ? { backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' } : {}}
               >
-                <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden shadow-inner">
+                <div className={`relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl shadow-inner ${isGlitchTheme ? 'overflow-visible' : 'overflow-hidden'}`}>
                   {data.avatarUrl ? (
                     <>
                       <img

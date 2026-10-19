@@ -113,8 +113,8 @@ export async function POST(req: Request) {
         await tx.notification.create({
           data: {
             userId: user.id,
-            title: 'Mở khoá Theme lỗi thành công',
-            message: `Bạn đã kích hoạt mã bí mật "${redeemCode.code}" và mở khoá vĩnh viễn giao diện ẩn "Theme lỗi" cho trang hồ sơ cá nhân!`,
+            title: 'Mở khoá T̶h̷e̴m̶e̴ ̸L̶ỗ̷i̶ thành công',
+            message: `Bạn đã kích hoạt mã bí mật "${redeemCode.code}" và mở khoá vĩnh viễn giao diện ẩn "T̶h̷e̴m̶e̴ ̸L̶ỗ̷i̶" cho trang hồ sơ cá nhân!`,
           },
         });
 
@@ -149,7 +149,7 @@ export async function POST(req: Request) {
           ...updatedUser,
           userSp: calculateUserSp(updatedUser),
         },
-        message: 'Đã mở khoá và kích hoạt "Theme lỗi" cho trang hồ sơ của bạn!',
+        message: 'Đã mở khoá và kích hoạt "T̶h̷e̴m̶e̴ ̸L̶ỗ̷i̶" cho trang hồ sơ của bạn!',
       });
     }
 

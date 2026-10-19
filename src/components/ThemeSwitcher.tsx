@@ -108,7 +108,7 @@ export const ThemeSwitcher = ({ dropUp = false }: { dropUp?: boolean }) => {
     },
     { id: 'lavender', label: 'iNeQaH', icon: Sparkles, color: 'bg-purple-500' },
     ...(currentUser?.hasGlitchTheme
-      ? [{ id: 'glitch' as ThemeType, label: 'Theme lỗi', icon: Sparkles, color: 'gdvn-swatch-glitch' }]
+      ? [{ id: 'glitch' as ThemeType, label: 'T̶h̷e̴m̶e̴ ̸L̶ỗ̷i̶', icon: Sparkles, color: 'gdvn-swatch-glitch' }]
       : []),
   ];
 

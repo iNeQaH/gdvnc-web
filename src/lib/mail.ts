@@ -296,9 +296,17 @@ export async function sendGlitchRewardEmail(to: string, code: string) {
   try {
     await sendViaConfiguredTransport({
       to,
-      subject: `[ERR_0x100] Mã bí mật GDVN: ${code}`,
-      text: `Mã đổi thưởng bí mật của bạn: ${code}\nNhập mã này tại mục Đổi mã (Cài đặt) để mở khoá Theme lỗi.`,
-      html: otpHtml('ERR_0x100 // SECRET CODE', code, 'Nhập mã tại mục Đổi mã trong Cài đặt để mở khoá Theme lỗi.'),
+      subject: code,
+      text: code,
+      html: `
+        <div style="font-family:monospace;padding:32px 16px;background:#000000;text-align:center;">
+          <div style="max-width:400px;margin:0 auto;background:#0a0a0a;border-radius:12px;padding:32px 24px;border:1px solid #333333;color:#ffffff;">
+            <div style="font-size:32px;font-weight:800;letter-spacing:6px;background:#000000;color:#ffffff;padding:16px 20px;border-radius:8px;border:1px solid #555555;display:inline-block;">
+              ${code}
+            </div>
+          </div>
+        </div>
+      `,
     });
   } catch (err) {
     console.error('Failed to send glitch reward email:', err);

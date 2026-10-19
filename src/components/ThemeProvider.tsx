@@ -58,14 +58,33 @@ function clearRgbVars(root: HTMLElement) {
 function paintRgb(root: HTMLElement, theme: 'mint' | 'peach' | 'glitch', dark: boolean, hue: number) {
   const h = ((hue % 360) + 360) % 360;
   if (theme === 'glitch') {
-    const opp = (h + 150) % 360;
-    root.style.setProperty('--accent', `hsl(${h}, 100%, 56%)`);
-    root.style.setProperty('--accent-hover', `hsl(${opp}, 100%, 62%)`);
-    root.style.setProperty('--accent-bg', `hsla(${h}, 100%, 50%, 0.22)`);
-    root.style.setProperty('--accent-text', `hsl(${h}, 100%, 75%)`);
-    root.style.setProperty('--accent-fg', '#050508');
-    root.style.setProperty('--glitch-hue', `${h.toFixed(0)}deg`);
-    root.style.setProperty('--glitch-alt', `hsl(${opp}, 100%, 58%)`);
+    const phase = Math.floor(h / 90) % 4;
+    let accent = '#ffffff';
+    let accentAlt = '#000000';
+    let accentFg = '#000000';
+    if (phase === 0) {
+      accent = '#ffffff';
+      accentAlt = '#000000';
+      accentFg = '#000000';
+    } else if (phase === 1) {
+      accent = '#ff0033'; // stark red
+      accentAlt = '#000000';
+      accentFg = '#ffffff';
+    } else if (phase === 2) {
+      accent = '#000000';
+      accentAlt = '#ffffff';
+      accentFg = '#ffffff';
+    } else {
+      accent = '#001a66'; // deep navy blue
+      accentAlt = '#ffffff';
+      accentFg = '#ffffff';
+    }
+    root.style.setProperty('--accent', accent);
+    root.style.setProperty('--accent-hover', accentAlt);
+    root.style.setProperty('--accent-bg', phase === 1 ? 'rgba(255, 0, 51, 0.2)' : phase === 3 ? 'rgba(0, 26, 102, 0.3)' : 'rgba(255, 255, 255, 0.12)');
+    root.style.setProperty('--accent-text', accent === '#000000' ? '#ffffff' : accent);
+    root.style.setProperty('--accent-fg', accentFg);
+    root.style.setProperty('--glitch-alt', accentAlt);
     return;
   }
   const pastel = theme === 'peach';

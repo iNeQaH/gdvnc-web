@@ -873,112 +873,359 @@ input[type="number"] {
 
 
 /* ==========================================================================
-   SECRET GLITCH THEME ("Theme lỗi" - data-theme="glitch")
-   Continuous intense glitch & rapid color-shifting on profile
+   SECRET GLITCH THEME ("T̶h̷e̴m̶e̴ ̸L̶ỗ̷i̶" - data-theme="glitch")
+   Pure monochrome (black/white) + occasional stark red & deep navy blue.
+   Continuous character jitter, rotating/clipping avatar & cover breaking bounds,
+   asynchronous irregular layout twitching, extreme contrast/saturation spikes,
+   and sudden blackout power-cut drops.
    ========================================================================== */
 [data-theme="glitch"] {
-  --bg-page: #040407;
-  --bg-card: rgba(9, 9, 16, 0.88);
-  --bg-subtle: rgba(18, 18, 30, 0.92);
-  --border-ui: var(--accent, #00ffff);
-  --border-subtle: var(--glitch-alt, #ff0055);
+  --bg-page: #000000;
+  --bg-card: #050505;
+  --bg-subtle: #0d0d0d;
+  --border-ui: #262626;
+  --border-subtle: #404040;
   --text-title: #ffffff;
-  --text-body: #e2e8f0;
-  --text-dim: #94a3b8;
+  --text-body: #d4d4d4;
+  --text-dim: #737373;
 }
 
 @keyframes gdvn-glitch-swatch {
-  0% { background: #ff0055; box-shadow: -2px 0 #00ffff, 2px 0 #aaff00; }
-  25% { background: #00ffff; box-shadow: 2px -1px #ff00ff, -2px 1px #ff0000; }
-  50% { background: #aaff00; box-shadow: -2px 1px #ff0055, 2px -1px #00ffff; }
-  75% { background: #ff00ff; box-shadow: 2px 1px #00ff88, -2px -1px #ffff00; }
-  100% { background: #ff0055; box-shadow: -2px 0 #00ffff, 2px 0 #aaff00; }
+  0%, 100% { background: #000000; box-shadow: -2px 0 #ffffff, 2px 0 #ff0033; }
+  25% { background: #ffffff; box-shadow: 2px 0 #001144, -2px 0 #000000; }
+  50% { background: #ff0033; box-shadow: -2px 0 #000000, 2px 0 #ffffff; }
+  75% { background: #001144; box-shadow: 2px 0 #ffffff, -2px 0 #ff0033; }
 }
 
 .gdvn-swatch-glitch {
-  animation: gdvn-glitch-swatch 0.35s steps(2, end) infinite;
+  animation: gdvn-glitch-swatch 0.4s steps(2, end) infinite;
 }
 
-@keyframes gdvn-glitch-jitter {
+/* Character Jitter Animations (Continuous Text Vibration) */
+@keyframes gdvn-char-twitch-a {
   0%, 100% {
-    transform: translate(0, 0) skew(0deg);
-    filter: hue-rotate(0deg) saturate(1.8) contrast(1.15);
+    transform: translate(0, 0);
+    text-shadow: none;
   }
-  12% {
-    transform: translate(-3px, 1px) skew(-1.2deg);
-    filter: hue-rotate(70deg) saturate(2.5) contrast(1.3);
+  20% {
+    transform: translate(-1.5px, 0.5px);
+    text-shadow: -1px 0 #ff0033, 1px 0 #ffffff;
   }
-  24% {
-    transform: translate(3px, -1px) skew(1.4deg);
-    filter: hue-rotate(145deg) saturate(2.2) contrast(1.2);
-  }
-  36% {
-    transform: translate(-2px, -2px) skew(-0.6deg);
-    filter: hue-rotate(215deg) saturate(2.8) contrast(1.35);
-  }
-  48% {
-    transform: translate(2px, 2px) skew(1deg);
-    filter: hue-rotate(290deg) saturate(2.4) contrast(1.25);
+  40% {
+    transform: translate(1px, -1px);
+    text-shadow: 1px 0 #001144;
   }
   60% {
-    transform: translate(-4px, 0px) skew(-1.8deg);
-    filter: hue-rotate(330deg) saturate(3) contrast(1.4);
+    transform: translate(-1px, -0.5px);
+    text-shadow: 0 0 2px #ffffff;
   }
-  72% {
-    transform: translate(3px, 1px) skew(0.8deg);
-    filter: hue-rotate(110deg) saturate(2.3) contrast(1.2);
-  }
-  84% {
-    transform: translate(-1px, 2px) skew(-1deg);
-    filter: hue-rotate(250deg) saturate(2.6) contrast(1.3);
+  80% {
+    transform: translate(1.5px, 0.5px);
+    text-shadow: -1.5px 0 #000000, 1.5px 0 #ff0033;
   }
 }
 
-@keyframes gdvn-glitch-rgb-shadow {
+@keyframes gdvn-char-twitch-b {
   0%, 100% {
-    box-shadow:
-      -3px 0 0 rgba(255, 0, 85, 0.85),
-      3px 0 0 rgba(0, 255, 255, 0.85),
-      0 0 22px var(--accent, #ff0055);
-    border-color: var(--accent, #00ffff);
-  }
-  33% {
-    box-shadow:
-      3px -2px 0 rgba(0, 255, 136, 0.85),
-      -3px 2px 0 rgba(255, 0, 255, 0.85),
-      0 0 28px var(--glitch-alt, #00ffff);
-    border-color: var(--glitch-alt, #ff00ff);
-  }
-  66% {
-    box-shadow:
-      -4px 2px 0 rgba(255, 230, 0, 0.85),
-      4px -2px 0 rgba(0, 180, 255, 0.85),
-      0 0 26px var(--accent, #aaff00);
-    border-color: var(--accent, #ff0055);
-  }
-}
-
-@keyframes gdvn-glitch-text {
-  0%, 100% {
-    text-shadow: -2px 0 #ff0055, 2px 0 #00ffff;
+    transform: translate(0, 0);
+    text-shadow: none;
   }
   25% {
-    text-shadow: 2px -1px #00ff88, -2px 1px #ff00ff;
+    transform: translate(1px, 1px) skewX(-1.5deg);
+    text-shadow: 1px 0 #ffffff, -1px 0 #001144;
   }
   50% {
-    text-shadow: -3px 1px #00ffff, 3px -1px #ff0055;
+    transform: translate(-1px, -1px);
+    text-shadow: -1px 0 #ff0033;
   }
   75% {
-    text-shadow: 2px 1px #ffe600, -2px -1px #00b4ff;
+    transform: translate(1.5px, -0.5px) skewX(1deg);
+    text-shadow: 0.5px 0 #000000, -0.5px 0 #ffffff;
   }
 }
 
+@keyframes gdvn-char-twitch-c {
+  0%, 100% {
+    transform: translate(0, 0);
+    letter-spacing: normal;
+  }
+  30% {
+    transform: translate(-0.8px, -0.8px);
+    letter-spacing: 0.02em;
+    text-shadow: -1px 0 #ffffff;
+  }
+  70% {
+    transform: translate(0.8px, 0.8px);
+    letter-spacing: -0.01em;
+    text-shadow: 1px 0 #ff0033;
+  }
+}
+
+/* Avatar: Rotate, Clip-path, Jitter Out of Container */
+@keyframes gdvn-glitch-avatar {
+  0%, 42% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    clip-path: none;
+    filter: none;
+  }
+  /* Thỉnh thoảng 1 ít */
+  43% {
+    transform: translate(-5px, 4px) rotate(3deg) scale(1.04);
+    clip-path: polygon(0 0, 100% 4%, 96% 100%, 0 94%);
+    filter: contrast(250%) saturate(0);
+  }
+  45% {
+    transform: translate(6px, -4px) rotate(-3.5deg) scale(0.98);
+    clip-path: polygon(4% 0, 98% 0, 94% 96%, 0 100%);
+    filter: contrast(300%) drop-shadow(0 0 8px #001144);
+  }
+  47% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    clip-path: none;
+    filter: none;
+  }
+  /* Tất cả cùng kích hoạt: Spasm mạnh giật văng ra ngoài box */
+  68% {
+    transform: translate(16px, -14px) rotate(8deg) scale(1.12);
+    clip-path: polygon(0 16%, 86% 0, 100% 84%, 14% 100%);
+    filter: contrast(500%) saturate(0) brightness(1.5);
+  }
+  71% {
+    transform: translate(-16px, 14px) rotate(-9deg) scale(1.08);
+    clip-path: polygon(10% 0, 100% 12%, 90% 100%, 0 88%);
+    filter: invert(1) contrast(400%);
+  }
+  73% {
+    /* Đen sập */
+    filter: brightness(0);
+    transform: translate(0, 0);
+  }
+  75% {
+    transform: translate(12px, 8px) rotate(5deg) scale(1.06);
+    clip-path: polygon(0 6%, 95% 0, 100% 94%, 5% 100%);
+    filter: contrast(400%) drop-shadow(0 0 12px #ff0033);
+  }
+  78%, 100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    clip-path: none;
+    filter: none;
+  }
+}
+
+/* Cover Banner: Rotate, Clip, Scale, and Jitter Out of Bounds */
+@keyframes gdvn-glitch-cover {
+  0%, 48% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    clip-path: none;
+    filter: none;
+  }
+  /* Thỉnh thoảng 1 ít */
+  49% {
+    transform: translate(-4px, 3px) rotate(1.2deg) scale(1.02);
+    clip-path: polygon(0 0, 100% 0, 100% 95%, 0 100%);
+    filter: contrast(180%) saturate(0);
+  }
+  51% {
+    transform: translate(5px, -4px) rotate(-1.5deg) scale(1.03);
+    clip-path: polygon(0 5%, 100% 0, 96% 100%, 0 94%);
+    filter: contrast(300%) brightness(1.2);
+  }
+  53% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    clip-path: none;
+    filter: none;
+  }
+  /* Tất cả cùng kích hoạt: Bứt phá viền, xén góc cực mạnh */
+  75% {
+    transform: translate(14px, -10px) rotate(3.5deg) scale(1.08);
+    clip-path: polygon(0 14%, 100% 0, 92% 100%, 0 86%);
+    filter: contrast(500%) saturate(0) brightness(1.4);
+  }
+  77% {
+    transform: translate(-18px, 12px) rotate(-4.5deg) scale(1.06);
+    clip-path: polygon(4% 0, 100% 12%, 96% 88%, 0 100%);
+    filter: invert(0.9) contrast(400%);
+  }
+  79% {
+    /* Box đen xì như bị sập */
+    transform: translate(0, 0) rotate(0deg);
+    clip-path: none;
+    filter: brightness(0);
+  }
+  81% {
+    transform: translate(10px, 6px) rotate(2.5deg) scale(1.05);
+    clip-path: polygon(0 0, 98% 4%, 100% 100%, 2% 96%);
+    filter: contrast(350%) drop-shadow(0 0 14px #ff0033);
+  }
+  83%, 100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    clip-path: none;
+    filter: none;
+  }
+}
+
+/* Card / Box Irregular Jitter & Blackouts (3 Co-Prime Timers) */
+@keyframes gdvn-card-glitch-1 {
+  0%, 46% {
+    transform: translate(0, 0) skew(0deg);
+    filter: none;
+    background-color: var(--bg-card);
+    opacity: 1;
+  }
+  47% {
+    transform: translate(-4px, 2px) skewX(1deg);
+    filter: contrast(180%) saturate(0);
+  }
+  48% {
+    transform: translate(0, 0) skew(0deg);
+    filter: none;
+  }
+  73% {
+    transform: translate(10px, -6px) skewX(-2.5deg);
+    filter: contrast(450%) saturate(0) brightness(1.2);
+    border-color: #ffffff !important;
+    box-shadow: -4px 0 0 #ff0033, 4px 0 0 #001144;
+  }
+  75% {
+    /* Đen xì như bị sập nguồn */
+    transform: translate(0, 0);
+    filter: brightness(0) contrast(500%);
+    border-color: #000000 !important;
+    box-shadow: none !important;
+    opacity: 0.08;
+  }
+  77% {
+    transform: translate(-8px, 6px) skewY(1.5deg);
+    filter: contrast(350%) invert(0.85);
+    border-color: #ff0033 !important;
+    opacity: 1;
+  }
+  79%, 100% {
+    transform: translate(0, 0) skew(0deg);
+    filter: none;
+    opacity: 1;
+  }
+}
+
+@keyframes gdvn-card-glitch-2 {
+  0%, 54% {
+    transform: translate(0, 0) skew(0deg);
+    filter: none;
+    opacity: 1;
+  }
+  55% {
+    transform: translate(5px, -3px) skewY(-1deg);
+    filter: contrast(220%) saturate(0);
+  }
+  56% {
+    transform: translate(0, 0) skew(0deg);
+    filter: none;
+  }
+  80% {
+    transform: translate(-12px, 8px) skewX(3deg);
+    filter: contrast(500%) saturate(0);
+    border-color: #ffffff !important;
+    box-shadow: 4px 0 0 #001144, -4px 0 0 #ff0033;
+  }
+  82% {
+    /* Đen sập */
+    filter: brightness(0);
+    border-color: #000000 !important;
+    box-shadow: none !important;
+    opacity: 0.05;
+  }
+  84% {
+    transform: translate(6px, -4px) skewX(-1.5deg);
+    filter: contrast(300%) drop-shadow(0 0 10px #ff0033);
+    border-color: #ff0033 !important;
+    opacity: 1;
+  }
+  86%, 100% {
+    transform: translate(0, 0) skew(0deg);
+    filter: none;
+    opacity: 1;
+  }
+}
+
+@keyframes gdvn-card-glitch-3 {
+  0%, 62% {
+    transform: translate(0, 0) skew(0deg);
+    filter: none;
+    opacity: 1;
+  }
+  63% {
+    transform: translate(-3px, -2px) skewX(-0.8deg);
+    filter: contrast(190%) saturate(0);
+  }
+  64% {
+    transform: translate(0, 0) skew(0deg);
+    filter: none;
+  }
+  88% {
+    transform: translate(14px, -10px) skewY(-2deg);
+    filter: contrast(400%) saturate(0);
+    border-color: #ffffff !important;
+  }
+  90% {
+    /* Đen sập */
+    filter: brightness(0);
+    border-color: #000000 !important;
+    box-shadow: none !important;
+    opacity: 0.06;
+  }
+  92% {
+    transform: translate(-6px, 4px) skewX(2deg);
+    filter: invert(1) contrast(300%);
+    border-color: #001144 !important;
+    opacity: 1;
+  }
+  94%, 100% {
+    transform: translate(0, 0) skew(0deg);
+    filter: none;
+    opacity: 1;
+  }
+}
+
+/* Fullscreen Glitch Overlay: Monochrome Static + Red/Navy Slices */
 @keyframes gdvn-glitch-scanlines {
   0% {
     background-position: 0 0, 0 0;
   }
   100% {
-    background-position: 0 100px, 0 400px;
+    background-position: 0 120px, 0 360px;
+  }
+}
+
+@keyframes gdvn-overlay-tear {
+  0%, 65% {
+    opacity: 0.15;
+    clip-path: none;
+    transform: translate(0, 0);
+  }
+  66% {
+    opacity: 0.65;
+    clip-path: polygon(0 18%, 100% 18%, 100% 32%, 0 32%);
+    transform: translate(-6px, 0);
+  }
+  68% {
+    opacity: 0.75;
+    clip-path: polygon(0 62%, 100% 62%, 100% 78%, 0 78%);
+    transform: translate(8px, 0);
+  }
+  70% {
+    opacity: 0.15;
+    clip-path: none;
+    transform: translate(0, 0);
+  }
+  85% {
+    opacity: 0.7;
+    clip-path: polygon(0 40%, 100% 40%, 100% 55%, 0 55%);
+    transform: translate(-10px, 0);
+  }
+  87%, 100% {
+    opacity: 0.15;
+    clip-path: none;
+    transform: translate(0, 0);
   }
 }
 
@@ -986,37 +1233,83 @@ input[type="number"] {
   background-image:
     repeating-linear-gradient(
       0deg,
-      rgba(255, 0, 85, 0.06) 0px,
-      rgba(0, 255, 255, 0.06) 2px,
+      rgba(255, 255, 255, 0.04) 0px,
+      rgba(0, 0, 0, 0.9) 2px,
       transparent 2px,
-      transparent 5px
+      transparent 4px
     ),
     linear-gradient(
       90deg,
-      rgba(255, 0, 85, 0.05),
-      rgba(0, 255, 255, 0.05),
-      rgba(170, 255, 0, 0.05)
+      rgba(255, 0, 51, 0.06),
+      rgba(0, 17, 68, 0.08),
+      rgba(255, 255, 255, 0.04)
     );
   mix-blend-mode: screen;
-  animation: gdvn-glitch-scanlines 1.2s linear infinite;
+  animation: gdvn-glitch-scanlines 0.8s linear infinite, gdvn-overlay-tear 5.1s steps(1, end) infinite;
 }
 
+/* Master Profile Glitch Container */
 .gdvn-profile-glitch {
-  animation: gdvn-glitch-jitter 0.45s steps(2, end) infinite;
+  position: relative;
 }
 
-.gdvn-profile-glitch .ui-card {
-  animation: gdvn-glitch-rgb-shadow 0.32s steps(2, end) infinite !important;
-  border-width: 1.5px !important;
-}
-
+/* Continuous character vibration across all text elements */
+.gdvn-profile-glitch p,
+.gdvn-profile-glitch span,
+.gdvn-profile-glitch a,
+.gdvn-profile-glitch button,
+.gdvn-profile-glitch label,
+.gdvn-profile-glitch strong,
+.gdvn-profile-glitch em,
 .gdvn-profile-glitch .ui-title,
 .gdvn-profile-glitch h1,
 .gdvn-profile-glitch h2,
-.gdvn-profile-glitch h3 {
-  animation: gdvn-glitch-text 0.25s steps(2, end) infinite;
+.gdvn-profile-glitch h3,
+.gdvn-profile-glitch h4,
+.gdvn-profile-glitch h5,
+.gdvn-profile-glitch h6 {
+  display: inline-block;
+  animation: gdvn-char-twitch-a 0.16s steps(2, end) infinite;
 }
 
-.gdvn-profile-glitch img {
-  animation: gdvn-glitch-jitter 0.6s steps(3, end) infinite;
+.gdvn-profile-glitch *:nth-child(2n) > span,
+.gdvn-profile-glitch *:nth-child(2n) > p,
+.gdvn-profile-glitch *:nth-child(2n) > a,
+.gdvn-profile-glitch *:nth-child(2n) > button {
+  animation: gdvn-char-twitch-b 0.21s steps(2, end) infinite;
+}
+
+.gdvn-profile-glitch *:nth-child(3n) > span,
+.gdvn-profile-glitch *:nth-child(3n) > p,
+.gdvn-profile-glitch *:nth-child(3n) > a,
+.gdvn-profile-glitch *:nth-child(3n) > button {
+  animation: gdvn-char-twitch-c 0.26s steps(2, end) infinite;
+}
+
+/* Avatar & Cover break-out animations */
+.gdvn-profile-glitch [data-glitch-avatar] {
+  animation: gdvn-glitch-avatar 4.9s steps(1, end) infinite;
+  transform-origin: center center;
+  z-index: 20;
+}
+
+.gdvn-profile-glitch [data-glitch-cover] {
+  animation: gdvn-glitch-cover 6.7s steps(1, end) infinite;
+  transform-origin: center center;
+}
+
+/* Staggered box dislocations & blackout collapses */
+.gdvn-profile-glitch .ui-card:nth-of-type(3n+1) {
+  animation: gdvn-card-glitch-1 5.3s steps(1, end) infinite !important;
+  transition: transform 0.05s ease-out;
+}
+
+.gdvn-profile-glitch .ui-card:nth-of-type(3n+2) {
+  animation: gdvn-card-glitch-2 7.1s steps(1, end) infinite !important;
+  transition: transform 0.05s ease-out;
+}
+
+.gdvn-profile-glitch .ui-card:nth-of-type(3n) {
+  animation: gdvn-card-glitch-3 8.9s steps(1, end) infinite !important;
+  transition: transform 0.05s ease-out;
 }
