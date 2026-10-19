@@ -31,6 +31,8 @@ export async function GET() {
       nameGradient: true,
       nameGlow: true,
       nameFont: true,
+      hasGlitchTheme: true,
+      easterEggCompleted: true,
       tokenVersion: true,
       clanMember: {
         select: {

@@ -65,7 +65,7 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: auth.userId },
-      select: { id: true, username: true, supporterUntil: true, role: true, profileConfig: true, profileTheme: true },
+      select: { id: true, username: true, supporterUntil: true, role: true, profileConfig: true, profileTheme: true, hasGlitchTheme: true },
     });
 
     if (!user) {
@@ -73,7 +73,85 @@ export async function POST(req: Request) {
     }
 
     const now = new Date();
+    const isGlitchTheme = redeemCode.rewardType === 'GLITCH_THEME';
     const isSpCoin = redeemCode.rewardType === 'SP_COIN';
+
+    if (isGlitchTheme) {
+      const updatedUser = await prisma.$transaction(async (tx) => {
+        const claimed = await tx.redeemCode.updateMany({
+          where: {
+            id: redeemCode.id,
+            isActive: true,
+            ...(isUnlimited || redeemCode.maxUses === null ? {} : { usedCount: { lt: redeemCode.maxUses } }),
+          },
+          data: {
+            usedCount: { increment: 1 },
+          },
+        });
+        if (claimed.count === 0) {
+          throw new Error('CODE_EXHAUSTED');
+        }
+
+        if (!isUnlimited && redeemCode.maxUses !== null && redeemCode.usedCount + 1 >= redeemCode.maxUses) {
+          await tx.redeemCode.updateMany({
+            where: { id: redeemCode.id, usedCount: { gte: redeemCode.maxUses } },
+            data: { isActive: false },
+          });
+        }
+
+        await tx.redeemCodeUse.create({
+          data: {
+            codeId: redeemCode.id,
+            userId: user.id,
+            months: 0,
+            rewardType: 'GLITCH_THEME',
+            days: 0,
+            spAmount: 0,
+          },
+        });
+
+        await tx.notification.create({
+          data: {
+            userId: user.id,
+            title: 'Mở khoá Theme lỗi thành công',
+            message: `Bạn đã kích hoạt mã bí mật "${redeemCode.code}" và mở khoá vĩnh viễn giao diện ẩn "Theme lỗi" cho trang hồ sơ cá nhân!`,
+          },
+        });
+
+        const updated = await tx.user.update({
+          where: { id: user.id },
+          data: {
+            hasGlitchTheme: true,
+            profileTheme: 'glitch',
+          },
+          select: {
+            id: true,
+            username: true,
+            supporterUntil: true,
+            spPoints: true,
+            role: true,
+            profileConfig: true,
+            profileTheme: true,
+            hasGlitchTheme: true,
+            spGrants: {
+              select: { id: true, amount: true, expiresAt: true, reason: true },
+            },
+          },
+        });
+
+        return updated;
+      });
+
+      return NextResponse.json({
+        success: true,
+        rewardType: 'GLITCH_THEME',
+        user: {
+          ...updatedUser,
+          userSp: calculateUserSp(updatedUser),
+        },
+        message: 'Đã mở khoá và kích hoạt "Theme lỗi" cho trang hồ sơ của bạn!',
+      });
+    }
 
     if (isSpCoin) {
       const spAmount = redeemCode.spAmount > 0 ? redeemCode.spAmount : 1;

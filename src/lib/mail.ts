@@ -290,3 +290,18 @@ function otpHtml(title: string, code: string, expire: string): string {
     </div>
   `;
 }
+
+export async function sendGlitchRewardEmail(to: string, code: string) {
+  if (!to || !isMailConfigured()) return;
+  try {
+    await sendViaConfiguredTransport({
+      to,
+      subject: `[ERR_0x100] Mã bí mật GDVN: ${code}`,
+      text: `Mã đổi thưởng bí mật của bạn: ${code}\nNhập mã này tại mục Đổi mã (Cài đặt) để mở khoá Theme lỗi.`,
+      html: otpHtml('ERR_0x100 // SECRET CODE', code, 'Nhập mã tại mục Đổi mã trong Cài đặt để mở khoá Theme lỗi.'),
+    });
+  } catch (err) {
+    console.error('Failed to send glitch reward email:', err);
+  }
+}
+

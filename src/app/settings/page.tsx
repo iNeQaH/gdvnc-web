@@ -714,6 +714,9 @@ export default function SettingsPage() {
             ...prev,
             ...resJson.user,
           }));
+          if (resJson.rewardType === 'GLITCH_THEME' || resJson.user.profileTheme === 'glitch') {
+            setTheme('glitch');
+          }
           const existingUser = (() => {
             try { return JSON.parse(localStorage.getItem('gdvnc_user') || '{}'); } catch { return {}; }
           })();
@@ -1164,6 +1167,9 @@ export default function SettingsPage() {
                   supporterOnly: true,
                 },
                 { id: 'lavender', label: 'iNeQaH', color: 'bg-purple-500', supporterOnly: true },
+                ...(data?.hasGlitchTheme || currentUser?.hasGlitchTheme
+                  ? [{ id: 'glitch', label: 'Theme lỗi', color: 'gdvn-swatch-glitch', supporterOnly: false }]
+                  : []),
               ].map((th) => {
                 const isSelected = (data.profileTheme || 'sky') === th.id;
                 const isLocked = Boolean(th.supporterOnly && !canAccessSupporter);

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   Star, 
   Folder, 
@@ -35,6 +35,7 @@ import { refreshSessionUser, logoutClient } from '@/lib/sessionClient';
 
 export const Sidebar = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const { theme, resolvedMode } = useTheme();
   const isDark = resolvedMode === 'dark';
   const isLavender = theme === 'lavender';
@@ -44,6 +45,59 @@ export const Sidebar = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [announceUnread, setAnnounceUnread] = useState(0);
   const [isInboxOpen, setIsInboxOpen] = useState(false);
+
+  // Easter Egg state on homepage top-left logo button (5 -> 15 -> 25 clicks)
+  const eggClicksRef = React.useRef(0);
+  const eggTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [eggAlertMessage, setEggAlertMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    eggClicksRef.current = 0;
+    setEggAlertMessage(null);
+  }, [pathname]);
+
+  const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (pathname !== '/') return;
+    e.preventDefault();
+    if (eggAlertMessage !== null) return;
+    if (currentUser?.easterEggCompleted) return;
+
+    if (eggTimerRef.current) {
+      clearTimeout(eggTimerRef.current);
+    }
+
+    const next = eggClicksRef.current + 1;
+    eggClicksRef.current = next;
+
+    if (next === 5) {
+      setEggAlertMessage('Làm j v?');
+      return;
+    }
+    if (next === 15) {
+      setEggAlertMessage('...');
+      return;
+    }
+    if (next >= 25) {
+      eggClicksRef.current = 0;
+      setIsOpen(false);
+      router.push('/easter-egg');
+      return;
+    }
+
+    eggTimerRef.current = setTimeout(() => {
+      eggClicksRef.current = 0;
+    }, 4000);
+  };
+
+  const handleCloseEggAlert = () => {
+    setEggAlertMessage(null);
+    if (eggTimerRef.current) {
+      clearTimeout(eggTimerRef.current);
+    }
+    eggTimerRef.current = setTimeout(() => {
+      eggClicksRef.current = 0;
+    }, 6000);
+  };
 
   const [indicatorStyle, setIndicatorStyle] = useState({ top: 0, height: 0, opacity: 0 });
   const navRef = React.useRef<HTMLElement>(null);
@@ -230,6 +284,10 @@ export const Sidebar = () => {
     ...(isStaffRole(currentUser?.role) ? [{ href: '/admin/records', label: t('nav.admin'), icon: ShieldCheck }] : []),
   ];
 
+  if (pathname === '/easter-egg') {
+    return null;
+  }
+
   return (
     <>
       {/* Mobile Top Bar */}
@@ -240,7 +298,13 @@ export const Sidebar = () => {
           borderColor: isLavender ? undefined : "var(--border-ui)",
         }}
       >
-        <Link href="/" className={`flex items-center gap-2 px-2 py-1 rounded-xl transition-all ${isLavender ? 'tsumiki-btn' : 'active:scale-95'}`}>
+        <Link
+          href="/"
+          onClick={handleLogoClick}
+          className={`flex items-center gap-2 px-2 py-1 rounded-xl select-none ${
+            pathname === '/' ? 'cursor-default' : `transition-all ${isLavender ? 'tsumiki-btn' : 'active:scale-95'}`
+          }`}
+        >
           <BrandMark size={28} className="rounded-lg" />
           <span className="font-black text-sm tracking-tight ui-title">
             GD<span style={{ color: 'var(--accent)' }}>VN</span>
@@ -280,7 +344,15 @@ export const Sidebar = () => {
         <div className="space-y-6">
           {/* Brand Header */}
           <div className="flex items-center justify-between px-2 pt-2">
-            <Link href="/" className={`flex items-center gap-2.5 px-3 py-1.5 rounded-2xl transition-all hover:bg-slate-100 dark:hover:bg-zinc-800 ${isLavender ? 'tsumiki-btn' : 'active:scale-95'}`}>
+            <Link
+              href="/"
+              onClick={handleLogoClick}
+              className={`flex items-center gap-2.5 px-3 py-1.5 rounded-2xl select-none ${
+                pathname === '/'
+                  ? 'cursor-default'
+                  : `transition-all hover:bg-slate-100 dark:hover:bg-zinc-800 ${isLavender ? 'tsumiki-btn' : 'active:scale-95'}`
+              }`}
+            >
               <BrandMark size={36} />
               <div>
                 <div className={`font-extrabold text-base tracking-tight leading-tight ${isLavender ? 'text-indigo-950 dark:text-white' : 'ui-title'}`}>
@@ -527,6 +599,34 @@ export const Sidebar = () => {
           onClose={() => setIsInboxOpen(false)}
           onUpdateUnreadCount={handleUpdateUnreadCount}
         />
+      )}
+
+      {eggAlertMessage !== null && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
+          <div
+            className="relative w-full max-w-xs rounded-2xl border p-6 shadow-2xl flex items-center justify-between gap-4"
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              borderColor: 'var(--border-ui)',
+            }}
+          >
+            <div className="text-base font-bold ui-title select-none">
+              {eggAlertMessage}
+            </div>
+            <button
+              type="button"
+              onClick={handleCloseEggAlert}
+              aria-label="Đóng"
+              className="p-1.5 rounded-lg border ui-dim hover:opacity-100 transition-opacity cursor-pointer shrink-0"
+              style={{
+                backgroundColor: 'var(--bg-subtle)',
+                borderColor: 'var(--border-ui)',
+              }}
+            >
+              <X className="w-4 h-4 ui-title" />
+            </button>
+          </div>
+        </div>
       )}
     </>
   );

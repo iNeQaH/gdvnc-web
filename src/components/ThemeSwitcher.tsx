@@ -107,6 +107,9 @@ export const ThemeSwitcher = ({ dropUp = false }: { dropUp?: boolean }) => {
       customStyle: customGradient ? { background: customGradient } : undefined,
     },
     { id: 'lavender', label: 'iNeQaH', icon: Sparkles, color: 'bg-purple-500' },
+    ...(currentUser?.hasGlitchTheme
+      ? [{ id: 'glitch' as ThemeType, label: 'Theme lỗi', icon: Sparkles, color: 'gdvn-swatch-glitch' }]
+      : []),
   ];
 
   const currentTheme = THEMES.find((item) => item.id === theme) || THEMES[0];

@@ -7,7 +7,7 @@ import {
   getStoredCustomThemeConfig,
 } from '@/lib/customTheme';
 
-export type ThemeType = 'sky' | 'mint' | 'peach' | 'lavender' | 'mono' | 'sakura' | 'custom';
+export type ThemeType = 'sky' | 'mint' | 'peach' | 'lavender' | 'mono' | 'sakura' | 'custom' | 'glitch';
 export type ModeType = 'light' | 'dark' | 'system';
 
 interface ThemeContextProps {
@@ -20,7 +20,7 @@ interface ThemeContextProps {
   setOverrideMode: (mode: ModeType | null) => void;
 }
 
-const THEMES: ThemeType[] = ['sky', 'mint', 'peach', 'lavender', 'mono', 'sakura', 'custom'];
+const THEMES: ThemeType[] = ['sky', 'mint', 'peach', 'lavender', 'mono', 'sakura', 'custom', 'glitch'];
 const MODES: ModeType[] = ['light', 'dark', 'system'];
 const RGB_VARS = ['--accent', '--accent-hover', '--accent-bg', '--accent-text', '--accent-fg'] as const;
 
@@ -36,6 +36,7 @@ const ThemeContext = createContext<ThemeContextProps>({
 
 function applyTheme(theme: ThemeType, mode: ModeType): 'light' | 'dark' {
   const dark =
+    theme === 'glitch' ||
     mode === 'dark' ||
     (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const root = document.documentElement;
@@ -43,16 +44,30 @@ function applyTheme(theme: ThemeType, mode: ModeType): 'light' | 'dark' {
     root.setAttribute('data-theme', theme);
   }
   root.classList.toggle('dark', dark);
-  root.classList.toggle('gdvn-rgb', theme === 'mint' || theme === 'peach');
+  root.classList.toggle('gdvn-rgb', theme === 'mint' || theme === 'peach' || theme === 'glitch');
+  root.classList.toggle('gdvn-glitch', theme === 'glitch');
   return dark ? 'dark' : 'light';
 }
 
 function clearRgbVars(root: HTMLElement) {
   for (const name of RGB_VARS) root.style.removeProperty(name);
+  root.style.removeProperty('--glitch-hue');
+  root.style.removeProperty('--glitch-alt');
 }
 
-function paintRgb(root: HTMLElement, theme: 'mint' | 'peach', dark: boolean, hue: number) {
+function paintRgb(root: HTMLElement, theme: 'mint' | 'peach' | 'glitch', dark: boolean, hue: number) {
   const h = ((hue % 360) + 360) % 360;
+  if (theme === 'glitch') {
+    const opp = (h + 150) % 360;
+    root.style.setProperty('--accent', `hsl(${h}, 100%, 56%)`);
+    root.style.setProperty('--accent-hover', `hsl(${opp}, 100%, 62%)`);
+    root.style.setProperty('--accent-bg', `hsla(${h}, 100%, 50%, 0.22)`);
+    root.style.setProperty('--accent-text', `hsl(${h}, 100%, 75%)`);
+    root.style.setProperty('--accent-fg', '#050508');
+    root.style.setProperty('--glitch-hue', `${h.toFixed(0)}deg`);
+    root.style.setProperty('--glitch-alt', `hsl(${opp}, 100%, 58%)`);
+    return;
+  }
   const pastel = theme === 'peach';
   const s = pastel ? (dark ? 48 : 52) : dark ? 82 : 88;
   const l = pastel ? (dark ? 74 : 64) : dark ? 62 : 48;
@@ -101,26 +116,29 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const root = document.documentElement;
-    const rgb = effectiveTheme === 'mint' || effectiveTheme === 'peach';
+    const rgb = effectiveTheme === 'mint' || effectiveTheme === 'peach' || effectiveTheme === 'glitch';
     if (!rgb) {
       clearRgbVars(root);
       return;
     }
     const dark = resolvedMode === 'dark';
-    // RGB / RGB Pastel are an explicit color-cycle choice — keep moving even if
-    // the OS has "reduce motion" on (Windows often maps that to a frozen accent).
-    const speed = effectiveTheme === 'peach' ? 22.5 : 30;
+    const isGlitch = effectiveTheme === 'glitch';
+    const speed = isGlitch ? 540 : effectiveTheme === 'peach' ? 22.5 : 30;
     let hue = 0;
     let last = performance.now();
     let raf = 0;
     const tick = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      hue = (hue + speed * dt) % 360;
-      paintRgb(root, effectiveTheme as 'mint' | 'peach', dark, hue);
+      if (isGlitch && Math.random() < 0.22) {
+        hue = (hue + 90 + Math.random() * 180) % 360;
+      } else {
+        hue = (hue + speed * dt) % 360;
+      }
+      paintRgb(root, effectiveTheme as 'mint' | 'peach' | 'glitch', dark, hue);
       raf = requestAnimationFrame(tick);
     };
-    paintRgb(root, effectiveTheme as 'mint' | 'peach', dark, hue);
+    paintRgb(root, effectiveTheme as 'mint' | 'peach' | 'glitch', dark, hue);
     raf = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(raf);

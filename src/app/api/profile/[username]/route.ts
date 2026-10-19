@@ -64,6 +64,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       nameGradient: true,
       nameGlow: true,
       nameFont: true,
+      hasGlitchTheme: true,
+      easterEggCompleted: true,
       clanMember: {
         include: {
           clan: {
@@ -354,6 +356,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         nameGradient: user.nameGradient,
         nameGlow: user.nameGlow,
         nameFont: user.nameFont,
+        hasGlitchTheme: user.hasGlitchTheme,
+        easterEggCompleted: user.easterEggCompleted,
         clanMember: user.clanMember
           ? {
               ...user.clanMember,
@@ -409,6 +413,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         coverUrl: true,
         supporterUntil: true,
         profileConfig: true,
+        hasGlitchTheme: true,
       },
     });
     if (!current) {
@@ -418,6 +423,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
     const isSupporterOrOwner =
       isSuperAdminUser(auth) ||
       Boolean(current.supporterUntil && new Date(current.supporterUntil) > new Date());
+
+    if (
+      body.profileTheme === 'glitch' &&
+      !current.hasGlitchTheme &&
+      !isSuperAdminUser(auth)
+    ) {
+      return NextResponse.json(
+        { error: 'Giao diện này chưa được mở khoá.' },
+        { status: 403 }
+      );
+    }
 
     if (
       body.profileTheme !== undefined &&

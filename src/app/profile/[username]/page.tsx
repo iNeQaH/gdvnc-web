@@ -1020,8 +1020,13 @@ export default function ProfilePage() {
   const headerBadges = [...roleBadges, ...(data.badges || [])].slice(0, 3);
   const allBadges = [...roleBadges, ...(data.badges || [])];
 
+  const isGlitchTheme = (data?.profileTheme ? data.profileTheme === 'glitch' : theme === 'glitch');
+
   return (
-    <div className="max-w-[1200px] mx-auto py-8 px-4 space-y-6 relative">
+    <div className={`max-w-[1200px] mx-auto py-8 px-4 space-y-6 relative ${isGlitchTheme ? 'gdvn-profile-glitch' : ''}`}>
+      {isGlitchTheme && (
+        <div className="gdvn-glitch-overlay pointer-events-none fixed inset-0 z-[5]" aria-hidden="true" />
+      )}
       {data?.profileConfig?.backgroundUrl && (
         <div className="fixed inset-0 z-[-1] pointer-events-none" style={{ backgroundImage: "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(" + data.profileConfig.backgroundUrl + ")", backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "fixed" }} />
       )}

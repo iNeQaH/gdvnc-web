@@ -871,3 +871,152 @@ input[type="number"] {
 }
 
 
+
+/* ==========================================================================
+   SECRET GLITCH THEME ("Theme lỗi" - data-theme="glitch")
+   Continuous intense glitch & rapid color-shifting on profile
+   ========================================================================== */
+[data-theme="glitch"] {
+  --bg-page: #040407;
+  --bg-card: rgba(9, 9, 16, 0.88);
+  --bg-subtle: rgba(18, 18, 30, 0.92);
+  --border-ui: var(--accent, #00ffff);
+  --border-subtle: var(--glitch-alt, #ff0055);
+  --text-title: #ffffff;
+  --text-body: #e2e8f0;
+  --text-dim: #94a3b8;
+}
+
+@keyframes gdvn-glitch-swatch {
+  0% { background: #ff0055; box-shadow: -2px 0 #00ffff, 2px 0 #aaff00; }
+  25% { background: #00ffff; box-shadow: 2px -1px #ff00ff, -2px 1px #ff0000; }
+  50% { background: #aaff00; box-shadow: -2px 1px #ff0055, 2px -1px #00ffff; }
+  75% { background: #ff00ff; box-shadow: 2px 1px #00ff88, -2px -1px #ffff00; }
+  100% { background: #ff0055; box-shadow: -2px 0 #00ffff, 2px 0 #aaff00; }
+}
+
+.gdvn-swatch-glitch {
+  animation: gdvn-glitch-swatch 0.35s steps(2, end) infinite;
+}
+
+@keyframes gdvn-glitch-jitter {
+  0%, 100% {
+    transform: translate(0, 0) skew(0deg);
+    filter: hue-rotate(0deg) saturate(1.8) contrast(1.15);
+  }
+  12% {
+    transform: translate(-3px, 1px) skew(-1.2deg);
+    filter: hue-rotate(70deg) saturate(2.5) contrast(1.3);
+  }
+  24% {
+    transform: translate(3px, -1px) skew(1.4deg);
+    filter: hue-rotate(145deg) saturate(2.2) contrast(1.2);
+  }
+  36% {
+    transform: translate(-2px, -2px) skew(-0.6deg);
+    filter: hue-rotate(215deg) saturate(2.8) contrast(1.35);
+  }
+  48% {
+    transform: translate(2px, 2px) skew(1deg);
+    filter: hue-rotate(290deg) saturate(2.4) contrast(1.25);
+  }
+  60% {
+    transform: translate(-4px, 0px) skew(-1.8deg);
+    filter: hue-rotate(330deg) saturate(3) contrast(1.4);
+  }
+  72% {
+    transform: translate(3px, 1px) skew(0.8deg);
+    filter: hue-rotate(110deg) saturate(2.3) contrast(1.2);
+  }
+  84% {
+    transform: translate(-1px, 2px) skew(-1deg);
+    filter: hue-rotate(250deg) saturate(2.6) contrast(1.3);
+  }
+}
+
+@keyframes gdvn-glitch-rgb-shadow {
+  0%, 100% {
+    box-shadow:
+      -3px 0 0 rgba(255, 0, 85, 0.85),
+      3px 0 0 rgba(0, 255, 255, 0.85),
+      0 0 22px var(--accent, #ff0055);
+    border-color: var(--accent, #00ffff);
+  }
+  33% {
+    box-shadow:
+      3px -2px 0 rgba(0, 255, 136, 0.85),
+      -3px 2px 0 rgba(255, 0, 255, 0.85),
+      0 0 28px var(--glitch-alt, #00ffff);
+    border-color: var(--glitch-alt, #ff00ff);
+  }
+  66% {
+    box-shadow:
+      -4px 2px 0 rgba(255, 230, 0, 0.85),
+      4px -2px 0 rgba(0, 180, 255, 0.85),
+      0 0 26px var(--accent, #aaff00);
+    border-color: var(--accent, #ff0055);
+  }
+}
+
+@keyframes gdvn-glitch-text {
+  0%, 100% {
+    text-shadow: -2px 0 #ff0055, 2px 0 #00ffff;
+  }
+  25% {
+    text-shadow: 2px -1px #00ff88, -2px 1px #ff00ff;
+  }
+  50% {
+    text-shadow: -3px 1px #00ffff, 3px -1px #ff0055;
+  }
+  75% {
+    text-shadow: 2px 1px #ffe600, -2px -1px #00b4ff;
+  }
+}
+
+@keyframes gdvn-glitch-scanlines {
+  0% {
+    background-position: 0 0, 0 0;
+  }
+  100% {
+    background-position: 0 100px, 0 400px;
+  }
+}
+
+.gdvn-glitch-overlay {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 0, 85, 0.06) 0px,
+      rgba(0, 255, 255, 0.06) 2px,
+      transparent 2px,
+      transparent 5px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 85, 0.05),
+      rgba(0, 255, 255, 0.05),
+      rgba(170, 255, 0, 0.05)
+    );
+  mix-blend-mode: screen;
+  animation: gdvn-glitch-scanlines 1.2s linear infinite;
+}
+
+.gdvn-profile-glitch {
+  animation: gdvn-glitch-jitter 0.45s steps(2, end) infinite;
+}
+
+.gdvn-profile-glitch .ui-card {
+  animation: gdvn-glitch-rgb-shadow 0.32s steps(2, end) infinite !important;
+  border-width: 1.5px !important;
+}
+
+.gdvn-profile-glitch .ui-title,
+.gdvn-profile-glitch h1,
+.gdvn-profile-glitch h2,
+.gdvn-profile-glitch h3 {
+  animation: gdvn-glitch-text 0.25s steps(2, end) infinite;
+}
+
+.gdvn-profile-glitch img {
+  animation: gdvn-glitch-jitter 0.6s steps(3, end) infinite;
+}
