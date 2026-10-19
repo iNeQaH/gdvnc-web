@@ -28,6 +28,7 @@ import {
   User as UserIcon,
   Clock,
   Calendar,
+  Sparkles,
 } from 'lucide-react';
 import BadgeIcon, { IconGlyph } from '@/components/BadgeIcon';
 import BadgePickerModal from '@/components/BadgePickerModal';
@@ -118,8 +119,11 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
   
   // Supporter state
   const [supporterTarget, setSupporterTarget] = useState<{ id: string; username: string } | null>(null);
-  const [supporterMonths, setSupporterMonths] = useState('1');
-  const [supporterSpCoins, setSupporterSpCoins] = useState(0);
+  const [manageTargetType, setManageTargetType] = useState<'supporter' | 'sp_coin'>('supporter');
+  const [supporterOp, setSupporterOp] = useState<'add' | 'sub'>('add');
+  const [supporterAmount, setSupporterAmount] = useState<number>(1);
+  const [spCoinOp, setSpCoinOp] = useState<'add' | 'sub'>('add');
+  const [spCoinAmount, setSpCoinAmount] = useState<number>(0);
   const [isSupporterModalOpen, setIsSupporterModalOpen] = useState(false);
   const [givingSupporter, setGivingSupporter] = useState(false);
 
@@ -357,15 +361,20 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
 
   const confirmGiveSupporter = async () => {
     if (!supporterTarget) return;
-    const months = parseInt(supporterMonths);
-    if (isNaN(months) || months < -1) {
-      showToast('Số tháng không hợp lệ.', 'error');
-      return;
-    }
     setGivingSupporter(true);
     try {
-      const payload: any = { grantSupporterMonths: months };
-      if (supporterSpCoins > 0) payload.grantSpCoin = supporterSpCoins;
+      const payload: any = {};
+      if (supporterAmount > 0) {
+        payload.grantSupporterMonths = supporterOp === 'add' ? supporterAmount : -supporterAmount;
+      }
+      if (spCoinAmount > 0) {
+        payload.grantSpCoin = spCoinOp === 'add' ? spCoinAmount : -spCoinAmount;
+      }
+      if (Object.keys(payload).length === 0) {
+        showToast('Vui lòng chọn số lượng cần điều chỉnh.', 'error');
+        setGivingSupporter(false);
+        return;
+      }
       const res = await fetch(`/api/admin/users/${supporterTarget.id}/role`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -373,14 +382,14 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        showToast(data.error || 'Cấp Supporter thất bại', 'error');
+        showToast(data.error || 'Cấp Supporter & SP Coin thất bại', 'error');
         return;
       }
-      showToast(`Đã cấp/sửa Supporter & SP Coin cho ${supporterTarget.username}`, 'success');
+      showToast(`Đã cập nhật Supporter & SP Coin cho ${supporterTarget.username}`, 'success');
       setIsSupporterModalOpen(false);
       setSupporterTarget(null);
-      setSupporterMonths('1');
-      setSupporterSpCoins(0);
+      setSupporterAmount(1);
+      setSpCoinAmount(0);
       fetchUsers(userQuery);
     } catch (err) {
       showToast('Lỗi hệ thống', 'error');
@@ -680,7 +689,11 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 setSupporterTarget({ id: user.id, username: user.username });
-                                setSupporterMonths('1');
+                                setManageTargetType('supporter');
+                                setSupporterOp('add');
+                                setSupporterAmount(1);
+                                setSpCoinOp('add');
+                                setSpCoinAmount(0);
                                 setIsSupporterModalOpen(true);
                               }}
                               className="p-1.5 rounded-lg text-pink-500 hover:bg-pink-500/10 border border-transparent hover:border-pink-500/20 transition-all cursor-pointer inline-flex items-center gap-1"
@@ -851,39 +864,165 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
 
             <div className="space-y-3 text-xs">
               <p className="ui-title font-medium">
-                Cấp Supporter cho <strong className="text-pink-500">{supporterTarget.username}</strong>
+                Cấp / Điều chỉnh cho <strong className="text-pink-500">{supporterTarget.username}</strong>
               </p>
 
-              <div>
-                <label className="block text-[11px] font-bold uppercase ui-dim mb-1">Số tháng</label>
-                <select
-                  value={supporterMonths}
-                  onChange={(e) => setSupporterMonths(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border text-xs focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+              {/* Switch 1: Tháng Support vs SP Coin */}
+              <div className="p-1 rounded-xl border flex gap-1 text-xs font-bold" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                <button
+                  type="button"
+                  onClick={() => setManageTargetType('supporter')}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    manageTargetType === 'supporter'
+                      ? 'bg-pink-500 text-white shadow-sm'
+                      : 'ui-dim hover:text-[var(--text-title)]'
+                  }`}
                 >
-                  <option value="1">1 tháng</option>
-                  <option value="3">3 tháng</option>
-                  <option value="6">6 tháng</option>
-                  <option value="12">1 năm</option>
-                  <option value="1200">Trọn đời (100 năm)</option>
-                  <option value="-1">Hủy Supporter ngay lập tức</option>
-                </select>
+                  <Heart className="w-3.5 h-3.5" />
+                  Tháng Support
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setManageTargetType('sp_coin')}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    manageTargetType === 'sp_coin'
+                      ? 'bg-amber-500 text-black shadow-sm font-black'
+                      : 'ui-dim hover:text-[var(--text-title)]'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  SP Coin
+                </button>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold uppercase ui-dim mb-1">Cấp thêm SP Coin (tùy chọn)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="10000"
-                  value={supporterSpCoins}
-                  onChange={(e) => setSupporterSpCoins(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                  placeholder="0"
-                  className="w-full px-3 py-2 rounded-xl border text-xs focus:outline-none focus:ring-2 focus:ring-pink-500 font-bold"
-                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                />
-                <span className="text-[10px] ui-dim mt-1 block">Nhập số SP Coin muốn tặng trực tiếp cho thành viên (để duy trì/nâng cấp Clan).</span>
+              {/* Switch 2: Cộng (+) vs Trừ (-) */}
+              <div className="p-1 rounded-xl border flex gap-1 text-xs font-bold" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (manageTargetType === 'supporter') setSupporterOp('add');
+                    else setSpCoinOp('add');
+                  }}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    (manageTargetType === 'supporter' ? supporterOp === 'add' : spCoinOp === 'add')
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'ui-dim hover:text-[var(--text-title)]'
+                  }`}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Cộng (+) {manageTargetType === 'supporter' ? 'tháng' : 'coin'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (manageTargetType === 'supporter') setSupporterOp('sub');
+                    else setSpCoinOp('sub');
+                  }}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    (manageTargetType === 'supporter' ? supporterOp === 'sub' : spCoinOp === 'sub')
+                      ? 'bg-rose-600 text-white shadow-sm'
+                      : 'ui-dim hover:text-[var(--text-title)]'
+                  }`}
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                  Trừ (-) {manageTargetType === 'supporter' ? 'tháng' : 'coin'}
+                </button>
+              </div>
+
+              {/* Stepper Input: [-] [ Input ] [+] */}
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={manageTargetType === 'supporter' ? supporterAmount <= 0 : spCoinAmount <= 0}
+                    onClick={() => {
+                      if (manageTargetType === 'supporter') {
+                        setSupporterAmount((prev) => Math.max(0, prev - 1));
+                      } else {
+                        setSpCoinAmount((prev) => Math.max(0, prev - 1));
+                      }
+                    }}
+                    className="w-10 h-10 rounded-xl border flex items-center justify-center font-bold text-base cursor-pointer hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-subtle)', color: 'var(--text-title)' }}
+                    title="Giảm 1"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      min={0}
+                      max={manageTargetType === 'supporter' ? 120 : 10000}
+                      value={
+                        manageTargetType === 'supporter'
+                          ? (supporterAmount === 0 ? '' : supporterAmount)
+                          : (spCoinAmount === 0 ? '' : spCoinAmount)
+                      }
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        const sanitized = isNaN(val) || val < 0 ? 0 : val;
+                        if (manageTargetType === 'supporter') {
+                          setSupporterAmount(sanitized);
+                        } else {
+                          setSpCoinAmount(sanitized);
+                        }
+                      }}
+                      placeholder="0"
+                      className="w-full text-center py-2 px-3 rounded-xl border text-sm font-black focus:outline-none focus:ring-2 focus:ring-pink-500/50"
+                      style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold ui-dim pointer-events-none">
+                      {manageTargetType === 'supporter' ? 'tháng' : 'SP'}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (manageTargetType === 'supporter') {
+                        setSupporterAmount((prev) => prev + 1);
+                      } else {
+                        setSpCoinAmount((prev) => prev + 1);
+                      }
+                    }}
+                    className="w-10 h-10 rounded-xl border flex items-center justify-center font-bold text-base cursor-pointer hover:bg-white/10 transition-all"
+                    style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-subtle)', color: 'var(--text-title)' }}
+                    title="Tăng 1"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Status Preview */}
+                <div className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border flex items-center justify-between" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}>
+                  <span className="ui-dim">Trạng thái:</span>
+                  {manageTargetType === 'supporter' ? (
+                    supporterAmount === 0 ? (
+                      <span className="ui-title">Không thay đổi tháng</span>
+                    ) : supporterOp === 'add' ? (
+                      <span className="text-emerald-500 font-bold">
+                        Cộng +{supporterAmount} tháng Supporter
+                      </span>
+                    ) : (
+                      <span className="text-rose-500 font-bold">
+                        Trừ -{supporterAmount} tháng Supporter
+                      </span>
+                    )
+                  ) : (
+                    spCoinAmount === 0 ? (
+                      <span className="ui-title">Không thay đổi SP Coin</span>
+                    ) : spCoinOp === 'add' ? (
+                      <span className="text-amber-500 font-bold">
+                        Cộng +{spCoinAmount} SP Coin (Duy trì theo hạn Supporter)
+                      </span>
+                    ) : (
+                      <span className="text-rose-500 font-bold">
+                        Trừ -{spCoinAmount} SP Coin
+                      </span>
+                    )
+                  )}
+                </div>
               </div>
             </div>
 
@@ -977,7 +1116,11 @@ export default function UsersTab({ currentUser }: { currentUser: any }) {
                 const u = contextMenu.user;
                 setContextMenu((prev) => ({ ...prev, visible: false }));
                 setSupporterTarget({ id: u.id, username: u.username });
-                setSupporterMonths('1');
+                setManageTargetType('supporter');
+                setSupporterOp('add');
+                setSupporterAmount(1);
+                setSpCoinOp('add');
+                setSpCoinAmount(0);
                 setIsSupporterModalOpen(true);
               }}
               className="w-full flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold text-pink-500 hover:bg-pink-500/10 transition-colors text-left cursor-pointer"

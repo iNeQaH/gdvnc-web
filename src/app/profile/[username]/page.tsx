@@ -228,8 +228,11 @@ export default function ProfilePage() {
   // Admin Management States
   const [showManageModal, setShowManageModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string>('USER');
-  const [supporterMode, setSupporterMode] = useState<'keep' | 'modify'>('keep');
-  const [supporterMonthsInput, setSupporterMonthsInput] = useState<number>(0);
+  const [manageTargetType, setManageTargetType] = useState<'supporter' | 'sp_coin'>('supporter');
+  const [supporterOp, setSupporterOp] = useState<'add' | 'sub'>('add');
+  const [supporterAmount, setSupporterAmount] = useState<number>(0);
+  const [spCoinOp, setSpCoinOp] = useState<'add' | 'sub'>('add');
+  const [spCoinAmount, setSpCoinAmount] = useState<number>(0);
   const [savingAdminChanges, setSavingAdminChanges] = useState(false);
   const [badgesList, setBadgesList] = useState<any[]>([]);
   const [selectedBadgeIds, setSelectedBadgeIds] = useState<string[]>([]);
@@ -442,9 +445,11 @@ export default function ProfilePage() {
   const handleOpenManageModal = async () => {
     if (!currentUser || !isStaff || !data) return;
     setSelectedRole(data.role);
-    const remaining = calculateUserSp(data);
-    setSupporterMonthsInput(remaining);
-    setSupporterMode('keep');
+    setManageTargetType('supporter');
+    setSupporterOp('add');
+    setSupporterAmount(0);
+    setSpCoinOp('add');
+    setSpCoinAmount(0);
     setSelectedBadgeIds((data.badges || []).map((b: any) => b.id));
     setCpInput(String(data.creatorPoints ?? 0));
     setIsEditingCp(false);
@@ -464,12 +469,21 @@ export default function ProfilePage() {
     setSavingAdminChanges(true);
 
     try {
-      if (isFullAdmin && (selectedRole !== data.role || supporterMode === 'modify')) {
+      const isRoleChanged = selectedRole !== data.role;
+      const hasSupporterChange = supporterAmount > 0;
+      const hasSpCoinChange = spCoinAmount > 0;
+
+      if (isFullAdmin && (isRoleChanged || hasSupporterChange || hasSpCoinChange)) {
         const payload: any = {
           currentAdminUsername: currentUser.username,
         };
-        if (selectedRole !== data.role) payload.newRole = selectedRole;
-        if (supporterMode === 'modify') payload.setSupporterMonths = supporterMonthsInput;
+        if (isRoleChanged) payload.newRole = selectedRole;
+        if (hasSupporterChange) {
+          payload.grantSupporterMonths = supporterOp === 'add' ? supporterAmount : -supporterAmount;
+        }
+        if (hasSpCoinChange) {
+          payload.grantSpCoin = spCoinOp === 'add' ? spCoinAmount : -spCoinAmount;
+        }
 
         const res = await fetch(`/api/admin/users/${data.id}/role`, {
           method: 'PATCH',
@@ -2011,42 +2025,134 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Section 2: Supporter Duration */}
-            <div className="space-y-2">
+            {/* Section 2: Supporter & SP Coin */}
+            <div className="space-y-2.5">
               <label className="text-xs font-bold uppercase tracking-wider ui-dim flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
                   <Heart className="w-3.5 h-3.5 text-pink-500" />
-                  {t('admin.section_supporter')}
+                  2. Cấp / Điều Chỉnh Supporter & SP Coin
                 </span>
-                {supporterMode === 'modify' && (
-                  <span className="text-[10px] font-bold text-amber-500">Đang chỉnh sửa</span>
+                {(supporterAmount > 0 || spCoinAmount > 0) && (
+                  <span className="text-[10px] font-bold text-amber-500 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" /> Đang điều chỉnh
+                  </span>
                 )}
               </label>
 
-              {data.supporterUntil && new Date(data.supporterUntil) > new Date() ? (
-                <div className="p-2.5 rounded-xl border text-[11px] flex items-center justify-between" style={{ backgroundColor: 'var(--badge-green-bg)', color: 'var(--badge-green-text)', borderColor: 'var(--badge-green-text)' }}>
-                  <span>{t('admin.supporter_until')}</span>
-                  <strong>{new Date(data.supporterUntil).toLocaleDateString(language === 'en' ? 'en-US' : 'vi-VN')}</strong>
+              {/* Status info */}
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <div
+                  className="p-2.5 rounded-xl border flex flex-col justify-between gap-0.5"
+                  style={{
+                    backgroundColor: data.supporterUntil && new Date(data.supporterUntil) > new Date()
+                      ? 'var(--badge-green-bg)'
+                      : 'var(--bg-subtle)',
+                    borderColor: data.supporterUntil && new Date(data.supporterUntil) > new Date()
+                      ? 'var(--badge-green-text)'
+                      : 'var(--border-ui)',
+                    color: data.supporterUntil && new Date(data.supporterUntil) > new Date()
+                      ? 'var(--badge-green-text)'
+                      : 'var(--text-dim)',
+                  }}
+                >
+                  <span className="font-semibold text-[10px] uppercase opacity-75">Hạn Supporter:</span>
+                  <span className="font-bold text-xs truncate">
+                    {data.supporterUntil && new Date(data.supporterUntil) > new Date()
+                      ? new Date(data.supporterUntil).toLocaleDateString(language === 'en' ? 'en-US' : 'vi-VN')
+                      : (isEn ? 'Not active' : 'Chưa kích hoạt')}
+                  </span>
                 </div>
-              ) : (
-                <div className="p-2.5 rounded-xl border text-[11px] ui-dim" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-                  {t('admin.no_supporter')} (0 tháng)
-                </div>
-              )}
 
-              {/* Manual Input with +/- controls */}
+                <div
+                  className="p-2.5 rounded-xl border flex flex-col justify-between gap-0.5"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+                >
+                  <span className="font-semibold text-[10px] uppercase opacity-75 ui-dim">SP Coin khả dụng:</span>
+                  <span className="font-bold text-xs text-amber-500 flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    {calculateUserSp(data)} SP
+                  </span>
+                </div>
+              </div>
+
+              {/* Switch 1: Chuyển giữa Tháng Support vs SP Coin */}
+              <div className="p-1 rounded-xl border flex gap-1 text-xs font-bold" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                <button
+                  type="button"
+                  onClick={() => setManageTargetType('supporter')}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    manageTargetType === 'supporter'
+                      ? 'bg-pink-500 text-white shadow-sm'
+                      : 'ui-dim hover:text-[var(--text-title)]'
+                  }`}
+                >
+                  <Heart className="w-3.5 h-3.5" />
+                  {isEn ? 'Supporter Months' : 'Tháng Support'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setManageTargetType('sp_coin')}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    manageTargetType === 'sp_coin'
+                      ? 'bg-amber-500 text-black shadow-sm font-black'
+                      : 'ui-dim hover:text-[var(--text-title)]'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  SP Coin
+                </button>
+              </div>
+
+              {/* Switch 2: Chọn thao tác Cộng (+) vs Trừ (-) */}
+              <div className="p-1 rounded-xl border flex gap-1 text-xs font-bold" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (manageTargetType === 'supporter') setSupporterOp('add');
+                    else setSpCoinOp('add');
+                  }}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    (manageTargetType === 'supporter' ? supporterOp === 'add' : spCoinOp === 'add')
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'ui-dim hover:text-[var(--text-title)]'
+                  }`}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  {isEn ? 'Add (+)' : 'Cộng (+)'} {manageTargetType === 'supporter' ? (isEn ? 'months' : 'tháng') : 'coin'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (manageTargetType === 'supporter') setSupporterOp('sub');
+                    else setSpCoinOp('sub');
+                  }}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    (manageTargetType === 'supporter' ? supporterOp === 'sub' : spCoinOp === 'sub')
+                      ? 'bg-rose-600 text-white shadow-sm'
+                      : 'ui-dim hover:text-[var(--text-title)]'
+                  }`}
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                  {isEn ? 'Subtract (-)' : 'Trừ (-)'} {manageTargetType === 'supporter' ? (isEn ? 'months' : 'tháng') : 'coin'}
+                </button>
+              </div>
+
+              {/* Stepper Input: [-] [ Input ] [+] */}
               <div className="space-y-2 pt-1">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    disabled={supporterMonthsInput <= 0}
+                    disabled={manageTargetType === 'supporter' ? supporterAmount <= 0 : spCoinAmount <= 0}
                     onClick={() => {
-                      setSupporterMode('modify');
-                      setSupporterMonthsInput((prev) => Math.max(0, prev - 1));
+                      if (manageTargetType === 'supporter') {
+                        setSupporterAmount((prev) => Math.max(0, prev - 1));
+                      } else {
+                        setSpCoinAmount((prev) => Math.max(0, prev - 1));
+                      }
                     }}
                     className="w-10 h-10 rounded-xl border flex items-center justify-center font-bold text-base cursor-pointer hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                     style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-subtle)', color: 'var(--text-title)' }}
-                    title="Trừ 1 tháng (tới 0)"
+                    title="Giảm 1"
                   >
                     <Minus className="w-4 h-4" />
                   </button>
@@ -2055,31 +2161,42 @@ export default function ProfilePage() {
                     <input
                       type="number"
                       min={0}
-                      max={120}
-                      value={supporterMonthsInput}
+                      max={manageTargetType === 'supporter' ? 120 : 10000}
+                      value={
+                        manageTargetType === 'supporter'
+                          ? (supporterAmount === 0 ? '' : supporterAmount)
+                          : (spCoinAmount === 0 ? '' : spCoinAmount)
+                      }
                       onChange={(e) => {
-                        setSupporterMode('modify');
                         const val = parseInt(e.target.value, 10);
-                        setSupporterMonthsInput(isNaN(val) || val < 0 ? 0 : val);
+                        const sanitized = isNaN(val) || val < 0 ? 0 : val;
+                        if (manageTargetType === 'supporter') {
+                          setSupporterAmount(sanitized);
+                        } else {
+                          setSpCoinAmount(sanitized);
+                        }
                       }}
                       placeholder="0"
                       className="w-full text-center py-2 px-3 rounded-xl border text-sm font-black focus:outline-none focus:ring-2 focus:ring-pink-500/50"
                       style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold ui-dim pointer-events-none">
-                      {isEn ? 'months' : 'tháng'}
+                      {manageTargetType === 'supporter' ? (isEn ? 'months' : 'tháng') : 'SP'}
                     </span>
                   </div>
 
                   <button
                     type="button"
                     onClick={() => {
-                      setSupporterMode('modify');
-                      setSupporterMonthsInput((prev) => prev + 1);
+                      if (manageTargetType === 'supporter') {
+                        setSupporterAmount((prev) => prev + 1);
+                      } else {
+                        setSpCoinAmount((prev) => prev + 1);
+                      }
                     }}
                     className="w-10 h-10 rounded-xl border flex items-center justify-center font-bold text-base cursor-pointer hover:bg-white/10 transition-all"
                     style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-subtle)', color: 'var(--text-title)' }}
-                    title="Cộng 1 tháng"
+                    title="Tăng 1"
                   >
                     <Plus className="w-4 h-4" />
                   </button>
@@ -2088,73 +2205,35 @@ export default function ProfilePage() {
                 {/* Status Preview */}
                 <div className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border flex items-center justify-between" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}>
                   <span className="ui-dim">Trạng thái áp dụng:</span>
-                  {supporterMode === 'keep' ? (
-                    <span className="ui-title">Giữ nguyên hạn hiện tại</span>
-                  ) : supporterMonthsInput === 0 ? (
-                    <span className="text-red-500 font-bold">Gỡ bỏ đặc quyền Supporter (0 tháng)</span>
+                  {manageTargetType === 'supporter' ? (
+                    supporterAmount === 0 ? (
+                      <span className="ui-title">Không thay đổi</span>
+                    ) : supporterOp === 'add' ? (
+                      <span className="text-emerald-500 font-bold">
+                        Cộng +{supporterAmount} tháng (~{new Date((data.supporterUntil && new Date(data.supporterUntil) > new Date() ? new Date(data.supporterUntil).getTime() : Date.now()) + supporterAmount * 30 * 24 * 60 * 60 * 1000).toLocaleDateString(language === 'en' ? 'en-US' : 'vi-VN')})
+                      </span>
+                    ) : (
+                      <span className="text-rose-500 font-bold">
+                        Trừ -{supporterAmount} tháng {(() => {
+                          const current = data.supporterUntil && new Date(data.supporterUntil) > new Date() ? new Date(data.supporterUntil).getTime() : Date.now();
+                          const target = current - supporterAmount * 30 * 24 * 60 * 60 * 1000;
+                          return target <= Date.now() ? '(Hết hạn)' : `(~${new Date(target).toLocaleDateString(language === 'en' ? 'en-US' : 'vi-VN')})`;
+                        })()}
+                      </span>
+                    )
                   ) : (
-                    <span className="text-pink-500 font-bold">
-                      {supporterMonthsInput} {isEn ? 'months from today' : 'tháng từ hôm nay'} (~{new Date(Date.now() + supporterMonthsInput * 30 * 24 * 60 * 60 * 1000).toLocaleDateString(isEn ? 'en-US' : 'vi-VN')})
-                    </span>
+                    spCoinAmount === 0 ? (
+                      <span className="ui-title">Không thay đổi</span>
+                    ) : spCoinOp === 'add' ? (
+                      <span className="text-amber-500 font-bold">
+                        Cộng +{spCoinAmount} SP Coin (Duy trì theo hạn Supporter)
+                      </span>
+                    ) : (
+                      <span className="text-rose-500 font-bold">
+                        Trừ -{spCoinAmount} SP Coin
+                      </span>
+                    )
                   )}
-                </div>
-
-                {/* Quick Preset Buttons */}
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const remaining = calculateUserSp(data);
-                      setSupporterMonthsInput(remaining);
-                      setSupporterMode('keep');
-                    }}
-                    className={`py-1.5 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                      supporterMode === 'keep' ? 'ring-2 ring-pink-500 bg-pink-500/15 text-pink-500' : 'hover:opacity-80'
-                    }`}
-                    style={{ borderColor: supporterMode === 'keep' ? 'var(--accent)' : 'var(--border-ui)', backgroundColor: supporterMode === 'keep' ? undefined : 'var(--bg-subtle)', color: supporterMode === 'keep' ? undefined : 'var(--text-title)' }}
-                  >
-                    {t('admin.keep') || 'Giữ nguyên'}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSupporterMode('modify');
-                      setSupporterMonthsInput(0);
-                    }}
-                    className={`py-1.5 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer text-red-500 ${
-                      supporterMode === 'modify' && supporterMonthsInput === 0 ? 'ring-2 ring-red-500 bg-red-500/15' : 'hover:opacity-80'
-                    }`}
-                    style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-subtle)' }}
-                  >
-                    0 (Gỡ bỏ)
-                  </button>
-
-                  {[
-                    { val: 1, label: '+1 tháng' },
-                    { val: 3, label: '+3 tháng' },
-                    { val: 6, label: '+6 tháng' },
-                    { val: 12, label: '+1 năm' },
-                  ].map((item) => (
-                    <button
-                      key={item.val}
-                      type="button"
-                      onClick={() => {
-                        const remaining = calculateUserSp(data);
-                        const base = supporterMode === 'keep' ? remaining : supporterMonthsInput;
-                        setSupporterMode('modify');
-                        setSupporterMonthsInput(base + item.val);
-                      }}
-                      className="py-1.5 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer hover:opacity-80"
-                      style={{
-                        backgroundColor: 'var(--bg-subtle)',
-                        borderColor: 'var(--border-ui)',
-                        color: 'var(--text-title)',
-                      }}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
                 </div>
               </div>
             </div>

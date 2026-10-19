@@ -127,25 +127,66 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     let grantedSpVal = 0;
     if (grantSpCoin !== undefined && grantSpCoin !== null && grantSpCoin !== '') {
       const spParsed = parseInt(String(grantSpCoin), 10);
-      if (Number.isFinite(spParsed) && spParsed > 0) {
+      if (Number.isFinite(spParsed) && spParsed !== 0) {
         grantedSpVal = spParsed;
-        const grantExpiry = updated.supporterUntil || new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000);
-        await prisma.userSpGrant.create({
-          data: {
-            userId: id,
-            amount: spParsed,
-            expiresAt: grantExpiry,
-            reason: `ADMIN_GRANT:${actor.username}`,
-          },
-        });
-        await prisma.notification.create({
-          data: {
-            userId: target.id,
-            title: 'Cấp SP Coin từ Admin',
-            message: `Bạn vừa được Admin "${actor.username}" cấp thêm +${spParsed} điểm SP Coin duy trì Clan!`,
-          },
-        });
-        isSupporterChanged = true;
+        if (spParsed > 0) {
+          const grantExpiry = updated.supporterUntil || new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000);
+          await prisma.userSpGrant.create({
+            data: {
+              userId: id,
+              amount: spParsed,
+              expiresAt: grantExpiry,
+              reason: `ADMIN_GRANT:${actor.username}`,
+            },
+          });
+          await prisma.notification.create({
+            data: {
+              userId: target.id,
+              title: 'Cấp SP Coin từ Admin',
+              message: `Bạn vừa được Admin "${actor.username}" cấp thêm +${spParsed} điểm SP Coin duy trì Clan!`,
+            },
+          });
+          isSupporterChanged = true;
+        } else {
+          // Trừ SP Coin: ưu tiên trừ các UserSpGrant hiện có của user
+          let deductRemaining = Math.abs(spParsed);
+          const userGrants = await prisma.userSpGrant.findMany({
+            where: { userId: id, amount: { gt: 0 } },
+            orderBy: { createdAt: 'desc' },
+          });
+          for (const grant of userGrants) {
+            if (deductRemaining <= 0) break;
+            if (grant.amount <= deductRemaining) {
+              deductRemaining -= grant.amount;
+              await prisma.userSpGrant.delete({ where: { id: grant.id } });
+            } else {
+              await prisma.userSpGrant.update({
+                where: { id: grant.id },
+                data: { amount: grant.amount - deductRemaining },
+              });
+              deductRemaining = 0;
+            }
+          }
+          if (deductRemaining > 0) {
+            const grantExpiry = updated.supporterUntil || new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000);
+            await prisma.userSpGrant.create({
+              data: {
+                userId: id,
+                amount: -deductRemaining,
+                expiresAt: grantExpiry,
+                reason: `ADMIN_DEDUCT:${actor.username}`,
+              },
+            });
+          }
+          await prisma.notification.create({
+            data: {
+              userId: target.id,
+              title: 'Điều chỉnh SP Coin',
+              message: `Admin "${actor.username}" đã điều chỉnh giảm ${Math.abs(spParsed)} điểm SP Coin của bạn.`,
+            },
+          });
+          isSupporterChanged = true;
+        }
       }
     }
 

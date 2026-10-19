@@ -139,14 +139,13 @@ export async function GET(req: Request) {
         : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
     // Get Online Users (last 5 minutes) directly in DB (by logged in users or guest IP)
-    const fiveMinsAgo = new Date();
-    fiveMinsAgo.setMinutes(fiveMinsAgo.getMinutes() - 5);
-    const onlineResult = await prisma.$queryRaw<Array<{ count: bigint }>>`
-      SELECT COUNT(DISTINCT "ipHash")::bigint AS count
-      FROM "PageVisit"
-      WHERE "createdAt" >= ${fiveMinsAgo};
-    `;
-    const onlineUsers = Number(onlineResult[0]?.count || 0);
+    const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const onlineVisits = await prisma.pageVisit.findMany({
+      where: { createdAt: { gte: fiveMinsAgo } },
+      distinct: ['ipHash'],
+      select: { ipHash: true },
+    });
+    const onlineUsers = onlineVisits.length;
 
     // Load metrics.jsonl using streaming (readline) to avoid OOM
     const readline = await import('readline');

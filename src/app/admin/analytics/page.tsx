@@ -72,10 +72,10 @@ export default function AnalyticsPage() {
   }, [startDate, endDate]);
 
   useEffect(() => {
-    if (dbComputeViewMode !== 'live') return;
+    const intervalMs = dbComputeViewMode === 'live' ? 3000 : 15000;
     const timer = setInterval(() => {
       fetchData();
-    }, 3000);
+    }, intervalMs);
     return () => clearInterval(timer);
   }, [startDate, endDate, dbComputeViewMode]);
 

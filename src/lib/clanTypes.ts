@@ -35,7 +35,7 @@ export function calculateUserSp(
     }
   }
 
-  return baseSp + bonusSp;
+  return Math.max(0, baseSp + bonusSp);
 }
 
 /**
