@@ -299,16 +299,17 @@ export default function ProfilePage() {
         if (!isMounted) return;
 
         // 2. Bắt đầu đợt hỗn loạn kéo dài 3 giây (3000ms)
-        // Mỗi hiệu ứng có thời gian ngẫu nhiên từ 1-3s (1000ms - 3000ms)
+        // Mỗi hiệu ứng có tỉ lệ 30% xuất hiện (thay vì tất cả cùng xuất hiện)
         const scheduleEffect = (
           setter: React.Dispatch<React.SetStateAction<boolean>>,
-          chance = 1.0,
+          customDuration?: number,
           onStart?: () => void
         ) => {
-          if (Math.random() > chance) return;
-          // Thời lượng từ 1s đến 3s
-          const duration = 1000 + Math.random() * 2000;
-          // Độ trễ bắt đầu sao cho kết thúc trong vòng 3s hỗn loạn
+          // Tỉ lệ 30% xuất hiện thay vì tất cả cùng xuất hiện
+          if (Math.random() > 0.30) return;
+
+          // Riêng avatar lớn có customDuration ~0.1s, các hiệu ứng khác ngẫu nhiên từ 1s đến 3s
+          const duration = customDuration !== undefined ? customDuration : (1000 + Math.random() * 2000);
           const maxStartOffset = Math.max(0, chaosMs - duration);
           const startOffset = Math.random() * maxStartOffset;
 
@@ -322,13 +323,14 @@ export default function ProfilePage() {
           }, startOffset + duration);
         };
 
-        // Kích hoạt ngẫu nhiên các hiệu ứng trong 3s (mỗi hiệu ứng 1s - 3s)
-        scheduleEffect(setIsCardsActive, 1.0);
-        scheduleEffect(setIsAvatarActive, 1.0);
-        scheduleEffect(setIsPanelActive, 0.9);
-        scheduleEffect(setIsTextActive, 1.0);
-        scheduleEffect(setShowAvatarJumpscare, 0.75);
-        scheduleEffect(setShowCrossOverlay, 0.75, () => {
+        // Kích hoạt với tỉ lệ 30% (mỗi hiệu ứng kéo dài 1s - 3s)
+        scheduleEffect(setIsCardsActive);
+        scheduleEffect(setIsAvatarActive);
+        scheduleEffect(setIsPanelActive);
+        scheduleEffect(setIsTextActive);
+        // Riêng avatar lớn chỉ nháy khoảng 0.1s (~90ms - 120ms)
+        scheduleEffect(setShowAvatarJumpscare, 90 + Math.random() * 30);
+        scheduleEffect(setShowCrossOverlay, undefined, () => {
           setCrossMode(Math.random() < 0.5 ? 'box' : 'fullscreen');
         });
 
