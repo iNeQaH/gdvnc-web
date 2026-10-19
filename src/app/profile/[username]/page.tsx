@@ -1021,11 +1021,98 @@ export default function ProfilePage() {
   const allBadges = [...roleBadges, ...(data.badges || [])];
 
   const isGlitchTheme = (data?.profileTheme ? data.profileTheme === 'glitch' : theme === 'glitch');
+  const profileContainerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isGlitchTheme) return;
+    const container = profileContainerRef.current;
+    if (!container) return;
+
+    const GLITCH_GLYPHS = '0123456789ABCDEF!@#$%&*?/~|\\{}[]<>øØ§¥‡◊∆¿∄╳꩜█▓▒░⚡✕⨂';
+    const originalTextMap = new Map<Text, string>();
+
+    function collectTextNodes(node: Node, list: Text[] = []): Text[] {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const val = node.nodeValue?.trim();
+        if (val && val.length > 0 && !/^\s*$/.test(val)) {
+          list.push(node as Text);
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node as HTMLElement;
+        if (['SCRIPT', 'STYLE', 'SVG', 'PATH', 'INPUT', 'TEXTAREA'].includes(el.tagName)) return list;
+        for (let i = 0; i < el.childNodes.length; i++) {
+          collectTextNodes(el.childNodes[i], list);
+        }
+      }
+      return list;
+    }
+
+    let textNodes: Text[] = [];
+    const refreshNodes = () => {
+      textNodes = collectTextNodes(container);
+      for (const node of textNodes) {
+        if (!originalTextMap.has(node)) {
+          originalTextMap.set(node, node.nodeValue || '');
+        }
+      }
+    };
+    refreshNodes();
+
+    const intervalId = window.setInterval(() => {
+      if (!textNodes.length) {
+        refreshNodes();
+        return;
+      }
+
+      const batchSize = Math.min(textNodes.length, Math.floor(Math.random() * 16) + 8);
+      for (let i = 0; i < batchSize; i++) {
+        const node = textNodes[Math.floor(Math.random() * textNodes.length)];
+        if (!node || !node.isConnected) continue;
+        const orig = originalTextMap.get(node);
+        if (!orig || orig.trim().length === 0) continue;
+
+        if (Math.random() < 0.35) {
+          if (node.nodeValue !== orig) {
+            node.nodeValue = orig;
+          }
+        } else {
+          const chars = orig.split('');
+          const mutateCount = Math.max(1, Math.min(chars.length, Math.floor(chars.length * 0.5)));
+          for (let m = 0; m < mutateCount; m++) {
+            const charIdx = Math.floor(Math.random() * chars.length);
+            if (chars[charIdx] !== ' ') {
+              chars[charIdx] = GLITCH_GLYPHS[Math.floor(Math.random() * GLITCH_GLYPHS.length)];
+            }
+          }
+          node.nodeValue = chars.join('');
+        }
+      }
+    }, 55);
+
+    return () => {
+      window.clearInterval(intervalId);
+      for (const [node, originalVal] of originalTextMap.entries()) {
+        if (node.isConnected) {
+          node.nodeValue = originalVal;
+        }
+      }
+    };
+  }, [isGlitchTheme, data?.username]);
 
   return (
-    <div className={`max-w-[1200px] mx-auto py-8 px-4 space-y-6 relative ${isGlitchTheme ? 'gdvn-profile-glitch' : ''}`}>
+    <div
+      ref={profileContainerRef}
+      className={`max-w-[1200px] mx-auto py-8 px-4 space-y-6 relative ${isGlitchTheme ? 'gdvn-profile-glitch' : ''}`}
+    >
       {isGlitchTheme && (
-        <div className="gdvn-glitch-overlay pointer-events-none fixed inset-0 z-[5]" aria-hidden="true" />
+        <>
+          <div className="gdvn-glitch-overlay pointer-events-none fixed inset-0 z-[5]" aria-hidden="true" />
+          <div className="gdvn-dead-panel-glitch pointer-events-none fixed inset-0 z-[6] overflow-hidden" aria-hidden="true">
+            <div className="gdvn-glitch-slab-1" />
+            <div className="gdvn-glitch-slab-2" />
+            <div className="gdvn-glitch-slab-3" />
+          </div>
+        </>
       )}
       {data?.profileConfig?.backgroundUrl && (
         <div className="fixed inset-0 z-[-1] pointer-events-none" style={{ backgroundImage: "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(" + data.profileConfig.backgroundUrl + ")", backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "fixed" }} />
@@ -1054,6 +1141,7 @@ export default function ProfilePage() {
         <div data-glitch-cover className={`relative w-full h-36 sm:h-48 md:h-56 bg-slate-100 dark:bg-zinc-800 ${isGlitchTheme ? 'overflow-visible' : 'overflow-hidden'}`}>
           {data.coverUrl ? (
             <img
+              data-glitch-cover-img
               src={data.coverUrl}
               alt=""
               onError={(e) => {
@@ -1062,7 +1150,7 @@ export default function ProfilePage() {
               className="w-full h-full object-cover"
             />
           ) : (
-            <img src="/default-banner.svg" alt="" className="w-full h-full object-cover opacity-50" />
+            <img data-glitch-cover-img src="/default-banner.svg" alt="" className="w-full h-full object-cover opacity-50" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
           
@@ -1073,15 +1161,16 @@ export default function ProfilePage() {
         <div className="px-5 pb-5 pt-0">
           <div className="flex flex-col sm:flex-row sm:items-start gap-4 mb-4">
             {/* Avatar */}
-            <div data-glitch-avatar className="relative shrink-0 -mt-12 sm:-mt-14">
+            <div data-glitch-avatar className={`relative shrink-0 -mt-12 sm:-mt-14 ${isGlitchTheme ? 'overflow-visible z-30' : ''}`}>
               <div
-                className={`p-1 rounded-2xl shadow-xl ${isLavender ? 'tsumiki-btn !m-0 !p-1' : 'bg-white dark:bg-zinc-900 border'}`}
+                className={`p-1 rounded-2xl shadow-xl ${isLavender ? 'tsumiki-btn !m-0 !p-1' : 'bg-white dark:bg-zinc-900 border'} ${isGlitchTheme ? 'overflow-visible' : ''}`}
                 style={!isLavender ? { backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' } : {}}
               >
                 <div className={`relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl shadow-inner ${isGlitchTheme ? 'overflow-visible' : 'overflow-hidden'}`}>
                   {data.avatarUrl ? (
                     <>
                       <img
+                        data-glitch-avatar-img
                         src={data.avatarUrl}
                         alt=""
                         onError={(e) => {

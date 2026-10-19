@@ -961,107 +961,313 @@ input[type="number"] {
   }
 }
 
-/* Avatar: Rotate, Clip-path, Jitter Out of Container */
+/* Avatar: Rotate, Clip-path, Massive Jitter Out of Container */
 @keyframes gdvn-glitch-avatar {
-  0%, 42% {
+  0%, 28% {
     transform: translate(0, 0) rotate(0deg) scale(1);
     clip-path: none;
     filter: none;
   }
-  /* Thỉnh thoảng 1 ít */
-  43% {
-    transform: translate(-5px, 4px) rotate(3deg) scale(1.04);
-    clip-path: polygon(0 0, 100% 4%, 96% 100%, 0 94%);
+  /* Nháy nhẹ */
+  29% {
+    transform: translate(-15px, 12px) rotate(8deg) scale(1.08);
+    clip-path: polygon(0 0, 100% 5%, 95% 100%, 0 92%);
     filter: contrast(250%) saturate(0);
   }
-  45% {
-    transform: translate(6px, -4px) rotate(-3.5deg) scale(0.98);
-    clip-path: polygon(4% 0, 98% 0, 94% 96%, 0 100%);
-    filter: contrast(300%) drop-shadow(0 0 8px #001144);
+  31% {
+    transform: translate(20px, -18px) rotate(-10deg) scale(0.95);
+    clip-path: polygon(5% 0, 98% 0, 92% 95%, 0 100%);
+    filter: contrast(300%) drop-shadow(0 0 10px #001144);
   }
-  47% {
+  33% {
     transform: translate(0, 0) rotate(0deg) scale(1);
     clip-path: none;
     filter: none;
   }
-  /* Tất cả cùng kích hoạt: Spasm mạnh giật văng ra ngoài box */
-  68% {
-    transform: translate(16px, -14px) rotate(8deg) scale(1.12);
-    clip-path: polygon(0 16%, 86% 0, 100% 84%, 14% 100%);
-    filter: contrast(500%) saturate(0) brightness(1.5);
+  /* Bùng nổ cực mạnh: Xoay lệch 35 độ, giật bay 55px khỏi box */
+  55% {
+    transform: translate(52px, -45px) rotate(28deg) scale(1.3) skewX(12deg);
+    clip-path: polygon(0 25%, 85% 0, 100% 80%, 15% 100%);
+    filter: contrast(600%) saturate(0) brightness(1.6);
   }
-  71% {
-    transform: translate(-16px, 14px) rotate(-9deg) scale(1.08);
-    clip-path: polygon(10% 0, 100% 12%, 90% 100%, 0 88%);
-    filter: invert(1) contrast(400%);
+  58% {
+    transform: translate(-58px, 48px) rotate(-32deg) scale(1.22) skewY(-15deg);
+    clip-path: polygon(12% 0, 100% 18%, 88% 100%, 0 85%);
+    filter: invert(1) contrast(500%);
   }
-  73% {
+  60% {
     /* Đen sập */
     filter: brightness(0);
     transform: translate(0, 0);
   }
-  75% {
-    transform: translate(12px, 8px) rotate(5deg) scale(1.06);
-    clip-path: polygon(0 6%, 95% 0, 100% 94%, 5% 100%);
-    filter: contrast(400%) drop-shadow(0 0 12px #ff0033);
+  62% {
+    transform: translate(45px, 35px) rotate(22deg) scale(1.18);
+    clip-path: polygon(0 8%, 92% 0, 100% 90%, 8% 100%);
+    filter: contrast(450%) drop-shadow(-8px 0 0 #ff0033) drop-shadow(8px 0 0 #001144);
   }
-  78%, 100% {
+  65% {
+    transform: translate(-38px, -40px) rotate(-20deg) scale(1.12);
+    clip-path: polygon(5% 0, 100% 12%, 95% 92%, 0 100%);
+  }
+  68%, 100% {
     transform: translate(0, 0) rotate(0deg) scale(1);
     clip-path: none;
     filter: none;
   }
 }
 
-/* Cover Banner: Rotate, Clip, Scale, and Jitter Out of Bounds */
+/* Avatar Inner Image Micro-Twist */
+@keyframes gdvn-glitch-avatar-inner {
+  0%, 45% {
+    transform: rotate(0deg) scale(1);
+  }
+  48% {
+    transform: rotate(-18deg) scale(1.25) translate(8px, -6px);
+  }
+  52% {
+    transform: rotate(24deg) scale(1.2) translate(-10px, 8px);
+  }
+  56%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+/* Cover Banner: Rotate, Clip, Scale, and Massive Displacement */
 @keyframes gdvn-glitch-cover {
-  0%, 48% {
+  0%, 32% {
     transform: translate(0, 0) rotate(0deg) scale(1);
     clip-path: none;
     filter: none;
   }
-  /* Thỉnh thoảng 1 ít */
-  49% {
-    transform: translate(-4px, 3px) rotate(1.2deg) scale(1.02);
-    clip-path: polygon(0 0, 100% 0, 100% 95%, 0 100%);
-    filter: contrast(180%) saturate(0);
+  /* Nháy nhẹ */
+  33% {
+    transform: translate(-18px, 12px) rotate(3deg) scale(1.05);
+    clip-path: polygon(0 0, 100% 0, 100% 92%, 0 100%);
+    filter: contrast(200%) saturate(0);
   }
-  51% {
-    transform: translate(5px, -4px) rotate(-1.5deg) scale(1.03);
-    clip-path: polygon(0 5%, 100% 0, 96% 100%, 0 94%);
-    filter: contrast(300%) brightness(1.2);
+  35% {
+    transform: translate(22px, -15px) rotate(-4deg) scale(1.06);
+    clip-path: polygon(0 6%, 100% 0, 94% 100%, 0 92%);
+    filter: contrast(350%) brightness(1.3);
   }
-  53% {
+  37% {
     transform: translate(0, 0) rotate(0deg) scale(1);
     clip-path: none;
     filter: none;
   }
-  /* Tất cả cùng kích hoạt: Bứt phá viền, xén góc cực mạnh */
-  75% {
-    transform: translate(14px, -10px) rotate(3.5deg) scale(1.08);
-    clip-path: polygon(0 14%, 100% 0, 92% 100%, 0 86%);
-    filter: contrast(500%) saturate(0) brightness(1.4);
+  /* Bùng nổ cực mạnh: Xoay 20 độ, dịch chuyển 65px khỏi khung */
+  60% {
+    transform: translate(58px, -38px) rotate(18deg) scale(1.25) skewX(-12deg);
+    clip-path: polygon(0 22%, 100% 0, 88% 100%, 0 80%);
+    filter: contrast(550%) saturate(0) brightness(1.5);
   }
-  77% {
-    transform: translate(-18px, 12px) rotate(-4.5deg) scale(1.06);
-    clip-path: polygon(4% 0, 100% 12%, 96% 88%, 0 100%);
-    filter: invert(0.9) contrast(400%);
+  63% {
+    transform: translate(-65px, 42px) rotate(-22deg) scale(1.22) skewY(10deg);
+    clip-path: polygon(6% 0, 100% 15%, 92% 85%, 0 100%);
+    filter: invert(0.95) contrast(450%);
   }
-  79% {
-    /* Box đen xì như bị sập */
+  65% {
+    /* Box đen sập */
     transform: translate(0, 0) rotate(0deg);
     clip-path: none;
     filter: brightness(0);
   }
-  81% {
-    transform: translate(10px, 6px) rotate(2.5deg) scale(1.05);
-    clip-path: polygon(0 0, 98% 4%, 100% 100%, 2% 96%);
-    filter: contrast(350%) drop-shadow(0 0 14px #ff0033);
+  68% {
+    transform: translate(45px, 25px) rotate(14deg) scale(1.18);
+    clip-path: polygon(0 0, 96% 6%, 100% 100%, 4% 94%);
+    filter: contrast(400%) drop-shadow(0 0 20px #ff0033);
   }
-  83%, 100% {
+  71% {
+    transform: translate(-42px, -35px) rotate(-16deg) scale(1.15);
+    clip-path: polygon(4% 0, 100% 8%, 96% 92%, 0 100%);
+  }
+  74%, 100% {
     transform: translate(0, 0) rotate(0deg) scale(1);
     clip-path: none;
     filter: none;
   }
+}
+
+/* Cover Inner Image Twist */
+@keyframes gdvn-glitch-cover-inner {
+  0%, 50% {
+    transform: rotate(0deg) scale(1);
+  }
+  53% {
+    transform: rotate(12deg) scale(1.2) translate(12px, -8px);
+  }
+  57% {
+    transform: rotate(-15deg) scale(1.15) translate(-14px, 10px);
+  }
+  61%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+/* Dead Panel / Burned Screen Rectangular Slabs */
+@keyframes gdvn-slab-burn-1 {
+  0%, 20% {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+  }
+  21% {
+    opacity: 0.96;
+    background: #000000;
+    clip-path: inset(0 0 52% 0); /* Nửa trên màn hình bị cháy đen xì */
+    border-bottom: 4px solid #ff0033;
+    box-shadow: 0 4px 15px rgba(255, 0, 51, 0.6);
+  }
+  24% {
+    opacity: 0.98;
+    background: #000000;
+    clip-path: inset(0 0 48% 0);
+    border-bottom: 4px solid #ffffff;
+  }
+  26% {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+  }
+  48% {
+    opacity: 0.92;
+    background: #ff0033;
+    mix-blend-mode: difference;
+    clip-path: inset(50% 0 0 0); /* Nửa dưới màn hình bị cháy đỏ */
+    border-top: 4px solid #ffffff;
+  }
+  50% {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+  }
+  68% {
+    opacity: 1;
+    background: #000000;
+    clip-path: inset(46% 0 0 0); /* Nửa dưới màn hình sập đen hoàn toàn */
+    border-top: 4px solid #001144;
+  }
+  71% {
+    opacity: 0.9;
+    background: #001144;
+    clip-path: inset(42% 0 0 0);
+    border-top: 4px solid #ffffff;
+  }
+  73% {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+  }
+  88% {
+    opacity: 0.95;
+    background: #000000;
+    clip-path: inset(0 52% 0 0); /* Nửa trái màn hình cháy đen dọc */
+    border-right: 4px solid #ff0033;
+  }
+  91% {
+    opacity: 0.9;
+    background: #ffffff;
+    clip-path: inset(0 48% 0 0);
+    mix-blend-mode: difference;
+  }
+  93%, 100% {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+  }
+}
+
+@keyframes gdvn-slab-burn-2 {
+  0%, 35% {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+  }
+  36% {
+    opacity: 0.95;
+    background: #000000;
+    clip-path: inset(0 0 0 50%); /* Nửa phải màn hình cháy đen dọc */
+    border-left: 4px solid #ffffff;
+    box-shadow: -4px 0 20px rgba(255, 255, 255, 0.5);
+  }
+  39% {
+    opacity: 0.88;
+    background: #001144;
+    clip-path: inset(0 0 0 45%);
+    border-left: 4px solid #ff0033;
+  }
+  41% {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+  }
+  76% {
+    opacity: 0.96;
+    background: #000000;
+    clip-path: polygon(0 15%, 100% 0, 100% 60%, 0 75%); /* Mảng chữ nhật chéo lớn */
+    border-bottom: 3px solid #ff0033;
+  }
+  79% {
+    opacity: 0.92;
+    background: #ff0033;
+    mix-blend-mode: difference;
+    clip-path: polygon(0 10%, 100% 0, 100% 55%, 0 65%);
+  }
+  81%, 100% {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+  }
+}
+
+@keyframes gdvn-slab-burn-3 {
+  0%, 15% {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+  }
+  16% {
+    opacity: 0.95;
+    background: #000000;
+    clip-path: inset(25vh 0 45vh 0); /* Dải chữ nhật ngang to giữa màn hình */
+    border-top: 3px solid #ff0033;
+    border-bottom: 3px solid #ffffff;
+  }
+  19% {
+    opacity: 0;
+  }
+  58% {
+    opacity: 0.98;
+    background: #000000;
+    clip-path: inset(60vh 0 10vh 0);
+    border-top: 3px solid #ffffff;
+    border-bottom: 3px solid #001144;
+  }
+  61% {
+    opacity: 0.85;
+    background: #ff0033;
+    mix-blend-mode: difference;
+    clip-path: inset(58vh 0 12vh 0);
+  }
+  63%, 100% {
+    opacity: 0;
+  }
+}
+
+.gdvn-dead-panel-glitch {
+  pointer-events: none;
+}
+
+.gdvn-glitch-slab-1,
+.gdvn-glitch-slab-2,
+.gdvn-glitch-slab-3 {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.gdvn-glitch-slab-1 {
+  animation: gdvn-slab-burn-1 1.7s steps(1, end) infinite;
+}
+
+.gdvn-glitch-slab-2 {
+  animation: gdvn-slab-burn-2 2.3s steps(1, end) infinite;
+}
+
+.gdvn-glitch-slab-3 {
+  animation: gdvn-slab-burn-3 1.1s steps(1, end) infinite;
 }
 
 /* Card / Box Irregular Jitter & Blackouts (3 Co-Prime Timers) */
@@ -1288,13 +1494,23 @@ input[type="number"] {
 
 /* Avatar & Cover break-out animations */
 .gdvn-profile-glitch [data-glitch-avatar] {
-  animation: gdvn-glitch-avatar 4.9s steps(1, end) infinite;
+  animation: gdvn-glitch-avatar 2.6s steps(1, end) infinite;
   transform-origin: center center;
-  z-index: 20;
+  z-index: 30;
+}
+
+.gdvn-profile-glitch [data-glitch-avatar-img] {
+  animation: gdvn-glitch-avatar-inner 1.7s steps(1, end) infinite;
+  transform-origin: center center;
 }
 
 .gdvn-profile-glitch [data-glitch-cover] {
-  animation: gdvn-glitch-cover 6.7s steps(1, end) infinite;
+  animation: gdvn-glitch-cover 3.2s steps(1, end) infinite;
+  transform-origin: center center;
+}
+
+.gdvn-profile-glitch [data-glitch-cover-img] {
+  animation: gdvn-glitch-cover-inner 2.1s steps(1, end) infinite;
   transform-origin: center center;
 }
 
