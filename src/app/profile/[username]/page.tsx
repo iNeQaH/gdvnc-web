@@ -330,7 +330,8 @@ export default function ProfilePage() {
         scheduleEffect(setIsTextActive);
         // Riêng avatar lớn chỉ nháy khoảng 0.1s (~90ms - 120ms)
         scheduleEffect(setShowAvatarJumpscare, 90 + Math.random() * 30);
-        scheduleEffect(setShowCrossOverlay, undefined, () => {
+        // Hiệu ứng đen toàn màn hình / cây thánh giá cũng chỉ nháy nhanh 1 phát (~100ms - 130ms) chứ không duy trì lâu
+        scheduleEffect(setShowCrossOverlay, 100 + Math.random() * 30, () => {
           setCrossMode(Math.random() < 0.5 ? 'box' : 'fullscreen');
         });
 
