@@ -301,9 +301,7 @@ export const Sidebar = () => {
         <Link
           href="/"
           onClick={handleLogoClick}
-          className={`flex items-center gap-2 px-2 py-1 rounded-xl select-none ${
-            pathname === '/' ? 'cursor-default' : `transition-all ${isLavender ? 'tsumiki-btn' : 'active:scale-95'}`
-          }`}
+          className={`flex items-center gap-2 px-2 py-1 rounded-xl select-none transition-all cursor-pointer ${isLavender ? 'tsumiki-btn' : 'active:scale-95'}`}
         >
           <BrandMark size={28} className="rounded-lg" />
           <span className="font-black text-sm tracking-tight ui-title">
@@ -347,11 +345,7 @@ export const Sidebar = () => {
             <Link
               href="/"
               onClick={handleLogoClick}
-              className={`flex items-center gap-2.5 px-3 py-1.5 rounded-2xl select-none ${
-                pathname === '/'
-                  ? 'cursor-default'
-                  : `transition-all hover:bg-slate-100 dark:hover:bg-zinc-800 ${isLavender ? 'tsumiki-btn' : 'active:scale-95'}`
-              }`}
+              className={`flex items-center gap-2.5 px-3 py-1.5 rounded-2xl select-none transition-all cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 ${isLavender ? 'tsumiki-btn' : 'active:scale-95'}`}
             >
               <BrandMark size={36} />
               <div>
