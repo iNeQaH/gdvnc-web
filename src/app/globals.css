@@ -1502,73 +1502,102 @@ input[type="number"] {
   position: relative;
 }
 
-/* Continuous character vibration across all text elements */
-.gdvn-profile-glitch p,
-.gdvn-profile-glitch span,
-.gdvn-profile-glitch a,
-.gdvn-profile-glitch button,
-.gdvn-profile-glitch label,
-.gdvn-profile-glitch strong,
-.gdvn-profile-glitch em,
-.gdvn-profile-glitch .ui-title,
-.gdvn-profile-glitch h1,
-.gdvn-profile-glitch h2,
-.gdvn-profile-glitch h3,
-.gdvn-profile-glitch h4,
-.gdvn-profile-glitch h5,
-.gdvn-profile-glitch h6 {
-  display: inline-block;
-  animation: gdvn-char-twitch-a 0.16s steps(2, end) infinite;
-}
-
-.gdvn-profile-glitch *:nth-child(2n) > span,
-.gdvn-profile-glitch *:nth-child(2n) > p,
-.gdvn-profile-glitch *:nth-child(2n) > a,
-.gdvn-profile-glitch *:nth-child(2n) > button {
-  animation: gdvn-char-twitch-b 0.21s steps(2, end) infinite;
-}
-
-.gdvn-profile-glitch *:nth-child(3n) > span,
-.gdvn-profile-glitch *:nth-child(3n) > p,
-.gdvn-profile-glitch *:nth-child(3n) > a,
-.gdvn-profile-glitch *:nth-child(3n) > button {
-  animation: gdvn-char-twitch-c 0.26s steps(2, end) infinite;
-}
-
-/* Avatar & Cover break-out animations & multi-turn spins */
-.gdvn-profile-glitch [data-glitch-avatar] {
-  animation: gdvn-glitch-avatar 3.2s cubic-bezier(0.2, 0.85, 0.25, 1) infinite;
-  transform-origin: center center;
-  z-index: 30;
-}
-
-.gdvn-profile-glitch [data-glitch-avatar-img] {
-  animation: gdvn-glitch-avatar-inner 2.2s cubic-bezier(0.2, 0.85, 0.25, 1) infinite;
-  transform-origin: center center;
-}
-
+/* By default (Calm periods): Complete stillness and normal layout */
+.gdvn-profile-glitch .ui-card,
+.gdvn-profile-glitch [data-glitch-avatar],
 .gdvn-profile-glitch [data-glitch-cover] {
-  animation: gdvn-glitch-cover 3.8s cubic-bezier(0.2, 0.85, 0.25, 1) infinite;
-  transform-origin: center center;
+  transition: none !important;
+  transform: none;
 }
 
-.gdvn-profile-glitch [data-glitch-cover-img] {
-  animation: gdvn-glitch-cover-inner 2.6s cubic-bezier(0.2, 0.85, 0.25, 1) infinite;
-  transform-origin: center center;
+/* Storm Burst Active: Instant Snap (Thời gian quay = 0) with Large Tilt Angles across Divs & Items */
+.gdvn-profile-glitch.gdvn-glitch-storm-active {
+  animation: gdvn-glitch-scanlines 0.5s linear infinite;
 }
 
-/* Staggered box dislocations & blackout collapses */
-.gdvn-profile-glitch .ui-card:nth-of-type(3n+1) {
-  animation: gdvn-card-glitch-1 5.3s steps(1, end) infinite !important;
-  transition: transform 0.05s ease-out;
+/* Avatar Snap Rotation */
+.gdvn-profile-glitch.gdvn-glitch-storm-active [data-glitch-avatar] {
+  transition: none !important;
+  transform: translate(52px, -42px) rotate(75deg) scale(1.28) !important;
+  filter: contrast(500%) saturate(0) brightness(1.5) !important;
+  clip-path: polygon(0 15%, 85% 0, 100% 85%, 15% 100%) !important;
+  z-index: 50 !important;
 }
 
-.gdvn-profile-glitch .ui-card:nth-of-type(3n+2) {
-  animation: gdvn-card-glitch-2 7.1s steps(1, end) infinite !important;
-  transition: transform 0.05s ease-out;
+.gdvn-profile-glitch.gdvn-glitch-storm-active [data-glitch-avatar-img] {
+  transition: none !important;
+  transform: rotate(-110deg) scale(1.2) !important;
 }
 
-.gdvn-profile-glitch .ui-card:nth-of-type(3n) {
-  animation: gdvn-card-glitch-3 8.9s steps(1, end) infinite !important;
-  transition: transform 0.05s ease-out;
+/* Cover Snap Rotation */
+.gdvn-profile-glitch.gdvn-glitch-storm-active [data-glitch-cover] {
+  transition: none !important;
+  transform: translate(-48px, 35px) rotate(-55deg) scale(1.22) !important;
+  filter: contrast(450%) invert(0.9) !important;
+  clip-path: polygon(0 20%, 100% 0, 88% 100%, 0 80%) !important;
+}
+
+.gdvn-profile-glitch.gdvn-glitch-storm-active [data-glitch-cover-img] {
+  transition: none !important;
+  transform: rotate(85deg) scale(1.15) !important;
+}
+
+/* Rotate ALL cards, items, and divs with large tilt angles (Thời gian quay = 0) */
+.gdvn-profile-glitch.gdvn-glitch-storm-active .ui-card:nth-of-type(4n+1) {
+  transition: none !important;
+  transform: translate(32px, -22px) rotate(45deg) scale(0.98) !important;
+  border-color: #ffffff !important;
+  box-shadow: -8px 0 0 #ff0033, 8px 0 0 #001144 !important;
+}
+
+.gdvn-profile-glitch.gdvn-glitch-storm-active .ui-card:nth-of-type(4n+2) {
+  transition: none !important;
+  transform: translate(-38px, 28px) rotate(-60deg) scale(0.95) !important;
+  filter: contrast(400%) saturate(0) !important;
+}
+
+.gdvn-profile-glitch.gdvn-glitch-storm-active .ui-card:nth-of-type(4n+3) {
+  transition: none !important;
+  transform: translate(28px, 24px) rotate(80deg) scale(0.96) !important;
+  background-color: #000000 !important;
+  border-color: #000000 !important;
+  box-shadow: none !important;
+}
+
+.gdvn-profile-glitch.gdvn-glitch-storm-active .ui-card:nth-of-type(4n) {
+  transition: none !important;
+  transform: translate(-42px, -32px) rotate(-75deg) scale(0.97) !important;
+  filter: invert(1) contrast(300%) !important;
+}
+
+/* Snap rotate inner grid divs, rounded cards, and stat blocks */
+.gdvn-profile-glitch.gdvn-glitch-storm-active .grid > div:nth-child(even),
+.gdvn-profile-glitch.gdvn-glitch-storm-active .rounded-2xl:nth-child(even) {
+  transition: none !important;
+  transform: rotate(35deg) scale(0.92) !important;
+}
+
+.gdvn-profile-glitch.gdvn-glitch-storm-active .grid > div:nth-child(odd),
+.gdvn-profile-glitch.gdvn-glitch-storm-active .rounded-2xl:nth-child(odd) {
+  transition: none !important;
+  transform: rotate(-40deg) scale(1.05) !important;
+}
+
+/* Character text twitch during storm only */
+.gdvn-profile-glitch.gdvn-glitch-storm-active p,
+.gdvn-profile-glitch.gdvn-glitch-storm-active span,
+.gdvn-profile-glitch.gdvn-glitch-storm-active a,
+.gdvn-profile-glitch.gdvn-glitch-storm-active button,
+.gdvn-profile-glitch.gdvn-glitch-storm-active label,
+.gdvn-profile-glitch.gdvn-glitch-storm-active strong,
+.gdvn-profile-glitch.gdvn-glitch-storm-active em,
+.gdvn-profile-glitch.gdvn-glitch-storm-active .ui-title,
+.gdvn-profile-glitch.gdvn-glitch-storm-active h1,
+.gdvn-profile-glitch.gdvn-glitch-storm-active h2,
+.gdvn-profile-glitch.gdvn-glitch-storm-active h3,
+.gdvn-profile-glitch.gdvn-glitch-storm-active h4,
+.gdvn-profile-glitch.gdvn-glitch-storm-active h5,
+.gdvn-profile-glitch.gdvn-glitch-storm-active h6 {
+  display: inline-block;
+  animation: gdvn-char-twitch-a 0.12s steps(1, end) infinite;
 }

@@ -1022,96 +1022,175 @@ export default function ProfilePage() {
 
   const isGlitchTheme = (data?.profileTheme ? data.profileTheme === 'glitch' : theme === 'glitch');
   const profileContainerRef = React.useRef<HTMLDivElement>(null);
+  const [isStormActive, setIsStormActive] = useState(false);
+  const [showAvatarJumpscare, setShowAvatarJumpscare] = useState(false);
+  const [showCrossOverlay, setShowCrossOverlay] = useState(false);
+  const [crossMode, setCrossMode] = useState<'box' | 'fullscreen'>('box');
 
+  // Glitch Rhythm: 3.5s - 5.5s of COMPLETE CALM & STILLNESS, then sudden ~1s violent storm burst
   useEffect(() => {
-    if (!isGlitchTheme) return;
+    if (!isGlitchTheme) {
+      setIsStormActive(false);
+      setShowAvatarJumpscare(false);
+      setShowCrossOverlay(false);
+      return;
+    }
+
+    let isMounted = true;
+    let timer: NodeJS.Timeout;
+
+    const runLoop = () => {
+      if (!isMounted) return;
+      // 1 vài giây tĩnh (3.5s - 5.5s hoàn toàn yên ắng, không rung, chữ bình thường, góc 0 độ)
+      const calmTime = 3200 + Math.random() * 2300;
+
+      timer = setTimeout(() => {
+        if (!isMounted) return;
+        setIsStormActive(true);
+
+        // Nháy ảnh avatar to overlay trên màn hình (chỉ nháy 120ms - 180ms)
+        if (Math.random() < 0.7) {
+          setShowAvatarJumpscare(true);
+          setTimeout(() => {
+            if (isMounted) setShowAvatarJumpscare(false);
+          }, 140 + Math.random() * 80);
+        }
+
+        // Overlay hình vuông đen to hoặc đen hình vuông che hết profile và có kí hiệu thánh giá ở giữa
+        if (Math.random() < 0.75) {
+          setCrossMode(Math.random() < 0.5 ? 'box' : 'fullscreen');
+          setTimeout(() => {
+            if (!isMounted) return;
+            setShowCrossOverlay(true);
+            setTimeout(() => {
+              if (isMounted) setShowCrossOverlay(false);
+            }, 180 + Math.random() * 150);
+          }, 80 + Math.random() * 250);
+        }
+
+        // Đợt bùng nổ kéo dài 850ms - 1300ms rồi trở lại tĩnh
+        const stormDuration = 850 + Math.random() * 450;
+        setTimeout(() => {
+          if (!isMounted) return;
+          setIsStormActive(false);
+          setShowAvatarJumpscare(false);
+          setShowCrossOverlay(false);
+          runLoop();
+        }, stormDuration);
+      }, calmTime);
+    };
+
+    runLoop();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+      setIsStormActive(false);
+      setShowAvatarJumpscare(false);
+      setShowCrossOverlay(false);
+    };
+  }, [isGlitchTheme]);
+
+  // Scramble 100% of visible characters on the page during the glitch storm, restore completely on calm
+  useEffect(() => {
+    if (!isGlitchTheme || !isStormActive) return;
     const container = profileContainerRef.current;
     if (!container) return;
 
-    const GLITCH_GLYPHS = '0123456789ABCDEF!@#$%&*?/~|\\{}[]<>øØ§¥‡◊∆¿∄╳꩜█▓▒░⚡✕⨂';
+    const GLITCH_GLYPHS = '0123456789ABCDEF!@#$%&*?/~|\\{}[]<>øØ§¥‡◊∆¿∄╳꩜█▓▒░⚡✕⨂†††';
+    const textNodes: Text[] = [];
     const originalTextMap = new Map<Text, string>();
 
-    function collectTextNodes(node: Node, list: Text[] = []): Text[] {
-      if (node.nodeType === Node.TEXT_NODE) {
-        const val = node.nodeValue?.trim();
-        if (val && val.length > 0 && !/^\s*$/.test(val)) {
-          list.push(node as Text);
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const parent = node.parentElement;
+        if (!parent) return NodeFilter.FILTER_REJECT;
+        if (['SCRIPT', 'STYLE', 'SVG', 'NOSCRIPT', 'TEXTAREA'].includes(parent.tagName)) {
+          return NodeFilter.FILTER_REJECT;
         }
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-        const el = node as HTMLElement;
-        if (['SCRIPT', 'STYLE', 'SVG', 'PATH', 'INPUT', 'TEXTAREA'].includes(el.tagName)) return list;
-        for (let i = 0; i < el.childNodes.length; i++) {
-          collectTextNodes(el.childNodes[i], list);
-        }
-      }
-      return list;
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    });
+
+    let cur = walker.nextNode();
+    while (cur) {
+      const tn = cur as Text;
+      textNodes.push(tn);
+      originalTextMap.set(tn, tn.nodeValue || '');
+      cur = walker.nextNode();
     }
 
-    let textNodes: Text[] = [];
-    const refreshNodes = () => {
-      textNodes = collectTextNodes(container);
+    const mutateAll = () => {
       for (const node of textNodes) {
-        if (!originalTextMap.has(node)) {
-          originalTextMap.set(node, node.nodeValue || '');
-        }
+        if (!node.isConnected) continue;
+        const orig = originalTextMap.get(node);
+        if (!orig) continue;
+
+        const scrambled = orig
+          .split('')
+          .map((ch) => {
+            if (ch === ' ' || ch === '\n' || ch === '\t') return ch;
+            return GLITCH_GLYPHS[Math.floor(Math.random() * GLITCH_GLYPHS.length)];
+          })
+          .join('');
+        node.nodeValue = scrambled;
       }
     };
-    refreshNodes();
 
-    const intervalId = window.setInterval(() => {
-      if (!textNodes.length) {
-        refreshNodes();
-        return;
-      }
-
-      const batchSize = Math.min(textNodes.length, Math.floor(Math.random() * 16) + 8);
-      for (let i = 0; i < batchSize; i++) {
-        const node = textNodes[Math.floor(Math.random() * textNodes.length)];
-        if (!node || !node.isConnected) continue;
-        const orig = originalTextMap.get(node);
-        if (!orig || orig.trim().length === 0) continue;
-
-        if (Math.random() < 0.35) {
-          if (node.nodeValue !== orig) {
-            node.nodeValue = orig;
-          }
-        } else {
-          const chars = orig.split('');
-          const mutateCount = Math.max(1, Math.min(chars.length, Math.floor(chars.length * 0.5)));
-          for (let m = 0; m < mutateCount; m++) {
-            const charIdx = Math.floor(Math.random() * chars.length);
-            if (chars[charIdx] !== ' ') {
-              chars[charIdx] = GLITCH_GLYPHS[Math.floor(Math.random() * GLITCH_GLYPHS.length)];
-            }
-          }
-          node.nodeValue = chars.join('');
-        }
-      }
-    }, 55);
+    mutateAll();
+    const scramblerInterval = window.setInterval(mutateAll, 45);
 
     return () => {
-      window.clearInterval(intervalId);
-      for (const [node, originalVal] of originalTextMap.entries()) {
+      window.clearInterval(scramblerInterval);
+      for (const [node, orig] of originalTextMap.entries()) {
         if (node.isConnected) {
-          node.nodeValue = originalVal;
+          node.nodeValue = orig;
         }
       }
     };
-  }, [isGlitchTheme, data?.username]);
+  }, [isGlitchTheme, isStormActive]);
 
   return (
     <div
       ref={profileContainerRef}
-      className={`max-w-[1200px] mx-auto py-8 px-4 space-y-6 relative ${isGlitchTheme ? 'gdvn-profile-glitch' : ''}`}
+      className={`max-w-[1200px] mx-auto py-8 px-4 space-y-6 relative ${isGlitchTheme ? 'gdvn-profile-glitch' : ''} ${isGlitchTheme && isStormActive ? 'gdvn-glitch-storm-active' : ''}`}
     >
       {isGlitchTheme && (
         <>
-          <div className="gdvn-glitch-overlay pointer-events-none fixed inset-0 z-[5]" aria-hidden="true" />
-          <div className="gdvn-dead-panel-glitch pointer-events-none fixed inset-0 z-[6] overflow-hidden" aria-hidden="true">
-            <div className="gdvn-glitch-slab-1" />
-            <div className="gdvn-glitch-slab-2" />
-            <div className="gdvn-glitch-slab-3" />
-          </div>
+          {/* Avatar Giant Flash Overlay (chỉ nháy) */}
+          {showAvatarJumpscare && data.avatarUrl && (
+            <div className="fixed inset-0 z-[9998] pointer-events-none flex items-center justify-center bg-black/80">
+              <div className="relative w-[80vw] max-w-[480px] aspect-square rounded-2xl overflow-hidden border-4 border-red-600 shadow-[0_0_100px_#ff0033]">
+                <img
+                  src={data.avatarUrl}
+                  alt=""
+                  className="w-full h-full object-cover filter contrast-[500%] saturate-0 brightness-150 invert drop-shadow-[0_0_40px_#001144]"
+                />
+                <div className="absolute inset-0 bg-red-600/30 mix-blend-color-burn" />
+              </div>
+            </div>
+          )}
+
+          {/* Overlay hình vuông đen to hoặc đen hình vuông che hết profile và có kí hiệu thánh giá ở giữa */}
+          {showCrossOverlay && (
+            <div className={`fixed inset-0 z-[9999] pointer-events-none flex items-center justify-center ${crossMode === 'fullscreen' ? 'bg-black' : 'bg-black/85'}`}>
+              <div className={`${crossMode === 'fullscreen' ? 'w-full h-full flex-col justify-center' : 'w-[320px] h-[320px] sm:w-[460px] sm:h-[460px] border-4 border-white shadow-[0_0_80px_rgba(255,255,255,0.4)]'} bg-black flex flex-col items-center justify-center p-6 text-center select-none`}>
+                <div className="text-white text-8xl sm:text-9xl font-serif drop-shadow-[0_0_25px_rgba(255,0,51,0.9)] leading-none select-none">
+                  ✝
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className={`gdvn-glitch-overlay pointer-events-none fixed inset-0 z-[5] ${isStormActive ? 'opacity-100' : 'opacity-0'} transition-opacity duration-75`} aria-hidden="true" />
+          {isStormActive && (
+            <div className="gdvn-dead-panel-glitch pointer-events-none fixed inset-0 z-[6] overflow-hidden" aria-hidden="true">
+              <div className="gdvn-glitch-slab-1" />
+              <div className="gdvn-glitch-slab-2" />
+              <div className="gdvn-glitch-slab-3" />
+            </div>
+          )}
         </>
       )}
       {data?.profileConfig?.backgroundUrl && (
