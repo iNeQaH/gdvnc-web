@@ -30,6 +30,7 @@ import { useLanguage } from './LanguageContext';
 import BrandMark from '@/components/BrandMark';
 import { NotificationModal } from './NotificationModal';
 import { UserDisplayName } from './UserDisplayName';
+import { EasterEggOverlay } from './EasterEggOverlay';
 import { isStaffRole, isSuperAdminUser } from '@/lib/roles';
 import { refreshSessionUser, logoutClient } from '@/lib/sessionClient';
 
@@ -50,10 +51,12 @@ export const Sidebar = () => {
   const eggClicksRef = React.useRef(0);
   const eggTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [eggAlertMessage, setEggAlertMessage] = useState<string | null>(null);
+  const [isEggOverlayOpen, setIsEggOverlayOpen] = useState(false);
 
   useEffect(() => {
     eggClicksRef.current = 0;
     setEggAlertMessage(null);
+    setIsEggOverlayOpen(false);
   }, [pathname]);
 
   const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -80,7 +83,7 @@ export const Sidebar = () => {
     if (next >= 25) {
       eggClicksRef.current = 0;
       setIsOpen(false);
-      router.push('/easter-egg');
+      setIsEggOverlayOpen(true);
       return;
     }
 
@@ -621,6 +624,11 @@ export const Sidebar = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Easter Egg Fullscreen Overlay (Covers everything on homepage, reset on reload) */}
+      {isEggOverlayOpen && (
+        <EasterEggOverlay onClose={() => setIsEggOverlayOpen(false)} />
       )}
     </>
   );
