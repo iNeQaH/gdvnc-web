@@ -44,7 +44,7 @@ function applyTheme(theme: ThemeType, mode: ModeType): 'light' | 'dark' {
     root.setAttribute('data-theme', theme);
   }
   root.classList.toggle('dark', dark);
-  root.classList.toggle('gdvn-rgb', theme === 'mint' || theme === 'peach' || theme === 'glitch');
+  root.classList.toggle('gdvn-rgb', theme === 'mint' || theme === 'peach');
   root.classList.toggle('gdvn-glitch', theme === 'glitch');
   return dark ? 'dark' : 'light';
 }
@@ -55,38 +55,8 @@ function clearRgbVars(root: HTMLElement) {
   root.style.removeProperty('--glitch-alt');
 }
 
-function paintRgb(root: HTMLElement, theme: 'mint' | 'peach' | 'glitch', dark: boolean, hue: number) {
+function paintRgb(root: HTMLElement, theme: 'mint' | 'peach', dark: boolean, hue: number) {
   const h = ((hue % 360) + 360) % 360;
-  if (theme === 'glitch') {
-    const phase = Math.floor(h / 90) % 4;
-    let accent = '#ffffff';
-    let accentAlt = '#000000';
-    let accentFg = '#000000';
-    if (phase === 0) {
-      accent = '#ffffff';
-      accentAlt = '#000000';
-      accentFg = '#000000';
-    } else if (phase === 1) {
-      accent = '#ff0033'; // stark red
-      accentAlt = '#000000';
-      accentFg = '#ffffff';
-    } else if (phase === 2) {
-      accent = '#000000';
-      accentAlt = '#ffffff';
-      accentFg = '#ffffff';
-    } else {
-      accent = '#001a66'; // deep navy blue
-      accentAlt = '#ffffff';
-      accentFg = '#ffffff';
-    }
-    root.style.setProperty('--accent', accent);
-    root.style.setProperty('--accent-hover', accentAlt);
-    root.style.setProperty('--accent-bg', phase === 1 ? 'rgba(255, 0, 51, 0.2)' : phase === 3 ? 'rgba(0, 26, 102, 0.3)' : 'rgba(255, 255, 255, 0.12)');
-    root.style.setProperty('--accent-text', accent === '#000000' ? '#ffffff' : accent);
-    root.style.setProperty('--accent-fg', accentFg);
-    root.style.setProperty('--glitch-alt', accentAlt);
-    return;
-  }
   const pastel = theme === 'peach';
   const s = pastel ? (dark ? 48 : 52) : dark ? 82 : 88;
   const l = pastel ? (dark ? 74 : 64) : dark ? 62 : 48;
@@ -135,29 +105,24 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const root = document.documentElement;
-    const rgb = effectiveTheme === 'mint' || effectiveTheme === 'peach' || effectiveTheme === 'glitch';
+    const rgb = effectiveTheme === 'mint' || effectiveTheme === 'peach';
     if (!rgb) {
       clearRgbVars(root);
       return;
     }
     const dark = resolvedMode === 'dark';
-    const isGlitch = effectiveTheme === 'glitch';
-    const speed = isGlitch ? 540 : effectiveTheme === 'peach' ? 22.5 : 30;
+    const speed = effectiveTheme === 'peach' ? 22.5 : 30;
     let hue = 0;
     let last = performance.now();
     let raf = 0;
     const tick = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      if (isGlitch && Math.random() < 0.22) {
-        hue = (hue + 90 + Math.random() * 180) % 360;
-      } else {
-        hue = (hue + speed * dt) % 360;
-      }
-      paintRgb(root, effectiveTheme as 'mint' | 'peach' | 'glitch', dark, hue);
+      hue = (hue + speed * dt) % 360;
+      paintRgb(root, effectiveTheme as 'mint' | 'peach', dark, hue);
       raf = requestAnimationFrame(tick);
     };
-    paintRgb(root, effectiveTheme as 'mint' | 'peach' | 'glitch', dark, hue);
+    paintRgb(root, effectiveTheme as 'mint' | 'peach', dark, hue);
     raf = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(raf);

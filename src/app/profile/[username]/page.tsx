@@ -256,15 +256,21 @@ export default function ProfilePage() {
   // Glitch Theme States & Effects (placed at top level to obey React Hook Rules)
   const isGlitchTheme = Boolean(data?.profileTheme ? data.profileTheme === 'glitch' : theme === 'glitch');
   const profileContainerRef = React.useRef<HTMLDivElement>(null);
-  const [isStormActive, setIsStormActive] = useState(false);
+  const [isCardsActive, setIsCardsActive] = useState(false);
+  const [isAvatarActive, setIsAvatarActive] = useState(false);
+  const [isPanelActive, setIsPanelActive] = useState(false);
+  const [isTextActive, setIsTextActive] = useState(false);
   const [showAvatarJumpscare, setShowAvatarJumpscare] = useState(false);
   const [showCrossOverlay, setShowCrossOverlay] = useState(false);
   const [crossMode, setCrossMode] = useState<'box' | 'fullscreen'>('box');
 
-  // Glitch Rhythm: 3.5s - 5.5s of COMPLETE CALM & STILLNESS, then sudden ~1s violent storm burst
+  // Glitch Rhythm: Fast, asynchronous, independent triggers or occasional all-at-once surge
   useEffect(() => {
     if (!isGlitchTheme) {
-      setIsStormActive(false);
+      setIsCardsActive(false);
+      setIsAvatarActive(false);
+      setIsPanelActive(false);
+      setIsTextActive(false);
       setShowAvatarJumpscare(false);
       setShowCrossOverlay(false);
       return;
@@ -273,45 +279,62 @@ export default function ProfilePage() {
     let isMounted = true;
     let timer: NodeJS.Timeout;
 
+    const trigger = (setter: React.Dispatch<React.SetStateAction<boolean>>, durationMs: number) => {
+      setter(true);
+      setTimeout(() => {
+        if (isMounted) setter(false);
+      }, durationMs);
+    };
+
     const runLoop = () => {
       if (!isMounted) return;
-      // 1 vài giây tĩnh (3.5s - 5.5s hoàn toàn yên ắng, không rung, chữ bình thường, góc 0 độ)
-      const calmTime = 3200 + Math.random() * 2300;
+      // Tần suất cao hơn: mỗi 380ms - 880ms thực hiện một nhịp kiểm tra/kích hoạt
+      const nextDelay = 380 + Math.random() * 500;
 
       timer = setTimeout(() => {
         if (!isMounted) return;
-        setIsStormActive(true);
 
-        // Nháy ảnh avatar to overlay trên màn hình (chỉ nháy 120ms - 180ms)
-        if (Math.random() < 0.7) {
-          setShowAvatarJumpscare(true);
-          setTimeout(() => {
-            if (isMounted) setShowAvatarJumpscare(false);
-          }, 140 + Math.random() * 80);
+        // Cơ chế Surge: Thỉnh thoảng (~14% tỉ lệ) tất cả cùng kích hoạt 1 lúc!
+        const isSurge = Math.random() < 0.14;
+
+        if (isSurge) {
+          // Tất cả cùng kích hoạt 1 lúc, thời gian nháy cực nhanh (120ms - 220ms)
+          trigger(setIsCardsActive, 140 + Math.random() * 110);
+          trigger(setIsAvatarActive, 160 + Math.random() * 120);
+          trigger(setIsPanelActive, 120 + Math.random() * 100);
+          trigger(setIsTextActive, 180 + Math.random() * 120);
+          if (Math.random() < 0.75) {
+            trigger(setShowAvatarJumpscare, 100 + Math.random() * 70);
+          }
+          if (Math.random() < 0.75) {
+            setCrossMode(Math.random() < 0.5 ? 'box' : 'fullscreen');
+            trigger(setShowCrossOverlay, 130 + Math.random() * 80);
+          }
+        } else {
+          // Các hiệu ứng hoạt động độc lập, không nháy chung 1 lần, thỉnh thoảng 1 ít
+          if (Math.random() < 0.38) {
+            trigger(setIsCardsActive, 120 + Math.random() * 110);
+          }
+          if (Math.random() < 0.36) {
+            trigger(setIsAvatarActive, 130 + Math.random() * 120);
+          }
+          if (Math.random() < 0.30) {
+            trigger(setIsPanelActive, 90 + Math.random() * 100);
+          }
+          if (Math.random() < 0.42) {
+            trigger(setIsTextActive, 150 + Math.random() * 120);
+          }
+          if (Math.random() < 0.12) {
+            trigger(setShowAvatarJumpscare, 90 + Math.random() * 60);
+          }
+          if (Math.random() < 0.10) {
+            setCrossMode(Math.random() < 0.5 ? 'box' : 'fullscreen');
+            trigger(setShowCrossOverlay, 110 + Math.random() * 70);
+          }
         }
 
-        // Overlay hình vuông đen to hoặc đen hình vuông che hết profile và có kí hiệu thánh giá ở giữa
-        if (Math.random() < 0.75) {
-          setCrossMode(Math.random() < 0.5 ? 'box' : 'fullscreen');
-          setTimeout(() => {
-            if (!isMounted) return;
-            setShowCrossOverlay(true);
-            setTimeout(() => {
-              if (isMounted) setShowCrossOverlay(false);
-            }, 180 + Math.random() * 150);
-          }, 80 + Math.random() * 250);
-        }
-
-        // Đợt bùng nổ kéo dài 850ms - 1300ms rồi trở lại tĩnh
-        const stormDuration = 850 + Math.random() * 450;
-        setTimeout(() => {
-          if (!isMounted) return;
-          setIsStormActive(false);
-          setShowAvatarJumpscare(false);
-          setShowCrossOverlay(false);
-          runLoop();
-        }, stormDuration);
-      }, calmTime);
+        runLoop();
+      }, nextDelay);
     };
 
     runLoop();
@@ -319,15 +342,18 @@ export default function ProfilePage() {
     return () => {
       isMounted = false;
       clearTimeout(timer);
-      setIsStormActive(false);
+      setIsCardsActive(false);
+      setIsAvatarActive(false);
+      setIsPanelActive(false);
+      setIsTextActive(false);
       setShowAvatarJumpscare(false);
       setShowCrossOverlay(false);
     };
   }, [isGlitchTheme]);
 
-  // Scramble 100% of visible characters on the page during the glitch storm, restore completely on calm
+  // Scramble 100% of visible characters on the page during text glitch bursts, restore completely when inactive
   useEffect(() => {
-    if (!isGlitchTheme || !isStormActive) return;
+    if (!isGlitchTheme || !isTextActive) return;
     const container = profileContainerRef.current;
     if (!container) return;
 
@@ -373,7 +399,7 @@ export default function ProfilePage() {
     };
 
     mutateAll();
-    const scramblerInterval = window.setInterval(mutateAll, 45);
+    const scramblerInterval = window.setInterval(mutateAll, 35);
 
     return () => {
       window.clearInterval(scramblerInterval);
@@ -383,7 +409,7 @@ export default function ProfilePage() {
         }
       }
     };
-  }, [isGlitchTheme, isStormActive]);
+  }, [isGlitchTheme, isTextActive]);
 
   useEffect(() => {
     const userStr = localStorage.getItem('gdvnc_user');
@@ -1155,11 +1181,11 @@ export default function ProfilePage() {
   return (
     <div
       ref={profileContainerRef}
-      className={`max-w-[1200px] mx-auto py-8 px-4 space-y-6 relative ${isGlitchTheme ? 'gdvn-profile-glitch' : ''} ${isGlitchTheme && isStormActive ? 'gdvn-glitch-storm-active' : ''}`}
+      className={`max-w-[1200px] mx-auto py-8 px-4 space-y-6 relative ${isGlitchTheme ? 'gdvn-profile-glitch' : ''} ${isGlitchTheme && isCardsActive ? 'gdvn-glitch-cards-active' : ''} ${isGlitchTheme && isAvatarActive ? 'gdvn-glitch-avatar-active' : ''} ${isGlitchTheme && isTextActive ? 'gdvn-glitch-text-active' : ''}`}
     >
       {isGlitchTheme && (
         <>
-          {/* Avatar Giant Flash Overlay (chỉ nháy) */}
+          {/* Avatar Giant Flash Overlay (chỉ nháy nhanh) */}
           {showAvatarJumpscare && data.avatarUrl && (
             <div className="fixed inset-0 z-[9998] pointer-events-none flex items-center justify-center bg-black/80">
               <div className="relative w-[80vw] max-w-[480px] aspect-square rounded-2xl overflow-hidden border-4 border-red-600 shadow-[0_0_100px_#ff0033]">
@@ -1184,8 +1210,8 @@ export default function ProfilePage() {
             </div>
           )}
 
-          <div className={`gdvn-glitch-overlay pointer-events-none fixed inset-0 z-[5] ${isStormActive ? 'opacity-100' : 'opacity-0'} transition-opacity duration-75`} aria-hidden="true" />
-          {isStormActive && (
+          <div className={`gdvn-glitch-overlay pointer-events-none fixed inset-0 z-[5] ${(isCardsActive || isAvatarActive || isTextActive || isPanelActive) ? 'opacity-100' : 'opacity-0'} transition-opacity duration-75`} aria-hidden="true" />
+          {isPanelActive && (
             <div className="gdvn-dead-panel-glitch pointer-events-none fixed inset-0 z-[6] overflow-hidden" aria-hidden="true">
               <div className="gdvn-glitch-slab-1" />
               <div className="gdvn-glitch-slab-2" />

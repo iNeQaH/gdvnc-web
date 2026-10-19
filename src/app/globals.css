@@ -888,6 +888,11 @@ input[type="number"] {
   --text-title: #ffffff;
   --text-body: #d4d4d4;
   --text-dim: #737373;
+  --accent: #ffffff;
+  --accent-hover: #e5e5e5;
+  --accent-bg: rgba(255, 255, 255, 0.1);
+  --accent-text: #ffffff;
+  --accent-fg: #000000;
 }
 
 @keyframes gdvn-glitch-swatch {
@@ -1515,7 +1520,8 @@ input[type="number"] {
   animation: gdvn-glitch-scanlines 0.5s linear infinite;
 }
 
-/* Avatar Snap Rotation */
+/* Avatar Snap Rotation (Can trigger independently or all at once) */
+.gdvn-profile-glitch.gdvn-glitch-avatar-active [data-glitch-avatar],
 .gdvn-profile-glitch.gdvn-glitch-storm-active [data-glitch-avatar] {
   transition: none !important;
   transform: translate(52px, -42px) rotate(75deg) scale(1.28) !important;
@@ -1524,12 +1530,14 @@ input[type="number"] {
   z-index: 50 !important;
 }
 
+.gdvn-profile-glitch.gdvn-glitch-avatar-active [data-glitch-avatar-img],
 .gdvn-profile-glitch.gdvn-glitch-storm-active [data-glitch-avatar-img] {
   transition: none !important;
   transform: rotate(-110deg) scale(1.2) !important;
 }
 
-/* Cover Snap Rotation */
+/* Cover Snap Rotation (Can trigger independently or all at once) */
+.gdvn-profile-glitch.gdvn-glitch-avatar-active [data-glitch-cover],
 .gdvn-profile-glitch.gdvn-glitch-storm-active [data-glitch-cover] {
   transition: none !important;
   transform: translate(-48px, 35px) rotate(-55deg) scale(1.22) !important;
@@ -1537,12 +1545,14 @@ input[type="number"] {
   clip-path: polygon(0 20%, 100% 0, 88% 100%, 0 80%) !important;
 }
 
+.gdvn-profile-glitch.gdvn-glitch-avatar-active [data-glitch-cover-img],
 .gdvn-profile-glitch.gdvn-glitch-storm-active [data-glitch-cover-img] {
   transition: none !important;
   transform: rotate(85deg) scale(1.15) !important;
 }
 
-/* Rotate ALL cards, items, and divs with large tilt angles (Thời gian quay = 0) */
+/* Rotate ALL cards, items, and divs with large tilt angles (Can trigger independently or all at once) */
+.gdvn-profile-glitch.gdvn-glitch-cards-active .ui-card:nth-of-type(4n+1),
 .gdvn-profile-glitch.gdvn-glitch-storm-active .ui-card:nth-of-type(4n+1) {
   transition: none !important;
   transform: translate(32px, -22px) rotate(45deg) scale(0.98) !important;
@@ -1550,12 +1560,14 @@ input[type="number"] {
   box-shadow: -8px 0 0 #ff0033, 8px 0 0 #001144 !important;
 }
 
+.gdvn-profile-glitch.gdvn-glitch-cards-active .ui-card:nth-of-type(4n+2),
 .gdvn-profile-glitch.gdvn-glitch-storm-active .ui-card:nth-of-type(4n+2) {
   transition: none !important;
   transform: translate(-38px, 28px) rotate(-60deg) scale(0.95) !important;
   filter: contrast(400%) saturate(0) !important;
 }
 
+.gdvn-profile-glitch.gdvn-glitch-cards-active .ui-card:nth-of-type(4n+3),
 .gdvn-profile-glitch.gdvn-glitch-storm-active .ui-card:nth-of-type(4n+3) {
   transition: none !important;
   transform: translate(28px, 24px) rotate(80deg) scale(0.96) !important;
@@ -1564,6 +1576,7 @@ input[type="number"] {
   box-shadow: none !important;
 }
 
+.gdvn-profile-glitch.gdvn-glitch-cards-active .ui-card:nth-of-type(4n),
 .gdvn-profile-glitch.gdvn-glitch-storm-active .ui-card:nth-of-type(4n) {
   transition: none !important;
   transform: translate(-42px, -32px) rotate(-75deg) scale(0.97) !important;
@@ -1571,19 +1584,37 @@ input[type="number"] {
 }
 
 /* Snap rotate inner grid divs, rounded cards, and stat blocks */
+.gdvn-profile-glitch.gdvn-glitch-cards-active .grid > div:nth-child(even),
 .gdvn-profile-glitch.gdvn-glitch-storm-active .grid > div:nth-child(even),
+.gdvn-profile-glitch.gdvn-glitch-cards-active .rounded-2xl:nth-child(even),
 .gdvn-profile-glitch.gdvn-glitch-storm-active .rounded-2xl:nth-child(even) {
   transition: none !important;
   transform: rotate(35deg) scale(0.92) !important;
 }
 
+.gdvn-profile-glitch.gdvn-glitch-cards-active .grid > div:nth-child(odd),
 .gdvn-profile-glitch.gdvn-glitch-storm-active .grid > div:nth-child(odd),
+.gdvn-profile-glitch.gdvn-glitch-cards-active .rounded-2xl:nth-child(odd),
 .gdvn-profile-glitch.gdvn-glitch-storm-active .rounded-2xl:nth-child(odd) {
   transition: none !important;
   transform: rotate(-40deg) scale(1.05) !important;
 }
 
-/* Character text twitch during storm only */
+/* Character text twitch (Can trigger independently or all at once) */
+.gdvn-profile-glitch.gdvn-glitch-text-active p,
+.gdvn-profile-glitch.gdvn-glitch-text-active span,
+.gdvn-profile-glitch.gdvn-glitch-text-active a,
+.gdvn-profile-glitch.gdvn-glitch-text-active button,
+.gdvn-profile-glitch.gdvn-glitch-text-active label,
+.gdvn-profile-glitch.gdvn-glitch-text-active strong,
+.gdvn-profile-glitch.gdvn-glitch-text-active em,
+.gdvn-profile-glitch.gdvn-glitch-text-active .ui-title,
+.gdvn-profile-glitch.gdvn-glitch-text-active h1,
+.gdvn-profile-glitch.gdvn-glitch-text-active h2,
+.gdvn-profile-glitch.gdvn-glitch-text-active h3,
+.gdvn-profile-glitch.gdvn-glitch-text-active h4,
+.gdvn-profile-glitch.gdvn-glitch-text-active h5,
+.gdvn-profile-glitch.gdvn-glitch-text-active h6,
 .gdvn-profile-glitch.gdvn-glitch-storm-active p,
 .gdvn-profile-glitch.gdvn-glitch-storm-active span,
 .gdvn-profile-glitch.gdvn-glitch-storm-active a,
