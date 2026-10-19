@@ -41,8 +41,8 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 
 const SORT_OPTIONS: { value: 'members' | 'sp' | 'newest' | 'oldest'; label: string; icon: any }[] = [
-  { value: 'members', label: 'Đông thành viên nhất', icon: Users },
   { value: 'sp', label: 'SP Coin cao nhất', icon: Coins },
+  { value: 'members', label: 'Đông thành viên nhất', icon: Users },
   { value: 'newest', label: 'Mới nhất', icon: Sparkles },
   { value: 'oldest', label: 'Cũ nhất', icon: Clock },
 ];
@@ -59,7 +59,7 @@ export default function ClanListPage() {
 
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<'members' | 'sp' | 'newest' | 'oldest'>('members');
+  const [sort, setSort] = useState<'members' | 'sp' | 'newest' | 'oldest'>('sp');
   const [order, setOrder] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isSortOpen, setIsSortOpen] = useState(false);

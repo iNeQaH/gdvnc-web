@@ -61,10 +61,13 @@ export const Sidebar = () => {
 
   const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (pathname !== '/') return;
+    if (!currentUser) return;
+    const isTester = isStaffRole(currentUser?.role) || isSuperAdminUser(currentUser) || currentUser?.username?.toLowerCase() === 'ego';
+    if ((currentUser?.easterEggCompleted || (currentUser?.easterEggPoints ?? 0) >= 100) && !isTester) {
+      return;
+    }
     e.preventDefault();
     if (eggAlertMessage !== null) return;
-    const isTester = isStaffRole(currentUser?.role) || isSuperAdminUser(currentUser) || currentUser?.username?.toLowerCase() === 'ego';
-    if (currentUser?.easterEggCompleted && !isTester) return;
 
     if (eggTimerRef.current) {
       clearTimeout(eggTimerRef.current);

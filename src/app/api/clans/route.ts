@@ -14,7 +14,7 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const q = (searchParams.get('q') || searchParams.get('search') || '').trim().toLowerCase();
-    const sort = searchParams.get('sort') || 'members';
+    const sort = searchParams.get('sort') || 'sp';
     const order = searchParams.get('order') === 'asc' ? 'asc' : 'desc';
 
     const clans = await prisma.clan.findMany({
@@ -97,10 +97,10 @@ export async function GET(req: Request) {
     // Sắp xếp
     filtered.sort((a, b) => {
       let cmp = 0;
-      if (sort === 'sp') cmp = b.totalSp - a.totalSp;
+      if (sort === 'members') cmp = b.memberCount - a.memberCount;
       else if (sort === 'oldest') cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       else if (sort === 'newest') cmp = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      else cmp = b.memberCount - a.memberCount; // mặc định: đông thành viên nhất
+      else cmp = (b.totalSp - a.totalSp) || (b.memberCount - a.memberCount); // mặc định: SP Coin cao nhất
 
       return order === 'asc' ? -cmp : cmp;
     });

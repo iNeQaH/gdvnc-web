@@ -41,6 +41,18 @@ export function EasterEggOverlay({ onClose }: EasterEggOverlayProps) {
     try {
       const res = await fetch('/api/easter-egg', { cache: 'no-store' });
       if (res.status === 401 || res.status === 403) {
+        if (res.status === 403) {
+          try {
+            const raw = localStorage.getItem('gdvnc_user');
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              localStorage.setItem(
+                'gdvnc_user',
+                JSON.stringify({ ...parsed, easterEggCompleted: true, easterEggPoints: 100 })
+              );
+            }
+          } catch {}
+        }
         onClose();
         return;
       }
@@ -49,7 +61,17 @@ export function EasterEggOverlay({ onClose }: EasterEggOverlayProps) {
         return;
       }
       const data = await res.json();
-      if (data.completed && !data.isOwner && !data.isTester) {
+      if ((data.completed || data.points >= 100) && !data.isOwner && !data.isTester) {
+        try {
+          const raw = localStorage.getItem('gdvnc_user');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            localStorage.setItem(
+              'gdvnc_user',
+              JSON.stringify({ ...parsed, easterEggCompleted: true, easterEggPoints: 100 })
+            );
+          }
+        } catch {}
         onClose();
         return;
       }

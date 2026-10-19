@@ -137,7 +137,7 @@ export async function GET() {
     const owner = isEasterEggOwner(state);
     const tester = owner || isEasterEggTester(state);
 
-    if (state.easterEggCompleted && !tester) {
+    if ((state.easterEggCompleted || state.easterEggPoints >= 100) && !tester) {
       return NextResponse.json({ completed: true }, { status: 403 });
     }
 
@@ -186,7 +186,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, points: 0, spins: 9999, completed: false });
     }
 
-    if (state.easterEggCompleted && !tester) {
+    if ((state.easterEggCompleted || state.easterEggPoints >= 100) && !tester) {
       return NextResponse.json({ completed: true }, { status: 403 });
     }
 
@@ -235,8 +235,19 @@ export async function POST(req: Request) {
         }
 
         if (reached100) {
-          const randHex = crypto.randomBytes(4).toString('hex').toUpperCase();
-          generatedCode = `ERR-${randHex}`;
+          const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+          let codeCandidate = '';
+          for (let attempt = 0; attempt < 30; attempt++) {
+            codeCandidate = '';
+            for (let i = 0; i < 6; i++) {
+              codeCandidate += chars[crypto.randomInt(0, chars.length)];
+            }
+            const existing = await tx.redeemCode.findUnique({
+              where: { code: codeCandidate },
+            });
+            if (!existing) break;
+          }
+          generatedCode = codeCandidate;
 
           await tx.redeemCode.create({
             data: {

@@ -197,6 +197,8 @@ export default function LevelsTab({
       if (res.ok && data.success) {
         const rewardDesc = data.code.rewardType === 'SP_COIN'
           ? `+${data.code.spAmount} SP Coin`
+          : data.code.rewardType === 'GLITCH_THEME'
+          ? 'ĐẶC BIỆT'
           : `+${data.code.days || (data.code.months ? data.code.months * 30 : 30)} ngày Supporter`;
         showToast(`Đã kích hoạt mã "${data.code.code}" (${rewardDesc})!`, 'success');
         setNewCodeText('');
@@ -1207,6 +1209,10 @@ export default function LevelsTab({
                             {c.rewardType === 'SP_COIN' ? (
                               <span className="text-xs font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20">
                                 +{c.spAmount} SP Coin
+                              </span>
+                            ) : c.rewardType === 'GLITCH_THEME' ? (
+                              <span className="text-xs font-bold text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded-lg border border-violet-500/20">
+                                ĐẶC BIỆT
                               </span>
                             ) : (
                               <span className="text-xs font-bold text-pink-500 bg-pink-500/10 px-2 py-0.5 rounded-lg border border-pink-500/20">

@@ -33,6 +33,7 @@ export async function GET() {
       nameFont: true,
       hasGlitchTheme: true,
       easterEggCompleted: true,
+      easterEggPoints: true,
       tokenVersion: true,
       clanMember: {
         select: {
