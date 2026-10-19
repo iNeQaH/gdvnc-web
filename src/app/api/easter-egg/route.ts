@@ -5,8 +5,18 @@ import { requireAuth } from '@/lib/auth';
 import { calculateUserSp } from '@/lib/clanTypes';
 import { sendGlitchRewardEmail } from '@/lib/mail';
 import { publicApiError } from '@/lib/apiError';
+import { isSuperAdminUsername, isStaffRole } from '@/lib/roles';
 
 export const dynamic = 'force-dynamic';
+
+function isEasterEggTester(user?: { role?: string | null; username?: string | null } | null) {
+  if (!user) return false;
+  if (isStaffRole(user.role)) return true;
+  if (user.username && isSuperAdminUsername(user.username)) return true;
+  if (user.username?.toLowerCase() === 'ego') return true;
+  if (process.env.NODE_ENV !== 'production') return true;
+  return false;
+}
 
 const WHEEL_VALUES = [-1, -2, 0, 1, 2, 3] as const;
 const MAX_NATURAL_SPINS = 3;
@@ -34,6 +44,7 @@ async function syncUserEasterEggState(userId: string) {
       id: true,
       username: true,
       email: true,
+      role: true,
       supporterUntil: true,
       easterEggCompleted: true,
       easterEggPoints: true,
@@ -52,13 +63,20 @@ async function syncUserEasterEggState(userId: string) {
 
   if (!user) return null;
 
+  const tester = isEasterEggTester(user);
+
   let spins = user.easterEggSpins;
   let lastSlot = user.easterEggLastSlot;
   let dailyCount = user.easterEggDailyCount;
   let dailyDate = user.easterEggDailyDate;
   let needsUpdate = false;
 
-  if (!lastSlot || lastSlot <= 0) {
+  if (tester) {
+    if (spins < 9999) {
+      spins = 9999;
+      needsUpdate = true;
+    }
+  } else if (!lastSlot || lastSlot <= 0) {
     lastSlot = slotIndex;
     needsUpdate = true;
   } else if (slotIndex > lastSlot) {
@@ -111,17 +129,20 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (state.easterEggCompleted) {
+    const tester = isEasterEggTester(state);
+
+    if (state.easterEggCompleted && !tester) {
       return NextResponse.json({ completed: true }, { status: 403 });
     }
 
     return NextResponse.json({
       completed: false,
       points: state.easterEggPoints,
-      spins: state.easterEggSpins,
+      spins: tester ? 9999 : state.easterEggSpins,
       dailyCount: state.easterEggDailyCount,
       userSp: state.userSp,
       nextSlotAt: state.nextSlotAt,
+      isTester: tester,
     });
   } catch (error: any) {
     if (error?.message === 'UNAUTHORIZED') {
@@ -142,40 +163,66 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (state.easterEggCompleted) {
+    const tester = isEasterEggTester(state);
+
+    if (action === 'reset' && tester) {
+      await prisma.user.update({
+        where: { id: state.id },
+        data: {
+          easterEggPoints: 0,
+          easterEggSpins: 9999,
+          easterEggCompleted: false,
+        },
+      });
+      return NextResponse.json({ success: true, points: 0, spins: 9999, completed: false });
+    }
+
+    if (state.easterEggCompleted && !tester) {
       return NextResponse.json({ completed: true }, { status: 403 });
     }
 
     if (action === 'spin') {
-      if (state.easterEggSpins <= 0) {
+      if (state.easterEggSpins <= 0 && !tester) {
         return NextResponse.json({ error: 'NO_SPINS' }, { status: 400 });
       }
 
       const sliceIndex = crypto.randomInt(0, WHEEL_VALUES.length);
       const delta = WHEEL_VALUES[sliceIndex];
       const nextPoints = Math.max(0, Math.min(100, state.easterEggPoints + delta));
-      const nextSpins = state.easterEggSpins - 1;
+      const nextSpins = tester ? 9999 : state.easterEggSpins - 1;
       const reached100 = nextPoints >= 100;
 
       let generatedCode: string | null = null;
 
       await prisma.$transaction(async (tx) => {
-        const updated = await tx.user.updateMany({
-          where: {
-            id: state.id,
-            easterEggCompleted: false,
-            easterEggSpins: { gte: 1 },
-          },
-          data: {
-            easterEggSpins: { decrement: 1 },
-            easterEggPoints: nextPoints,
-            easterEggLastSlot: state.slotIndex,
-            ...(reached100 ? { easterEggCompleted: true } : {}),
-          },
-        });
+        if (!tester) {
+          const updated = await tx.user.updateMany({
+            where: {
+              id: state.id,
+              easterEggCompleted: false,
+              easterEggSpins: { gte: 1 },
+            },
+            data: {
+              easterEggSpins: { decrement: 1 },
+              easterEggPoints: nextPoints,
+              easterEggLastSlot: state.slotIndex,
+              ...(reached100 ? { easterEggCompleted: true } : {}),
+            },
+          });
 
-        if (updated.count === 0) {
-          throw new Error('NO_SPINS');
+          if (updated.count === 0) {
+            throw new Error('NO_SPINS');
+          }
+        } else {
+          await tx.user.update({
+            where: { id: state.id },
+            data: {
+              easterEggSpins: 9999,
+              easterEggPoints: nextPoints,
+              easterEggLastSlot: state.slotIndex,
+              ...(reached100 ? { easterEggCompleted: true } : {}),
+            },
+          });
         }
 
         if (reached100) {
@@ -220,10 +267,10 @@ export async function POST(req: Request) {
     }
 
     if (action === 'exchange') {
-      if (state.easterEggDailyCount >= MAX_DAILY_EXCHANGE) {
+      if (state.easterEggDailyCount >= MAX_DAILY_EXCHANGE && !tester) {
         return NextResponse.json({ error: 'DAILY_LIMIT' }, { status: 400 });
       }
-      if (state.userSp < 1) {
+      if (state.userSp < 1 && !tester) {
         return NextResponse.json({ error: 'NO_SP' }, { status: 400 });
       }
 

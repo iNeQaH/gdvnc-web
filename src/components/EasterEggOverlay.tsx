@@ -26,6 +26,7 @@ export function EasterEggOverlay({ onClose }: EasterEggOverlayProps) {
   const [userSp, setUserSp] = useState(0);
   const [nextSlotAt, setNextSlotAt] = useState<string | null>(null);
   const [countdownStr, setCountdownStr] = useState<string>('00:00:00');
+  const [isTester, setIsTester] = useState(false);
 
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
@@ -55,6 +56,7 @@ export function EasterEggOverlay({ onClose }: EasterEggOverlayProps) {
       setDailyCount(typeof data.dailyCount === 'number' ? data.dailyCount : 0);
       setUserSp(typeof data.userSp === 'number' ? data.userSp : 0);
       setNextSlotAt(data.nextSlotAt || null);
+      setIsTester(Boolean(data.isTester));
       setLoaded(true);
     } catch {
       onClose();
@@ -98,8 +100,25 @@ export function EasterEggOverlay({ onClose }: EasterEggOverlayProps) {
     return () => clearInterval(interval);
   }, [nextSlotAt, spinning, fetchState]);
 
+  const handleResetPoints = async () => {
+    if (!isTester || spinning) return;
+    try {
+      const res = await fetch('/api/easter-egg', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reset' }),
+      });
+      if (res.ok) {
+        setPoints(0);
+        setSpins(9999);
+      }
+    } catch {
+      /* ignore */
+    }
+  };
+
   const handleSpin = async () => {
-    if (spinning || spins <= 0) return;
+    if (spinning || (!isTester && spins <= 0)) return;
     setSpinning(true);
     setShowConfirmCheck(false);
 
@@ -122,8 +141,8 @@ export function EasterEggOverlay({ onClose }: EasterEggOverlayProps) {
       const data = await res.json();
       const sliceIndex = typeof data.sliceIndex === 'number' ? data.sliceIndex : 0;
 
-      // Immediately deduct 1 spin visually
-      setSpins((prev) => Math.max(0, prev - 1));
+      // Immediately deduct 1 spin visually (testers stay at 9999)
+      setSpins((prev) => (isTester ? 9999 : Math.max(0, prev - 1)));
 
       const sliceCenterAngle = sliceIndex * 60 + 30;
       const targetMod = (360 - sliceCenterAngle) % 360;
@@ -137,7 +156,7 @@ export function EasterEggOverlay({ onClose }: EasterEggOverlayProps) {
 
       spinTimeoutRef.current = setTimeout(async () => {
         setPoints(typeof data.points === 'number' ? data.points : points);
-        setSpins(typeof data.spins === 'number' ? data.spins : spins - 1);
+        setSpins(typeof data.spins === 'number' ? (isTester ? 9999 : data.spins) : spins);
         setSpinning(false);
 
         if (data.completed || data.points >= 100) {
@@ -278,9 +297,9 @@ export function EasterEggOverlay({ onClose }: EasterEggOverlayProps) {
           <button
             type="button"
             onClick={handleSpin}
-            disabled={spinning || spins <= 0}
+            disabled={spinning || (!isTester && spins <= 0)}
             className={`relative w-72 h-72 sm:w-80 sm:h-80 rounded-full p-2 bg-zinc-900 border-4 border-zinc-700/80 shadow-[0_0_60px_rgba(0,0,0,0.95)] focus:outline-none ${
-              spinning || spins <= 0 ? 'cursor-default' : 'cursor-pointer active:scale-[0.99]'
+              spinning || (!isTester && spins <= 0) ? 'cursor-default' : 'cursor-pointer active:scale-[0.99]'
             }`}
           >
             <div
@@ -340,7 +359,11 @@ export function EasterEggOverlay({ onClose }: EasterEggOverlayProps) {
         </div>
 
         {/* Thanh tiến độ (100 điểm đầy thanh, chỉ có thanh không hiện số không hiện mô tả) */}
-        <div className="w-full h-5 rounded-full bg-zinc-900 border-2 border-zinc-800 overflow-hidden p-0.5 shadow-inner">
+        <div
+          onDoubleClick={handleResetPoints}
+          title={isTester ? 'Nhấn đúp để đặt lại điểm (Chế độ Tester)' : undefined}
+          className="w-full h-5 rounded-full bg-zinc-900 border-2 border-zinc-800 overflow-hidden p-0.5 shadow-inner cursor-pointer"
+        >
           <div
             className="h-full rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,0.6)] transition-all duration-500"
             style={{ width: `${Math.max(0, Math.min(100, points))}%` }}

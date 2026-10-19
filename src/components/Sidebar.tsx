@@ -63,7 +63,8 @@ export const Sidebar = () => {
     if (pathname !== '/') return;
     e.preventDefault();
     if (eggAlertMessage !== null) return;
-    if (currentUser?.easterEggCompleted) return;
+    const isTester = isStaffRole(currentUser?.role) || isSuperAdminUser(currentUser) || currentUser?.username?.toLowerCase() === 'ego';
+    if (currentUser?.easterEggCompleted && !isTester) return;
 
     if (eggTimerRef.current) {
       clearTimeout(eggTimerRef.current);
