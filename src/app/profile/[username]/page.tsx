@@ -264,7 +264,8 @@ export default function ProfilePage() {
   const [showCrossOverlay, setShowCrossOverlay] = useState(false);
   const [crossMode, setCrossMode] = useState<'box' | 'fullscreen'>('box');
 
-  // Glitch Rhythm: Fast, asynchronous, independent triggers or occasional all-at-once surge
+  // Glitch Rhythm: 5s of COMPLETE STILLNESS, then 3s of CHAOS
+  // In the 3s chaos window, each effect runs for an independent random duration of 1s to 3s
   useEffect(() => {
     if (!isGlitchTheme) {
       setIsCardsActive(false);
@@ -277,71 +278,78 @@ export default function ProfilePage() {
     }
 
     let isMounted = true;
-    let timer: NodeJS.Timeout;
+    const timeouts: NodeJS.Timeout[] = [];
 
-    const trigger = (setter: React.Dispatch<React.SetStateAction<boolean>>, durationMs: number) => {
-      setter(true);
-      setTimeout(() => {
-        if (isMounted) setter(false);
-      }, durationMs);
+    const scheduleTimeout = (fn: () => void, ms: number) => {
+      const t = setTimeout(() => {
+        if (isMounted) fn();
+      }, ms);
+      timeouts.push(t);
+      return t;
     };
 
     const runLoop = () => {
       if (!isMounted) return;
-      // Tần suất cao hơn: mỗi 380ms - 880ms thực hiện một nhịp kiểm tra/kích hoạt
-      const nextDelay = 380 + Math.random() * 500;
 
-      timer = setTimeout(() => {
+      // 1. Tĩnh hoàn toàn 5 giây (5000ms)
+      const calmMs = 5000;
+      const chaosMs = 3000;
+
+      scheduleTimeout(() => {
         if (!isMounted) return;
 
-        // Cơ chế Surge: Thỉnh thoảng (~14% tỉ lệ) tất cả cùng kích hoạt 1 lúc!
-        const isSurge = Math.random() < 0.14;
+        // 2. Bắt đầu đợt hỗn loạn kéo dài 3 giây (3000ms)
+        // Mỗi hiệu ứng có thời gian ngẫu nhiên từ 1-3s (1000ms - 3000ms)
+        const scheduleEffect = (
+          setter: React.Dispatch<React.SetStateAction<boolean>>,
+          chance = 1.0,
+          onStart?: () => void
+        ) => {
+          if (Math.random() > chance) return;
+          // Thời lượng từ 1s đến 3s
+          const duration = 1000 + Math.random() * 2000;
+          // Độ trễ bắt đầu sao cho kết thúc trong vòng 3s hỗn loạn
+          const maxStartOffset = Math.max(0, chaosMs - duration);
+          const startOffset = Math.random() * maxStartOffset;
 
-        if (isSurge) {
-          // Tất cả cùng kích hoạt 1 lúc, thời gian nháy cực nhanh (120ms - 220ms)
-          trigger(setIsCardsActive, 140 + Math.random() * 110);
-          trigger(setIsAvatarActive, 160 + Math.random() * 120);
-          trigger(setIsPanelActive, 120 + Math.random() * 100);
-          trigger(setIsTextActive, 180 + Math.random() * 120);
-          if (Math.random() < 0.75) {
-            trigger(setShowAvatarJumpscare, 100 + Math.random() * 70);
-          }
-          if (Math.random() < 0.75) {
-            setCrossMode(Math.random() < 0.5 ? 'box' : 'fullscreen');
-            trigger(setShowCrossOverlay, 130 + Math.random() * 80);
-          }
-        } else {
-          // Các hiệu ứng hoạt động độc lập, không nháy chung 1 lần, thỉnh thoảng 1 ít
-          if (Math.random() < 0.38) {
-            trigger(setIsCardsActive, 120 + Math.random() * 110);
-          }
-          if (Math.random() < 0.36) {
-            trigger(setIsAvatarActive, 130 + Math.random() * 120);
-          }
-          if (Math.random() < 0.30) {
-            trigger(setIsPanelActive, 90 + Math.random() * 100);
-          }
-          if (Math.random() < 0.42) {
-            trigger(setIsTextActive, 150 + Math.random() * 120);
-          }
-          if (Math.random() < 0.12) {
-            trigger(setShowAvatarJumpscare, 90 + Math.random() * 60);
-          }
-          if (Math.random() < 0.10) {
-            setCrossMode(Math.random() < 0.5 ? 'box' : 'fullscreen');
-            trigger(setShowCrossOverlay, 110 + Math.random() * 70);
-          }
-        }
+          scheduleTimeout(() => {
+            if (onStart) onStart();
+            setter(true);
+          }, startOffset);
 
-        runLoop();
-      }, nextDelay);
+          scheduleTimeout(() => {
+            setter(false);
+          }, startOffset + duration);
+        };
+
+        // Kích hoạt ngẫu nhiên các hiệu ứng trong 3s (mỗi hiệu ứng 1s - 3s)
+        scheduleEffect(setIsCardsActive, 1.0);
+        scheduleEffect(setIsAvatarActive, 1.0);
+        scheduleEffect(setIsPanelActive, 0.9);
+        scheduleEffect(setIsTextActive, 1.0);
+        scheduleEffect(setShowAvatarJumpscare, 0.75);
+        scheduleEffect(setShowCrossOverlay, 0.75, () => {
+          setCrossMode(Math.random() < 0.5 ? 'box' : 'fullscreen');
+        });
+
+        // 3. Kết thúc đợt hỗn loạn sau 3s: dọn dẹp tắt hết và lặp lại chu kỳ 5s tĩnh
+        scheduleTimeout(() => {
+          setIsCardsActive(false);
+          setIsAvatarActive(false);
+          setIsPanelActive(false);
+          setIsTextActive(false);
+          setShowAvatarJumpscare(false);
+          setShowCrossOverlay(false);
+          runLoop();
+        }, chaosMs);
+      }, calmMs);
     };
 
     runLoop();
 
     return () => {
       isMounted = false;
-      clearTimeout(timer);
+      for (const t of timeouts) clearTimeout(t);
       setIsCardsActive(false);
       setIsAvatarActive(false);
       setIsPanelActive(false);
