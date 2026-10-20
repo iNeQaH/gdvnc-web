@@ -399,14 +399,18 @@ export default function LevelsTab({
   };
 
   const handleDeleteBadge = async (id: string) => {
-    showConfirm('Xóa huy hiệu này?', async () => {
+    const badgeName = badgeForm.name ? `"${badgeForm.name}"` : 'này';
+    showConfirm(`Xác nhận xóa huy hiệu ${badgeName}? Thao tác này không thể hoàn tác.`, async () => {
       try {
         const res = await fetch(`/api/admin/badges/${id}`, { method: 'DELETE' });
         const data = await res.json();
         if (data.success) {
           showToast('Đã xóa huy hiệu', 'success');
           setIsBadgeEditModalOpen(false);
+          setBadgeForm(emptyBadgeForm);
           fetchBadges();
+        } else {
+          showToast(data.error || 'Lỗi khi xóa huy hiệu', 'error');
         }
       } catch (e) {
         showToast('Lỗi kết nối', 'error');

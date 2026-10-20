@@ -55,6 +55,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setConfirmData(null);
   };
 
+  React.useEffect(() => {
+    if (!confirmData) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (confirmData?.onCancel) confirmData.onCancel();
+        setConfirmData(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [confirmData]);
+
   return (
     <ToastContext.Provider value={{ showToast, showConfirm }}>
       {children}
@@ -62,7 +74,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {/* Global Toast */}
       {toast && (
         <div 
-          className="fixed bottom-5 right-5 z-[999999] animate-in fade-in slide-in-from-bottom-3 duration-200 cursor-pointer"
+          className="fixed bottom-5 right-5 z-[1000001] animate-in fade-in slide-in-from-bottom-3 duration-200 cursor-pointer"
           onClick={async () => {
             try {
               await navigator.clipboard.writeText(toast.message);
@@ -92,8 +104,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
       {/* Global Confirm Modal */}
       {confirmData && (
-        <div className="fixed inset-0 z-[100000] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-sm rounded-3xl border shadow-2xl p-6 space-y-4" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}>
+        <div 
+          className="fixed inset-0 z-[1000000] bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={handleCancel}
+        >
+          <div 
+            className="w-full max-w-sm rounded-3xl border shadow-2xl p-6 space-y-4" 
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-500/10 text-amber-500 shrink-0">
                 <AlertCircle className="w-5 h-5" />
