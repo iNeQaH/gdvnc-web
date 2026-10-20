@@ -84,6 +84,9 @@ export const Sidebar = () => {
         setLeaderboardExpanded(false);
         setLastClickedAccordion('lvl');
       } else {
+        // Tự động thu gọn (collapse) cả Bảng xếp hạng và Danh sách level khi chuyển sang các trang khác
+        setLeaderboardExpanded(false);
+        setLevelsExpanded(false);
         setLastClickedAccordion(null);
       }
     }
@@ -554,6 +557,11 @@ export const Sidebar = () => {
                   ) : (
                     <Link
                       href={item.href}
+                      onClick={() => {
+                        setLeaderboardExpanded(false);
+                        setLevelsExpanded(false);
+                        setLastClickedAccordion(null);
+                      }}
                       className={getItemClassName()}
                     >
                       <div className="flex items-center gap-2.5">
@@ -670,6 +678,11 @@ export const Sidebar = () => {
                   {item.href === '/clan' && myClan && (
                     <Link
                       href={`/clan/${myClan.slug}`}
+                      onClick={() => {
+                        setLeaderboardExpanded(false);
+                        setLevelsExpanded(false);
+                        setLastClickedAccordion(null);
+                      }}
                       className={`relative flex items-center justify-between ml-5 pl-3 pr-2.5 py-2 rounded-xl text-xs font-black border-l-4 transition-all group z-[2] shadow-xs ${
                         isMyClanActive
                           ? 'border-amber-500 shadow-sm'
