@@ -623,6 +623,18 @@ export default function HomePage({
   }, [initialMode]);
 
   useEffect(() => {
+    const handlePopState = () => {
+      const parts = window.location.pathname.split('/');
+      const last = parts[parts.length - 1]?.toUpperCase();
+      if (['CLASSIC', 'PLATFORMER', 'CHALLENGE', 'CREATOR', 'STARS', 'MOONS', 'DEMONS'].includes(last)) {
+        setMode(last as any);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
     const userStr = localStorage.getItem('gdvnc_user');
     if (userStr) {
       try { setCurrentUser(JSON.parse(userStr)); } catch {}
@@ -694,7 +706,10 @@ export default function HomePage({
 
   const handleModeChange = (newMode: any) => {
     setMode(newMode);
-    router.push(`/leaderboard/${String(newMode).toLowerCase()}`);
+    setCurrentPage(1);
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', `/leaderboard/${String(newMode).toLowerCase()}`);
+    }
   };
 
   // Keep true ranking based on full device/mode list

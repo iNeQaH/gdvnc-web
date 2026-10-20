@@ -83,8 +83,19 @@ export default function LevelsListPage({
       }
       if (tabParam && ['featured', 'classic', 'demonlist', 'pemonlist', 'vn', 'challenge'].includes(tabParam)) {
         setListTab(tabParam as any);
+        window.history.replaceState(null, '', `/levels/${tabParam}`);
       }
     }
+
+    const handlePopState = () => {
+      const parts = window.location.pathname.split('/');
+      const last = parts[parts.length - 1];
+      if (['featured', 'classic', 'demonlist', 'pemonlist', 'vn', 'challenge'].includes(last)) {
+        setListTab(last as any);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   useEffect(() => {
@@ -249,9 +260,7 @@ export default function LevelsListPage({
                 setListTab(newTab as any);
                 setCurrentPage(1);
                 if (typeof window !== 'undefined') {
-                  const url = new URL(window.location.href);
-                  url.searchParams.set('tab', newTab);
-                  window.history.replaceState({}, '', url.toString());
+                  window.history.pushState(null, '', `/levels/${newTab}`);
                 }
               }}
               options={(['featured', 'classic', 'demonlist', 'pemonlist', 'vn', 'challenge'] as const).map(tab => ({
