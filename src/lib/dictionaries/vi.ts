@@ -747,7 +747,7 @@ const vi: Record<DictKey, string> = {
   'auth.captcha_success': 'Đã xác minh thiết bị',
   'auth.captcha_fail': 'Xác thực thất bại, thử lại!',
   'helps.title': 'Hỗ trợ',
-  'helps.desc': 'Gửi yêu cầu hỗ trợ, đề xuất hoặc báo lỗi. Discord: {url}',
+  'helps.desc': 'Gửi yêu cầu hỗ trợ, đề xuất hoặc báo lỗi. Discord (15+): {url}',
   'helps.field_title': 'Tiêu đề',
   'helps.title_ph': 'VD: Báo lỗi tính năng...',
   'helps.field_content': 'Mô tả chi tiết',

@@ -756,7 +756,7 @@ const en = {
   'auth.captcha_fail': 'Authentication Failed, try again!',
 
   'helps.title': 'Helps',
-  'helps.desc': 'Send a support request, suggestion, or bug report. Discord: {url}',
+  'helps.desc': 'Send a support request, suggestion, or bug report. Discord (15+): {url}',
   'helps.field_title': 'Title',
   'helps.title_ph': 'e.g. Bug report...',
   'helps.field_content': 'Details',

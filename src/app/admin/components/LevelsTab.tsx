@@ -1031,8 +1031,8 @@ export default function LevelsTab({
               <Plus className="w-3.5 h-3.5 text-pink-500" />
               Tạo Mã Mới
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-start">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 items-start">
+              <div className="min-w-0">
                 <label className="block text-[11px] font-bold ui-dim mb-1.5 h-4 leading-4">Mã Code (Tự đặt tuỳ chọn)</label>
                 <div className="relative">
                   <Ticket className="w-3.5 h-3.5 ui-dim absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -1047,7 +1047,7 @@ export default function LevelsTab({
                   />
                 </div>
               </div>
-              <div>
+              <div className="min-w-0">
                 <label className="block text-[11px] font-bold ui-dim mb-1.5 h-4 leading-4">Loại phần thưởng</label>
                 <select
                   value={newCodeRewardType}
@@ -1060,7 +1060,7 @@ export default function LevelsTab({
                 </select>
               </div>
               {newCodeRewardType === 'SUPPORTER_DAYS' ? (
-                <div>
+                <div className="min-w-0">
                   <label className="block text-[11px] font-bold ui-dim mb-1.5 h-4 leading-4">Số ngày Supporter</label>
                   <input
                     type="number"
@@ -1074,7 +1074,7 @@ export default function LevelsTab({
                   />
                 </div>
               ) : (
-                <div>
+                <div className="min-w-0">
                   <label className="block text-[11px] font-bold ui-dim mb-1.5 h-4 leading-4">Số lượng SP Coin</label>
                   <input
                     type="number"
@@ -1088,13 +1088,13 @@ export default function LevelsTab({
                   />
                 </div>
               )}
-              <div>
+              <div className="min-w-0">
                 <label className="block text-[11px] font-bold ui-dim mb-1.5 h-4 leading-4">Số người dùng</label>
-                <div className="flex gap-1.5">
+                <div className="space-y-1.5">
                   <select
                     value={newCodeUsersPreset}
                     onChange={(e) => setNewCodeUsersPreset(e.target.value as any)}
-                    className="flex-1 h-[38px] px-2.5 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none cursor-pointer"
+                    className="w-full h-[38px] px-2.5 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none cursor-pointer"
                     style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                   >
                     <option value="all">Toàn bộ người dùng</option>
@@ -1106,26 +1106,31 @@ export default function LevelsTab({
                     <option value="custom">Tuỳ chỉnh số người...</option>
                   </select>
                   {newCodeUsersPreset === 'custom' && (
-                    <input
-                      type="number"
-                      min="1"
-                      max="1000000"
-                      value={newCodeCustomMaxUses}
-                      onChange={(e) => setNewCodeCustomMaxUses(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                      placeholder="Số user"
-                      className="w-20 h-[38px] px-2 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none text-center"
-                      style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                    />
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="1"
+                        max="1000000"
+                        value={newCodeCustomMaxUses}
+                        onChange={(e) => setNewCodeCustomMaxUses(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                        placeholder="Nhập số người..."
+                        className="w-full h-[36px] px-3 pr-14 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none"
+                        style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold ui-dim pointer-events-none">
+                        người
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
-              <div>
+              <div className="min-w-0">
                 <label className="block text-[11px] font-bold ui-dim mb-1.5 h-4 leading-4">Thời hạn tồn tại của mã</label>
-                <div className="flex gap-1.5">
+                <div className="space-y-1.5">
                   <select
                     value={newCodeExpiryPreset}
                     onChange={(e) => setNewCodeExpiryPreset(e.target.value as any)}
-                    className="flex-1 h-[38px] px-2.5 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none cursor-pointer"
+                    className="w-full h-[38px] px-2.5 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none cursor-pointer"
                     style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                   >
                     <option value="30">30 ngày (1 tháng)</option>
@@ -1137,16 +1142,21 @@ export default function LevelsTab({
                     <option value="custom">Tự nhập số ngày...</option>
                   </select>
                   {newCodeExpiryPreset === 'custom' && (
-                    <input
-                      type="number"
-                      min="1"
-                      max="3650"
-                      value={newCodeCustomDays}
-                      onChange={(e) => setNewCodeCustomDays(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                      placeholder="Ngày"
-                      className="w-16 h-[38px] px-2 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none text-center"
-                      style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                    />
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="1"
+                        max="3650"
+                        value={newCodeCustomDays}
+                        onChange={(e) => setNewCodeCustomDays(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                        placeholder="Nhập số ngày..."
+                        className="w-full h-[36px] px-3 pr-14 rounded-xl text-xs font-bold border focus:ring-1 focus:ring-pink-500 outline-none"
+                        style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold ui-dim pointer-events-none">
+                        ngày
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
