@@ -258,8 +258,8 @@ export default function AnnouncementDetailPage({
         <div className="space-y-3 border-b pb-5" style={{ borderColor: 'var(--border-subtle)' }}>
           <div className="flex items-center gap-2 flex-wrap">
             <span
-              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-white shadow-xs"
-              style={{ backgroundColor: 'var(--accent)' }}
+              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase shadow-xs"
+              style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-fg)' }}
             >
               <Bell className="w-3 h-3" />
               {audienceLabel(item.audience)}

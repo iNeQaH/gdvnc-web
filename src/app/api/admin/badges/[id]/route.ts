@@ -40,6 +40,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       if (!isNaN(val)) parsedSortOrder = val;
     }
 
+    const hasGlow = body.effect === 'glow' || (body.effect !== 'none' && Boolean(body.glow));
+    let nextGlowColor = undefined;
+    if (body.effect !== undefined || body.glow !== undefined || body.glowColor !== undefined) {
+      if (body.effect === 'none') {
+        nextGlowColor = null;
+      } else if (hasGlow) {
+        nextGlowColor = body.glowColor || body.color2 || body.color || null;
+      } else {
+        nextGlowColor = null;
+      }
+    }
+
     const badge = await prisma.badge.update({
       where: { id },
       data: {
@@ -49,7 +61,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         color: body.color !== undefined ? body.color : undefined,
         color2: body.color2 !== undefined ? (body.color2 || null) : undefined,
         effect: body.effect !== undefined ? body.effect : undefined,
-        glowColor: body.glow !== undefined ? (body.glow ? body.color : null) : undefined,
+        glowColor: nextGlowColor,
         categoryId: body.categoryId !== undefined ? (body.categoryId || null) : undefined,
         sortOrder: parsedSortOrder,
       },

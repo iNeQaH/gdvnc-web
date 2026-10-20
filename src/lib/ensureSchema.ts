@@ -8,7 +8,7 @@ async function columnSet(db: PrismaClient) {
     FROM information_schema.columns
     WHERE table_schema = 'public'
       AND (
-        (table_name = 'User' AND column_name IN ('tokenVersion', 'hardestClassicLevelId', 'hardestPlatformerLevelId', 'isBanned', 'bannedUntil', 'banReason', 'failedLoginAttempts', 'lockedUntil', 'lastFailedLoginAt', 'displayName', 'gdStars', 'gdMoons', 'gdDemons', 'gdHasGlobalRank', 'gdStatsUpdatedAt', 'displayedBadgeIds', 'hideAllBadges'))
+        (table_name = 'User' AND column_name IN ('tokenVersion', 'hardestClassicLevelId', 'hardestPlatformerLevelId', 'isBanned', 'bannedUntil', 'banReason', 'failedLoginAttempts', 'lockedUntil', 'lastFailedLoginAt', 'displayName', 'gdStars', 'gdMoons', 'gdDemons', 'gdHasGlobalRank', 'gdStatsUpdatedAt', 'likedUserIds', 'displayedBadgeIds', 'hideAllBadges'))
         OR (table_name = 'Otp' AND column_name = 'failedAttempts')
         OR (table_name = 'PageVisit' AND column_name = 'id')
         OR (table_name = 'ListChangeLog' AND column_name = 'id')
@@ -304,6 +304,13 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
   if (!have.has('User.gdStatsUpdatedAt')) {
     await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "gdStatsUpdatedAt" TIMESTAMP(3)`);
   }
+  if (!have.has('User.likedUserIds')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "likedUserIds" TEXT[] NOT NULL DEFAULT '{}'`);
+  }
+  // Turn off glow for badges with no effect (effect = 'none' or empty)
+  try {
+    await db.$executeRawUnsafe(`UPDATE "Badge" SET "glowColor" = NULL WHERE "effect" = 'none' OR "effect" IS NULL OR "effect" = ''`);
+  } catch {}
   if (!have.has('User.displayedBadgeIds')) {
     await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "displayedBadgeIds" TEXT[] NOT NULL DEFAULT '{}'`);
   }

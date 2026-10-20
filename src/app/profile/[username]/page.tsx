@@ -208,6 +208,11 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [verifyingGd, setVerifyingGd] = useState(false);
 
+  // Profile Like / Heart States
+  const [hasLiked, setHasLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [likeLoading, setLikeLoading] = useState(false);
+
   // Super Admin Password Reset & Ban States
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [newPasswordInput, setNewPasswordInput] = useState('');
@@ -436,6 +441,49 @@ export default function ProfilePage() {
       fetchProfile();
     }
   }, [username]);
+
+  useEffect(() => {
+    if (data) {
+      setHasLiked(Boolean(data.hasLiked));
+      setLikesCount(typeof data.likesCount === 'number' ? data.likesCount : 0);
+    }
+  }, [data?.hasLiked, data?.likesCount]);
+
+  const handleToggleLike = async () => {
+    if (!currentUser) {
+      showToast(isEn ? 'Please log in to like this profile.' : 'Vui lòng đăng nhập để thả tim.', 'info');
+      return;
+    }
+    if (likeLoading) return;
+
+    const prevLiked = hasLiked;
+    const prevCount = likesCount;
+    const nextLiked = !prevLiked;
+    const nextCount = nextLiked ? prevCount + 1 : Math.max(0, prevCount - 1);
+
+    setHasLiked(nextLiked);
+    setLikesCount(nextCount);
+    setLikeLoading(true);
+
+    try {
+      const res = await fetch(`/api/profile/${username}/like`, { method: 'POST' });
+      const json = await res.json();
+      if (json.success) {
+        setHasLiked(Boolean(json.hasLiked));
+        setLikesCount(typeof json.likesCount === 'number' ? json.likesCount : nextCount);
+      } else {
+        setHasLiked(prevLiked);
+        setLikesCount(prevCount);
+        showToast(json.error || (isEn ? 'Failed to like' : 'Lỗi khi thả tim'), 'error');
+      }
+    } catch {
+      setHasLiked(prevLiked);
+      setLikesCount(prevCount);
+      showToast(isEn ? 'Connection error' : 'Lỗi kết nối', 'error');
+    } finally {
+      setLikeLoading(false);
+    }
+  };
 
   useEffect(() => {
     if ((showManageModal || showBadgePicker) && badgesList.length === 0) {
@@ -928,8 +976,8 @@ export default function ProfilePage() {
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-xs text-white"
-              style={{ backgroundColor: 'var(--accent)' }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-xs"
+              style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-fg)' }}
             >
               <ArrowLeft className="w-4 h-4" /> Về Trang Chủ
             </Link>
@@ -1409,21 +1457,32 @@ export default function ProfilePage() {
                   )}
                 </div>
 
-                {/* Supporter Duration Badge */}
-                {isSupporter && (
-                  <div
-                    className="ml-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider border shadow-xs"
-                    style={{
-                      backgroundColor: 'color-mix(in srgb, #ec4899 14%, var(--bg-card))',
-                      borderColor: 'color-mix(in srgb, #ec4899 35%, var(--border-ui))',
-                      color: '#ec4899',
-                    }}
-                    title={isEn ? 'Supporter active' : 'Đang là Supporter'}
-                  >
-                    <Heart className="w-3.5 h-3.5 text-pink-500 fill-pink-500 shrink-0" />
-                    <span>Supporter</span>
-                  </div>
-                )}
+                {/* Profile Heart Button (Replacing old Supporter badge) */}
+                <button
+                  type="button"
+                  onClick={handleToggleLike}
+                  disabled={likeLoading}
+                  className="ml-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black border shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                  style={{
+                    backgroundColor: hasLiked
+                      ? 'color-mix(in srgb, #ec4899 18%, var(--bg-card))'
+                      : 'var(--bg-subtle)',
+                    borderColor: hasLiked
+                      ? 'color-mix(in srgb, #ec4899 45%, var(--border-ui))'
+                      : 'var(--border-ui)',
+                    color: hasLiked ? '#ec4899' : 'var(--text-title)',
+                  }}
+                  title={hasLiked ? (isEn ? 'Unlike' : 'Bỏ tim') : (isEn ? 'Like profile' : 'Thả tim')}
+                >
+                  <Heart
+                    className={`w-3.5 h-3.5 transition-transform shrink-0 ${
+                      hasLiked
+                        ? 'text-pink-500 fill-pink-500 scale-110'
+                        : 'text-gray-400 hover:text-pink-400'
+                    }`}
+                  />
+                  <span>{likesCount}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -1748,8 +1807,8 @@ export default function ProfilePage() {
                       setIsEditingBio(false);
                       fetchProfile({ silent: true });
                     }}
-                    className="px-3.5 py-1.5 text-xs font-bold text-white rounded-xl shadow-xs transition-all cursor-pointer"
-                    style={{ backgroundColor: 'var(--accent)' }}
+                    className="px-3.5 py-1.5 text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
+                    style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-fg)' }}
                   >
                     {t('common.save')}
                   </button>

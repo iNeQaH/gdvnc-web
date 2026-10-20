@@ -83,7 +83,7 @@ export default function DatePicker({ date, onApply, labelFormat }: DatePickerPro
       let dayClass = "w-8 h-8 flex items-center justify-center text-xs rounded transition-colors cursor-pointer ";
       
       if (isSelected) {
-        dayClass += "bg-[var(--accent)] text-white font-bold ring-2 ring-[var(--bg-card)] ring-offset-1 ring-offset-[var(--accent)]";
+        dayClass += "bg-[var(--accent)] text-[color:var(--accent-fg)] font-bold ring-2 ring-[var(--bg-card)] ring-offset-1 ring-offset-[var(--accent)]";
       } else {
         dayClass += "text-[var(--text-dim)] hover:bg-[var(--border-ui)] hover:text-[var(--text-title)]";
       }

@@ -203,8 +203,22 @@ export default function BadgeIcon({
 }) {
   const fill = color || 'var(--accent)';
   const fill2 = color2 || fill;
-  const glowing = Boolean(glow) || effect === 'glow' || effect === 'pulse' || effect === 'shimmer';
-  const hasGradient = Boolean(color2) || effect === 'gradient' || effect === 'shimmer';
+
+  const isBlack = (c?: string | null) => {
+    if (!c) return false;
+    const s = c.trim().toLowerCase();
+    return s === '#000' || s === '#000000' || s === 'black' || s === 'rgb(0,0,0)' || s === 'rgb(0, 0, 0)' || s === 'rgba(0,0,0,1)' || s === 'rgba(0, 0, 0, 1)';
+  };
+
+  const isNoneEffect = !effect || effect === 'none' || effect === '';
+  const effectHasGlow = effect === 'glow' || effect === 'pulse' || effect === 'shimmer';
+  const glowPropActive = Boolean(glow) && glow !== 'false' && glow !== 'none';
+
+  // Khi "Không hiệu ứng" (effect === 'none'): BẮT BUỘC TẮT GLOW (không phát sáng)
+  const glowing = !isNoneEffect && (effectHasGlow || glowPropActive);
+
+  // Nếu màu phụ là đen hoặc trùng màu tối, không dùng đen làm vệt glow thứ 2
+  const secondGlow = isBlack(fill2) ? fill : fill2;
 
   return (
     <span
@@ -213,7 +227,7 @@ export default function BadgeIcon({
       style={{
         color: fill,
         filter: glowing
-          ? `drop-shadow(0 0 1.5px ${fill}) drop-shadow(0 0 4px ${fill2})`
+          ? `drop-shadow(0 0 1.5px ${fill}) drop-shadow(0 0 4px ${secondGlow})`
           : undefined,
       }}
     >

@@ -68,6 +68,7 @@ model User {
   gdDemons      Int       @default(0)
   gdHasGlobalRank Boolean @default(true)
   gdStatsUpdatedAt DateTime?
+  likedUserIds  String[]  @default([])
   tokenVersion  Int       @default(0)
   totpEnabled   Boolean   @default(false)
   totpSecret    String?

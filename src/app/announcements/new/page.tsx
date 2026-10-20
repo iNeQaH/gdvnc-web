@@ -779,8 +779,8 @@ function AnnouncementEditorContent() {
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-extrabold text-white transition-all shadow-md cursor-pointer disabled:opacity-50"
-            style={{ backgroundColor: 'var(--accent)' }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all shadow-md cursor-pointer disabled:opacity-50"
+            style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-fg)' }}
           >
             {saving ? (
               <>

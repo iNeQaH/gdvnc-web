@@ -43,7 +43,7 @@ export async function POST(req: Request) {
         color: color || '#FFD700',
         color2: color2 || null,
         effect: effect || (glow ? 'glow' : 'none'),
-        glowColor: glow ? color || '#FFD700' : null,
+        glowColor: (effect === 'none' ? null : (glow || effect === 'glow' ? (color2 || color || '#FFD700') : null)),
         categoryId: categoryId || null,
         sortOrder: parsedSortOrder,
       },

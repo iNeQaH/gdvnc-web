@@ -355,7 +355,10 @@ export default function LevelsTab({
     try {
       const res = await fetch('/api/admin/badges');
       const data = await res.json();
-      if (data.success) setBadgesList(data.badges || []);
+      if (data.success) {
+        const sorted = (data.badges || []).slice().sort((a: any, b: any) => (b.sortOrder || 0) - (a.sortOrder || 0));
+        setBadgesList(sorted);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -374,12 +377,18 @@ export default function LevelsTab({
   const handleSaveBadge = async () => {
     setActionLoading('badge');
     try {
+      const isGlow = badgeForm.effect === 'glow';
+      const payload = {
+        ...badgeForm,
+        glow: isGlow,
+        glowColor: isGlow ? (badgeForm.color2 || badgeForm.color) : null,
+      };
       const url = badgeForm.id ? `/api/admin/badges/${badgeForm.id}` : `/api/admin/badges`;
       const method = badgeForm.id ? 'PATCH' : 'POST';
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(badgeForm),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.success) {
@@ -427,19 +436,29 @@ export default function LevelsTab({
     const newBadges = [...badgesList];
     const [movedItem] = newBadges.splice(sourceIndex, 1);
     newBadges.splice(targetIndex, 0, movedItem);
-    setBadgesList(newBadges.map((b, i) => ({ ...b, sortOrder: i + 1 })));
+    const total = newBadges.length;
+    // Thứ tự giảm dần: item đầu tiên có sortOrder cao nhất
+    const updated = newBadges.map((b, i) => ({ ...b, sortOrder: (total - i) * 10 }));
+    setBadgesList(updated);
     setDraggedBadgeId(null);
   };
 
-  const persistBadgeOrder = async () => {
+  const persistBadgeOrder = async (listToPersist?: any[]) => {
     try {
-      const orderedIds = badgesList.map((b) => b.id);
-      await fetch('/api/admin/badges', {
+      const list = listToPersist || badgesList;
+      const orderedIds = list.map((b) => b.id);
+      const res = await fetch('/api/admin/badges', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderedIds }),
       });
-      fetchBadges();
+      const data = await res.json();
+      if (data.success) {
+        showToast('Đã lưu thứ tự huy hiệu', 'success');
+        await fetchBadges();
+      } else {
+        showToast(data.error || 'Lỗi cập nhật thứ tự', 'error');
+      }
     } catch (e) {
       console.error(e);
       showToast('Lỗi cập nhật thứ tự', 'error');
@@ -601,9 +620,9 @@ export default function LevelsTab({
     .sort((a, b) => {
       if (badgeSort === 'name') return a.name.localeCompare(b.name);
       if (badgeSort === 'category') {
-        return (a.badgeCategory?.name || '').localeCompare(b.badgeCategory?.name || '') || (a.sortOrder || 0) - (b.sortOrder || 0);
+        return (a.badgeCategory?.name || '').localeCompare(b.badgeCategory?.name || '') || (b.sortOrder || 0) - (a.sortOrder || 0);
       }
-      return (a.sortOrder || 0) - (b.sortOrder || 0);
+      return (b.sortOrder || 0) - (a.sortOrder || 0);
     });
 
   return (
@@ -944,16 +963,17 @@ export default function LevelsTab({
                     await persistBadgeOrder();
                     setIsBadgeEditMode(false);
                   } else {
+                    setBadgePageSize('all');
                     setIsBadgeEditMode(true);
                   }
                 }}
-                className={`px-3 py-2 rounded-xl text-[11px] font-bold border transition-colors ${
-                  isBadgeEditMode ? 'bg-[var(--accent)] text-[color:var(--accent-fg)] border-[var(--accent)]' : 'hover:opacity-80'
+                className={`px-3 py-2 rounded-xl text-[11px] font-bold border transition-colors cursor-pointer ${
+                  isBadgeEditMode ? 'bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600' : 'hover:opacity-80'
                 }`}
                 style={!isBadgeEditMode ? { backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' } : {}}
-                title="Chế độ kéo thả"
+                title="Chế độ kéo thả sắp xếp"
               >
-                {isBadgeEditMode ? 'Đang chỉnh sửa' : 'Chỉnh sửa (Kéo Thả)'}
+                {isBadgeEditMode ? '✓ Lưu thứ tự' : 'Sắp xếp (Kéo Thả)'}
               </button>
 
               <button
@@ -994,6 +1014,7 @@ export default function LevelsTab({
                     }}
                     onClick={() => {
                       if (!isBadgeEditMode) {
+                        const isGlowInit = b.effect === 'glow' || (!b.effect && !!b.glowColor);
                         setBadgeForm({
                           imageUrl: b.icon || 'Star',
                           id: b.id,
@@ -1002,7 +1023,7 @@ export default function LevelsTab({
                           color: b.color || '#3b82f6',
                           color2: b.color2 || '',
                           effect: b.effect || (b.glowColor ? 'glow' : 'none'),
-                          glow: !!b.glowColor,
+                          glow: b.effect === 'none' ? false : isGlowInit,
                           categoryId: b.categoryId || '',
                           sortOrder: b.sortOrder !== undefined ? String(b.sortOrder) : '',
                           systemKey: b.systemKey || '',
@@ -1020,7 +1041,7 @@ export default function LevelsTab({
                     style={{ backgroundColor: 'var(--bg-card)', borderColor: isBadgeEditMode ? 'var(--accent)' : 'var(--border-ui)' }}
                   >
                     <span className="text-[10px] font-black ui-dim w-6">#{b.sortOrder ?? (badgePageSize === 'all' ? idx + 1 : (badgePage - 1) * (badgePageSize as number) + idx + 1)}</span>
-                    <BadgeIcon icon={b.icon || 'Star'} color={b.color} color2={b.color2} effect={b.effect} glow={b.glowColor} className="w-7 h-7" />
+                    <BadgeIcon icon={b.icon || 'Star'} color={b.color} color2={b.color2} effect={b.effect} glow={b.effect !== 'none' ? b.glowColor : false} className="w-7 h-7" />
                     <div className={`min-w-0 flex-1 ${badgesViewMode === 'grid' ? 'w-full' : ''}`}>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-bold ui-title text-xs truncate">{b.name}</span>
@@ -1526,7 +1547,14 @@ export default function LevelsTab({
                   <label className="block text-[11px] font-bold ui-dim mb-1">Hiệu ứng hiển thị (Effect)</label>
                   <select
                     value={badgeForm.effect || 'none'}
-                    onChange={(e) => setBadgeForm({ ...badgeForm, effect: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setBadgeForm({
+                        ...badgeForm,
+                        effect: val,
+                        glow: val === 'glow',
+                      });
+                    }}
                     className="w-full px-3 py-2 rounded-xl border font-bold cursor-pointer"
                     style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                   >
@@ -1583,7 +1611,7 @@ export default function LevelsTab({
                       color={badgeForm.color}
                       color2={badgeForm.color2}
                       effect={badgeForm.effect}
-                      glow={badgeForm.glow}
+                      glow={badgeForm.effect === 'none' ? false : badgeForm.glow}
                       className="w-8 h-8"
                     />
                   </div>

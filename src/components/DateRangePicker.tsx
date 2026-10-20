@@ -118,7 +118,7 @@ export default function DateRangePicker({ startDate, endDate, onApply }: DateRan
       let dayClass = "w-8 h-8 flex items-center justify-center text-xs rounded transition-colors cursor-pointer ";
       
       if (isStart || isEnd) {
-        dayClass += "bg-[var(--accent)] text-white font-bold ring-2 ring-[var(--bg-card)] ring-offset-1 ring-offset-[var(--accent)]";
+        dayClass += "bg-[var(--accent)] text-[color:var(--accent-fg)] font-bold ring-2 ring-[var(--bg-card)] ring-offset-1 ring-offset-[var(--accent)]";
       } else if (inRange) {
         dayClass += "bg-[var(--bg-subtle)] text-[var(--text-title)] font-medium";
       } else {
