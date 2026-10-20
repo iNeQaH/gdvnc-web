@@ -1,6 +1,35 @@
 /** Curated badge icons: Geometry Dash, deco, tools, community, achievements. */
 export const BADGE_ICON_NAMES: string[] = [
-  // Custom (GDVN)
+  // Geometry Dash & GDVN Special Icons
+  'GDCP',
+  'GDStar',
+  'GDMoon',
+  'GDDiamond',
+  'GDCoin',
+  'GDUserCoin',
+  'GDOrb',
+  'GDDemon',
+  'GDExtremeDemon',
+  'GDNormal',
+  'GDHard',
+  'GDHarder',
+  'GDInsane',
+  'GDAuto',
+  'GDCube',
+  'GDWave',
+  'GDShip',
+  'GDUfo',
+  'GDKey',
+  'GDSkull',
+  // Web & Community Icons
+  'WebDev',
+  'WebCrown',
+  'WebShield',
+  'WebFlame',
+  'WebClan',
+  'WebTrophy',
+  'WebRank',
+  // Custom Icons
   'CustomStar',
   'CustomDiamond',
   'CustomCrown',

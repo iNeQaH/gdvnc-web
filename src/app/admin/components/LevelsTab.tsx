@@ -109,6 +109,7 @@ export default function LevelsTab({
   const [badgesViewMode, setBadgesViewMode] = useState<'list' | 'grid'>('list');
   const [showBadgeCreate, setShowBadgeCreate] = useState(false);
   const [badgePage, setBadgePage] = useState(1);
+  const [badgePageSize, setBadgePageSize] = useState<number | 'all'>(10);
   const [isBadgeEditMode, setIsBadgeEditMode] = useState(false);
   const [isBadgeEditModalOpen, setIsBadgeEditModalOpen] = useState(false);
   const [draggedBadgeId, setDraggedBadgeId] = useState<string | null>(null);
@@ -914,6 +915,24 @@ export default function LevelsTab({
                 <option value="category">{t('badge.sort_category')}</option>
               </select>
 
+              <select
+                value={String(badgePageSize)}
+                onChange={(e) => {
+                  const val = e.target.value === 'all' ? 'all' : parseInt(e.target.value, 10);
+                  setBadgePageSize(val);
+                  setBadgePage(1);
+                }}
+                className="px-2.5 py-2 rounded-xl border text-[11px] font-bold"
+                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                title="Số lượng huy hiệu mỗi trang"
+              >
+                <option value="10">10 / trang</option>
+                <option value="20">20 / trang</option>
+                <option value="50">50 / trang</option>
+                <option value="100">100 / trang</option>
+                <option value="all">Tất cả ({filteredBadges?.length || 0})</option>
+              </select>
+
               <button
                 type="button"
                 onClick={async () => {
@@ -950,7 +969,10 @@ export default function LevelsTab({
               ) : filteredBadges?.length === 0 ? (
                 <div className="col-span-full p-6 text-center text-xs ui-dim">{t('badge.none_found')}</div>
               ) : (
-                filteredBadges?.slice((badgePage - 1) * 5, badgePage * 5).map((b: any, idx: number) => (
+                (badgePageSize === 'all'
+                  ? (filteredBadges || [])
+                  : (filteredBadges || []).slice((badgePage - 1) * (badgePageSize as number), badgePage * (badgePageSize as number))
+                ).map((b: any, idx: number) => (
                   <div
                     key={b.id}
                     draggable={isBadgeEditMode}
@@ -993,7 +1015,7 @@ export default function LevelsTab({
                     } transition-all`}
                     style={{ backgroundColor: 'var(--bg-card)', borderColor: isBadgeEditMode ? 'var(--accent)' : 'var(--border-ui)' }}
                   >
-                    <span className="text-[10px] font-black ui-dim w-6">#{b.sortOrder ?? (badgePage - 1) * 10 + idx + 1}</span>
+                    <span className="text-[10px] font-black ui-dim w-6">#{b.sortOrder ?? (badgePageSize === 'all' ? idx + 1 : (badgePage - 1) * (badgePageSize as number) + idx + 1)}</span>
                     <BadgeIcon icon={b.icon || 'Star'} color={b.color} color2={b.color2} effect={b.effect} glow={b.glowColor} className="w-7 h-7" />
                     <div className={`min-w-0 flex-1 ${badgesViewMode === 'grid' ? 'w-full' : ''}`}>
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -1013,7 +1035,9 @@ export default function LevelsTab({
                 ))
               )}
             </div>
-            <AdminListPager page={badgePage} total={filteredBadges?.length || 0} onPage={setBadgePage} t={t} pageSize={10} />
+            {badgePageSize !== 'all' && (
+              <AdminListPager page={badgePage} total={filteredBadges?.length || 0} onPage={setBadgePage} t={t} pageSize={badgePageSize as number} />
+            )}
           </div>
         </div>
       </FnSection>

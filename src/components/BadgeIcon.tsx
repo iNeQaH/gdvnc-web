@@ -84,6 +84,7 @@ import {
   PartyPopper,
 } from 'lucide-react';
 import { CUSTOM_ICONS } from '@/components/CustomIcons';
+import { GD_WEB_ICONS } from '@/components/GdWebIcons';
 
 const LUCIDE_ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
   Star,
@@ -171,6 +172,7 @@ const LUCIDE_ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
 export function resolveIcon(icon?: string | null) {
   const name = String(icon || 'Star').trim() || 'Star';
   return (
+    GD_WEB_ICONS[name] ||
     (CUSTOM_ICONS as Record<string, ComponentType<{ className?: string }>>)[name] ||
     LUCIDE_ICON_MAP[name] ||
     Star

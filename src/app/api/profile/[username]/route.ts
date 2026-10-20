@@ -25,6 +25,7 @@ import { validateBioContent } from '@/lib/contentFilter';
 import { getSessionUser } from '@/lib/auth';
 import { syncUserGdBrowserStats } from '@/lib/gdBrowserSync';
 import { recalculateCreatorPoints } from '@/lib/recalculateCreatorPoints';
+import { autoLinkUserCreatedLevels } from '@/lib/creatorLevelsSync';
 
 export const dynamic = 'force-dynamic';
 
@@ -170,17 +171,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
 
     const viewer = await getSessionUser();
     if (viewer?.userId && !user.isBanned) {
-      // 1. Tự động lấy stats từ GDBrowser (nếu đã qua 5 phút cooldown)
+      // 1. Tự động lấy stats từ GDBrowser (Star, Moon, Demon, Creator Points)
       const synced = await syncUserGdBrowserStats(user, viewer);
       if (synced) {
         user.gdStars = synced.stars;
         user.gdMoons = synced.moons;
         user.gdDemons = synced.demons;
+        user.creatorPoints = synced.cp;
         user.gdStatsUpdatedAt = new Date();
       }
-      // 2. Tự động tính lại Creator Points & xét Role Creator từ các level trong DB
-      const updatedCp = await recalculateCreatorPoints(user.id);
-      user.creatorPoints = updatedCp;
+      // 2. Tự động liên kết các level đã có trong database của người đó vào creatorId
+      await autoLinkUserCreatedLevels(user.id, user.gdUsername, user.username);
+      // 3. Tự động xét Role Creator theo phẩm chất level cao nhất mà user sở hữu (không ghi đè creatorPoints)
+      await recalculateCreatorPoints(user.id);
     }
 
     if (user.isBanned) {
@@ -300,7 +303,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       )[0];
     }
 
-    const createdById = new Map(user.createdLevels.map((l) => [l.id, { ...l, workId: null as string | null }]));
+    // Tự động tìm và bổ sung các level đã có trong DB của người này
+    const autoLevels = await autoLinkUserCreatedLevels(user.id, user.gdUsername, user.username);
+    const combinedLevels = autoLevels.length > 0 ? autoLevels : user.createdLevels;
+
+    const createdById = new Map(combinedLevels.map((l) => [l.id, { ...l, workId: null as string | null }]));
+    for (const l of user.createdLevels) {
+      if (!createdById.has(l.id)) {
+        createdById.set(l.id, { ...l, workId: null });
+      }
+    }
     const workByGd = new Map(
       user.creatorWorks
         .filter((w) => w.gdLevelId)
@@ -654,7 +666,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
     });
 
     if (nextGdUsername !== undefined) {
+      void autoLinkUserCreatedLevels(current.id, nextGdUsername, current.username).catch(() => {});
       void recalculateCreatorPoints(current.id).catch(() => {});
+      void syncUserGdBrowserStats({ id: current.id, gdUsername: nextGdUsername }, { userId: current.id }, true).catch(() => {});
     }
 
     if (staleRefs.length > 0) {

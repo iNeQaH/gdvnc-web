@@ -36,7 +36,7 @@ export async function checkAndAwardGrinderBadges(
 }
 
 /**
- * Tự động đồng bộ stats (Star, Moon, Demon) từ GDBrowser khi có user đăng nhập xem profile:
+ * Tự động đồng bộ stats (Star, Moon, Demon, Creator Points) từ GDBrowser khi có user đăng nhập xem profile:
  * - Điều kiện: người xem phải đã đăng nhập (viewer != null).
  * - Cooldown: 5 phút (300,000ms) tính từ lần cập nhật gần nhất.
  * - Tự động trao các badge Star Grinder (>= 10,000 stars), Moon Grinder (>= 5,000 moons), Demon Slayer (>= 500 demons).
@@ -49,17 +49,19 @@ export async function syncUserGdBrowserStats(
     gdStars?: number;
     gdMoons?: number;
     gdDemons?: number;
+    creatorPoints?: number;
   },
-  viewerUser?: { id?: string; userId?: string } | null
-): Promise<{ stars: number; moons: number; demons: number } | null> {
+  viewerUser?: { id?: string; userId?: string } | null,
+  force = false
+): Promise<{ stars: number; moons: number; demons: number; cp: number } | null> {
   const viewerId = viewerUser?.id || viewerUser?.userId;
-  // Khách (chưa đăng nhập) không được kích hoạt cập nhật
-  if (!viewerId) return null;
+  // Khách (chưa đăng nhập) không được kích hoạt cập nhật (trừ khi force = true)
+  if (!viewerId && !force) return null;
 
   if (!targetUser.gdUsername || !targetUser.gdUsername.trim()) return null;
 
   const now = Date.now();
-  if (targetUser.gdStatsUpdatedAt) {
+  if (!force && targetUser.gdStatsUpdatedAt) {
     const lastUpdate = new Date(targetUser.gdStatsUpdatedAt).getTime();
     if (now - lastUpdate < 5 * 60 * 1000) {
       // Đang trong thời gian cooldown 5 phút
@@ -85,6 +87,7 @@ export async function syncUserGdBrowserStats(
     const stars = Math.max(0, parseInt(data.stars, 10) || 0);
     const moons = Math.max(0, parseInt(data.moons, 10) || 0);
     const demons = Math.max(0, parseInt(data.demons, 10) || 0);
+    const cp = data.cp !== undefined ? Math.max(0, parseInt(data.cp, 10) || 0) : Math.max(0, targetUser.creatorPoints || 0);
 
     await prisma.user.update({
       where: { id: targetUser.id },
@@ -92,13 +95,14 @@ export async function syncUserGdBrowserStats(
         gdStars: stars,
         gdMoons: moons,
         gdDemons: demons,
+        creatorPoints: cp,
         gdStatsUpdatedAt: new Date(),
       },
     });
 
     await checkAndAwardGrinderBadges(targetUser.id, stars, moons, demons);
 
-    return { stars, moons, demons };
+    return { stars, moons, demons, cp };
   } catch (err) {
     // GDBrowser timeout hoặc lỗi mạng: bỏ qua âm thầm
     return null;
