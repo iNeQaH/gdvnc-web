@@ -1175,16 +1175,17 @@ export default function ProfilePage() {
   }
 
   const allBadges = [...roleBadges, ...(data.badges || [])].sort((a: any, b: any) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
-  const headerBadges = useMemo(() => {
-    if (data.hideAllBadges) return [];
+  let headerBadges: any[] = [];
+  if (!data.hideAllBadges) {
     if (Array.isArray(data.displayedBadgeIds) && data.displayedBadgeIds.length > 0) {
       const selected = data.displayedBadgeIds
         .map((id: string) => allBadges.find((b: any) => b.id === id || b.systemKey === id))
         .filter(Boolean);
-      if (selected.length > 0) return selected.slice(0, 3);
+      headerBadges = selected.length > 0 ? selected.slice(0, 3) : allBadges.slice(0, 3);
+    } else {
+      headerBadges = allBadges.slice(0, 3);
     }
-    return allBadges.slice(0, 3);
-  }, [data.hideAllBadges, data.displayedBadgeIds, allBadges]);
+  }
 
   return (
     <div

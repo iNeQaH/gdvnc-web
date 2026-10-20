@@ -65,14 +65,23 @@ export const Sidebar = () => {
   const isLvlActive = pathname.startsWith('/levels');
   const [leaderboardExpanded, setLeaderboardExpanded] = useState(isLbActive);
   const [levelsExpanded, setLevelsExpanded] = useState(isLvlActive);
+  const [lastClickedAccordion, setLastClickedAccordion] = useState<'lb' | 'lvl' | null>(() => {
+    if (isLbActive) return 'lb';
+    if (isLvlActive) return 'lvl';
+    return null;
+  });
 
   useEffect(() => {
-    if (isLbActive) setLeaderboardExpanded(true);
-  }, [pathname, isLbActive]);
-
-  useEffect(() => {
-    if (isLvlActive) setLevelsExpanded(true);
-  }, [pathname, isLvlActive]);
+    if (isLbActive) {
+      setLeaderboardExpanded(true);
+      setLastClickedAccordion('lb');
+    } else if (isLvlActive) {
+      setLevelsExpanded(true);
+      setLastClickedAccordion('lvl');
+    } else {
+      setLastClickedAccordion(null);
+    }
+  }, [pathname, isLbActive, isLvlActive]);
 
   useEffect(() => {
     eggClicksRef.current = 0;
@@ -173,7 +182,7 @@ export const Sidebar = () => {
   const navRef = React.useRef<HTMLElement>(null);
   const activeLinkRef = React.useRef<HTMLAnchorElement>(null);
 
-  useEffect(() => {
+  const updateIndicator = () => {
     if (isLavender && activeLinkRef.current && navRef.current) {
       setIndicatorStyle({
         top: activeLinkRef.current.offsetTop,
@@ -183,7 +192,19 @@ export const Sidebar = () => {
     } else {
       setIndicatorStyle(prev => ({ ...prev, opacity: 0 }));
     }
-  }, [pathname, isLavender]);
+  };
+
+  useEffect(() => {
+    updateIndicator();
+    const t1 = setTimeout(updateIndicator, 40);
+    const t2 = setTimeout(updateIndicator, 150);
+    const t3 = setTimeout(updateIndicator, 320);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [pathname, isLavender, leaderboardExpanded, levelsExpanded, lastClickedAccordion]);
 
   const handleUpdateUnreadCount = (count: number) => {
     const newCount = Math.max(0, count);
@@ -351,12 +372,12 @@ export const Sidebar = () => {
   ];
 
   const levelsSubLinks = [
-    { href: '/levels/featured', label: 'Nổi bật', match: (p: string) => p === '/levels' || p === '/levels/featured' || p === '/levels/feature-list' },
-    { href: '/levels/classic', label: 'Classic', match: (p: string) => p === '/levels/classic' },
-    { href: '/levels/demonlist', label: 'Demonlist', match: (p: string) => p === '/levels/demonlist' },
-    { href: '/levels/pemonlist', label: 'Pemonlist', match: (p: string) => p === '/levels/pemonlist' },
-    { href: '/levels/vn', label: 'Việt Nam', match: (p: string) => p === '/levels/vn' },
-    { href: '/levels/challenge', label: 'Challenge', match: (p: string) => p === '/levels/challenge' },
+    { href: '/levels/featured', label: 'Featured List', match: (p: string) => p === '/levels' || p === '/levels/featured' || p === '/levels/feature-list' },
+    { href: '/levels/classic', label: 'Classic List', match: (p: string) => p === '/levels/classic' },
+    { href: '/levels/demonlist', label: 'Demon List', match: (p: string) => p === '/levels/demonlist' },
+    { href: '/levels/pemonlist', label: 'Pemon List', match: (p: string) => p === '/levels/pemonlist' },
+    { href: '/levels/vn', label: 'Made in VN', match: (p: string) => p === '/levels/vn' },
+    { href: '/levels/challenge', label: 'Challenge List', match: (p: string) => p === '/levels/challenge' },
   ];
 
   const navLinks = [
@@ -488,9 +509,9 @@ export const Sidebar = () => {
               const isExpanded = item.href === '/' ? leaderboardExpanded : item.href === '/levels' ? levelsExpanded : false;
               const isActive =
                 item.href === '/'
-                  ? isLbActive
+                  ? (isLbActive || (lastClickedAccordion === 'lb' && leaderboardExpanded))
                   : item.href === '/levels'
-                  ? isLvlActive
+                  ? (isLvlActive || (lastClickedAccordion === 'lvl' && levelsExpanded))
                   : (item.href === '/clan' && isMyClanActive)
                   ? false
                   : pathname === item.href || (pathname.startsWith(item.href + '/') && !isMyClanActive);
@@ -500,10 +521,18 @@ export const Sidebar = () => {
               const handleItemClick = (e: React.MouseEvent) => {
                 if (item.href === '/') {
                   e.preventDefault();
-                  setLeaderboardExpanded((prev) => !prev);
+                  setLeaderboardExpanded((prev) => {
+                    const next = !prev;
+                    if (next) setLastClickedAccordion('lb');
+                    return next;
+                  });
                 } else if (item.href === '/levels') {
                   e.preventDefault();
-                  setLevelsExpanded((prev) => !prev);
+                  setLevelsExpanded((prev) => {
+                    const next = !prev;
+                    if (next) setLastClickedAccordion('lvl');
+                    return next;
+                  });
                 }
               };
 
@@ -512,6 +541,7 @@ export const Sidebar = () => {
                   {isAccordion ? (
                     <button
                       type="button"
+                      ref={isActive ? (activeLinkRef as any) : null}
                       onClick={handleItemClick}
                       className={`w-full relative flex items-center justify-between px-3 py-3 rounded-xl text-xs font-semibold transition-all group z-[2] text-left cursor-pointer ${isLavender && isActive ? '-translate-y-[7px]' : ''}`}
                       style={{
@@ -524,7 +554,7 @@ export const Sidebar = () => {
                         <span>{item.label}</span>
                       </div>
                       <ChevronDown
-                        className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                        className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
                       />
                     </button>
                   ) : (
@@ -549,51 +579,77 @@ export const Sidebar = () => {
                     </Link>
                   )}
 
-                  {/* Leaderboard sub-links accordion */}
-                  {item.href === '/' && isExpanded && (
-                    <div className="ml-5 pl-2.5 my-1 space-y-0.5 border-l-2 transition-all" style={{ borderColor: 'var(--border-subtle)' }}>
-                      {leaderboardSubLinks.map((sub) => {
-                        const isSubActive = sub.match(pathname);
-                        return (
-                          <Link
-                            key={sub.href}
-                            href={sub.href}
-                            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                              isSubActive
-                                ? 'font-bold'
-                                : 'ui-dim hover:text-inherit hover:bg-black/5 dark:hover:bg-white/5'
-                            }`}
-                            style={isSubActive ? { backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' } : {}}
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: isSubActive ? 'var(--accent)' : 'currentColor', opacity: isSubActive ? 1 : 0.4 }} />
-                            <span>{sub.label}</span>
-                          </Link>
-                        );
-                      })}
+                  {/* Leaderboard sub-links accordion with smooth CSS grid transition */}
+                  {item.href === '/' && (
+                    <div
+                      className="grid transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden"
+                      style={{
+                        gridTemplateRows: isExpanded ? '1fr' : '0fr',
+                        opacity: isExpanded ? 1 : 0,
+                        marginTop: isExpanded ? '4px' : '0px',
+                        marginBottom: isExpanded ? '4px' : '0px',
+                      }}
+                    >
+                      <div className="min-h-0 ml-5 pl-2.5 space-y-0.5 border-l-2" style={{ borderColor: 'var(--border-subtle)' }}>
+                        {leaderboardSubLinks.map((sub) => {
+                          const isSubActive = sub.match(pathname);
+                          return (
+                            <Link
+                              key={sub.href}
+                              href={sub.href}
+                              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                isSubActive
+                                  ? 'font-bold'
+                                  : 'ui-dim hover:text-inherit hover:bg-black/5 dark:hover:bg-white/5'
+                              }`}
+                              style={isSubActive ? {
+                                backgroundColor: isLavender ? 'rgba(196, 161, 251, 0.22)' : 'var(--accent-bg)',
+                                color: isLavender ? '#ffffff' : 'var(--accent-text)',
+                              } : {}}
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: isSubActive ? (isLavender ? '#ffffff' : 'var(--accent)') : 'currentColor', opacity: isSubActive ? 1 : 0.4 }} />
+                              <span>{sub.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 
-                  {/* Levels sub-links accordion */}
-                  {item.href === '/levels' && isExpanded && (
-                    <div className="ml-5 pl-2.5 my-1 space-y-0.5 border-l-2 transition-all" style={{ borderColor: 'var(--border-subtle)' }}>
-                      {levelsSubLinks.map((sub) => {
-                        const isSubActive = sub.match(pathname);
-                        return (
-                          <Link
-                            key={sub.href}
-                            href={sub.href}
-                            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                              isSubActive
-                                ? 'font-bold'
-                                : 'ui-dim hover:text-inherit hover:bg-black/5 dark:hover:bg-white/5'
-                            }`}
-                            style={isSubActive ? { backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' } : {}}
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: isSubActive ? 'var(--accent)' : 'currentColor', opacity: isSubActive ? 1 : 0.4 }} />
-                            <span>{sub.label}</span>
-                          </Link>
-                        );
-                      })}
+                  {/* Levels sub-links accordion with smooth CSS grid transition */}
+                  {item.href === '/levels' && (
+                    <div
+                      className="grid transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden"
+                      style={{
+                        gridTemplateRows: isExpanded ? '1fr' : '0fr',
+                        opacity: isExpanded ? 1 : 0,
+                        marginTop: isExpanded ? '4px' : '0px',
+                        marginBottom: isExpanded ? '4px' : '0px',
+                      }}
+                    >
+                      <div className="min-h-0 ml-5 pl-2.5 space-y-0.5 border-l-2" style={{ borderColor: 'var(--border-subtle)' }}>
+                        {levelsSubLinks.map((sub) => {
+                          const isSubActive = sub.match(pathname);
+                          return (
+                            <Link
+                              key={sub.href}
+                              href={sub.href}
+                              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                isSubActive
+                                  ? 'font-bold'
+                                  : 'ui-dim hover:text-inherit hover:bg-black/5 dark:hover:bg-white/5'
+                              }`}
+                              style={isSubActive ? {
+                                backgroundColor: isLavender ? 'rgba(196, 161, 251, 0.22)' : 'var(--accent-bg)',
+                                color: isLavender ? '#ffffff' : 'var(--accent-text)',
+                              } : {}}
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: isSubActive ? (isLavender ? '#ffffff' : 'var(--accent)') : 'currentColor', opacity: isSubActive ? 1 : 0.4 }} />
+                              <span>{sub.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 

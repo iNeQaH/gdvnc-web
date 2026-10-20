@@ -786,64 +786,73 @@ export default function HomePage({
         <QuickStatsGrid highlights={highlights} isLavender={isLavender} isDark={isDark} t={t} />
       </section>
 
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <AnimatedTabs
-          active={mode}
-          onChange={handleModeChange}
-          options={[
-            { id: 'CLASSIC', label: t('leaderboard.classic'), icon: <Star className="w-3.5 h-3.5 fill-current" /> },
-            { id: 'PLATFORMER', label: t('leaderboard.platformer'), icon: <Gamepad2 className="w-3.5 h-3.5" /> },
-            { id: 'CHALLENGE', label: t('tags.challenge'), icon: <Crosshair className="w-3.5 h-3.5" /> },
-            { id: 'CREATOR', label: t('leaderboard.creator'), icon: <Wrench className="w-3.5 h-3.5" /> },
-            { id: 'STARS', label: 'Stars', icon: <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" /> },
-            { id: 'MOONS', label: 'Moons', icon: <Moon className="w-3.5 h-3.5 text-sky-400 fill-sky-400" /> },
-            { id: 'DEMONS', label: 'Demons', icon: <Swords className="w-3.5 h-3.5 text-rose-500" /> },
-          ]}
-        />
-
-        {/* Device Filter (Hidden in CREATOR, STARS, MOONS, DEMONS mode) */}
-        {!['CREATOR', 'STARS', 'MOONS', 'DEMONS'].includes(mode) && (
+      {/* Navigation Controls: Split into Mode Tabs (Row 1) and Secondary Filter/Search (Row 2) */}
+      <div className="space-y-3">
+        {/* Row 1: Main Mode Tabs */}
+        <div className="flex items-center justify-between gap-3 overflow-x-auto pb-1 scrollbar-none">
           <AnimatedTabs
-            active={deviceFilter}
-            onChange={(val) => setDeviceFilter(val as any)}
+            active={mode}
+            onChange={handleModeChange}
             options={[
-              { id: 'ALL', label: 'Tất cả' },
-              { id: 'PC', label: 'PC', icon: <Monitor className="w-3.5 h-3.5" /> },
-              { id: 'MOBILE', label: 'Mobile', icon: <Smartphone className="w-3.5 h-3.5" /> },
+              { id: 'CLASSIC', label: t('leaderboard.classic'), icon: <Star className="w-3.5 h-3.5 fill-current" /> },
+              { id: 'PLATFORMER', label: t('leaderboard.platformer'), icon: <Gamepad2 className="w-3.5 h-3.5" /> },
+              { id: 'CHALLENGE', label: t('tags.challenge'), icon: <Crosshair className="w-3.5 h-3.5" /> },
+              { id: 'CREATOR', label: t('leaderboard.creator'), icon: <Wrench className="w-3.5 h-3.5" /> },
+              { id: 'STARS', label: 'Stars', icon: <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" /> },
+              { id: 'MOONS', label: 'Moons', icon: <Moon className="w-3.5 h-3.5 text-sky-400 fill-sky-400" /> },
+              { id: 'DEMONS', label: 'Demons', icon: <img src="/difficulties/EXTREME DEMON.png" alt="Demons" className="w-3.5 h-3.5 object-contain shrink-0 inline-block" /> },
             ]}
           />
-        )}
+        </div>
 
-        {/* Search Bar */}
-        <div className="relative min-w-60">
-          <Search className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${searchInput !== debouncedSearch ? 'text-sky-500 animate-pulse' : 'ui-dim'}`} />
-          <input
-            type="text"
-            placeholder={t('leaderboard.search_player')}
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyDown={handleSearchKeyDown}
-            className="w-full pl-9 pr-8 py-1.5 rounded-xl text-xs border focus:outline-none transition-all"
-            style={{
-              backgroundColor: 'var(--bg-card)',
-              borderColor: 'var(--border-ui)',
-              color: 'var(--text-title)',
-            }}
-          />
-          {searchInput && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchInput('');
-                setDebouncedSearch('');
-                setCurrentPage(1);
+        {/* Row 2: Secondary Controls (Device Filter + Search Bar) */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          {/* Device Filter (Hidden in CREATOR, STARS, MOONS, DEMONS mode) */}
+          <div>
+            {!['CREATOR', 'STARS', 'MOONS', 'DEMONS'].includes(mode) ? (
+              <AnimatedTabs
+                active={deviceFilter}
+                onChange={(val) => setDeviceFilter(val as any)}
+                options={[
+                  { id: 'ALL', label: 'Tất cả' },
+                  { id: 'PC', label: 'PC', icon: <Monitor className="w-3.5 h-3.5" /> },
+                  { id: 'MOBILE', label: 'Mobile', icon: <Smartphone className="w-3.5 h-3.5" /> },
+                ]}
+              />
+            ) : <div />}
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative w-full sm:w-72">
+            <Search className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${searchInput !== debouncedSearch ? 'text-sky-500 animate-pulse' : 'ui-dim'}`} />
+            <input
+              type="text"
+              placeholder={t('leaderboard.search_player')}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              className="w-full pl-9 pr-8 py-1.5 rounded-xl text-xs border focus:outline-none transition-all"
+              style={{
+                backgroundColor: 'var(--bg-card)',
+                borderColor: 'var(--border-ui)',
+                color: 'var(--text-title)',
               }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 ui-dim cursor-pointer"
-              title="Xóa tìm kiếm"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
+            />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchInput('');
+                  setDebouncedSearch('');
+                  setCurrentPage(1);
+                }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 ui-dim cursor-pointer"
+                title="Xóa tìm kiếm"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
