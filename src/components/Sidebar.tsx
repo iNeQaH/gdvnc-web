@@ -514,20 +514,21 @@ export const Sidebar = () => {
 
               // Class name & Style cho từng loại nav item:
               // Khử hoàn toàn lỗi chữ trắng trên nền trắng (white on white), đảm bảo độ tương phản cao tuyệt đối
+              // Giữ nguyên nút 3D (tsumiki-btn / active bg) khi active cho dù đang expand hay collapse
               const getItemClassName = () => {
                 const base = "w-full relative flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group z-[2] text-left cursor-pointer";
+                if (isActive) {
+                  if (isLavender) {
+                    return `${base} tsumiki-btn shadow-sm !text-indigo-950 dark:!text-white`;
+                  }
+                  return `${base} bg-[var(--accent-bg)] text-[var(--accent-text)] font-bold`;
+                }
                 if (isAccordion && isExpanded) {
                   return `${base} ${
                     isLavender
                       ? (isDark ? 'bg-white/10 text-white font-bold' : 'bg-indigo-50 text-indigo-950 font-bold border border-indigo-200/60')
                       : 'bg-[var(--bg-subtle)] text-[var(--text-title)] font-bold'
                   }`;
-                }
-                if (isActive) {
-                  if (isLavender) {
-                    return `${base} tsumiki-btn shadow-sm !text-indigo-950 dark:!text-white`;
-                  }
-                  return `${base} bg-[var(--accent-bg)] text-[var(--accent-text)] font-bold`;
                 }
                 if (item.isPink) {
                   return `${base} text-pink-500 dark:text-pink-400 hover:bg-pink-500/10`;
