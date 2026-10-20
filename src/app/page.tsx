@@ -223,7 +223,7 @@ function LeaderboardPodium({
                       href={profileHref}
                       className="font-bold text-[11px] sm:text-xs ui-title truncate block hover:underline"
                     >
-                      <UserDisplayName user={item} fallbackName={displayName} linkClan />
+                      <UserDisplayName user={item} fallbackName={displayName} linkClan={false} />
                     </Link>
                   ) : (
                     <span className="font-bold text-[11px] sm:text-xs ui-title truncate block">
