@@ -20,6 +20,7 @@ import GdUnverifiedNotice from '@/components/GdUnverifiedNotice';
 import { logoutClient } from '@/lib/sessionClient';
 import { calculateUserSp } from '@/lib/clanTypes';
 import DeviceBadge from '@/components/DeviceBadge';
+import DiscordMarkdown from '@/components/DiscordMarkdown';
 
 const RECORD_PAGE_SIZE = 10;
 
@@ -227,6 +228,8 @@ export default function ProfilePage() {
   const [cpInput, setCpInput] = useState('');
   const [isEditingCp, setIsEditingCp] = useState(false);
   const [isEditingHardest, setIsEditingHardest] = useState(false);
+  const [isEditingBio, setIsEditingBio] = useState(false);
+  const [bioInput, setBioInput] = useState('');
   const [showClassicPoints, setShowClassicPoints] = useState(false);
   const [showPlatformerPoints, setShowPlatformerPoints] = useState(false);
   const [showCreatorRank, setShowCreatorRank] = useState(false);
@@ -1377,177 +1380,120 @@ export default function ProfilePage() {
                     <span>Supporter</span>
                   </div>
                 )}
-
-                {/* SP Coin Badge */}
-                {userSp > 0 && (
-                  <div
-                    className={`${isSupporter ? 'ml-2' : 'ml-auto'} shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider border shadow-xs`}
-                    style={{
-                      backgroundColor: 'color-mix(in srgb, #f59e0b 14%, var(--bg-card))',
-                      borderColor: 'color-mix(in srgb, #f59e0b 35%, var(--border-ui))',
-                      color: '#f59e0b',
-                    }}
-                    title={isEn ? `${userSp} SP Coin available` : `Có ${userSp} điểm SP Coin`}
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    <span>{userSp} SP</span>
-                  </div>
-                )}
               </div>
             </div>
           </div>
 
-          {/* Main Info & Bio Split Grid: Left = Info & Badges, Right = Dedicated Bio Box */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 pt-4 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-            {/* Left 7 Cols: Info Pills & All Badges */}
-            <div className="md:col-span-7 space-y-3 flex flex-col justify-between">
-              {/* Metadata Pills Row (GD, Discord, Location, Clan, SP) */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* GD Username */}
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-                  <Gamepad2 className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-                  <span className="ui-dim font-bold text-[11px] uppercase">GD:</span>
-                  <span className="ui-title font-semibold">{data.gdUsername || 'Chưa liên kết'}</span>
-                  {data.gdVerified && <span title="Đã xác minh"><CheckCircle className="w-3 h-3 text-emerald-500" /></span>}
-                </div>
-
-                {/* Discord */}
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-                  <MessageSquare className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                  <span className="ui-dim font-bold text-[11px] uppercase">Discord:</span>
-                  <span className="ui-title font-semibold">{data.discordTag || 'Chưa liên kết'}</span>
-                </div>
-
-                {/* Location */}
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-                  <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                  <span className="ui-dim font-bold text-[11px] uppercase">Vị trí:</span>
-                  <span className="ui-title font-semibold">{data.country || 'Việt Nam'}</span>
-                </div>
-
-                {/* GD Stats: Stars, Moons, Demons */}
-                {(Number(data.gdStars || 0) > 0 || Number(data.gdMoons || 0) > 0 || Number(data.gdDemons || 0) > 0) && (
-                  <>
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
-                      <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
-                      <span className="ui-dim font-bold text-[11px] uppercase">Stars:</span>
-                      <span className="ui-title font-semibold">{Number(data.gdStars || 0).toLocaleString()}</span>
-                    </div>
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
-                      <Moon className="w-3.5 h-3.5 text-sky-400 fill-sky-400 shrink-0" />
-                      <span className="ui-dim font-bold text-[11px] uppercase">Moons:</span>
-                      <span className="ui-title font-semibold">{Number(data.gdMoons || 0).toLocaleString()}</span>
-                    </div>
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
-                      <Flame className="w-3.5 h-3.5 text-rose-500 fill-rose-500 shrink-0" />
-                      <span className="ui-dim font-bold text-[11px] uppercase">Demons:</span>
-                      <span className="ui-title font-semibold">{Number(data.gdDemons || 0).toLocaleString()}</span>
-                    </div>
-                  </>
-                )}
-
-                {/* Clan */}
-                {data.clanMember?.clan && (
-                  <Link
-                    href={`/clan/${data.clanMember.clan.slug}`}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border hover:opacity-80 transition-opacity"
-                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
-                  >
-                    <Shield className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    <span className="ui-dim font-bold text-[11px] uppercase">Clan:</span>
-                    <span
-                      className="font-bold font-mono inline-block"
-                      style={
-                        data.clanMember.clan.colorGradient &&
-                        ((data.clanMember.clan as any).tier === undefined || (data.clanMember.clan as any).tier >= 2)
-                          ? {
-                              backgroundImage: data.clanMember.clan.colorGradient,
-                              WebkitBackgroundClip: 'text',
-                              WebkitTextFillColor: 'transparent',
-                            }
-                          : { color: data.clanMember.clan.color || 'var(--accent)' }
-                      }
-                    >
-                      [{data.clanMember.clan.tag}]
-                    </span>
-                    <span className="font-bold ui-title">
-                      {data.clanMember.clan.name}
-                    </span>
-                  </Link>
-                )}
-
-                {/* SP Coin Pill */}
-                {userSp > 0 && (
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    <span className="ui-dim font-bold text-[11px] uppercase">SP Coin:</span>
-                    <span className="ui-title font-semibold text-amber-500">{userSp} SP</span>
-                  </div>
-                )}
+          {/* Main Info (Pills & Badges) - Clean Full Width Layout */}
+          <div className="space-y-3 pt-4 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+            {/* Metadata Pills Row (GD, Discord, Location, Clan) */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* GD Username */}
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                <Gamepad2 className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                <span className="ui-dim font-bold text-[11px] uppercase">GD:</span>
+                <span className="ui-title font-semibold">{data.gdUsername || 'Chưa liên kết'}</span>
+                {data.gdVerified && <span title="Đã xác minh"><CheckCircle className="w-3 h-3 text-emerald-500" /></span>}
               </div>
 
-              {/* All Badges Showcase (if any) */}
-              {allBadges.length > 0 && (
-                <div className="pt-2 border-t flex flex-col gap-1.5" style={{ borderColor: 'var(--border-subtle)' }}>
-                  <span className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5 text-amber-500" /> {t('profile.all_badges')} ({allBadges.length}):
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {allBadges.map((b: any) => (
-                      <div
-                        key={b.id}
-                        className={
-                          isLavender
-                            ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl tsumiki-btn tsumiki-badge-btn !m-0 !mb-0 shadow-sm cursor-default"
-                            : "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-black text-white border border-zinc-800/80 shadow-xs cursor-default"
-                        }
-                        title={b.description || b.name}
-                      >
-                        <BadgeIcon
-                          icon={b.icon || 'Star'}
-                          color={b.color}
-                          glow={b.glowColor}
-                          className={isLavender ? "w-3.5 h-3.5 shrink-0" : "w-3 h-3 shrink-0"}
-                        />
-                        <span className="text-[11px] font-bold text-white drop-shadow-sm">{b.name}</span>
-                      </div>
-                    ))}
+              {/* Discord */}
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                <MessageSquare className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                <span className="ui-dim font-bold text-[11px] uppercase">Discord:</span>
+                <span className="ui-title font-semibold">{data.discordTag || 'Chưa liên kết'}</span>
+              </div>
+
+              {/* Location */}
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                <span className="ui-dim font-bold text-[11px] uppercase">Vị trí:</span>
+                <span className="ui-title font-semibold">{data.country || 'Việt Nam'}</span>
+              </div>
+
+              {/* GD Stats: Stars, Moons, Demons */}
+              {(Number(data.gdStars || 0) > 0 || Number(data.gdMoons || 0) > 0 || Number(data.gdDemons || 0) > 0) && (
+                <>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
+                    <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
+                    <span className="ui-dim font-bold text-[11px] uppercase">Stars:</span>
+                    <span className="ui-title font-semibold">{Number(data.gdStars || 0).toLocaleString()}</span>
                   </div>
-                </div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
+                    <Moon className="w-3.5 h-3.5 text-sky-400 fill-sky-400 shrink-0" />
+                    <span className="ui-dim font-bold text-[11px] uppercase">Moons:</span>
+                    <span className="ui-title font-semibold">{Number(data.gdMoons || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
+                    <Flame className="w-3.5 h-3.5 text-rose-500 fill-rose-500 shrink-0" />
+                    <span className="ui-dim font-bold text-[11px] uppercase">Demons:</span>
+                    <span className="ui-title font-semibold">{Number(data.gdDemons || 0).toLocaleString()}</span>
+                  </div>
+                </>
+              )}
+
+              {/* Clan */}
+              {data.clanMember?.clan && (
+                <Link
+                  href={`/clan/${data.clanMember.clan.slug}`}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border hover:opacity-80 transition-opacity"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+                >
+                  <Shield className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span className="ui-dim font-bold text-[11px] uppercase">Clan:</span>
+                  <span
+                    className="font-bold font-mono inline-block"
+                    style={{
+                      ...(data.clanMember.clan.colorGradient &&
+                      ((data.clanMember.clan as any).tier === undefined || (data.clanMember.clan as any).tier >= 2)
+                        ? {
+                            backgroundImage: data.clanMember.clan.colorGradient,
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                          }
+                        : { color: data.clanMember.clan.color || 'var(--accent)' }),
+                      filter: ((data.clanMember.clan as any)?.tier >= 3 || ((data.clanMember.clan as any)?.totalSp !== undefined && (data.clanMember.clan as any).totalSp >= 20))
+                        ? `drop-shadow(0 0 5px ${data.clanMember.clan.color || '#38bdf8'}99)`
+                        : undefined,
+                    }}
+                  >
+                    [{data.clanMember.clan.tag}]
+                  </span>
+                  <span className="font-bold ui-title">
+                    {data.clanMember.clan.name}
+                  </span>
+                </Link>
               )}
             </div>
 
-            {/* Right 5 Cols: Dedicated Bio / Description Box */}
-            <div className="md:col-span-5 flex flex-col">
-              <div
-                className="rounded-2xl p-3.5 sm:p-4 border flex flex-col justify-between h-full min-h-[110px] shadow-2xs transition-all relative"
-                style={{
-                  backgroundColor: isDark
-                    ? 'rgba(0, 0, 0, 0.25)'
-                    : 'color-mix(in srgb, var(--accent) 5%, var(--bg-subtle))',
-                  borderColor: 'var(--border-ui)',
-                }}
-              >
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between border-b pb-1.5" style={{ borderColor: 'var(--border-subtle)' }}>
-                    <span className="text-[11px] font-black uppercase tracking-wider ui-dim flex items-center gap-1.5">
-                      <FileText className="w-3.5 h-3.5 text-sky-500" />
-                      {t('profile.bio') || 'Mô tả'}
-                    </span>
-                  </div>
-
-                  {data.bio ? (
-                    <div className="text-xs ui-dim max-h-40 overflow-y-auto whitespace-pre-line break-words leading-relaxed pr-1 select-text">
-                      {data.bio}
+            {/* All Badges Showcase (if any) */}
+            {allBadges.length > 0 && (
+              <div className="pt-2 border-t flex flex-col gap-1.5" style={{ borderColor: 'var(--border-subtle)' }}>
+                <span className="text-[11px] font-bold uppercase ui-dim flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-amber-500" /> {t('profile.all_badges')} ({allBadges.length}):
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {allBadges.map((b: any) => (
+                    <div
+                      key={b.id}
+                      className={
+                        isLavender
+                          ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl tsumiki-btn tsumiki-badge-btn !m-0 !mb-0 shadow-sm cursor-default"
+                          : "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-black text-white border border-zinc-800/80 shadow-xs cursor-default"
+                      }
+                      title={b.description || b.name}
+                    >
+                      <BadgeIcon
+                        icon={b.icon || 'Star'}
+                        color={b.color}
+                        glow={b.glowColor}
+                        className={isLavender ? "w-3.5 h-3.5 shrink-0" : "w-3 h-3 shrink-0"}
+                      />
+                      <span className="text-[11px] font-bold text-white drop-shadow-sm">{b.name}</span>
                     </div>
-                  ) : (
-                    <div className="text-xs ui-dim opacity-60 italic py-2">
-                      {isEn ? 'No bio written yet.' : 'Chưa có tiểu sử.'}
-                    </div>
-                  )}
+                  ))}
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -1651,43 +1597,43 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Favorite / Hardest (Right 6 cols) */}
+        {/* Bio Card (Right 6 cols, replaces Favorite, supports Discord Markdown) */}
         <div className="lg:col-span-6">
           <div className="ui-card p-4 rounded-2xl h-full flex flex-col justify-between space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold ui-title flex items-center gap-1.5 uppercase tracking-wide">
-                <Heart className="w-3.5 h-3.5 text-rose-500" />
-                {t('profile.favorite')}
+                <FileText className="w-3.5 h-3.5 text-sky-500" />
+                {t('profile.bio') || 'Tiểu sử'}
               </span>
-              {canEditInfo && !isEditingHardest && (
+              {canEditInfo && !isEditingBio && (
                 <button
                   type="button"
                   onClick={() => {
-                    setHardestInput(data.profileConfig?.hardestEmbed || '');
-                    setIsEditingHardest(true);
+                    setBioInput(data.bio || '');
+                    setIsEditingBio(true);
                   }}
                   className="p-1 rounded-lg text-sky-500 hover:bg-sky-500/10 transition-colors cursor-pointer"
-                  title="Chỉnh sửa nội dung yêu thích"
+                  title="Chỉnh sửa tiểu sử"
                 >
                   <Edit className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
-            {isEditingHardest ? (
+            {isEditingBio ? (
               <div className="space-y-2 flex-1 flex flex-col">
                 <textarea
-                  value={hardestInput}
-                  onChange={(e) => setHardestInput(e.target.value)}
+                  value={bioInput}
+                  onChange={(e) => setBioInput(e.target.value)}
                   className="w-full flex-1 min-h-[140px] p-3 rounded-xl border text-xs resize-none"
                   style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                  placeholder={t('profile.favorite_ph')}
+                  placeholder="Nhập tiểu sử (hỗ trợ Discord Markdown: **đậm**, *nghiêng*, # tiêu đề, > trích dẫn, `code`, v.v.)..."
                   autoFocus
                 />
                 <div className="flex items-center justify-end gap-2">
                   <button
                     type="button"
-                    onClick={() => setIsEditingHardest(false)}
+                    onClick={() => setIsEditingBio(false)}
                     className="px-3 py-1.5 text-xs font-bold border rounded-xl hover:opacity-80 transition-all cursor-pointer"
                     style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
                   >
@@ -1696,10 +1642,10 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={async () => {
-                      const newConfig = { ...(data.profileConfig || {}), hardestEmbed: hardestInput.trim() };
-                      await updateProfileField({ profileConfig: newConfig });
-                      setData((prev: any) => ({ ...prev, profileConfig: newConfig }));
-                      setIsEditingHardest(false);
+                      const trimmedBio = bioInput.trim();
+                      await updateProfileField({ bio: trimmedBio });
+                      setData((prev: any) => ({ ...prev, bio: trimmedBio }));
+                      setIsEditingBio(false);
                       fetchProfile({ silent: true });
                     }}
                     className="px-3.5 py-1.5 text-xs font-bold text-white rounded-xl shadow-xs transition-all cursor-pointer"
@@ -1710,8 +1656,14 @@ export default function ProfilePage() {
                 </div>
               </div>
             ) : (
-              <div className="w-full flex-1 rounded-xl overflow-hidden border flex items-center justify-center min-h-[140px] max-h-[220px]" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
-                {renderFavoriteContent(data.profileConfig?.hardestEmbed)}
+              <div className="w-full flex-1 rounded-xl p-3.5 border min-h-[140px] max-h-[220px] overflow-y-auto" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                {data.bio ? (
+                  <DiscordMarkdown content={data.bio} className="text-xs leading-relaxed" />
+                ) : (
+                  <div className="h-full flex items-center justify-center text-xs ui-dim opacity-60 italic py-6">
+                    {isEn ? 'No bio written yet.' : 'Chưa có tiểu sử.'}
+                  </div>
+                )}
               </div>
             )}
           </div>

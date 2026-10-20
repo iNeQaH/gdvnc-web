@@ -1300,7 +1300,7 @@ export default function SettingsPage() {
                 },
                 { id: 'lavender', label: 'iNeQaH', color: 'bg-purple-500', supporterOnly: true },
                 ...(data?.hasGlitchTheme || currentUser?.hasGlitchTheme
-                  ? [{ id: 'glitch', label: 'T̶h̷e̴m̶e̴ ̸L̶ỗ̷i̶', color: 'gdvn-swatch-glitch', supporterOnly: false }]
+                  ? [{ id: 'glitch', label: '???', color: 'gdvn-swatch-glitch', supporterOnly: false }]
                   : []),
               ].map((th) => {
                 const isSelected = (data.profileTheme || 'sky') === th.id;

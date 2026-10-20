@@ -99,7 +99,7 @@ export function AnimatedTabs<T extends string>({
     return (
       <div 
         ref={containerRef}
-        className={`relative flex items-center gap-1.5 p-1 rounded-2xl border ${className}`} 
+        className={`relative flex flex-wrap sm:flex-nowrap items-center gap-1 p-1 rounded-xl sm:rounded-2xl border max-w-full ${className}`} 
         style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
       >
         {indicatorStyle.width > 0 && (
@@ -122,7 +122,7 @@ export function AnimatedTabs<T extends string>({
               key={opt.id}
               ref={isActive ? activeTabRef : null}
               onClick={() => onChange(opt.id)}
-              className={`relative z-[1] flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer flex-1 ${tabClassName}`}
+              className={`relative z-[1] flex items-center justify-center gap-1 px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-xs font-bold transition-colors cursor-pointer flex-1 ${tabClassName}`}
               style={{
                 color: isActive ? 'var(--accent)' : 'var(--text-dim)',
               }}
@@ -140,7 +140,7 @@ export function AnimatedTabs<T extends string>({
   return (
     <div 
       ref={containerRef}
-      className={`relative flex gap-2 p-3 bg-white rounded-[32px] shadow-[0_8px_24px_rgba(0,0,0,0.1)] ${className}`}
+      className={`relative flex flex-wrap sm:flex-nowrap gap-1 sm:gap-2 p-1.5 sm:p-2.5 bg-white rounded-2xl sm:rounded-[32px] shadow-[0_8px_24px_rgba(0,0,0,0.1)] max-w-full ${className}`}
       style={{ backgroundColor: 'var(--bg-card)' }}
     >
       <div 
@@ -164,7 +164,7 @@ export function AnimatedTabs<T extends string>({
             key={opt.id}
             ref={isActive ? activeTabRef : null}
             onClick={() => !isAnimating && onChange(opt.id)}
-            className={`relative flex-1 flex items-center justify-center gap-1.5 px-4 py-3 min-w-[80px] min-h-[48px] h-full leading-tight text-center rounded-[20px] font-bold text-sm z-[2] transition-all duration-250 ease-[cubic-bezier(0.19,1,0.22,1)] cursor-pointer select-none ${isActive ? "-translate-y-[7px] text-white" : "text-gray-400 hover:text-gray-600"} ${tabClassName}`}
+            className={`relative flex-1 flex items-center justify-center gap-1 px-2.5 py-2 sm:px-4 sm:py-3 min-w-fit sm:min-w-[70px] min-h-[38px] sm:min-h-[46px] h-full leading-tight text-center rounded-xl sm:rounded-[20px] font-bold text-xs sm:text-sm z-[2] transition-all duration-250 ease-[cubic-bezier(0.19,1,0.22,1)] cursor-pointer select-none ${isActive ? "-translate-y-[5px] sm:-translate-y-[7px] text-white" : "text-gray-400 hover:text-gray-600"} ${tabClassName}`}
             style={!isActive ? { color: 'var(--text-dim)' } : {}}
           >
             {opt.icon}

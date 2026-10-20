@@ -141,6 +141,13 @@ export function UserDisplayName({
     clanTagStyle.WebkitTextFillColor = 'initial';
   }
 
+  // Clan Tier 3+: nhẹ nhàng có hiệu ứng glow quanh tag clan theo màu clan
+  const clanTierNum = (clan as any)?.tier ?? ((clan as any)?.totalSp !== undefined ? ((clan as any).totalSp >= 50 ? 4 : (clan as any).totalSp >= 20 ? 3 : (clan as any).totalSp >= 8 ? 2 : (clan as any).totalSp >= 3 ? 1 : 0) : 0);
+  if (clanTierNum >= 3) {
+    const glowBaseCol = clan?.color || '#38bdf8';
+    clanTagStyle.filter = `drop-shadow(0 0 4px ${glowBaseCol}88)`;
+  }
+
   // Helper tính toán Drop-shadow Glow (hỗ trợ cả đơn sắc lẫn 2 màu gradient kèm góc xoay và độ sáng/mờ opacity, tối ưu tương phản cả Dark & Light Mode)
   const getGlowFilter = (glow: string, dark: boolean) => {
     // Trích xuất metadata độ mờ/sáng opacity (nếu có, e.g. /*op:75*/ hoặc /*glow:1:70*/)

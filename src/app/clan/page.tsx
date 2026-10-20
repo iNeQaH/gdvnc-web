@@ -40,16 +40,19 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(14, 165, 233, ${alpha})`;
 }
 
-function renderClanTierBadge(tierInfo: any, primaryColor: string, gradient?: string | null) {
+function renderClanTierBadge(tierInfo: any, primaryColor: string, gradient?: string | null, isDark: boolean = true) {
   const baseColor = primaryColor || '#0ea5e9';
+  const bgColor = isDark ? '#000000' : '#ffffff';
+
   if (!tierInfo.isSufficient || tierInfo.tier === 0) {
     return (
       <span
-        className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-white border select-none shrink-0"
+        className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border-2 select-none shrink-0"
         style={{
-          backgroundColor: '#991b1b',
+          backgroundColor: bgColor,
           borderColor: '#ef4444',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+          color: '#ef4444',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
         }}
       >
         {tierInfo.name}
@@ -60,12 +63,12 @@ function renderClanTierBadge(tierInfo: any, primaryColor: string, gradient?: str
   if (tierInfo.tier === 1) {
     return (
       <span
-        className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-white border select-none shrink-0"
+        className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border-2 select-none shrink-0"
         style={{
-          backgroundColor: baseColor,
-          borderColor: 'rgba(255, 255, 255, 0.4)',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.4)',
-          textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+          backgroundColor: bgColor,
+          borderColor: baseColor,
+          color: baseColor,
+          boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
         }}
       >
         {tierInfo.name}
@@ -76,15 +79,27 @@ function renderClanTierBadge(tierInfo: any, primaryColor: string, gradient?: str
   if (tierInfo.tier === 2) {
     return (
       <span
-        className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-white border select-none shrink-0"
+        className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border-2 select-none shrink-0"
         style={{
-          background: gradient || `linear-gradient(135deg, ${baseColor}, color-mix(in srgb, ${baseColor} 65%, #000000))`,
-          borderColor: 'rgba(255, 255, 255, 0.5)',
-          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.45)',
-          textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+          backgroundColor: bgColor,
+          borderColor: baseColor,
+          color: baseColor,
+          boxShadow: `0 0 8px ${baseColor}40`,
         }}
       >
-        {tierInfo.name}
+        {gradient ? (
+          <span
+            style={{
+              backgroundImage: gradient,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            {tierInfo.name}
+          </span>
+        ) : (
+          tierInfo.name
+        )}
       </span>
     );
   }
@@ -92,15 +107,27 @@ function renderClanTierBadge(tierInfo: any, primaryColor: string, gradient?: str
   if (tierInfo.tier === 3) {
     return (
       <span
-        className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-white border select-none shrink-0"
+        className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border-2 select-none shrink-0"
         style={{
-          background: gradient || `linear-gradient(135deg, ${baseColor}, color-mix(in srgb, ${baseColor} 60%, #ffffff))`,
-          borderColor: 'rgba(255, 255, 255, 0.7)',
-          boxShadow: `0 0 14px ${baseColor}, 0 2px 10px rgba(0, 0, 0, 0.5)`,
-          textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+          backgroundColor: bgColor,
+          borderColor: baseColor,
+          color: baseColor,
+          boxShadow: `0 0 12px ${baseColor}80, inset 0 0 4px ${baseColor}30`,
         }}
       >
-        {tierInfo.name}
+        {gradient ? (
+          <span
+            style={{
+              backgroundImage: gradient,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            {tierInfo.name}
+          </span>
+        ) : (
+          tierInfo.name
+        )}
       </span>
     );
   }
@@ -108,15 +135,23 @@ function renderClanTierBadge(tierInfo: any, primaryColor: string, gradient?: str
   // Tier 4: Animated Shimmer + Glow + Gradient
   return (
     <span
-      className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-white border select-none shrink-0 animate-pulse"
+      className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border-2 select-none shrink-0 animate-pulse"
       style={{
-        background: `linear-gradient(135deg, ${baseColor}, #ec4899, #f59e0b)`,
-        borderColor: '#ffffff',
-        boxShadow: `0 0 18px ${baseColor}, 0 0 10px #ec4899, 0 2px 12px rgba(0, 0, 0, 0.6)`,
-        textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+        backgroundColor: bgColor,
+        borderColor: baseColor,
+        color: baseColor,
+        boxShadow: `0 0 16px ${baseColor}, 0 0 8px #ec4899`,
       }}
     >
-      {tierInfo.name}
+      <span
+        style={{
+          backgroundImage: gradient || `linear-gradient(135deg, ${baseColor}, #ec4899, #f59e0b)`,
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+        }}
+      >
+        {tierInfo.name}
+      </span>
     </span>
   );
 }
@@ -455,7 +490,7 @@ export default function ClanListPage() {
 
                   {/* Tier Badge on top-right */}
                   <div className="absolute top-3 right-3 z-10">
-                    {renderClanTierBadge(tierInfo, primaryThemeColor, clan.themeGradient)}
+                    {renderClanTierBadge(tierInfo, primaryThemeColor, clan.themeGradient, isDark)}
                   </div>
 
                   {/* Status Overlay if Suspended */}
@@ -632,7 +667,7 @@ export default function ClanListPage() {
                   </div>
 
                   <div className="shrink-0">
-                    {renderClanTierBadge(tierInfo, primaryThemeColor, clan.themeGradient)}
+                    {renderClanTierBadge(tierInfo, primaryThemeColor, clan.themeGradient, isDark)}
                   </div>
                 </div>
               </Link>

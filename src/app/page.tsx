@@ -805,25 +805,23 @@ export default function HomePage({
           />
         </div>
 
-        {/* Row 2: Secondary Controls (Device Filter + Search Bar) */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        {/* Row 2: Secondary Controls (Device Filter + Search Bar - grouped closely together) */}
+        <div className="flex flex-wrap items-center gap-3">
           {/* Device Filter (Hidden in CREATOR, STARS, MOONS, DEMONS mode) */}
-          <div>
-            {!['CREATOR', 'STARS', 'MOONS', 'DEMONS'].includes(mode) ? (
-              <AnimatedTabs
-                active={deviceFilter}
-                onChange={(val) => setDeviceFilter(val as any)}
-                options={[
-                  { id: 'ALL', label: 'Tất cả' },
-                  { id: 'PC', label: 'PC', icon: <Monitor className="w-3.5 h-3.5" /> },
-                  { id: 'MOBILE', label: 'Mobile', icon: <Smartphone className="w-3.5 h-3.5" /> },
-                ]}
-              />
-            ) : <div />}
-          </div>
+          {!['CREATOR', 'STARS', 'MOONS', 'DEMONS'].includes(mode) && (
+            <AnimatedTabs
+              active={deviceFilter}
+              onChange={(val) => setDeviceFilter(val as any)}
+              options={[
+                { id: 'ALL', label: 'Tất cả' },
+                { id: 'PC', label: 'PC', icon: <Monitor className="w-3.5 h-3.5" /> },
+                { id: 'MOBILE', label: 'Mobile', icon: <Smartphone className="w-3.5 h-3.5" /> },
+              ]}
+            />
+          )}
 
-          {/* Search Bar */}
-          <div className="relative w-full sm:w-72">
+          {/* Search Bar - sits right next to Device Filter, not pushed away */}
+          <div className="relative w-full sm:w-64 md:w-72">
             <Search className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${searchInput !== debouncedSearch ? 'text-sky-500 animate-pulse' : 'ui-dim'}`} />
             <input
               type="text"

@@ -64,22 +64,28 @@ export const Sidebar = () => {
   const isLbActive = pathname === '/' || pathname.startsWith('/leaderboard');
   const isLvlActive = pathname.startsWith('/levels');
   const [leaderboardExpanded, setLeaderboardExpanded] = useState(isLbActive);
-  const [levelsExpanded, setLevelsExpanded] = useState(isLvlActive);
+  const [levelsExpanded, setLevelsExpanded] = useState(isLvlActive && !isLbActive);
   const [lastClickedAccordion, setLastClickedAccordion] = useState<'lb' | 'lvl' | null>(() => {
     if (isLbActive) return 'lb';
     if (isLvlActive) return 'lvl';
     return null;
   });
 
+  const prevPathnameRef = React.useRef(pathname);
   useEffect(() => {
-    if (isLbActive) {
-      setLeaderboardExpanded(true);
-      setLastClickedAccordion('lb');
-    } else if (isLvlActive) {
-      setLevelsExpanded(true);
-      setLastClickedAccordion('lvl');
-    } else {
-      setLastClickedAccordion(null);
+    if (prevPathnameRef.current !== pathname) {
+      prevPathnameRef.current = pathname;
+      if (isLbActive) {
+        setLeaderboardExpanded(true);
+        setLevelsExpanded(false);
+        setLastClickedAccordion('lb');
+      } else if (isLvlActive) {
+        setLevelsExpanded(true);
+        setLeaderboardExpanded(false);
+        setLastClickedAccordion('lvl');
+      } else {
+        setLastClickedAccordion(null);
+      }
     }
   }, [pathname, isLbActive, isLvlActive]);
 
@@ -519,20 +525,31 @@ export const Sidebar = () => {
               const actualTextCol = isLavender && isActive ? '#ffffff' : (item.isPink ? '#f472b6' : (isActive ? 'var(--accent-text)' : 'var(--text-body)'));
 
               const handleItemClick = (e: React.MouseEvent) => {
+                e.preventDefault();
                 if (item.href === '/') {
-                  e.preventDefault();
-                  setLeaderboardExpanded((prev) => {
-                    const next = !prev;
-                    if (next) setLastClickedAccordion('lb');
-                    return next;
-                  });
+                  if (!leaderboardExpanded) {
+                    setLevelsExpanded(false);
+                    setLeaderboardExpanded(true);
+                    setLastClickedAccordion('lb');
+                    if (!isLbActive) {
+                      router.push('/leaderboard/classic');
+                      setIsOpen(false);
+                    }
+                  } else {
+                    setLeaderboardExpanded(false);
+                  }
                 } else if (item.href === '/levels') {
-                  e.preventDefault();
-                  setLevelsExpanded((prev) => {
-                    const next = !prev;
-                    if (next) setLastClickedAccordion('lvl');
-                    return next;
-                  });
+                  if (!levelsExpanded) {
+                    setLeaderboardExpanded(false);
+                    setLevelsExpanded(true);
+                    setLastClickedAccordion('lvl');
+                    if (!isLvlActive) {
+                      router.push('/levels/featured');
+                      setIsOpen(false);
+                    }
+                  } else {
+                    setLevelsExpanded(false);
+                  }
                 }
               };
 

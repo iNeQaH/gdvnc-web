@@ -78,33 +78,23 @@ function ClanTierBadge({
   isDark: boolean;
   className?: string;
 }) {
+  const baseColor = cleanThemeColor || 'var(--accent)';
+  const bgColor = isDark ? '#000000' : '#ffffff';
+
   return (
     <span
-      className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border-2 backdrop-blur-md shrink-0 shadow-xs inline-flex items-center ${
-        tier === 3
-          ? ''
-          : tier === 2
-          ? 'bg-sky-500/20 text-sky-800 border-sky-400/60 shadow-[0_0_12px_rgba(14,165,233,0.45)] dark:bg-sky-500/30 dark:text-sky-100 dark:border-sky-300/70'
-          : tier === 1
-          ? 'bg-amber-500/15 text-amber-800 border-amber-400/50 dark:bg-amber-500/25 dark:text-amber-100 dark:border-amber-400/60'
-          : 'bg-red-500/20 text-red-800 dark:text-red-200 border-red-400/50'
-      } ${className}`}
-      style={
-        tier === 3
-          ? {
-              borderColor: cleanThemeColor || 'var(--accent)',
-              backgroundColor: isDark
-                ? 'rgba(0, 0, 0, 0.75)'
-                : `color-mix(in srgb, ${cleanThemeColor || 'var(--accent)'} 16%, #ffffff)`,
-              boxShadow: isDark
-                ? `0 0 10px ${cleanThemeColor || 'var(--accent)'}, inset 0 0 6px ${hexToRgba(cleanThemeColor || '#a855f7', 0.4)}`
-                : `0 0 10px ${hexToRgba(cleanThemeColor || '#a855f7', 0.4)}`,
-              color: isDark
-                ? '#ffffff'
-                : `color-mix(in srgb, ${cleanThemeColor || 'var(--accent)'} 85%, #000000)`,
-            }
-          : undefined
-      }
+      className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border-2 select-none shrink-0 shadow-xs inline-flex items-center ${className}`}
+      style={{
+        backgroundColor: bgColor,
+        borderColor: tier === 0 ? '#ef4444' : baseColor,
+        color: tier === 0 ? '#ef4444' : baseColor,
+        boxShadow:
+          tier >= 3
+            ? `0 0 12px ${baseColor}80, inset 0 0 4px ${baseColor}30`
+            : tier === 2
+            ? `0 0 8px ${baseColor}40`
+            : '0 2px 6px rgba(0,0,0,0.25)',
+      }}
     >
       {name}
     </span>
@@ -1378,36 +1368,40 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
       style={clanThemeStyle}
       data-tier3={isTier3 && clanGlowEnabled ? 'true' : undefined}
     >
-      {/* Full-bleed Clan Theme Backdrop */}
-      {hasCustomClanTheme && (
-        <div
-          className="fixed inset-0 md:left-64 pointer-events-none z-0 transition-colors duration-500 overflow-hidden"
-          style={{
-            backgroundColor: 'var(--bg-page)',
-          }}
-        >
-          {cleanThemeGradient ? (
-            <div
-              className="absolute inset-0 transition-opacity duration-300"
-              style={{
-                background: cleanThemeGradient,
-                opacity: clanGlowEnabled && isTier3 ? (clanGlowOpacity / 100) * (isDark ? 0.35 : 0.22) : (isDark ? 0.05 : 0.04),
-              }}
-            />
-          ) : cleanThemeColor ? (
-            <div
-              className="absolute inset-0 transition-opacity duration-300"
-              style={{
-                background: `radial-gradient(ellipse 80% 50% at 50% -10%, ${cleanThemeColor} 0%, transparent 75%)`,
-                opacity: clanGlowEnabled && isTier3 ? (clanGlowOpacity / 100) * (isDark ? 0.3 : 0.2) : (isDark ? 0.05 : 0.04),
-              }}
-            />
-          ) : null}
-          {isDark && (
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/15 to-black/50 pointer-events-none" />
-          )}
-        </div>
-      )}
+      {/* Full-bleed Clan Theme Backdrop - 100% OPAQUE to replace the active theme background */}
+      <div
+        className="fixed inset-0 md:left-64 pointer-events-none z-0 transition-colors duration-500 overflow-hidden"
+        style={{
+          background: isDark
+            ? (cleanThemeGradient
+                ? `radial-gradient(ellipse 120% 80% at 50% -10%, color-mix(in srgb, ${clanColors[0] || clan.color || '#10b981'} 28%, #05070a), color-mix(in srgb, ${clanColors[1] || clanColors[0] || clan.color || '#10b981'} 20%, #030406))`
+                : `radial-gradient(ellipse 120% 80% at 50% -10%, color-mix(in srgb, ${cleanThemeColor || clan.color || '#10b981'} 26%, #05070a), #040608)`)
+            : (cleanThemeGradient
+                ? `radial-gradient(ellipse 120% 80% at 50% -10%, color-mix(in srgb, ${clanColors[0] || clan.color || '#10b981'} 15%, #ffffff), color-mix(in srgb, ${clanColors[1] || clanColors[0] || clan.color || '#10b981'} 10%, #f1f5f9))`
+                : `radial-gradient(ellipse 120% 80% at 50% -10%, color-mix(in srgb, ${cleanThemeColor || clan.color || '#10b981'} 12%, #ffffff), #f8fafc)`),
+        }}
+      >
+        {cleanThemeGradient ? (
+          <div
+            className="absolute inset-0 transition-opacity duration-300"
+            style={{
+              background: cleanThemeGradient,
+              opacity: isDark ? (clanGlowEnabled && isTier3 ? 0.35 : 0.18) : (clanGlowEnabled && isTier3 ? 0.22 : 0.10),
+            }}
+          />
+        ) : (cleanThemeColor || clan.color) ? (
+          <div
+            className="absolute inset-0 transition-opacity duration-300"
+            style={{
+              background: `radial-gradient(ellipse 80% 50% at 50% -10%, ${cleanThemeColor || clan.color} 0%, transparent 75%)`,
+              opacity: isDark ? (clanGlowEnabled && isTier3 ? 0.40 : 0.20) : (clanGlowEnabled && isTier3 ? 0.22 : 0.12),
+            }}
+          />
+        ) : null}
+        {isDark && (
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/10 to-black/40 pointer-events-none" />
+        )}
+      </div>
 
       <div className={`relative z-[1] max-w-6xl mx-auto space-y-6 transition-all duration-300 ease-in-out ${isRosterOpen ? 'xl:-translate-x-14 2xl:-translate-x-16' : ''}`}>
         {/* HERO CARD (Tương tự cấu trúc trang Profile) */}
@@ -1456,8 +1450,12 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                           backgroundImage: clan.colorGradient,
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
+                          filter: isTier3 ? `drop-shadow(0 0 5px ${clan.color || '#38bdf8'}99)` : undefined,
                         }
-                      : { color: clan.color || 'var(--accent)' }
+                      : {
+                          color: clan.color || 'var(--accent)',
+                          filter: isTier3 ? `drop-shadow(0 0 5px ${clan.color || '#38bdf8'}99)` : undefined,
+                        }
                   }
                 >
                   [{clan.tag}]
