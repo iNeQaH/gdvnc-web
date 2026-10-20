@@ -69,24 +69,30 @@ function ClanTierBadge({
   tier,
   name,
   cleanThemeColor,
+  gradient,
   isDark,
   className = '',
 }: {
   tier: number;
   name: string;
   cleanThemeColor?: string;
+  gradient?: string | null;
   isDark: boolean;
   className?: string;
 }) {
   const baseColor = cleanThemeColor || 'var(--accent)';
   const bgColor = isDark ? '#000000' : '#ffffff';
+  const cleanGrad = gradient ? gradient.replace(/\/\*.*?\*\//g, '').trim() : null;
+  const effectiveGradient = tier >= 2 ? cleanGrad : null;
 
   return (
     <span
       className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border-2 select-none shrink-0 shadow-xs inline-flex items-center ${className}`}
       style={{
-        backgroundColor: bgColor,
-        borderColor: tier === 0 ? '#ef4444' : baseColor,
+        background: effectiveGradient
+          ? `linear-gradient(${bgColor}, ${bgColor}) padding-box, ${effectiveGradient} border-box`
+          : bgColor,
+        borderColor: effectiveGradient ? 'transparent' : (tier === 0 ? '#ef4444' : baseColor),
         color: tier === 0 ? '#ef4444' : baseColor,
         boxShadow:
           tier >= 3
@@ -96,7 +102,19 @@ function ClanTierBadge({
             : '0 2px 6px rgba(0,0,0,0.25)',
       }}
     >
-      {name}
+      {effectiveGradient ? (
+        <span
+          style={{
+            backgroundImage: effectiveGradient,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
+        >
+          {name}
+        </span>
+      ) : (
+        name
+      )}
     </span>
   );
 }
@@ -1483,6 +1501,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                 tier={tierInfo.tier}
                 name={tierInfo.name}
                 cleanThemeColor={cleanThemeColor}
+                gradient={cleanThemeGradient || clan.colorGradient}
                 isDark={isDark}
                 className="py-1 shadow-lg"
               />

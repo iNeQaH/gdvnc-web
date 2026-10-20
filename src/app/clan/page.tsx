@@ -43,6 +43,7 @@ function hexToRgba(hex: string, alpha: number): string {
 function renderClanTierBadge(tierInfo: any, primaryColor: string, gradient?: string | null, isDark: boolean = true) {
   const baseColor = primaryColor || '#0ea5e9';
   const bgColor = isDark ? '#000000' : '#ffffff';
+  const cleanGrad = gradient ? gradient.replace(/\/\*.*?\*\//g, '').trim() : null;
 
   if (!tierInfo.isSufficient || tierInfo.tier === 0) {
     return (
@@ -81,16 +82,18 @@ function renderClanTierBadge(tierInfo: any, primaryColor: string, gradient?: str
       <span
         className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border-2 select-none shrink-0"
         style={{
-          backgroundColor: bgColor,
-          borderColor: baseColor,
+          background: cleanGrad
+            ? `linear-gradient(${bgColor}, ${bgColor}) padding-box, ${cleanGrad} border-box`
+            : bgColor,
+          borderColor: cleanGrad ? 'transparent' : baseColor,
           color: baseColor,
           boxShadow: `0 0 8px ${baseColor}40`,
         }}
       >
-        {gradient ? (
+        {cleanGrad ? (
           <span
             style={{
-              backgroundImage: gradient,
+              backgroundImage: cleanGrad,
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
             }}
@@ -109,16 +112,18 @@ function renderClanTierBadge(tierInfo: any, primaryColor: string, gradient?: str
       <span
         className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border-2 select-none shrink-0"
         style={{
-          backgroundColor: bgColor,
-          borderColor: baseColor,
+          background: cleanGrad
+            ? `linear-gradient(${bgColor}, ${bgColor}) padding-box, ${cleanGrad} border-box`
+            : bgColor,
+          borderColor: cleanGrad ? 'transparent' : baseColor,
           color: baseColor,
           boxShadow: `0 0 12px ${baseColor}80, inset 0 0 4px ${baseColor}30`,
         }}
       >
-        {gradient ? (
+        {cleanGrad ? (
           <span
             style={{
-              backgroundImage: gradient,
+              backgroundImage: cleanGrad,
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
             }}
@@ -133,19 +138,20 @@ function renderClanTierBadge(tierInfo: any, primaryColor: string, gradient?: str
   }
 
   // Tier 4: Animated Shimmer + Glow + Gradient
+  const t4Grad = cleanGrad || `linear-gradient(135deg, ${baseColor}, #ec4899, #f59e0b)`;
   return (
     <span
       className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border-2 select-none shrink-0 animate-pulse"
       style={{
-        backgroundColor: bgColor,
-        borderColor: baseColor,
+        background: `linear-gradient(${bgColor}, ${bgColor}) padding-box, ${t4Grad} border-box`,
+        borderColor: 'transparent',
         color: baseColor,
         boxShadow: `0 0 16px ${baseColor}, 0 0 8px #ec4899`,
       }}
     >
       <span
         style={{
-          backgroundImage: gradient || `linear-gradient(135deg, ${baseColor}, #ec4899, #f59e0b)`,
+          backgroundImage: t4Grad,
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
         }}
@@ -490,7 +496,7 @@ export default function ClanListPage() {
 
                   {/* Tier Badge on top-right */}
                   <div className="absolute top-3 right-3 z-10">
-                    {renderClanTierBadge(tierInfo, primaryThemeColor, clan.themeGradient, isDark)}
+                    {renderClanTierBadge(tierInfo, primaryThemeColor, clan.themeGradient || clan.colorGradient, isDark)}
                   </div>
 
                   {/* Status Overlay if Suspended */}
@@ -667,7 +673,7 @@ export default function ClanListPage() {
                   </div>
 
                   <div className="shrink-0">
-                    {renderClanTierBadge(tierInfo, primaryThemeColor, clan.themeGradient, isDark)}
+                    {renderClanTierBadge(tierInfo, primaryThemeColor, clan.themeGradient || clan.colorGradient, isDark)}
                   </div>
                 </div>
               </Link>

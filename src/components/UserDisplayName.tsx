@@ -154,8 +154,8 @@ export function UserDisplayName({
     clanTagStyle.filter = `drop-shadow(0 0 4px ${tagGlowColor}99)`;
   }
 
-  // Helper tính toán Drop-shadow Glow (hỗ trợ cả đơn sắc lẫn 2 màu gradient kèm góc xoay và độ sáng/mờ opacity, tối ưu tương phản cả Dark & Light Mode)
-  const getGlowFilter = (glow: string, dark: boolean) => {
+  // Helper tính toán Drop-shadow Glow không tạo viền đen (hỗ trợ cả đơn sắc lẫn gradient, dùng blend-mode cộng sáng plus-lighter/screen)
+  const getGlowFilter = (glow: string) => {
     // Trích xuất metadata độ mờ/sáng opacity (nếu có, e.g. /*op:75*/ hoặc /*glow:1:70*/)
     let opacity = 100;
     const opMatch = glow.match(/\/\*(?:op|glow:\d+):(\d+)\*\//);
@@ -175,25 +175,14 @@ export function UserDisplayName({
       const col1 = gradMatch[2].trim();
       const col2 = gradMatch[3].trim();
       const rad = (angle * Math.PI) / 180;
-      if (!dark) {
-        // LIGHT MODE: Bright luminous backlight with vibrant colorful aura (loại bỏ hoàn toàn viền đen bẩn)
-        return `drop-shadow(0 0 1px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 4px ${hexToRgba(col2, 0.65 * alphaMultiplier)}) drop-shadow(0 0 8px ${hexToRgba(col1, 0.45 * alphaMultiplier)})`;
-      }
-      // DARK MODE: Rich vibrant neon glow
-      const ox = Math.round(Math.sin(rad) * 4);
-      const oy = Math.round(-Math.cos(rad) * 4);
-      const a1 = 0.75 * alphaMultiplier;
-      const a2 = 0.45 * alphaMultiplier;
-      return `drop-shadow(${ox}px ${oy}px 4px ${hexToRgba(col2, a1)}) drop-shadow(${-ox}px ${-oy}px 4px ${hexToRgba(col1, a1)}) drop-shadow(0 0 8px ${hexToRgba(col1, a2)})`;
+      const ox = Math.round(Math.sin(rad) * 3);
+      const oy = Math.round(-Math.cos(rad) * 3);
+      const a = 0.85 * alphaMultiplier;
+      return `drop-shadow(${ox}px ${oy}px 4px ${hexToRgba(col2, a)}) drop-shadow(${-ox}px ${-oy}px 4px ${hexToRgba(col1, a)})`;
     }
 
-    if (!dark) {
-      // LIGHT MODE: Bright crisp white backing + vibrant colorful glow so light letters stand out cleanly without dark smudges
-      return `drop-shadow(0 0 1px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 5px ${hexToRgba(cleanGlow, 0.65 * alphaMultiplier)})`;
-    }
-    const a1 = 0.75 * alphaMultiplier;
-    const a2 = 0.45 * alphaMultiplier;
-    return `drop-shadow(0 0 3px ${hexToRgba(cleanGlow, a1)}) drop-shadow(0 0 7px ${hexToRgba(cleanGlow, a2)})`;
+    const a = 0.85 * alphaMultiplier;
+    return `drop-shadow(0 0 4px ${hexToRgba(cleanGlow, a)}) drop-shadow(0 0 8px ${hexToRgba(cleanGlow, a * 0.7)})`;
   };
 
   // Style cho Tên Supporter (bảo đảm độc lập 100% với màu Clan tag)
@@ -210,21 +199,14 @@ export function UserDisplayName({
     nameStyle.backgroundImage = user.nameGradient;
     nameStyle.WebkitBackgroundClip = 'text';
     nameStyle.WebkitTextFillColor = 'transparent';
-    if (user?.nameGlow) {
-      nameStyle.filter = getGlowFilter(user.nameGlow, isDark);
-    }
   } else if (user?.nameColor) {
     nameStyle.color = user.nameColor;
     nameStyle.WebkitTextFillColor = 'initial';
-    if (user?.nameGlow) {
-      nameStyle.filter = getGlowFilter(user.nameGlow, isDark);
-    }
   } else {
     nameStyle.WebkitTextFillColor = 'initial';
-    if (user?.nameGlow) {
-      nameStyle.filter = getGlowFilter(user.nameGlow, isDark);
-    }
   }
+
+  const glowFilter = user?.nameGlow ? getGlowFilter(user.nameGlow) : '';
 
   // Padding chống cắt góc chữ nghiêng / nét bay (đặc biệt là ký tự 'H' của font Angels và nét uốn Rasley/Coraline)
   if (user?.nameFont === 'neon' || user?.nameFont === 'angels') {
@@ -289,9 +271,35 @@ export function UserDisplayName({
   return (
     <span className={`inline-flex items-center gap-1.5 ${wrap ? 'flex-wrap' : 'flex-nowrap min-w-0'} ${className}`}>
       {tagPosition === 'left' && renderTag()}
-      <span style={nameStyle} className={`font-bold ${wrap ? '' : 'truncate'}`}>
-        {name}
-      </span>
+      {glowFilter ? (
+        <span className="relative inline-flex items-center min-w-0">
+          <span
+            aria-hidden="true"
+            style={{
+              ...nameStyle,
+              filter: glowFilter,
+              mixBlendMode: 'plus-lighter',
+              position: 'absolute',
+              inset: 0,
+              pointerEvents: 'none',
+              userSelect: 'none',
+            }}
+            className={`font-bold ${wrap ? '' : 'truncate'}`}
+          >
+            {name}
+          </span>
+          <span
+            style={{ ...nameStyle, filter: undefined }}
+            className={`font-bold relative ${wrap ? '' : 'truncate'}`}
+          >
+            {name}
+          </span>
+        </span>
+      ) : (
+        <span style={nameStyle} className={`font-bold ${wrap ? '' : 'truncate'}`}>
+          {name}
+        </span>
+      )}
       {tagPosition === 'right' && renderTag()}
       {renderRoleIcon()}
     </span>

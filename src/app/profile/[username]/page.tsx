@@ -177,7 +177,15 @@ export default function ProfilePage() {
       (window as any).__profileOverride = overrideObj;
       window.dispatchEvent(new Event('gdvnc_user_update'));
     }
-  }, [data?.profileConfig]);
+    // Set theme and mode override for the whole app while viewing this profile
+    if (data.profileTheme) {
+      setOverrideTheme(data.profileTheme);
+    }
+    const targetMode = data.profileConfig?.profileMode;
+    if (targetMode === 'dark' || targetMode === 'light') {
+      setOverrideMode(targetMode);
+    }
+  }, [data?.profileConfig, data?.profileTheme, setOverrideTheme, setOverrideMode]);
 
   useEffect(() => {
     return () => {
@@ -185,8 +193,10 @@ export default function ProfilePage() {
         delete (window as any).__profileOverride;
         window.dispatchEvent(new Event('gdvnc_user_update'));
       }
+      setOverrideTheme(null);
+      setOverrideMode(null);
     };
-  }, []);
+  }, [setOverrideTheme, setOverrideMode]);
   const isOwner = !!(currentUser && currentUser.username === username);
   const isStaff = isStaffRole(currentUser?.role);
   const isFullAdmin = isFullAdminRole(currentUser?.role);
@@ -1192,37 +1202,47 @@ export default function ProfilePage() {
     }
   }
 
+  const profileBgColor = isProfileDark
+    ? ((data?.profileTheme || theme) === 'lavender' ? '#150f24' : '#0b0c10')
+    : '#f8fafc';
+
   return (
-    <div
-      ref={profileContainerRef}
-      data-theme={data?.profileTheme || theme}
-      data-mode={isProfileDark ? 'dark' : 'light'}
-      className={`max-w-[1200px] mx-auto py-8 px-4 space-y-6 relative ${isProfileDark ? 'dark' : ''} ${isGlitchTheme ? 'gdvn-profile-glitch' : ''} ${isGlitchTheme && isCardsActive ? 'gdvn-glitch-cards-active' : ''} ${isGlitchTheme && isAvatarActive ? 'gdvn-glitch-avatar-active' : ''} ${isGlitchTheme && isTextActive ? 'gdvn-glitch-text-active' : ''}`}
-      style={{
-        colorScheme: isProfileDark ? 'dark' : 'light',
-        ...(isProfileDark
-          ? {
-              '--bg-page': (data?.profileTheme || theme) === 'lavender' ? '#150f24' : '#0b0c10',
-              '--bg-card': (data?.profileTheme || theme) === 'lavender' ? '#1f1733' : '#12131a',
-              '--bg-subtle': (data?.profileTheme || theme) === 'lavender' ? '#281e42' : '#181a24',
-              '--text-title': '#ffffff',
-              '--text-body': '#cbd5e1',
-              '--text-dim': '#94a3b8',
-              '--border-ui': 'rgba(255, 255, 255, 0.12)',
-              '--border-subtle': 'rgba(255, 255, 255, 0.08)',
-            }
-          : {
-              '--bg-page': '#f1f5f9',
-              '--bg-card': '#ffffff',
-              '--bg-subtle': '#f8fafc',
-              '--text-title': '#0f172a',
-              '--text-body': '#334155',
-              '--text-dim': '#64748b',
-              '--border-ui': '#e2e8f0',
-              '--border-subtle': '#f1f5f9',
-            }),
-      } as any}
-    >
+    <>
+      {/* Full screen backdrop matching profile theme/mode to eliminate white flash/borders */}
+      <div
+        className="fixed inset-0 pointer-events-none -z-10 transition-colors duration-200"
+        style={{ backgroundColor: profileBgColor }}
+      />
+      <div
+        ref={profileContainerRef}
+        data-theme={data?.profileTheme || theme}
+        data-mode={isProfileDark ? 'dark' : 'light'}
+        className={`max-w-[1200px] mx-auto py-8 px-4 space-y-6 relative min-h-screen ${isProfileDark ? 'dark' : ''} ${isGlitchTheme ? 'gdvn-profile-glitch' : ''} ${isGlitchTheme && isCardsActive ? 'gdvn-glitch-cards-active' : ''} ${isGlitchTheme && isAvatarActive ? 'gdvn-glitch-avatar-active' : ''} ${isGlitchTheme && isTextActive ? 'gdvn-glitch-text-active' : ''}`}
+        style={{
+          colorScheme: isProfileDark ? 'dark' : 'light',
+          ...(isProfileDark
+            ? {
+                '--bg-page': profileBgColor,
+                '--bg-card': (data?.profileTheme || theme) === 'lavender' ? '#1f1733' : '#12131a',
+                '--bg-subtle': (data?.profileTheme || theme) === 'lavender' ? '#281e42' : '#181a24',
+                '--text-title': '#ffffff',
+                '--text-body': '#cbd5e1',
+                '--text-dim': '#94a3b8',
+                '--border-ui': 'rgba(255, 255, 255, 0.12)',
+                '--border-subtle': 'rgba(255, 255, 255, 0.08)',
+              }
+            : {
+                '--bg-page': '#f1f5f9',
+                '--bg-card': '#ffffff',
+                '--bg-subtle': '#f8fafc',
+                '--text-title': '#0f172a',
+                '--text-body': '#334155',
+                '--text-dim': '#64748b',
+                '--border-ui': '#e2e8f0',
+                '--border-subtle': '#f1f5f9',
+              }),
+        } as any}
+      >
       {isGlitchTheme && (
         <>
           {/* Avatar Giant Flash Overlay (chỉ nháy nhanh) */}
@@ -1282,9 +1302,9 @@ export default function ProfilePage() {
 
 
       {/* Unified Hero Card */}
-      <div className={`ui-card shadow-sm ${isGlitchTheme ? 'overflow-visible' : 'overflow-hidden'}`}>
+      <div className="ui-card shadow-sm rounded-2xl sm:rounded-3xl overflow-hidden">
         {/* Banner Cover */}
-        <div data-glitch-cover className={`relative w-full h-36 sm:h-48 md:h-56 bg-slate-100 dark:bg-zinc-800 ${isGlitchTheme ? 'overflow-visible' : 'overflow-hidden'}`}>
+        <div data-glitch-cover className="relative w-full h-36 sm:h-48 md:h-56 bg-slate-100 dark:bg-zinc-800 rounded-t-2xl sm:rounded-t-3xl overflow-hidden">
           {data.coverUrl ? (
             <img
               data-glitch-cover-img
@@ -1293,14 +1313,12 @@ export default function ProfilePage() {
               onError={(e) => {
                 e.currentTarget.src = '/default-banner.svg';
               }}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover rounded-t-2xl sm:rounded-t-3xl"
             />
           ) : (
-            <img data-glitch-cover-img src="/default-banner.svg" alt="" className="w-full h-full object-cover opacity-50" />
+            <img data-glitch-cover-img src="/default-banner.svg" alt="" className="w-full h-full object-cover opacity-50 rounded-t-2xl sm:rounded-t-3xl" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-          
-          
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none rounded-t-2xl sm:rounded-t-3xl" />
         </div>
 
         {/* Info Bar */}
@@ -1412,7 +1430,7 @@ export default function ProfilePage() {
 
           {/* Main Info (Pills & Badges) - Clean Full Width Layout */}
           <div className="space-y-3 pt-4 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-            {/* Metadata Pills Row (GD, Discord, Location, Clan) */}
+            {/* Section 1: Social & Identity (GD, Discord, Vị trí, Clan) */}
             <div className="flex items-center gap-2 flex-wrap">
               {/* GD Username */}
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
@@ -1435,27 +1453,6 @@ export default function ProfilePage() {
                 <span className="ui-dim font-bold text-[11px] uppercase">Vị trí:</span>
                 <span className="ui-title font-semibold">{data.country || 'Việt Nam'}</span>
               </div>
-
-              {/* GD Stats: Stars, Moons, Demons */}
-              {(Number(data.gdStars || 0) > 0 || Number(data.gdMoons || 0) > 0 || Number(data.gdDemons || 0) > 0) && (
-                <>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
-                    <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
-                    <span className="ui-dim font-bold text-[11px] uppercase">Stars:</span>
-                    <span className="ui-title font-semibold">{Number(data.gdStars || 0).toLocaleString()}</span>
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
-                    <Moon className="w-3.5 h-3.5 text-sky-400 fill-sky-400 shrink-0" />
-                    <span className="ui-dim font-bold text-[11px] uppercase">Moons:</span>
-                    <span className="ui-title font-semibold">{Number(data.gdMoons || 0).toLocaleString()}</span>
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
-                    <Flame className="w-3.5 h-3.5 text-rose-500 fill-rose-500 shrink-0" />
-                    <span className="ui-dim font-bold text-[11px] uppercase">Demons:</span>
-                    <span className="ui-title font-semibold">{Number(data.gdDemons || 0).toLocaleString()}</span>
-                  </div>
-                </>
-              )}
 
               {/* Clan */}
               {data.clanMember?.clan && (
@@ -1494,6 +1491,27 @@ export default function ProfilePage() {
                 </Link>
               )}
             </div>
+
+            {/* Section 2: In-game GD Stats (Stars, Moons, Demons) */}
+            {(Number(data.gdStars || 0) > 0 || Number(data.gdMoons || 0) > 0 || Number(data.gdDemons || 0) > 0) && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
+                  <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
+                  <span className="ui-dim font-bold text-[11px] uppercase">Stars:</span>
+                  <span className="ui-title font-semibold">{Number(data.gdStars || 0).toLocaleString()}</span>
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
+                  <Moon className="w-3.5 h-3.5 text-sky-400 fill-sky-400 shrink-0" />
+                  <span className="ui-dim font-bold text-[11px] uppercase">Moons:</span>
+                  <span className="ui-title font-semibold">{Number(data.gdMoons || 0).toLocaleString()}</span>
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
+                  <Flame className="w-3.5 h-3.5 text-rose-500 fill-rose-500 shrink-0" />
+                  <span className="ui-dim font-bold text-[11px] uppercase">Demons:</span>
+                  <span className="ui-title font-semibold">{Number(data.gdDemons || 0).toLocaleString()}</span>
+                </div>
+              </div>
+            )}
 
             {/* All Badges Showcase (if any) */}
             {allBadges.length > 0 && (
@@ -2860,5 +2878,6 @@ export default function ProfilePage() {
         </div>
       )}
     </div>
+    </>
   );
 }
