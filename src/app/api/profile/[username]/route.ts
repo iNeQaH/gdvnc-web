@@ -174,16 +174,53 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       // 1. Tự động lấy stats từ GDBrowser (Star, Moon, Demon, Creator Points)
       const synced = await syncUserGdBrowserStats(user, viewer);
       if (synced) {
+        const statsChanged =
+          user.gdStars !== synced.stars ||
+          user.gdMoons !== synced.moons ||
+          user.gdDemons !== synced.demons ||
+          user.creatorPoints !== synced.cp;
+
         user.gdStars = synced.stars;
         user.gdMoons = synced.moons;
         user.gdDemons = synced.demons;
         user.creatorPoints = synced.cp;
         user.gdStatsUpdatedAt = new Date();
+
+        if (statsChanged) {
+          clearLeaderboardCache();
+        }
       }
       // 2. Tự động liên kết các level đã có trong database của người đó vào creatorId
       await autoLinkUserCreatedLevels(user.id, user.gdUsername, user.username);
       // 3. Tự động xét Role Creator theo phẩm chất level cao nhất mà user sở hữu (không ghi đè creatorPoints)
       await recalculateCreatorPoints(user.id);
+
+      // Refresh badges and createdLevels so latest auto-linked levels and auto-awarded badges are reflected in response
+      const [refreshedBadges, refreshedLevels] = await Promise.all([
+        prisma.userBadge.findMany({
+          where: { userId: user.id },
+          include: { badge: { include: { badgeCategory: true } } },
+        }),
+        prisma.level.findMany({
+          where: { creatorId: user.id },
+          select: {
+            id: true,
+            gdLevelId: true,
+            name: true,
+            mode: true,
+            placement: true,
+            basePp: true,
+            difficulty: true,
+            ratingType: true,
+            youtubeId: true,
+            difficultyFace: true,
+            isVN: true,
+            isChallenge: true,
+          },
+        }),
+      ]);
+      (user as any).userBadges = refreshedBadges;
+      (user as any).createdLevels = refreshedLevels;
     }
 
     if (user.isBanned) {

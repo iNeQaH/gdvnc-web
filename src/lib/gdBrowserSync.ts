@@ -39,7 +39,9 @@ export async function checkAndAwardGrinderBadges(
  * Tự động đồng bộ stats (Star, Moon, Demon, Creator Points) từ GDBrowser khi có user đăng nhập xem profile:
  * - Điều kiện: người xem phải đã đăng nhập (viewer != null).
  * - Cooldown: 5 phút (300,000ms) tính từ lần cập nhật gần nhất.
- * - Tự động trao các badge Star Grinder (>= 10,000 stars), Moon Grinder (>= 5,000 moons), Demon Slayer (>= 500 demons).
+ * - Chỉ những người có global rank trong GDBrowser (rank >= 1) mới được chấp nhận lấy điểm Stars, Moons và Demons.
+ * - Nếu không có global rank (rank = 0 hoặc unranked), stars/moons/demons không được chấp nhận (= 0) và gỡ badge Grinder tự động.
+ * - Creator Points (CP) vẫn được lấy từ GDBrowser nếu có.
  */
 export async function syncUserGdBrowserStats(
   targetUser: {
@@ -53,7 +55,7 @@ export async function syncUserGdBrowserStats(
   },
   viewerUser?: { id?: string; userId?: string } | null,
   force = false
-): Promise<{ stars: number; moons: number; demons: number; cp: number } | null> {
+): Promise<{ stars: number; moons: number; demons: number; cp: number; rank: number; hasGlobalRank: boolean } | null> {
   const viewerId = viewerUser?.id || viewerUser?.userId;
   // Khách (chưa đăng nhập) không được kích hoạt cập nhật (trừ khi force = true)
   if (!viewerId && !force) return null;
@@ -84,9 +86,14 @@ export async function syncUserGdBrowserStats(
     const data = await res.json().catch(() => null);
     if (!data || typeof data !== 'object') return null;
 
-    const stars = Math.max(0, parseInt(data.stars, 10) || 0);
-    const moons = Math.max(0, parseInt(data.moons, 10) || 0);
-    const demons = Math.max(0, parseInt(data.demons, 10) || 0);
+    // Kiểm tra global rank từ GDBrowser: chỉ chấp nhận khi có rank và rank >= 1
+    const rawRank = data.rank !== undefined && data.rank !== null ? parseInt(String(data.rank), 10) : 0;
+    const hasGlobalRank = !isNaN(rawRank) && rawRank >= 1;
+
+    // Chỉ những người có global rank mới được chấp nhận lấy điểm stars, moons và demons
+    const stars = hasGlobalRank ? Math.max(0, parseInt(data.stars, 10) || 0) : 0;
+    const moons = hasGlobalRank ? Math.max(0, parseInt(data.moons, 10) || 0) : 0;
+    const demons = hasGlobalRank ? Math.max(0, parseInt(data.demons, 10) || 0) : 0;
     const cp = data.cp !== undefined ? Math.max(0, parseInt(data.cp, 10) || 0) : Math.max(0, targetUser.creatorPoints || 0);
 
     await prisma.user.update({
@@ -100,9 +107,30 @@ export async function syncUserGdBrowserStats(
       },
     });
 
-    await checkAndAwardGrinderBadges(targetUser.id, stars, moons, demons);
+    if (hasGlobalRank) {
+      await checkAndAwardGrinderBadges(targetUser.id, stars, moons, demons);
+    } else {
+      // Nếu không có global rank, gỡ bỏ các badge Grinder đã tự động trao trước đó
+      try {
+        const grinderBadges = await prisma.badge.findMany({
+          where: { systemKey: { in: ['GRINDER_STAR', 'GRINDER_MOON', 'GRINDER_DEMON'] } },
+          select: { id: true },
+        });
+        if (grinderBadges.length > 0) {
+          await prisma.userBadge.deleteMany({
+            where: {
+              userId: targetUser.id,
+              badgeId: { in: grinderBadges.map((b) => b.id) },
+              assignedBy: 'SYSTEM_AUTO_GRINDER',
+            },
+          });
+        }
+      } catch (e) {
+        console.error('cleanup grinder badges error:', e);
+      }
+    }
 
-    return { stars, moons, demons, cp };
+    return { stars, moons, demons, cp, rank: hasGlobalRank ? rawRank : 0, hasGlobalRank };
   } catch (err) {
     // GDBrowser timeout hoặc lỗi mạng: bỏ qua âm thầm
     return null;
