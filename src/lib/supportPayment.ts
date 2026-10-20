@@ -18,7 +18,7 @@ export function sanitizeSupportUsername(username: string) {
 export function calculateSupportPrice(months: number) {
   const basePrice = 20000;
   let discountPercent = Math.floor(months / 3) * 5;
-  if (discountPercent > 60) discountPercent = 60;
+  if (discountPercent > 30) discountPercent = 30;
   
   const totalPrice = (basePrice * months) * (1 - discountPercent / 100);
   const bonusSp = Math.floor(months / 3) * 2;

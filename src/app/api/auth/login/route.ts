@@ -51,6 +51,7 @@ export async function POST(req: Request) {
           select: {
             id: true,
             username: true,
+            displayName: true,
             role: true,
             avatarUrl: true,
             discordTag: true,
@@ -298,7 +299,21 @@ export async function POST(req: Request) {
       }
     }
 
+    if (user.isBanned && user.bannedUntil && new Date(user.bannedUntil) <= new Date()) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { isBanned: false, bannedUntil: null, banReason: null },
+      });
+      user.isBanned = false;
+      user.bannedUntil = null;
+      user.banReason = null;
+    }
+
     const safeUser = {
+      displayName: user.displayName,
+      isBanned: user.isBanned,
+      bannedUntil: user.bannedUntil,
+      banReason: user.banReason,
       id: user.id,
       username: user.username,
       role: user.role,

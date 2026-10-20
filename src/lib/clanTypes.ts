@@ -2,6 +2,7 @@ export const CLAN_TIER_CONFIG = {
   TIER_1: { minSp: 3, maxMembers: 5, hasGradient: false, name: 'Tier 1' },
   TIER_2: { minSp: 10, maxMembers: 15, hasGradient: true, name: 'Tier 2' },
   TIER_3: { minSp: 20, maxMembers: 50, hasGradient: true, name: 'Tier 3' },
+  TIER_4: { minSp: 50, maxMembers: 100, hasGradient: true, name: 'Tier 4' },
 } as const;
 
 /**
@@ -42,6 +43,15 @@ export function calculateUserSp(
  * Xác định cấp bậc Tier và giới hạn của Clan theo số điểm SP.
  */
 export function getClanTier(spPoints: number) {
+  if (spPoints >= 50) {
+    return {
+      tier: 4,
+      name: CLAN_TIER_CONFIG.TIER_4.name,
+      maxMembers: CLAN_TIER_CONFIG.TIER_4.maxMembers,
+      hasGradient: CLAN_TIER_CONFIG.TIER_4.hasGradient,
+      isSufficient: true,
+    };
+  }
   if (spPoints >= 20) {
     return {
       tier: 3,

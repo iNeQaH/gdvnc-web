@@ -205,10 +205,23 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
       };
     });
 
-    // 3. Phân chia danh sách thành viên theo quyền hạn
-    const leaderMember = rawClan.members.find((m) => m.role === 'LEADER');
-    const modMembers = rawClan.members.filter((m) => m.role === 'MODERATOR');
-    const regularMembers = rawClan.members.filter((m) => m.role === 'MEMBER');
+    // 3. Phân chia danh sách thành viên theo quyền hạn & đóng góp SP
+    const contribMap = new Map<string, number>();
+    for (const c of rawClan.contributions) {
+      if (c.spPledged > 0) contribMap.set(c.userId, c.spPledged);
+    }
+
+    const mapMember = (m: any) => ({
+      ...m,
+      spPledged: contribMap.get(m.userId) || 0,
+    });
+
+    const leaderRaw = rawClan.members.find((m) => m.role === 'LEADER');
+    const leaderMember = leaderRaw ? mapMember(leaderRaw) : null;
+    const modMembers = rawClan.members.filter((m) => m.role === 'MODERATOR').map(mapMember);
+    const nonModMembers = rawClan.members.filter((m) => m.role === 'MEMBER').map(mapMember);
+    const contributorMembers = nonModMembers.filter((m) => (m.spPledged || 0) > 0);
+    const regularMembers = nonModMembers.filter((m) => (m.spPledged || 0) <= 0);
 
     // 4. Kiểm tra trạng thái của người đang xem
     let myMembership = null;
@@ -283,6 +296,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         membersGrouped: {
           leader: leaderMember,
           mods: modMembers,
+          contributors: contributorMembers,
           members: regularMembers,
         },
         myMembership,

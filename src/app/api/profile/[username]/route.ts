@@ -22,6 +22,9 @@ import { deleteUserAccount } from '@/lib/deleteUser';
 import { isSuperAdminUser, isStaffRole } from '@/lib/roles';
 import { clearLeaderboardCache } from '@/lib/leaderboard';
 import { validateBioContent } from '@/lib/contentFilter';
+import { getSessionUser } from '@/lib/auth';
+import { syncUserGdBrowserStats } from '@/lib/gdBrowserSync';
+import { recalculateCreatorPoints } from '@/lib/recalculateCreatorPoints';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +36,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
     const userSelect = {
       id: true,
       username: true,
+      displayName: true,
       role: true,
       bio: true,
       avatarUrl: true,
@@ -47,6 +51,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         },
       },
       spPoints: true,
+      gdStars: true,
+      gdMoons: true,
+      gdDemons: true,
+      gdStatsUpdatedAt: true,
+      displayedBadgeIds: true,
+      hideAllBadges: true,
       isBanned: true,
       bannedUntil: true,
       profileTheme: true,
@@ -156,6 +166,21 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
 
     if (!user) {
       return NextResponse.json({ error: 'Không tìm thấy người chơi.' }, { status: 404 });
+    }
+
+    const viewer = await getSessionUser();
+    if (viewer?.userId && !user.isBanned) {
+      // 1. Tự động lấy stats từ GDBrowser (nếu đã qua 5 phút cooldown)
+      const synced = await syncUserGdBrowserStats(user, viewer);
+      if (synced) {
+        user.gdStars = synced.stars;
+        user.gdMoons = synced.moons;
+        user.gdDemons = synced.demons;
+        user.gdStatsUpdatedAt = new Date();
+      }
+      // 2. Tự động tính lại Creator Points & xét Role Creator từ các level trong DB
+      const updatedCp = await recalculateCreatorPoints(user.id);
+      user.creatorPoints = updatedCp;
     }
 
     if (user.isBanned) {
@@ -330,6 +355,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       user: {
         id: user.id,
         username: user.username,
+        displayName: user.displayName,
         role: user.role,
         isSuperAdmin: isSuperAdminUser(user),
         bio: user.bio,
@@ -338,6 +364,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         supporterUntil: user.supporterUntil,
         spGrants: user.spGrants || [],
         spPoints: user.spPoints || 0,
+        gdStars: user.gdStars || 0,
+        gdMoons: user.gdMoons || 0,
+        gdDemons: user.gdDemons || 0,
+        gdStatsUpdatedAt: user.gdStatsUpdatedAt,
+        displayedBadgeIds: user.displayedBadgeIds || [],
+        hideAllBadges: user.hideAllBadges || false,
         userSp,
         profileTheme: user.profileTheme,
         profileConfig: user.profileConfig,
@@ -584,6 +616,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
     const updated = await prisma.user.update({
       where: { id: current.id },
       data: {
+        displayName: body.displayName !== undefined ? (clipText(body.displayName, 32)?.trim() || null) : undefined,
         bio: body.bio !== undefined ? clipText(body.bio, 2000) : undefined,
         avatarUrl: nextAvatar,
         coverUrl: nextCover,
@@ -593,12 +626,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         discordTag: body.discordTag !== undefined ? clipText(body.discordTag, 80) : undefined,
         profileConfig: nextProfileConfig !== undefined ? nextProfileConfig : undefined,
         profileTheme: body.profileTheme !== undefined ? body.profileTheme : undefined,
+        displayedBadgeIds: Array.isArray(body.displayedBadgeIds) ? body.displayedBadgeIds.filter((x: any) => typeof x === 'string').slice(0, 3) : undefined,
+        hideAllBadges: body.hideAllBadges !== undefined ? Boolean(body.hideAllBadges) : undefined,
         nameColor: body.nameColor !== undefined ? (clipText(body.nameColor, 30)?.trim() || null) : undefined,
         nameGradient: body.nameGradient !== undefined ? (clipText(body.nameGradient, 120)?.trim() || null) : undefined,
         nameGlow: body.nameGlow !== undefined ? (clipText(body.nameGlow, 160)?.trim() || null) : undefined,
         nameFont: body.nameFont !== undefined ? (clipText(body.nameFont, 50)?.trim() || null) : undefined,
       },
       select: {
+        displayName: true,
         bio: true,
         avatarUrl: true,
         coverUrl: true,
@@ -608,12 +644,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         discordTag: true,
         profileConfig: true,
         profileTheme: true,
+        displayedBadgeIds: true,
+        hideAllBadges: true,
         nameColor: true,
         nameGradient: true,
         nameGlow: true,
         nameFont: true,
       }
     });
+
+    if (nextGdUsername !== undefined) {
+      void recalculateCreatorPoints(current.id).catch(() => {});
+    }
 
     if (staleRefs.length > 0) {
       const stillUsed = await prisma.user.findMany({

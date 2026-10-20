@@ -12,6 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  Coins,
+  Sparkles,
 } from 'lucide-react';
 import { UserDisplayName } from '@/components/UserDisplayName';
 import { useTheme } from '@/components/ThemeProvider';
@@ -48,6 +50,7 @@ export default function ClanDiscordMemberSidebar({
 }: ClanDiscordMemberSidebarProps) {
   const leader = clan.membersGrouped?.leader;
   const mods: any[] = clan.membersGrouped?.mods || [];
+  const contributors: any[] = clan.membersGrouped?.contributors || [];
   const members: any[] = clan.membersGrouped?.members || [];
   const { resolvedMode } = useTheme();
   const isDark = resolvedMode === 'dark';
@@ -147,7 +150,18 @@ export default function ClanDiscordMemberSidebar({
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <UserDisplayName user={leader.user} showClanTag={false} clanRole="LEADER" />
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <UserDisplayName user={leader.user} showClanTag={false} clanRole="LEADER" />
+                      {(leader.spPledged || 0) > 0 && (
+                        <span
+                          className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-black font-mono bg-amber-500/15 text-amber-500 border border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.25)] shrink-0"
+                          title={`Đã đóng góp ${leader.spPledged} SP`}
+                        >
+                          <Coins className="w-2.5 h-2.5 text-amber-400" />
+                          +{leader.spPledged} SP
+                        </span>
+                      )}
+                    </div>
                     <span className="font-mono text-[10px] text-amber-600 dark:text-amber-400 font-bold block mt-0.5">
                       {(leader.user.classicPp || 0).toLocaleString()} Pt
                     </span>
@@ -189,7 +203,18 @@ export default function ClanDiscordMemberSidebar({
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <UserDisplayName user={m.user} showClanTag={false} clanRole="MODERATOR" />
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <UserDisplayName user={m.user} showClanTag={false} clanRole="MODERATOR" />
+                        {(m.spPledged || 0) > 0 && (
+                          <span
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-black font-mono bg-amber-500/15 text-amber-500 border border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.25)] shrink-0"
+                            title={`Đã đóng góp ${m.spPledged} SP`}
+                          >
+                            <Coins className="w-2.5 h-2.5 text-amber-400" />
+                            +{m.spPledged} SP
+                          </span>
+                        )}
+                      </div>
                       <span className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400/90 font-bold block">
                         {(m.user.classicPp || 0).toLocaleString()} Pt
                       </span>
@@ -216,7 +241,94 @@ export default function ClanDiscordMemberSidebar({
             </div>
           )}
 
-          {/* 3. Category: MEMBERS */}
+          {/* 3. Category: CONTRIBUTORS */}
+          {contributors.length > 0 && (
+            <div className="space-y-1 pt-1 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-500 dark:text-amber-400 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Coins className="w-3 h-3 text-amber-400" />
+                  <span>{isEn ? 'Contributors' : 'Đóng góp'} — {contributors.length}</span>
+                </span>
+              </div>
+
+              {contributors.map((m: any) => {
+                const customRow = getUserListRowStyle(m.user, isDark);
+                return (
+                  <div
+                    key={m.id}
+                    className={`group flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl border transition-colors ${
+                      customRow.hasCustomBg ? 'hover:brightness-110 shadow-xs' : 'hover:bg-amber-500/5'
+                    }`}
+                    style={
+                      customRow.hasCustomBg
+                        ? { ...customRow.style, borderLeft: `3px solid ${customRow.color}` }
+                        : { backgroundColor: 'var(--bg-subtle)', borderColor: 'rgba(245, 158, 11, 0.25)' }
+                    }
+                  >
+                    <Link
+                      href={`/profile/${m.user.username}`}
+                      className="flex items-center gap-2.5 min-w-0 flex-1 hover:underline"
+                    >
+                      <div className="relative shrink-0">
+                        <div className="w-7 h-7 rounded-full overflow-hidden border border-amber-500/40 bg-amber-500/10 shrink-0">
+                          {m.user.avatarUrl ? (
+                            <img src={m.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center font-bold text-xs text-amber-500">
+                              {m.user.username[0]?.toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <UserDisplayName user={m.user} showClanTag={false} />
+                          <span
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-black font-mono bg-amber-500/15 text-amber-500 border border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.25)] shrink-0"
+                            title={`Đã đóng góp ${m.spPledged} SP duy trì Clan`}
+                          >
+                            <Coins className="w-2.5 h-2.5 text-amber-400" />
+                            +{m.spPledged} SP
+                          </span>
+                        </div>
+                        <span className="font-mono text-[10px] ui-dim font-bold block">
+                          {(m.user.classicPp || 0).toLocaleString()} Pt
+                        </span>
+                      </div>
+                    </Link>
+
+                    {(canManage || canKick) && (
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                        {canManage && (
+                          <button
+                            type="button"
+                            onClick={() => onRoleChange(m.id, 'MODERATOR')}
+                            className="p-1 rounded text-emerald-400 hover:bg-emerald-500/10 cursor-pointer transition-colors"
+                            title={isEn ? 'Promote to Clan Mod' : 'Bổ nhiệm làm Mod Clan'}
+                          >
+                            <ArrowUpCircle className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {canKick && (
+                          <button
+                            type="button"
+                            onClick={() => onKick(m.id, m.user.username)}
+                            className="p-1 rounded text-red-400 hover:bg-red-500/10 cursor-pointer transition-colors"
+                            title={isEn ? 'Kick from Clan' : 'Trục xuất khỏi Clan'}
+                          >
+                            <UserX className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* 4. Category: REGULAR MEMBERS */}
           <div className="space-y-1 pt-1 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
             <div className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ui-dim flex items-center justify-between">
               <span>{isEn ? 'Members' : 'Thành viên'} — {members.length}</span>

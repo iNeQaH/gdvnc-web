@@ -19,6 +19,8 @@ import {
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import DiscordMarkdown from '@/components/DiscordMarkdown';
+import { AnnouncementPoll } from '@/components/AnnouncementPoll';
+import { Heart, Clock } from 'lucide-react';
 import type { DictKey } from '@/lib/dictionaries';
 import { isSuperAdminUser } from '@/lib/roles';
 
@@ -31,6 +33,10 @@ type Announcement = {
   author: string;
   createdAt: string;
   updatedAt?: string;
+  expiresAt?: string | null;
+  likesCount?: number;
+  isLiked?: boolean;
+  poll?: any;
   targetUserIds?: string[];
 };
 
@@ -88,6 +94,24 @@ export default function AnnouncementDetailPage({
     const key = `announce.audience.${aud.toLowerCase()}` as DictKey;
     const label = t(key);
     return label.startsWith('announce.audience') ? aud : label;
+  };
+
+  const handleLike = async () => {
+    if (!currentUser) {
+      showToast('Vui lòng đăng nhập để thả tim thông báo!', 'error');
+      return;
+    }
+    if (currentUser.isBanned) {
+      showToast('Tài khoản bị đình chỉ không thể tương tác!', 'error');
+      return;
+    }
+    try {
+      const res = await fetch(`/api/announcements/${id}/react`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setItem((prev: any) => prev ? { ...prev, isLiked: data.isLiked, likesCount: data.likesCount } : prev);
+      }
+    } catch {}
   };
 
   const handleShare = async () => {
@@ -251,6 +275,13 @@ export default function AnnouncementDetailPage({
                 minute: '2-digit',
               })}
             </span>
+
+            {item.expiresAt && (
+              <span className="text-xs text-amber-500 font-semibold flex items-center gap-1 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
+                <Clock className="w-3 h-3" />
+                Hết hạn: {new Date(item.expiresAt).toLocaleDateString(locale)}
+              </span>
+            )}
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-black ui-title leading-snug tracking-tight">
@@ -268,6 +299,34 @@ export default function AnnouncementDetailPage({
         {/* Announcement Body rendered with Discord Markdown */}
         <div className="prose max-w-none text-sm leading-relaxed ui-title">
           <DiscordMarkdown content={item.body} />
+        </div>
+
+        {/* Interactive Poll (if attached) */}
+        {item.poll && (
+          <AnnouncementPoll
+            announcementId={item.id}
+            poll={item.poll}
+            onVoteSuccess={(updatedPoll) => {
+              setItem((prev: any) => prev ? { ...prev, poll: updatedPoll } : prev);
+            }}
+          />
+        )}
+
+        {/* Heart Reaction Footer */}
+        <div className="pt-4 border-t flex items-center justify-between" style={{ borderColor: 'var(--border-subtle)' }}>
+          <button
+            type="button"
+            onClick={handleLike}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
+              item.isLiked
+                ? 'bg-rose-500/15 border-rose-500/40 text-rose-500 shadow-sm'
+                : 'hover:bg-rose-500/10 hover:border-rose-500/30 ui-dim hover:text-rose-500'
+            }`}
+            style={{ borderColor: item.isLiked ? undefined : 'var(--border-ui)' }}
+          >
+            <Heart className={`w-4 h-4 transition-transform active:scale-125 ${item.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} />
+            <span>{item.likesCount || 0}</span>
+          </button>
         </div>
       </article>
     </div>

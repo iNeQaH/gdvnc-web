@@ -212,7 +212,7 @@ export const ThemeSwitcher = ({ dropUp = false }: { dropUp?: boolean }) => {
                   key={item.id}
                   ref={isSelected ? activeThemeRef : null}
                   type="button"
-                  onClick={() => { if (['lavender', 'mint', 'custom'].includes(item.id) && !canUseLavender) { window.location.href = '/support'; return; } setTheme(item.id); setOpen(false); if (currentUser?.username) { fetch(`/api/profile/${currentUser.username}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profileTheme: item.id }) }).catch(()=>{}); } }}
+                  onClick={() => { if (['lavender', 'mint', 'custom'].includes(item.id) && !canUseLavender) { window.location.href = '/support'; return; } setTheme(item.id); setOpen(false); }}
                   className={`relative z-[2] w-full px-3 py-2 my-0.5 text-left flex items-center justify-between rounded-xl transition-all duration-250 ease-[cubic-bezier(0.19,1,0.22,1)] hover:opacity-80 cursor-pointer ${isSelected && isLavender ? '-translate-y-[7px]' : ''}`}
                   style={{
                     color: isLavender && isSelected ? '#ffffff' : 'var(--text-title)',

@@ -40,6 +40,87 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(14, 165, 233, ${alpha})`;
 }
 
+function renderClanTierBadge(tierInfo: any, primaryColor: string, gradient?: string | null) {
+  const baseColor = primaryColor || '#0ea5e9';
+  if (!tierInfo.isSufficient || tierInfo.tier === 0) {
+    return (
+      <span
+        className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-white border select-none shrink-0"
+        style={{
+          backgroundColor: '#991b1b',
+          borderColor: '#ef4444',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+        }}
+      >
+        {tierInfo.name}
+      </span>
+    );
+  }
+
+  if (tierInfo.tier === 1) {
+    return (
+      <span
+        className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-white border select-none shrink-0"
+        style={{
+          backgroundColor: baseColor,
+          borderColor: 'rgba(255, 255, 255, 0.4)',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.4)',
+          textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+        }}
+      >
+        {tierInfo.name}
+      </span>
+    );
+  }
+
+  if (tierInfo.tier === 2) {
+    return (
+      <span
+        className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-white border select-none shrink-0"
+        style={{
+          background: gradient || `linear-gradient(135deg, ${baseColor}, color-mix(in srgb, ${baseColor} 65%, #000000))`,
+          borderColor: 'rgba(255, 255, 255, 0.5)',
+          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.45)',
+          textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+        }}
+      >
+        {tierInfo.name}
+      </span>
+    );
+  }
+
+  if (tierInfo.tier === 3) {
+    return (
+      <span
+        className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-white border select-none shrink-0"
+        style={{
+          background: gradient || `linear-gradient(135deg, ${baseColor}, color-mix(in srgb, ${baseColor} 60%, #ffffff))`,
+          borderColor: 'rgba(255, 255, 255, 0.7)',
+          boxShadow: `0 0 14px ${baseColor}, 0 2px 10px rgba(0, 0, 0, 0.5)`,
+          textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+        }}
+      >
+        {tierInfo.name}
+      </span>
+    );
+  }
+
+  // Tier 4: Animated Shimmer + Glow + Gradient
+  return (
+    <span
+      className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-white border select-none shrink-0 animate-pulse"
+      style={{
+        background: `linear-gradient(135deg, ${baseColor}, #ec4899, #f59e0b)`,
+        borderColor: '#ffffff',
+        boxShadow: `0 0 18px ${baseColor}, 0 0 10px #ec4899, 0 2px 12px rgba(0, 0, 0, 0.6)`,
+        textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+      }}
+    >
+      {tierInfo.name}
+    </span>
+  );
+}
+
 const SORT_OPTIONS: { value: 'members' | 'sp' | 'newest' | 'oldest'; label: string; icon: any }[] = [
   { value: 'sp', label: 'SP Coin cao nhất', icon: Coins },
   { value: 'members', label: 'Đông thành viên nhất', icon: Users },
@@ -373,35 +454,9 @@ export default function ClanListPage() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
                   {/* Tier Badge on top-right */}
-                  <span
-                    className={`absolute top-3 right-3 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border-2 backdrop-blur-md shadow-lg ${
-                      tierInfo.tier === 3
-                        ? ''
-                        : tierInfo.tier === 2
-                        ? 'bg-sky-500/20 text-sky-800 border-sky-400/60 shadow-[0_0_14px_rgba(14,165,233,0.45)] dark:bg-sky-500/30 dark:text-sky-100 dark:border-sky-300/70'
-                        : tierInfo.tier === 1
-                        ? 'bg-amber-500/15 text-amber-800 border-amber-400/50 dark:bg-amber-500/25 dark:text-amber-100 dark:border-amber-400/60'
-                        : 'bg-red-500/20 text-red-800 dark:text-red-200 border-red-400/50'
-                    }`}
-                    style={
-                      tierInfo.tier === 3
-                        ? {
-                            borderColor: cardStyle.borderColor || primaryThemeColor,
-                            backgroundColor: isDark
-                              ? 'rgba(0, 0, 0, 0.75)'
-                              : `color-mix(in srgb, ${primaryThemeColor} 16%, #ffffff)`,
-                            boxShadow: isDark
-                              ? `0 0 10px ${c1 || primaryThemeColor}, inset 0 0 6px ${hexToRgba(c1 || primaryThemeColor, 0.4)}`
-                              : `0 0 10px ${hexToRgba(c1 || primaryThemeColor, 0.4)}`,
-                            color: isDark
-                              ? '#ffffff'
-                              : `color-mix(in srgb, ${primaryThemeColor} 85%, #000000)`,
-                          }
-                        : undefined
-                    }
-                  >
-                    {tierInfo.name}
-                  </span>
+                  <div className="absolute top-3 right-3 z-10">
+                    {renderClanTierBadge(tierInfo, primaryThemeColor, clan.themeGradient)}
+                  </div>
 
                   {/* Status Overlay if Suspended */}
                   {clan.isSuspended && (
@@ -576,33 +631,9 @@ export default function ClanListPage() {
                     <span>{sp} SP</span>
                   </div>
 
-                  <span
-                    className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border-2 ${
-                      tierInfo.tier === 3
-                        ? ''
-                        : tierInfo.tier === 2
-                        ? 'bg-sky-500/20 text-sky-800 border-sky-500/40 dark:bg-sky-500/30 dark:text-sky-200'
-                        : 'bg-amber-500/15 text-amber-800 border-amber-500/40 dark:bg-amber-500/25 dark:text-amber-200'
-                    }`}
-                    style={
-                      tierInfo.tier === 3
-                        ? {
-                            borderColor: primaryThemeColor,
-                            backgroundColor: isDark
-                              ? 'rgba(0, 0, 0, 0.75)'
-                              : `color-mix(in srgb, ${primaryThemeColor} 16%, #ffffff)`,
-                            boxShadow: isDark
-                              ? `0 0 10px ${primaryThemeColor}`
-                              : `0 0 8px ${hexToRgba(primaryThemeColor, 0.4)}`,
-                            color: isDark
-                              ? '#ffffff'
-                              : `color-mix(in srgb, ${primaryThemeColor} 85%, #000000)`,
-                          }
-                        : undefined
-                    }
-                  >
-                    {tierInfo.name}
-                  </span>
+                  <div className="shrink-0">
+                    {renderClanTierBadge(tierInfo, primaryThemeColor, clan.themeGradient)}
+                  </div>
                 </div>
               </Link>
             );

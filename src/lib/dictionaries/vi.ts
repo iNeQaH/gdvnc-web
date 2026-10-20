@@ -37,6 +37,7 @@ const vi: Record<DictKey, string> = {
   'theme.sakura': 'Sakura',
   'theme.slate': 'Tối',
   'theme.sky': 'Sky (Mặc định)',
+  'theme.glitch': '???',
   'theme.custom': 'Tuỳ chỉnh',
 
   'common.loading': 'Đang tải...',
@@ -319,7 +320,7 @@ const vi: Record<DictKey, string> = {
   'support.original_price': 'Mức giá gốc:',
   'support.discount_label': 'Chiết khấu (Giảm {percent}%):',
   'support.total_price': 'Thành tiền:',
-  'support.discount_hint': '* Ưu đãi: Mỗi 3 tháng giảm thêm 5% giá và tặng thêm 2 điểm SP Coin duy trì Clan. Supporter sẽ tự động gỡ bỏ khi hết hạn.',
+  'support.discount_hint': '* Ưu đãi: Mỗi 3 tháng giảm thêm 5% giá (tối đa 30%) và tặng thêm 2 điểm SP Coin duy trì Clan. Supporter sẽ tự động gỡ bỏ khi hết hạn.',
   'support.qr_label': 'Mã QR Auto-Supporter',
   'support.no_account_title': 'Chưa xác định tài khoản',
   'support.no_account_desc': 'Vui lòng đăng nhập hoặc nhập tên người dùng để tạo mã QR.',

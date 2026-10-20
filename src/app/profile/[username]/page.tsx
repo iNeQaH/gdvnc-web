@@ -166,36 +166,24 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!data) return;
-    if (data.profileTheme && setOverrideTheme) {
-      setOverrideTheme(data.profileTheme);
-      document.documentElement.setAttribute('data-theme', data.profileTheme);
-    }
-    const profileMode = data.profileConfig?.profileMode === 'light' ? 'light' : 'dark';
-    if (setOverrideMode) {
-      setOverrideMode(profileMode);
-    }
     if (typeof window !== 'undefined') {
       const overrideObj: any = {};
-      if (data.profileTheme) overrideObj.theme = data.profileTheme;
-      overrideObj.mode = profileMode;
       if (data.profileConfig) {
         Object.assign(overrideObj, data.profileConfig);
       }
       (window as any).__profileOverride = overrideObj;
       window.dispatchEvent(new Event('gdvnc_user_update'));
     }
-  }, [data?.profileTheme, data?.profileConfig, setOverrideTheme, setOverrideMode]);
+  }, [data?.profileConfig]);
 
   useEffect(() => {
     return () => {
-      if (setOverrideTheme) setOverrideTheme(null);
-      if (setOverrideMode) setOverrideMode(null);
       if (typeof window !== 'undefined') {
         delete (window as any).__profileOverride;
         window.dispatchEvent(new Event('gdvnc_user_update'));
       }
     };
-  }, [setOverrideTheme, setOverrideMode]);
+  }, []);
   const isOwner = !!(currentUser && currentUser.username === username);
   const isStaff = isStaffRole(currentUser?.role);
   const isFullAdmin = isFullAdminRole(currentUser?.role);
@@ -1186,12 +1174,23 @@ export default function ProfilePage() {
     });
   }
 
-  const headerBadges = [...roleBadges, ...(data.badges || [])].slice(0, 3);
-  const allBadges = [...roleBadges, ...(data.badges || [])];
+  const allBadges = [...roleBadges, ...(data.badges || [])].sort((a: any, b: any) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
+  const headerBadges = useMemo(() => {
+    if (data.hideAllBadges) return [];
+    if (Array.isArray(data.displayedBadgeIds) && data.displayedBadgeIds.length > 0) {
+      const selected = data.displayedBadgeIds
+        .map((id: string) => allBadges.find((b: any) => b.id === id || b.systemKey === id))
+        .filter(Boolean);
+      if (selected.length > 0) return selected.slice(0, 3);
+    }
+    return allBadges.slice(0, 3);
+  }, [data.hideAllBadges, data.displayedBadgeIds, allBadges]);
 
   return (
     <div
       ref={profileContainerRef}
+      data-theme={data?.profileTheme || theme}
+      data-mode={data?.profileConfig?.profileMode || (isDark ? 'dark' : 'light')}
       className={`max-w-[1200px] mx-auto py-8 px-4 space-y-6 relative ${isGlitchTheme ? 'gdvn-profile-glitch' : ''} ${isGlitchTheme && isCardsActive ? 'gdvn-glitch-cards-active' : ''} ${isGlitchTheme && isAvatarActive ? 'gdvn-glitch-avatar-active' : ''} ${isGlitchTheme && isTextActive ? 'gdvn-glitch-text-active' : ''}`}
     >
       {isGlitchTheme && (
@@ -1345,6 +1344,8 @@ export default function ProfilePage() {
                           <BadgeIcon
                             icon={b.icon || 'Star'}
                             color={b.color}
+                            color2={b.color2}
+                            effect={b.effect}
                             glow={b.glowColor}
                             className={isLavender ? "w-4 h-4" : "w-3.5 h-3.5"}
                           />
@@ -1422,6 +1423,27 @@ export default function ProfilePage() {
                   <span className="ui-dim font-bold text-[11px] uppercase">Vị trí:</span>
                   <span className="ui-title font-semibold">{data.country || 'Việt Nam'}</span>
                 </div>
+
+                {/* GD Stats: Stars, Moons, Demons */}
+                {(Number(data.gdStars || 0) > 0 || Number(data.gdMoons || 0) > 0 || Number(data.gdDemons || 0) > 0) && (
+                  <>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
+                      <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
+                      <span className="ui-dim font-bold text-[11px] uppercase">Stars:</span>
+                      <span className="ui-title font-semibold">{Number(data.gdStars || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
+                      <Moon className="w-3.5 h-3.5 text-sky-400 fill-sky-400 shrink-0" />
+                      <span className="ui-dim font-bold text-[11px] uppercase">Moons:</span>
+                      <span className="ui-title font-semibold">{Number(data.gdMoons || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
+                      <Flame className="w-3.5 h-3.5 text-rose-500 fill-rose-500 shrink-0" />
+                      <span className="ui-dim font-bold text-[11px] uppercase">Demons:</span>
+                      <span className="ui-title font-semibold">{Number(data.gdDemons || 0).toLocaleString()}</span>
+                    </div>
+                  </>
+                )}
 
                 {/* Clan */}
                 {data.clanMember?.clan && (
@@ -2856,4 +2878,4 @@ export default function ProfilePage() {
       )}
     </div>
   );
-}
+}

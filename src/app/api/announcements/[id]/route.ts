@@ -119,7 +119,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     }
     return NextResponse.json({
       success: true,
-      announcement: serializeAnnouncement(row, { includeTargets: viewer?.role === 'ADMIN' }),
+      announcement: serializeAnnouncement(row, {
+        includeTargets: viewer?.role === 'ADMIN',
+        viewerId: viewer?.id,
+      }),
     });
   } catch (error: any) {
     return publicApiError(error, 'Failed to fetch announcement.', 500);

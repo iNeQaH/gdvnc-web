@@ -47,6 +47,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         description: body.description !== undefined ? body.description : undefined,
         icon: body.imageUrl !== undefined ? body.imageUrl || 'star' : undefined,
         color: body.color !== undefined ? body.color : undefined,
+        color2: body.color2 !== undefined ? (body.color2 || null) : undefined,
+        effect: body.effect !== undefined ? body.effect : undefined,
         glowColor: body.glow !== undefined ? (body.glow ? body.color : null) : undefined,
         categoryId: body.categoryId !== undefined ? (body.categoryId || null) : undefined,
         sortOrder: parsedSortOrder,
@@ -64,6 +66,11 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
   try {
     const { id } = await params;
+    const current = await prisma.badge.findUnique({ where: { id } });
+    if (!current) return NextResponse.json({ error: 'Không tìm thấy huy hiệu.' }, { status: 404 });
+    if (current.systemKey) {
+      return NextResponse.json({ error: 'Không thể xoá Role hệ thống. Bạn chỉ có thể tuỳ chỉnh màu sắc, tên và thứ tự hiển thị.' }, { status: 400 });
+    }
     await prisma.badge.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error: any) {

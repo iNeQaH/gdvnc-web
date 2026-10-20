@@ -45,6 +45,7 @@ import SmartCaptcha from '@/components/SmartCaptcha';
 import ColorPicker from '@/components/ColorPicker';
 import { CircularAnglePicker } from '@/components/CircularAnglePicker';
 import { AnimatedTabs } from '@/components/AnimatedTabs';
+import BadgeIcon from '@/components/BadgeIcon';
 import { UserDisplayName, SETTINGS_FONT_PRESETS } from '@/components/UserDisplayName';
 import { calculateUserSp } from '@/lib/clanTypes';
 
@@ -115,6 +116,9 @@ export default function SettingsPage() {
   };
 
   // States
+  const [displayName, setDisplayName] = useState('');
+  const [hideAllBadges, setHideAllBadges] = useState(false);
+  const [displayedBadgeIds, setDisplayedBadgeIds] = useState<string[]>([]);
   const [gdUsername, setGdUsername] = useState('');
   const [discordTag, setDiscordTag] = useState('');
   const [country, setCountry] = useState('');
@@ -196,6 +200,9 @@ export default function SettingsPage() {
       const json = await res.json();
       if (res.ok && json.user) {
         setData(json.user);
+        setDisplayName(json.user.displayName || '');
+        setHideAllBadges(Boolean(json.user.hideAllBadges));
+        setDisplayedBadgeIds(Array.isArray(json.user.displayedBadgeIds) ? json.user.displayedBadgeIds : []);
         setGdUsername(json.user.gdUsername || '');
         setDiscordTag(json.user.discordTag || '');
         setCountry(json.user.country || '');
@@ -549,10 +556,20 @@ export default function SettingsPage() {
       const res = await fetch(`/api/profile/${currentUser.username}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gdUsername, discordTag, country, bio }),
+        body: JSON.stringify({ displayName, gdUsername, discordTag, country, bio, hideAllBadges, displayedBadgeIds }),
       });
       if (res.ok) {
         showToast(t('settings.save_info_success'), 'success');
+        try {
+          const raw = localStorage.getItem('gdvnc_user');
+          if (raw) {
+            const u = JSON.parse(raw);
+            const nextU = { ...u, displayName, hideAllBadges, displayedBadgeIds };
+            localStorage.setItem('gdvnc_user', JSON.stringify(nextU));
+            setCurrentUser(nextU);
+            window.dispatchEvent(new Event('gdvnc_user_update'));
+          }
+        } catch {}
       } else {
         const errData = await res.json().catch(() => null);
         showToast(errData?.error || t('settings.save_info_error'), 'error');
@@ -1059,6 +1076,25 @@ export default function SettingsPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className="text-xs font-bold ui-dim block mb-1.5">Tên hiển thị (Display Name)</label>
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-500/10 text-amber-500 shrink-0 border border-amber-500/20">
+                    <UserIcon className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Tên hiển thị tuỳ chỉnh (để trống sẽ dùng tên đăng nhập)"
+                    maxLength={32}
+                    className="flex-1 px-3 py-2 rounded-xl text-xs font-semibold border focus:ring-1 focus:ring-sky-500 outline-none"
+                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  />
+                </div>
+                <p className="text-[11px] ui-dim mt-1">Tên này sẽ hiển thị trên Bảng xếp hạng, Clan và Profile mà không thay đổi tên đăng nhập.</p>
+              </div>
+
               <div>
                 <label className="text-xs font-bold ui-dim block mb-1.5">{t('settings.gd_username')}</label>
                 <div className="flex items-center gap-2">
@@ -1132,6 +1168,102 @@ export default function SettingsPage() {
               >
                 <Check className="w-4 h-4" />
                 <span>{savingInfo ? t('common.saving') : t('settings.save_info')}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Badge Display Preferences Card */}
+          <div className="ui-card p-6 space-y-4">
+            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div>
+                <h2 className="text-sm font-bold flex items-center gap-2 ui-title">
+                  <Shield className="w-4 h-4 text-amber-500" /> Cài Đặt Hiển Thị Huy Hiệu & Vai Trò
+                </h2>
+                <p className="text-xs ui-dim mt-0.5">
+                  Chọn tối đa 3 huy hiệu bạn sở hữu để hiển thị nổi bật trên đầu trang cá nhân (hoặc ẩn toàn bộ)
+                </p>
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={hideAllBadges}
+                onChange={(e) => setHideAllBadges(e.target.checked)}
+                className="w-4 h-4 rounded text-sky-500 cursor-pointer"
+              />
+              <span className="text-xs font-bold ui-title">
+                Ẩn toàn bộ huy hiệu trên đầu trang cá nhân
+              </span>
+            </label>
+
+            {!hideAllBadges && (
+              <div className="space-y-3 pt-2">
+                <div className="text-xs font-semibold ui-dim">
+                  Chọn tối đa 3 huy hiệu yêu thích ({displayedBadgeIds.length}/3 đã chọn):
+                  {displayedBadgeIds.length === 0 && (
+                    <span className="ml-1 text-amber-500 font-bold">(Mặc định tự động chọn 3 huy hiệu bậc cao nhất)</span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                  {(data?.badges || []).map((b: any) => {
+                    const isChecked = displayedBadgeIds.includes(b.id);
+                    const toggleBadge = () => {
+                      if (isChecked) {
+                        setDisplayedBadgeIds((prev) => prev.filter((id) => id !== b.id));
+                      } else {
+                        if (displayedBadgeIds.length >= 3) {
+                          showToast('Chỉ được chọn tối đa 3 huy hiệu để hiển thị trên đầu trang', 'error');
+                          return;
+                        }
+                        setDisplayedBadgeIds((prev) => [...prev, b.id]);
+                      }
+                    };
+
+                    return (
+                      <div
+                        key={b.id}
+                        onClick={toggleBadge}
+                        className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${
+                          isChecked ? 'ring-2 ring-sky-500 bg-sky-500/10 border-sky-500' : 'hover:bg-black/5 dark:hover:bg-white/5'
+                        }`}
+                        style={{ borderColor: isChecked ? undefined : 'var(--border-ui)' }}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <BadgeIcon icon={b.icon || 'Star'} color={b.color} color2={b.color2} effect={b.effect} className="w-5 h-5 shrink-0" />
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold ui-title truncate">{b.name}</div>
+                            {b.description && <div className="text-[10px] ui-dim truncate">{b.description}</div>}
+                          </div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {}}
+                          className="w-4 h-4 rounded text-sky-500 pointer-events-none"
+                        />
+                      </div>
+                    );
+                  })}
+                  {(data?.badges || []).length === 0 && (
+                    <div className="sm:col-span-3 text-center py-4 text-xs ui-dim italic">
+                      Bạn chưa sở hữu huy hiệu tùy chỉnh nào. Các vai trò hệ thống sẽ tự động hiển thị.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+              <button
+                type="button"
+                onClick={handleSaveInfo}
+                disabled={savingInfo}
+                className="px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <Check className="w-4 h-4" />
+                <span>{savingInfo ? t('common.saving') : 'Lưu Cài Đặt Huy Hiệu'}</span>
               </button>
             </div>
           </div>

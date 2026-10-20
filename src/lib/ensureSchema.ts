@@ -8,7 +8,7 @@ async function columnSet(db: PrismaClient) {
     FROM information_schema.columns
     WHERE table_schema = 'public'
       AND (
-        (table_name = 'User' AND column_name IN ('tokenVersion', 'hardestClassicLevelId', 'hardestPlatformerLevelId', 'isBanned', 'bannedUntil', 'banReason', 'failedLoginAttempts', 'lockedUntil', 'lastFailedLoginAt'))
+        (table_name = 'User' AND column_name IN ('tokenVersion', 'hardestClassicLevelId', 'hardestPlatformerLevelId', 'isBanned', 'bannedUntil', 'banReason', 'failedLoginAttempts', 'lockedUntil', 'lastFailedLoginAt', 'displayName', 'gdStars', 'gdMoons', 'gdDemons', 'gdStatsUpdatedAt', 'displayedBadgeIds', 'hideAllBadges'))
         OR (table_name = 'Otp' AND column_name = 'failedAttempts')
         OR (table_name = 'PageVisit' AND column_name = 'id')
         OR (table_name = 'ListChangeLog' AND column_name = 'id')
@@ -22,6 +22,8 @@ async function columnSet(db: PrismaClient) {
         OR (table_name = 'ClanJoinRequest' AND column_name = 'id')
         OR (table_name = 'ClanSpContribution' AND column_name = 'id')
         OR (table_name = 'ClanBan' AND column_name = 'id')
+        OR (table_name = 'Badge' AND column_name IN ('systemKey', 'color2', 'effect'))
+        OR (table_name = 'SiteAnnouncement' AND column_name IN ('expiresAt', 'likedUserIds', 'poll'))
       )
   `;
   return new Set(rows.map((row) => `${row.table_name}.${row.column_name}`));
@@ -284,6 +286,46 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
       )
     `);
   }
+  if (!have.has('User.displayName')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "displayName" TEXT`);
+  }
+  if (!have.has('User.gdStars')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "gdStars" INTEGER NOT NULL DEFAULT 0`);
+  }
+  if (!have.has('User.gdMoons')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "gdMoons" INTEGER NOT NULL DEFAULT 0`);
+  }
+  if (!have.has('User.gdDemons')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "gdDemons" INTEGER NOT NULL DEFAULT 0`);
+  }
+  if (!have.has('User.gdStatsUpdatedAt')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "gdStatsUpdatedAt" TIMESTAMP(3)`);
+  }
+  if (!have.has('User.displayedBadgeIds')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "displayedBadgeIds" TEXT[] NOT NULL DEFAULT '{}'`);
+  }
+  if (!have.has('User.hideAllBadges')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "hideAllBadges" BOOLEAN NOT NULL DEFAULT false`);
+  }
+  if (!have.has('Badge.systemKey')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "Badge" ADD COLUMN IF NOT EXISTS "systemKey" TEXT`);
+    await db.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "Badge_systemKey_key" ON "Badge"("systemKey")`);
+  }
+  if (!have.has('Badge.color2')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "Badge" ADD COLUMN IF NOT EXISTS "color2" TEXT`);
+  }
+  if (!have.has('Badge.effect')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "Badge" ADD COLUMN IF NOT EXISTS "effect" TEXT`);
+  }
+  if (!have.has('SiteAnnouncement.expiresAt')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "SiteAnnouncement" ADD COLUMN IF NOT EXISTS "expiresAt" TIMESTAMP(3)`);
+  }
+  if (!have.has('SiteAnnouncement.likedUserIds')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "SiteAnnouncement" ADD COLUMN IF NOT EXISTS "likedUserIds" TEXT[] NOT NULL DEFAULT '{}'`);
+  }
+  if (!have.has('SiteAnnouncement.poll')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "SiteAnnouncement" ADD COLUMN IF NOT EXISTS "poll" JSONB`);
+  }
 }
 
 /** Indexes/FKs — do not block the request that needed the new columns. */
@@ -359,6 +401,11 @@ async function addIndexesInBackground(db: PrismaClient) {
           FOREIGN KEY ("hardestPlatformerLevelId") REFERENCES "Level"("id") ON DELETE SET NULL ON UPDATE CASCADE;
       END IF;
     END $$`,
+    `CREATE INDEX IF NOT EXISTS "User_gdStars_idx" ON "User"("gdStars" DESC)`,
+    `CREATE INDEX IF NOT EXISTS "User_gdMoons_idx" ON "User"("gdMoons" DESC)`,
+    `CREATE INDEX IF NOT EXISTS "User_gdDemons_idx" ON "User"("gdDemons" DESC)`,
+    `CREATE INDEX IF NOT EXISTS "Badge_systemKey_idx" ON "Badge"("systemKey")`,
+    `CREATE INDEX IF NOT EXISTS "SiteAnnouncement_expiresAt_idx" ON "SiteAnnouncement"("expiresAt")`,
   ];
   for (const sql of statements) {
     try {
@@ -366,6 +413,186 @@ async function addIndexesInBackground(db: PrismaClient) {
     } catch (error) {
       console.error('ensureSchema index', error);
     }
+  }
+}
+
+export const DEFAULT_SYSTEM_ROLES = [
+  {
+    systemKey: 'ROLE_ADMIN',
+    name: 'Admin',
+    description: 'Quản trị viên hệ thống GDVN',
+    icon: 'crown',
+    color: '#ef4444',
+    bgColor: '#ef444420',
+    borderColor: '#ef444450',
+    glowColor: '#ef4444',
+    effect: 'glow',
+    category: 'STAFF',
+    sortOrder: 1000,
+  },
+  {
+    systemKey: 'ROLE_MODERATOR',
+    name: 'Moderator',
+    description: 'Kiểm duyệt viên hệ thống GDVN',
+    icon: 'shield',
+    color: '#3b82f6',
+    bgColor: '#3b82f620',
+    borderColor: '#3b82f650',
+    glowColor: '#3b82f6',
+    effect: 'glow',
+    category: 'STAFF',
+    sortOrder: 900,
+  },
+  {
+    systemKey: 'ROLE_SUPPORTER',
+    name: 'Supporter',
+    description: 'Người ủng hộ phát triển GDVN',
+    icon: 'heart',
+    color: '#ec4899',
+    color2: '#f43f5e',
+    bgColor: '#ec489920',
+    borderColor: '#ec489950',
+    glowColor: '#ec4899',
+    effect: 'gradient',
+    category: 'SUPPORTER',
+    sortOrder: 800,
+  },
+  {
+    systemKey: 'CREATOR_MYTHIC',
+    name: 'Mythic Creator',
+    description: 'Tác giả có màn chơi đạt phẩm chất Mythic',
+    icon: 'diamond',
+    color: '#06b6d4',
+    color2: '#3b82f6',
+    bgColor: '#06b6d420',
+    borderColor: '#06b6d450',
+    glowColor: '#06b6d4',
+    effect: 'shimmer',
+    category: 'CREATOR',
+    sortOrder: 750,
+  },
+  {
+    systemKey: 'CREATOR_LEGENDARY',
+    name: 'Legendary Creator',
+    description: 'Tác giả có màn chơi đạt phẩm chất Legendary',
+    icon: 'trophy',
+    color: '#f59e0b',
+    color2: '#ef4444',
+    bgColor: '#f59e0b20',
+    borderColor: '#f59e0b50',
+    glowColor: '#f59e0b',
+    effect: 'gradient',
+    category: 'CREATOR',
+    sortOrder: 700,
+  },
+  {
+    systemKey: 'CREATOR_EPIC',
+    name: 'Epic Creator',
+    description: 'Tác giả có màn chơi đạt phẩm chất Epic',
+    icon: 'sparkles',
+    color: '#8b5cf6',
+    color2: '#d946ef',
+    bgColor: '#8b5cf620',
+    borderColor: '#8b5cf650',
+    glowColor: '#8b5cf6',
+    effect: 'glow',
+    category: 'CREATOR',
+    sortOrder: 650,
+  },
+  {
+    systemKey: 'CREATOR_FEATURED',
+    name: 'Featured Creator',
+    description: 'Tác giả có màn chơi đạt phẩm chất Featured',
+    icon: 'star',
+    color: '#eab308',
+    bgColor: '#eab30820',
+    borderColor: '#eab30850',
+    glowColor: '#eab308',
+    effect: 'none',
+    category: 'CREATOR',
+    sortOrder: 600,
+  },
+  {
+    systemKey: 'CREATOR_STAR',
+    name: 'Rated Creator',
+    description: 'Tác giả có màn chơi được Star Rate',
+    icon: 'award',
+    color: '#10b981',
+    bgColor: '#10b98120',
+    borderColor: '#10b98150',
+    glowColor: '#10b981',
+    effect: 'none',
+    category: 'CREATOR',
+    sortOrder: 550,
+  },
+  {
+    systemKey: 'GRINDER_DEMON',
+    name: 'Demon Slayer',
+    description: 'Chinh phục từ 500 Demons trở lên trong Geometry Dash',
+    icon: 'flame',
+    color: '#dc2626',
+    color2: '#991b1b',
+    bgColor: '#dc262620',
+    borderColor: '#dc262650',
+    glowColor: '#dc2626',
+    effect: 'gradient',
+    category: 'PLAYER',
+    sortOrder: 500,
+  },
+  {
+    systemKey: 'GRINDER_STAR',
+    name: 'Star Grinder',
+    description: 'Thu thập từ 10,000 Stars trở lên trong Geometry Dash',
+    icon: 'star',
+    color: '#facc15',
+    color2: '#eab308',
+    bgColor: '#facc1520',
+    borderColor: '#facc1550',
+    glowColor: '#facc15',
+    effect: 'glow',
+    category: 'PLAYER',
+    sortOrder: 450,
+  },
+  {
+    systemKey: 'GRINDER_MOON',
+    name: 'Moon Grinder',
+    description: 'Thu thập từ 5,000 Moons trở lên trong Geometry Dash',
+    icon: 'moon',
+    color: '#38bdf8',
+    color2: '#0284c7',
+    bgColor: '#38bdf820',
+    borderColor: '#38bdf850',
+    glowColor: '#38bdf8',
+    effect: 'glow',
+    category: 'PLAYER',
+    sortOrder: 400,
+  },
+];
+
+export async function seedSystemBadges(db: PrismaClient): Promise<void> {
+  try {
+    for (const b of DEFAULT_SYSTEM_ROLES) {
+      await db.badge.upsert({
+        where: { systemKey: b.systemKey },
+        update: {},
+        create: {
+          systemKey: b.systemKey,
+          name: b.name,
+          description: b.description,
+          icon: b.icon,
+          color: b.color,
+          color2: b.color2,
+          bgColor: b.bgColor,
+          borderColor: b.borderColor,
+          glowColor: b.glowColor,
+          effect: b.effect,
+          category: b.category,
+          sortOrder: b.sortOrder,
+        },
+      });
+    }
+  } catch (err) {
+    console.error('seedSystemBadges error', err);
   }
 }
 
@@ -397,8 +624,12 @@ export async function applyPendingSchema(db: PrismaClient): Promise<void> {
     have.has('ClanBan.id') &&
     have.has('User.nameColor') &&
     have.has('User.hasGlitchTheme') &&
-    have.has('User.easterEggCompleted');
+    have.has('User.easterEggCompleted') &&
+    have.has('User.displayName') &&
+    have.has('Badge.systemKey') &&
+    have.has('SiteAnnouncement.expiresAt');
   if (complete) return;
   await addMissingColumns(db, have);
   void addIndexesInBackground(db);
+  void seedSystemBadges(db);
 }

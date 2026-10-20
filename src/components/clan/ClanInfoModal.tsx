@@ -167,7 +167,7 @@ export default function ClanInfoModal({ isOpen, onClose }: ClanInfoModalProps) {
             <div className="p-4 rounded-2xl border bg-purple-500/5 border-purple-500/30 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="px-2.5 py-0.5 rounded-md text-[11px] font-black uppercase tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/30">
-                  Tier 3 (Từ 20 SP trở lên)
+                  Tier 3 (20 - 49 SP)
                 </span>
                 <span className="text-xs font-bold text-purple-400 flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5" />
@@ -182,6 +182,33 @@ export default function ClanInfoModal({ isOpen, onClose }: ClanInfoModalProps) {
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                   <span>{isEn ? 'Exclusive VIP Tier 3 badge on Clan list and member profiles.' : 'Huy hiệu VIP Tier 3 đặc quyền trên danh sách Clan và trang cá nhân thành viên.'}</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Tier 4 */}
+            <div className="p-4 rounded-2xl border bg-rose-500/5 border-rose-500/30 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="px-2.5 py-0.5 rounded-md text-[11px] font-black uppercase tracking-wider bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                  Tier 4 (Từ 50 SP trở lên)
+                </span>
+                <span className="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5" />
+                  <span>{isEn ? 'Max 100 members' : 'Tối đa 100 thành viên'}</span>
+                </span>
+              </div>
+              <ul className="text-xs ui-dim space-y-1 pl-1">
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                  <span>{isEn ? 'Maximum 100 members capacity.' : 'Mở rộng quy mô Clan lên tới tối đa 100 thành viên.'}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                  <span>{isEn ? 'Special Animated Shimmer & Mythic Glow frame on Clan Card.' : 'Khung thẻ Clan phát sáng đặc biệt (Animated Mythic Glow + Gradient lấp lánh).'}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                  <span>{isEn ? 'Exclusive Mythic Tier 4 Badge.' : 'Huy hiệu Tối thượng Mythic Clan Tier 4.'}</span>
                 </li>
               </ul>
             </div>

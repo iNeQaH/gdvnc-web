@@ -57,11 +57,16 @@ model User {
   lastFailedLoginAt   DateTime?
 
   // Points and rankings
+  displayName   String?
   classicPp     Float     @default(0)
   platformerPp  Float     @default(0)
   challengePp   Float     @default(0)
   creatorPoints Float     @default(0)
   spPoints      Int       @default(0)
+  gdStars       Int       @default(0)
+  gdMoons       Int       @default(0)
+  gdDemons      Int       @default(0)
+  gdStatsUpdatedAt DateTime?
   tokenVersion  Int       @default(0)
   totpEnabled   Boolean   @default(false)
   totpSecret    String?
@@ -80,6 +85,8 @@ model User {
   authoredAnnouncements SiteAnnouncement[] @relation("AnnouncementAuthor")
   announcementReads AnnouncementRead[]
   userBadges      UserBadge[]
+  displayedBadgeIds String[]      @default([])
+  hideAllBadges     Boolean       @default(false)
   creatorWorks    CreatorWork[]   @relation("CreatorWorks")
   reviewedWorks   CreatorWork[]   @relation("WorkReviewer")
   levelSubmissions LevelSubmission[] @relation("LevelSubmissions")
@@ -118,6 +125,9 @@ model User {
   @@index([classicPp(sort: Desc)])
   @@index([platformerPp(sort: Desc)])
   @@index([creatorPoints(sort: Desc)])
+  @@index([gdStars(sort: Desc)])
+  @@index([gdMoons(sort: Desc)])
+  @@index([gdDemons(sort: Desc)])
   @@index([role])
   @@index([gdUsername])
   @@index([hardestClassicLevelId])
@@ -248,13 +258,16 @@ model BadgeCategory {
 
 model Badge {
   id          String      @id @default(uuid())
+  systemKey   String?     @unique
   name        String
   description String?     @db.Text
   icon        String      // 'star', 'flame', etc.
   color       String      
+  color2      String?
   bgColor     String?     
   borderColor String?     
   glowColor   String?     
+  effect      String?     // 'none', 'glow', 'gradient', 'pulse', 'shimmer', 'rainbow'
   tier        String?     
   minPoints   Float?      
   pointsType  String?     
@@ -268,6 +281,7 @@ model Badge {
 
   @@index([sortOrder])
   @@index([categoryId])
+  @@index([systemKey])
 }
 
 model UserBadge {
@@ -384,6 +398,9 @@ model SiteAnnouncement {
   targetUserIds String[]               @default([])
   authorId      String?
   author        User?                  @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  expiresAt     DateTime?
+  likedUserIds  String[]               @default([])
+  poll          Json?
   createdAt     DateTime               @default(now())
   updatedAt     DateTime               @updatedAt
   reads         AnnouncementRead[]
@@ -391,6 +408,7 @@ model SiteAnnouncement {
   @@index([createdAt])
   @@index([audience])
   @@index([authorId])
+  @@index([expiresAt])
 }
 
 model AnnouncementRead {

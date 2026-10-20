@@ -38,6 +38,7 @@ const en = {
   'theme.slate': 'Dark',
   'theme.sky': 'Sky',
   'theme.custom': 'Custom',
+  'theme.glitch': '???',
 
   // Common
   'common.loading': 'Loading...',
@@ -324,7 +325,7 @@ const en = {
   'support.original_price': 'Original Price:',
   'support.discount_label': 'Discount ({percent}% off):',
   'support.total_price': 'Total:',
-  'support.discount_hint': '* Promo: 5% discount and +2 SP Coins for every 3 months. Supporter status will automatically expire at the end of the duration.',
+  'support.discount_hint': '* Promo: 5% discount (up to 30% max) and +2 SP Coins for every 3 months. Supporter status will automatically expire at the end of the duration.',
   'support.qr_label': 'Auto-Supporter QR Code',
   'support.no_account_title': 'Account Not Specified',
   'support.no_account_desc': 'Please log in or enter a username to generate the QR code.',

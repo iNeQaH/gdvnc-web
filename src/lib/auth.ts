@@ -20,6 +20,7 @@ export interface JwtPayload {
   username: string;
   role: string;
   tokenVersion?: number;
+  isBanned?: boolean;
   iat?: number;
   exp?: number;
 }
@@ -115,22 +116,33 @@ export async function getSessionUser(): Promise<JwtPayload | null> {
         where: { id: user.id },
         data: { isBanned: false, banReason: null, bannedUntil: null },
       });
-    } else {
-      return null;
+      user.isBanned = false;
     }
   }
   if ((jwt.tokenVersion ?? 0) !== user.tokenVersion) return null;
   return {
     userId: user.id,
     username: user.username,
-    role: user.role,
+    role: user.isBanned ? 'USER' : user.role,
     tokenVersion: user.tokenVersion,
+    isBanned: user.isBanned,
   };
+}
+
+export async function requireActiveUser(): Promise<JwtPayload> {
+  const user = await getSessionUser();
+  if (!user) {
+    throw new Error('UNAUTHORIZED');
+  }
+  if (user.isBanned) {
+    throw new Error('BANNED');
+  }
+  return user;
 }
 
 export async function requireAdmin(): Promise<JwtPayload> {
   const user = await getSessionUser();
-  if (!user || !isStaffRole(user.role)) {
+  if (!user || user.isBanned || !isStaffRole(user.role)) {
     throw new Error('UNAUTHORIZED');
   }
   return user;
@@ -138,7 +150,7 @@ export async function requireAdmin(): Promise<JwtPayload> {
 
 export async function requireFullAdmin(): Promise<JwtPayload> {
   const user = await getSessionUser();
-  if (!user || !isFullAdminRole(user.role)) {
+  if (!user || user.isBanned || !isFullAdminRole(user.role)) {
     throw new Error('UNAUTHORIZED');
   }
   return user;
@@ -146,7 +158,7 @@ export async function requireFullAdmin(): Promise<JwtPayload> {
 
 export async function requireSuperAdmin(): Promise<JwtPayload> {
   const user = await getSessionUser();
-  if (!user || !isSuperAdminUser(user)) {
+  if (!user || user.isBanned || !isSuperAdminUser(user)) {
     throw new Error('UNAUTHORIZED');
   }
   return user;

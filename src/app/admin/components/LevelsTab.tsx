@@ -97,7 +97,7 @@ export default function LevelsTab({
   // Badges state
   const [badgesList, setBadgesList] = useState<any[]>([]);
   const [loadingBadges, setLoadingBadges] = useState(true);
-  const emptyBadgeForm = { imageUrl: '', id: '', name: '', description: '', color: '', glow: false, categoryId: '', sortOrder: '' };
+  const emptyBadgeForm = { imageUrl: 'Star', id: '', name: '', description: '', color: '#3b82f6', color2: '', effect: 'none', glow: false, categoryId: '', sortOrder: '', systemKey: '' };
   const [badgeForm, setBadgeForm] = useState(emptyBadgeForm);
   const [isIconModalOpen, setIsIconModalOpen] = useState(false);
   const [iconSearch, setIconSearch] = useState('');
@@ -973,10 +973,13 @@ export default function LevelsTab({
                           id: b.id,
                           name: b.name,
                           description: b.description || '',
-                          color: b.color || '',
+                          color: b.color || '#3b82f6',
+                          color2: b.color2 || '',
+                          effect: b.effect || (b.glowColor ? 'glow' : 'none'),
                           glow: !!b.glowColor,
                           categoryId: b.categoryId || '',
-                          sortOrder: b.sortOrder || '',
+                          sortOrder: b.sortOrder !== undefined ? String(b.sortOrder) : '',
+                          systemKey: b.systemKey || '',
                         });
                         setIsBadgeEditModalOpen(true);
                       }
@@ -990,10 +993,17 @@ export default function LevelsTab({
                     } transition-all`}
                     style={{ backgroundColor: 'var(--bg-card)', borderColor: isBadgeEditMode ? 'var(--accent)' : 'var(--border-ui)' }}
                   >
-                    <span className="text-[10px] font-black ui-dim w-6">#{b.sortOrder || (badgePage - 1) * 5 + idx + 1}</span>
-                    <BadgeIcon icon={b.icon || 'Star'} color={b.color} glow={b.glowColor} className="w-7 h-7" />
+                    <span className="text-[10px] font-black ui-dim w-6">#{b.sortOrder ?? (badgePage - 1) * 10 + idx + 1}</span>
+                    <BadgeIcon icon={b.icon || 'Star'} color={b.color} color2={b.color2} effect={b.effect} glow={b.glowColor} className="w-7 h-7" />
                     <div className={`min-w-0 flex-1 ${badgesViewMode === 'grid' ? 'w-full' : ''}`}>
-                      <div className="font-bold ui-title text-xs truncate">{b.name}</div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold ui-title text-xs truncate">{b.name}</span>
+                        {b.systemKey && (
+                          <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20 font-bold shrink-0">
+                            HỆ THỐNG
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[10px] ui-dim truncate">
                         {b.badgeCategory?.name || t('badge.uncategorized')}
                         {b.description ? ` · ${b.description}` : ''}
@@ -1003,7 +1013,7 @@ export default function LevelsTab({
                 ))
               )}
             </div>
-            <AdminListPager page={badgePage} total={filteredBadges?.length || 0} onPage={setBadgePage} t={t} pageSize={5} />
+            <AdminListPager page={badgePage} total={filteredBadges?.length || 0} onPage={setBadgePage} t={t} pageSize={10} />
           </div>
         </div>
       </FnSection>
@@ -1398,6 +1408,197 @@ export default function LevelsTab({
         initialData={levelFormInitialData}
         onSaved={() => {}}
       />
+
+      {isBadgeEditModalOpen && (
+        <div className="fixed inset-0 z-[100100] bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-3xl border shadow-2xl overflow-hidden flex flex-col max-h-[90vh]" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}>
+            <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-sm ui-title">Chỉnh Sửa Huy Hiệu / Role</h3>
+                {badgeForm.systemKey && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20 font-bold">
+                    HỆ THỐNG
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsBadgeEditModalOpen(false);
+                  setBadgeForm(emptyBadgeForm);
+                }}
+                className="p-1 rounded-lg border hover:opacity-80 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4 overflow-y-auto flex-1 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold ui-dim mb-1">Tên hiển thị</label>
+                  <input
+                    type="text"
+                    value={badgeForm.name}
+                    onChange={(e) => setBadgeForm({ ...badgeForm, name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border font-bold"
+                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold ui-dim mb-1">Thứ tự ưu tiên (sortOrder cao = đứng trước)</label>
+                  <input
+                    type="number"
+                    value={badgeForm.sortOrder}
+                    onChange={(e) => setBadgeForm({ ...badgeForm, sortOrder: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border font-bold"
+                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold ui-dim mb-1">Mô tả huy hiệu</label>
+                <input
+                  type="text"
+                  value={badgeForm.description}
+                  onChange={(e) => setBadgeForm({ ...badgeForm, description: e.target.value })}
+                  placeholder="Mô tả ý nghĩa huy hiệu..."
+                  className="w-full px-3 py-2 rounded-xl border"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold ui-dim mb-1">Danh mục</label>
+                  <select
+                    value={badgeForm.categoryId}
+                    onChange={(e) => setBadgeForm({ ...badgeForm, categoryId: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border font-bold cursor-pointer"
+                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  >
+                    <option value="">Chưa phân loại</option>
+                    {badgeCategories?.map((c: any) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold ui-dim mb-1">Hiệu ứng hiển thị (Effect)</label>
+                  <select
+                    value={badgeForm.effect || 'none'}
+                    onChange={(e) => setBadgeForm({ ...badgeForm, effect: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border font-bold cursor-pointer"
+                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  >
+                    <option value="none">Mặc định (Không hiệu ứng)</option>
+                    <option value="glow">Phát sáng (Glow)</option>
+                    <option value="gradient">Gradient 2 màu</option>
+                    <option value="shimmer">Lấp lánh (Shimmer)</option>
+                    <option value="pulse">Nhịp đập (Pulse)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold ui-dim mb-1.5">Icon Huy hiệu</label>
+                <button
+                  type="button"
+                  onClick={() => setIsIconModalOpen(true)}
+                  className="px-3.5 py-2 rounded-xl border font-bold flex items-center gap-2 hover:opacity-80 cursor-pointer"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+                >
+                  <IconGlyph icon={badgeForm.imageUrl} className="w-4 h-4" />
+                  <span>{badgeForm.imageUrl || 'Chọn Icon'}</span>
+                  <Search className="w-3.5 h-3.5 ui-dim ml-1" />
+                </button>
+              </div>
+
+              <div className="p-3.5 rounded-2xl border space-y-3" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}>
+                <div className="text-[11px] font-bold uppercase ui-dim tracking-wider">Màu sắc & Xem trước trực tiếp</div>
+                <div className="flex items-center gap-6">
+                  <div>
+                    <label className="block text-[10px] font-bold ui-dim mb-1">Màu chính</label>
+                    <ColorPicker
+                      value={badgeForm.color || '#3b82f6'}
+                      onChange={(color) => setBadgeForm({ ...badgeForm, color })}
+                      ariaLabel="Main badge color"
+                      size={36}
+                      round
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold ui-dim mb-1">Màu phụ (Gradient/Glow)</label>
+                    <ColorPicker
+                      value={badgeForm.color2 || '#8b5cf6'}
+                      onChange={(color2) => setBadgeForm({ ...badgeForm, color2 })}
+                      ariaLabel="Secondary badge color"
+                      size={36}
+                      round
+                    />
+                  </div>
+                  <div className="flex flex-col items-center justify-center p-3 rounded-xl border min-w-[100px]" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}>
+                    <div className="text-[10px] font-bold ui-dim mb-1">Preview</div>
+                    <BadgeIcon
+                      icon={badgeForm.imageUrl || 'Star'}
+                      color={badgeForm.color}
+                      color2={badgeForm.color2}
+                      effect={badgeForm.effect}
+                      glow={badgeForm.glow}
+                      className="w-8 h-8"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {badgeForm.systemKey && (
+                <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[11px] text-blue-400 font-medium leading-relaxed">
+                  ℹ️ Đây là Role hệ thống. Bạn có thể tự do điều chỉnh tên hiển thị, icon, màu sắc, hiệu ứng và thứ tự ưu tiên (sortOrder). Hệ thống bảo vệ Role này không bị xóa nhầm.
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t flex items-center justify-between gap-3" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div>
+                {!badgeForm.systemKey ? (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteBadge(badgeForm.id)}
+                    className="px-3 py-2 rounded-xl text-xs font-bold text-red-500 hover:bg-red-500/10 border border-red-500/20 transition-all cursor-pointer"
+                  >
+                    Xóa huy hiệu
+                  </button>
+                ) : (
+                  <span className="text-[11px] ui-dim italic">Role hệ thống không thể xóa</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsBadgeEditModalOpen(false);
+                    setBadgeForm(emptyBadgeForm);
+                  }}
+                  className="px-3 py-2 rounded-xl text-xs font-bold border hover:opacity-80 cursor-pointer"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+                >
+                  Đóng
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveBadge}
+                  disabled={actionLoading === 'badge'}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-xs cursor-pointer"
+                  style={{ backgroundColor: 'var(--accent)' }}
+                >
+                  {actionLoading === 'badge' ? 'Đang lưu...' : 'Lưu thay đổi'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isIconModalOpen && (
         <div className="fixed inset-0 z-[100200] bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">

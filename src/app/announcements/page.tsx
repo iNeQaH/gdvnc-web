@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Bell, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { Bell, Pencil, Plus, Trash2, X, Heart, Clock, Vote } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import type { DictKey } from '@/lib/dictionaries';
@@ -17,6 +17,10 @@ type Announcement = {
   audience: string;
   author: string;
   createdAt: string;
+  expiresAt?: string | null;
+  likesCount?: number;
+  isLiked?: boolean;
+  poll?: any;
   targetUserIds?: string[];
 };
 
@@ -63,6 +67,30 @@ export default function AnnouncementsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLikeAnnouncement = async (e: React.MouseEvent, item: Announcement) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!currentUser) {
+      showToast('Vui lòng đăng nhập để thả tim thông báo!', 'error');
+      return;
+    }
+    if (currentUser.isBanned) {
+      showToast('Tài khoản bị đình chỉ không thể tương tác!', 'error');
+      return;
+    }
+    try {
+      const res = await fetch(`/api/announcements/${item.id}/react`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setItems((prev) =>
+          prev.map((x) =>
+            x.id === item.id ? { ...x, isLiked: data.isLiked, likesCount: data.likesCount } : x
+          )
+        );
+      }
+    } catch {}
   };
 
   const handleDeleteAnnouncement = (item: Announcement) => {
@@ -149,6 +177,36 @@ export default function AnnouncementsPage() {
                   {t('announce.by')} {item.author} · {audienceLabel(item.audience)}
                 </div>
                 <p className="text-xs ui-title/80 line-clamp-2 leading-relaxed">{item.excerpt}</p>
+
+                <div className="flex items-center gap-3 pt-2 text-[11px] ui-dim">
+                  <button
+                    type="button"
+                    onClick={(e) => handleLikeAnnouncement(e, item)}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                      item.isLiked
+                        ? 'bg-rose-500/15 border-rose-500/40 text-rose-500 font-bold'
+                        : 'hover:bg-rose-500/10 hover:border-rose-500/30 hover:text-rose-500'
+                    }`}
+                    style={{ borderColor: item.isLiked ? undefined : 'var(--border-ui)' }}
+                  >
+                    <Heart className={`w-3.5 h-3.5 ${item.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} />
+                    <span>{item.likesCount || 0}</span>
+                  </button>
+
+                  {item.poll && (
+                    <span className="inline-flex items-center gap-1 text-sky-500 font-medium">
+                      <Vote className="w-3.5 h-3.5" />
+                      Bình chọn ({item.poll.totalVoters || 0})
+                    </span>
+                  )}
+
+                  {item.expiresAt && (
+                    <span className="inline-flex items-center gap-1 text-amber-500/90 font-medium">
+                      <Clock className="w-3.5 h-3.5" />
+                      Hết hạn: {new Date(item.expiresAt).toLocaleDateString(locale)}
+                    </span>
+                  )}
+                </div>
               </Link>
 
               {isAdmin && (

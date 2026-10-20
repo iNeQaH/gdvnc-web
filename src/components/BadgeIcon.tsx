@@ -185,26 +185,33 @@ export function IconGlyph({ icon, className }: { icon?: string | null; className
 export default function BadgeIcon({
   icon,
   color,
+  color2,
+  effect,
   glow,
   className = 'w-4 h-4',
   title,
 }: {
   icon?: string | null;
   color?: string | null;
+  color2?: string | null;
+  effect?: string | null;
   glow?: boolean | string | null;
   className?: string;
   title?: string;
 }) {
   const fill = color || 'var(--accent)';
-  const glowing = Boolean(glow);
+  const fill2 = color2 || fill;
+  const glowing = Boolean(glow) || effect === 'glow' || effect === 'pulse' || effect === 'shimmer';
+  const hasGradient = Boolean(color2) || effect === 'gradient' || effect === 'shimmer';
+
   return (
     <span
       title={title}
-      className="gdvn-badge-icon"
+      className={`gdvn-badge-icon inline-flex items-center justify-center ${effect === 'pulse' ? 'animate-pulse' : ''}`}
       style={{
         color: fill,
         filter: glowing
-          ? `drop-shadow(0 0 1.2px ${fill}) drop-shadow(0 0 3px ${fill})`
+          ? `drop-shadow(0 0 1.5px ${fill}) drop-shadow(0 0 4px ${fill2})`
           : undefined,
       }}
     >

@@ -24,6 +24,11 @@ import {
   Shield,
   Users,
   Copy,
+  ChevronDown,
+  Gamepad2,
+  Crosshair,
+  Wrench,
+  Flame,
 } from 'lucide-react';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { useTheme } from './ThemeProvider';
@@ -55,6 +60,19 @@ export const Sidebar = () => {
   const eggTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [eggAlertMessage, setEggAlertMessage] = useState<string | null>(null);
   const [isEggOverlayOpen, setIsEggOverlayOpen] = useState(false);
+
+  const isLbActive = pathname === '/' || pathname.startsWith('/leaderboard');
+  const isLvlActive = pathname.startsWith('/levels');
+  const [leaderboardExpanded, setLeaderboardExpanded] = useState(isLbActive);
+  const [levelsExpanded, setLevelsExpanded] = useState(isLvlActive);
+
+  useEffect(() => {
+    if (isLbActive) setLeaderboardExpanded(true);
+  }, [pathname, isLbActive]);
+
+  useEffect(() => {
+    if (isLvlActive) setLevelsExpanded(true);
+  }, [pathname, isLvlActive]);
 
   useEffect(() => {
     eggClicksRef.current = 0;
@@ -322,6 +340,25 @@ export const Sidebar = () => {
     }
   }, []);
 
+  const leaderboardSubLinks = [
+    { href: '/leaderboard/classic', label: t('leaderboard.classic') || 'Classic', match: (p: string) => p === '/' || p === '/leaderboard' || p === '/leaderboard/classic' },
+    { href: '/leaderboard/platformer', label: t('leaderboard.platformer') || 'Platformer', match: (p: string) => p === '/leaderboard/platformer' },
+    { href: '/leaderboard/challenge', label: t('tags.challenge') || 'Challenge', match: (p: string) => p === '/leaderboard/challenge' },
+    { href: '/leaderboard/creator', label: t('leaderboard.creator') || 'Creator', match: (p: string) => p === '/leaderboard/creator' },
+    { href: '/leaderboard/stars', label: 'Stars', match: (p: string) => p === '/leaderboard/stars' },
+    { href: '/leaderboard/moons', label: 'Moons', match: (p: string) => p === '/leaderboard/moons' },
+    { href: '/leaderboard/demons', label: 'Demons', match: (p: string) => p === '/leaderboard/demons' },
+  ];
+
+  const levelsSubLinks = [
+    { href: '/levels/featured', label: 'Nổi bật', match: (p: string) => p === '/levels' || p === '/levels/featured' || p === '/levels/feature-list' },
+    { href: '/levels/classic', label: 'Classic', match: (p: string) => p === '/levels/classic' },
+    { href: '/levels/demonlist', label: 'Demonlist', match: (p: string) => p === '/levels/demonlist' },
+    { href: '/levels/pemonlist', label: 'Pemonlist', match: (p: string) => p === '/levels/pemonlist' },
+    { href: '/levels/vn', label: 'Việt Nam', match: (p: string) => p === '/levels/vn' },
+    { href: '/levels/challenge', label: 'Challenge', match: (p: string) => p === '/levels/challenge' },
+  ];
+
   const navLinks = [
     { href: '/announcements', label: t('nav.announcements'), icon: Bell },
     { href: '/', label: t('nav.leaderboard'), icon: Star },
@@ -447,36 +484,118 @@ export const Sidebar = () => {
               const Icon = item.icon;
               const myClan = currentUser?.clanMember?.clan;
               const isMyClanActive = myClan && pathname === `/clan/${myClan.slug}`;
+              const isAccordion = item.href === '/' || item.href === '/levels';
+              const isExpanded = item.href === '/' ? leaderboardExpanded : item.href === '/levels' ? levelsExpanded : false;
               const isActive =
                 item.href === '/'
-                  ? pathname === '/'
+                  ? isLbActive
+                  : item.href === '/levels'
+                  ? isLvlActive
                   : (item.href === '/clan' && isMyClanActive)
                   ? false
                   : pathname === item.href || (pathname.startsWith(item.href + '/') && !isMyClanActive);
               const actualBgCol = isLavender ? 'transparent' : (isActive ? 'var(--accent-bg)' : 'transparent');
               const actualTextCol = isLavender && isActive ? '#ffffff' : (item.isPink ? '#f472b6' : (isActive ? 'var(--accent-text)' : 'var(--text-body)'));
 
+              const handleItemClick = (e: React.MouseEvent) => {
+                if (item.href === '/') {
+                  e.preventDefault();
+                  setLeaderboardExpanded((prev) => !prev);
+                } else if (item.href === '/levels') {
+                  e.preventDefault();
+                  setLevelsExpanded((prev) => !prev);
+                }
+              };
+
               return (
                 <React.Fragment key={item.href}>
-                  <Link
-                    href={item.href}
-                    ref={isActive ? activeLinkRef : null}
-                    className={`relative flex items-center justify-between px-3 py-3 rounded-xl text-xs font-semibold transition-all group z-[2] ${isLavender && isActive ? '-translate-y-[7px]' : ''}`}
-                    style={{
-                      backgroundColor: actualBgCol,
-                      color: actualTextCol,
-                    }}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Icon className={`w-4 h-4 ${isActive ? 'scale-110' : 'group-hover:scale-110'} transition-transform ${item.isPink ? 'text-pink-400' : ''}`} />
-                      <span>{item.label}</span>
+                  {isAccordion ? (
+                    <button
+                      type="button"
+                      onClick={handleItemClick}
+                      className={`w-full relative flex items-center justify-between px-3 py-3 rounded-xl text-xs font-semibold transition-all group z-[2] text-left cursor-pointer ${isLavender && isActive ? '-translate-y-[7px]' : ''}`}
+                      style={{
+                        backgroundColor: actualBgCol,
+                        color: actualTextCol,
+                      }}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Icon className={`w-4 h-4 ${isActive ? 'scale-110' : 'group-hover:scale-110'} transition-transform ${item.isPink ? 'text-pink-400' : ''}`} />
+                        <span>{item.label}</span>
+                      </div>
+                      <ChevronDown
+                        className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                  ) : (
+                    <Link
+                      href={item.href}
+                      ref={isActive ? activeLinkRef : null}
+                      className={`relative flex items-center justify-between px-3 py-3 rounded-xl text-xs font-semibold transition-all group z-[2] ${isLavender && isActive ? '-translate-y-[7px]' : ''}`}
+                      style={{
+                        backgroundColor: actualBgCol,
+                        color: actualTextCol,
+                      }}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Icon className={`w-4 h-4 ${isActive ? 'scale-110' : 'group-hover:scale-110'} transition-transform ${item.isPink ? 'text-pink-400' : ''}`} />
+                        <span>{item.label}</span>
+                      </div>
+                      {item.href === '/announcements' && announceUnread > 0 ? (
+                        <span className="min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                          {announceUnread > 9 ? '9+' : announceUnread}
+                        </span>
+                      ) : null}
+                    </Link>
+                  )}
+
+                  {/* Leaderboard sub-links accordion */}
+                  {item.href === '/' && isExpanded && (
+                    <div className="ml-5 pl-2.5 my-1 space-y-0.5 border-l-2 transition-all" style={{ borderColor: 'var(--border-subtle)' }}>
+                      {leaderboardSubLinks.map((sub) => {
+                        const isSubActive = sub.match(pathname);
+                        return (
+                          <Link
+                            key={sub.href}
+                            href={sub.href}
+                            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                              isSubActive
+                                ? 'font-bold'
+                                : 'ui-dim hover:text-inherit hover:bg-black/5 dark:hover:bg-white/5'
+                            }`}
+                            style={isSubActive ? { backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' } : {}}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: isSubActive ? 'var(--accent)' : 'currentColor', opacity: isSubActive ? 1 : 0.4 }} />
+                            <span>{sub.label}</span>
+                          </Link>
+                        );
+                      })}
                     </div>
-                    {item.href === '/announcements' && announceUnread > 0 ? (
-                      <span className="min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
-                        {announceUnread > 9 ? '9+' : announceUnread}
-                      </span>
-                    ) : null}
-                  </Link>
+                  )}
+
+                  {/* Levels sub-links accordion */}
+                  {item.href === '/levels' && isExpanded && (
+                    <div className="ml-5 pl-2.5 my-1 space-y-0.5 border-l-2 transition-all" style={{ borderColor: 'var(--border-subtle)' }}>
+                      {levelsSubLinks.map((sub) => {
+                        const isSubActive = sub.match(pathname);
+                        return (
+                          <Link
+                            key={sub.href}
+                            href={sub.href}
+                            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                              isSubActive
+                                ? 'font-bold'
+                                : 'ui-dim hover:text-inherit hover:bg-black/5 dark:hover:bg-white/5'
+                            }`}
+                            style={isSubActive ? { backgroundColor: 'var(--accent-bg)', color: 'var(--accent-text)' } : {}}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: isSubActive ? 'var(--accent)' : 'currentColor', opacity: isSubActive ? 1 : 0.4 }} />
+                            <span>{sub.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
 
                   {/* Joined Clan Sub-item */}
                   {item.href === '/clan' && myClan && (

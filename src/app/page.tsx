@@ -15,13 +15,14 @@ import { getUserListRowStyle } from '@/lib/userListRowStyle';
 
 import FloatingNav from '@/components/FloatingNav';
 import { AnimatedTabs } from '@/components/AnimatedTabs';
+import { getCachedPageState, setCachedPageState } from '@/lib/pageCache';
 
 function LeaderboardPodium({
   players,
   mode,
 }: {
   players: any[];
-  mode: 'CLASSIC' | 'PLATFORMER' | 'CHALLENGE' | 'CREATOR';
+  mode: 'CLASSIC' | 'PLATFORMER' | 'CHALLENGE' | 'CREATOR' | 'STARS' | 'MOONS' | 'DEMONS';
 }) {
   const { t } = useLanguage();
   if (!players || players.length === 0) return null;
@@ -62,6 +63,15 @@ function LeaderboardPodium({
   const formatPoints = (player: any) => {
     if (mode === 'CREATOR') {
       return `${formatCp(player.creatorPoints)} CP`;
+    }
+    if (mode === 'STARS') {
+      return `${Number(player.statValue ?? player.gdStars ?? 0).toLocaleString()} Stars`;
+    }
+    if (mode === 'MOONS') {
+      return `${Number(player.statValue ?? player.gdMoons ?? 0).toLocaleString()} Moons`;
+    }
+    if (mode === 'DEMONS') {
+      return `${Number(player.statValue ?? player.gdDemons ?? 0).toLocaleString()} Demons`;
     }
     const pts = mode === 'PLATFORMER' ? player.platformerPp : mode === 'CHALLENGE' ? player.challengePp : player.classicPp;
     return `${Number(pts || 0).toFixed(2)} Pt`;
@@ -582,14 +592,18 @@ function QuickStatsGrid({
   );
 }
 
-export default function HomePage() {
+export default function HomePage({
+  initialMode = 'CLASSIC',
+}: {
+  initialMode?: 'CLASSIC' | 'PLATFORMER' | 'CHALLENGE' | 'CREATOR' | 'STARS' | 'MOONS' | 'DEMONS';
+} = {}) {
   const { t } = useLanguage();
   const { theme, resolvedMode } = useTheme();
   const isDark = resolvedMode === 'dark';
   const isLavender = theme === 'lavender';
   const { showConfirm, showToast } = useToast();
   const router = useRouter();
-  const [mode, setMode] = useState<'CLASSIC' | 'PLATFORMER' | 'CHALLENGE' | 'CREATOR'>('CLASSIC');
+  const [mode, setMode] = useState<'CLASSIC' | 'PLATFORMER' | 'CHALLENGE' | 'CREATOR' | 'STARS' | 'MOONS' | 'DEMONS'>(initialMode);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -605,6 +619,10 @@ export default function HomePage() {
   const [deviceFilter, setDeviceFilter] = useState<'ALL' | 'PC' | 'MOBILE'>('ALL');
 
   useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
+
+  useEffect(() => {
     const userStr = localStorage.getItem('gdvnc_user');
     if (userStr) {
       try { setCurrentUser(JSON.parse(userStr)); } catch {}
@@ -612,10 +630,18 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    const cached = getCachedPageState<any>('lb_highlights');
+    if (cached) {
+      setHighlights(cached);
+      return;
+    }
     fetch('/api/leaderboard/highlights')
       .then((res) => res.json())
       .then((data) => {
-        if (data.success) setHighlights(data.highlights);
+        if (data.success) {
+          setHighlights(data.highlights);
+          setCachedPageState('lb_highlights', data.highlights);
+        }
       })
       .catch(() => {});
   }, []);
@@ -643,12 +669,21 @@ export default function HomePage() {
   }, [mode, deviceFilter]);
 
   const fetchLeaderboard = async (currentMode: string, currentDevice: string = 'ALL') => {
+    const cacheKey = `lb_${currentMode}_${currentDevice}`;
+    const cached = getCachedPageState<any[]>(cacheKey);
+    if (cached) {
+      setLeaderboard(cached);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch(`/api/leaderboard?mode=${currentMode}&device=${currentDevice}`);
       const data = await res.json();
       if (data.success) {
         setLeaderboard(data.leaderboard || []);
+        setCachedPageState(cacheKey, data.leaderboard || []);
       }
     } catch (e) {
       console.error(e);
@@ -657,10 +692,18 @@ export default function HomePage() {
     }
   };
 
+  const handleModeChange = (newMode: any) => {
+    setMode(newMode);
+    router.push(`/leaderboard/${String(newMode).toLowerCase()}`);
+  };
+
   // Keep true ranking based on full device/mode list
   const validLeaderboard = useMemo(() => {
     return (leaderboard || []).filter((item) => {
       if (mode === 'CREATOR') return true;
+      if (mode === 'STARS') return (item.statValue ?? item.gdStars ?? 0) > 0;
+      if (mode === 'MOONS') return (item.statValue ?? item.gdMoons ?? 0) > 0;
+      if (mode === 'DEMONS') return (item.statValue ?? item.gdDemons ?? 0) > 0;
       const pts = mode === 'PLATFORMER' ? item.platformerPp : mode === 'CHALLENGE' ? item.challengePp : item.classicPp;
       return (pts || 0) > 0.005;
     });
@@ -746,17 +789,20 @@ export default function HomePage() {
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <AnimatedTabs
           active={mode}
-          onChange={setMode}
+          onChange={handleModeChange}
           options={[
             { id: 'CLASSIC', label: t('leaderboard.classic'), icon: <Star className="w-3.5 h-3.5 fill-current" /> },
             { id: 'PLATFORMER', label: t('leaderboard.platformer'), icon: <Gamepad2 className="w-3.5 h-3.5" /> },
             { id: 'CHALLENGE', label: t('tags.challenge'), icon: <Crosshair className="w-3.5 h-3.5" /> },
-            { id: 'CREATOR', label: t('leaderboard.creator'), icon: <Wrench className="w-3.5 h-3.5" /> }
+            { id: 'CREATOR', label: t('leaderboard.creator'), icon: <Wrench className="w-3.5 h-3.5" /> },
+            { id: 'STARS', label: 'Stars', icon: <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" /> },
+            { id: 'MOONS', label: 'Moons', icon: <Moon className="w-3.5 h-3.5 text-sky-400 fill-sky-400" /> },
+            { id: 'DEMONS', label: 'Demons', icon: <Swords className="w-3.5 h-3.5 text-rose-500" /> },
           ]}
         />
 
-        {/* Device Filter (Hidden in CREATOR mode) */}
-        {mode !== 'CREATOR' && (
+        {/* Device Filter (Hidden in CREATOR, STARS, MOONS, DEMONS mode) */}
+        {!['CREATOR', 'STARS', 'MOONS', 'DEMONS'].includes(mode) && (
           <AnimatedTabs
             active={deviceFilter}
             onChange={(val) => setDeviceFilter(val as any)}
@@ -828,6 +874,13 @@ export default function HomePage() {
                         <th className="px-5 py-3">{t('leaderboard.created_levels')}</th>
                         <th className="px-5 py-3">{t('leaderboard.tier')}</th>
                         <th className="px-5 py-3 text-right">{t('leaderboard.creator_points')}</th>
+                      </>
+                    ) : ['STARS', 'MOONS', 'DEMONS'].includes(mode) ? (
+                      <>
+                        <th className="px-5 py-3">GD Username</th>
+                        <th className="px-5 py-3 text-right">
+                          {mode === 'STARS' ? 'Stars' : mode === 'MOONS' ? 'Moons' : 'Demons'}
+                        </th>
                       </>
                     ) : (
                       <>
@@ -1000,6 +1053,21 @@ export default function HomePage() {
                             </td>
                             <td className="px-5 py-3.5 text-right font-black text-sm" style={{ color: customRow.hasCustomBg ? '#38bdf8' : 'var(--accent)' }}>
                               {formatCp(player.creatorPoints)} <span className={`text-[10px] font-normal ${customRow.hasCustomBg ? 'text-slate-300' : 'ui-dim'}`}>CP</span>
+                            </td>
+                          </>
+                        ) : ['STARS', 'MOONS', 'DEMONS'].includes(mode) ? (
+                          <>
+                            <td className="px-5 py-3.5">
+                              <span className="font-mono text-xs ui-dim">
+                                {player.gdUsername || '—'}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3.5 text-right font-black text-sm" style={{ color: customRow.hasCustomBg ? '#38bdf8' : 'var(--accent)' }}>
+                              {Number(
+                                mode === 'STARS' ? (player.statValue ?? player.gdStars ?? 0) :
+                                mode === 'MOONS' ? (player.statValue ?? player.gdMoons ?? 0) :
+                                (player.statValue ?? player.gdDemons ?? 0)
+                              ).toLocaleString()}
                             </td>
                           </>
                         ) : (

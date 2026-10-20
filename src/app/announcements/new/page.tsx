@@ -33,6 +33,7 @@ import { useToast } from '@/components/GlobalToast';
 import DiscordMarkdown from '@/components/DiscordMarkdown';
 import { htmlToDiscordMarkdown } from '@/lib/htmlToDiscordMarkdown';
 import { handleMarkdownKeyDown, handleMarkdownPaste } from '@/lib/markdownShortcuts';
+import { Clock, Vote, Plus, Trash2 } from 'lucide-react';
 import type { DictKey } from '@/lib/dictionaries';
 
 const AUDIENCES = ['ALL', 'ADMIN', 'MODERATOR', 'SUPPORTER', 'USERS'] as const;
@@ -54,6 +55,11 @@ function AnnouncementEditorContent() {
   const [body, setBody] = useState('');
   const [audience, setAudience] = useState<string>('ALL');
   const [usernames, setUsernames] = useState('');
+  const [expiresInDays, setExpiresInDays] = useState<number>(0);
+  const [hasPoll, setHasPoll] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState('');
+  const [pollOptions, setPollOptions] = useState<string[]>(['', '']);
+  const [pollAllowMultiple, setPollAllowMultiple] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [error, setError] = useState('');
@@ -98,6 +104,16 @@ function AnnouncementEditorContent() {
             setBody(rawBody);
           }
           setAudience(a.audience || 'ALL');
+          if (a.expiresAt) {
+            const diffDays = Math.max(1, Math.round((new Date(a.expiresAt).getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
+            setExpiresInDays(diffDays);
+          }
+          if (a.poll) {
+            setHasPoll(true);
+            setPollQuestion(a.poll.question || '');
+            setPollOptions(a.poll.options?.map((o: any) => o.text || o) || ['', '']);
+            setPollAllowMultiple(Boolean(a.poll.allowMultiple));
+          }
           if (Array.isArray(a.targetUserIds) && a.targetUserIds.length > 0) {
             setUsernames(a.targetUserIds.join(', '));
           }
@@ -202,6 +218,12 @@ function AnnouncementEditorContent() {
           body: body.trim(),
           audience,
           usernames: audience === 'USERS' && usernames.trim() ? usernames : undefined,
+          expiresInDays: expiresInDays > 0 ? expiresInDays : undefined,
+          poll: hasPoll && pollQuestion.trim() && pollOptions.filter(Boolean).length >= 2 ? {
+            question: pollQuestion.trim(),
+            options: pollOptions.map(o => o.trim()).filter(Boolean),
+            allowMultiple: pollAllowMultiple,
+          } : undefined,
         }),
       });
 
@@ -403,6 +425,121 @@ function AnnouncementEditorContent() {
                 color: 'var(--text-title)',
               }}
             />
+          </div>
+
+          {/* Expiration Settings */}
+          <div className="space-y-1 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+            <label className="text-xs font-bold ui-title flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-amber-500" />
+              Thời hạn tồn tại (Tự động xoá sau X ngày)
+            </label>
+            <select
+              value={expiresInDays}
+              onChange={(e) => setExpiresInDays(Number(e.target.value))}
+              className="w-full sm:w-64 px-3.5 py-2 rounded-xl border text-xs font-bold focus:outline-none"
+              style={{
+                backgroundColor: 'var(--bg-subtle)',
+                borderColor: 'var(--border-ui)',
+                color: 'var(--text-title)',
+              }}
+            >
+              <option value={0}>Vĩnh viễn (Không bao giờ hết hạn)</option>
+              <option value={1}>1 ngày</option>
+              <option value={3}>3 ngày</option>
+              <option value={7}>7 ngày (1 tuần)</option>
+              <option value={14}>14 ngày (2 tuần)</option>
+              <option value={30}>30 ngày (1 tháng)</option>
+            </select>
+          </div>
+
+          {/* Interactive Poll Section */}
+          <div className="pt-2 border-t space-y-3" style={{ borderColor: 'var(--border-subtle)' }}>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={hasPoll}
+                onChange={(e) => setHasPoll(e.target.checked)}
+                className="w-4 h-4 rounded text-sky-500"
+              />
+              <span className="text-xs font-bold ui-title flex items-center gap-1.5">
+                <Vote className="w-4 h-4 text-sky-500" />
+                Đính kèm cuộc bình chọn (Poll)
+              </span>
+            </label>
+
+            {hasPoll && (
+              <div className="space-y-3 p-4 rounded-xl border bg-black/5 dark:bg-white/5" style={{ borderColor: 'var(--border-ui)' }}>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold ui-dim">Câu hỏi bình chọn:</label>
+                  <input
+                    type="text"
+                    value={pollQuestion}
+                    onChange={(e) => setPollQuestion(e.target.value)}
+                    placeholder="VD: Bạn thích bản cập nhật nào nhất?"
+                    className="w-full px-3 py-1.5 rounded-lg border text-xs font-semibold focus:outline-none"
+                    style={{
+                      backgroundColor: 'var(--bg-subtle)',
+                      borderColor: 'var(--border-ui)',
+                      color: 'var(--text-title)',
+                    }}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold ui-dim">Các phương án lựa chọn:</label>
+                  {pollOptions.map((opt, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={opt}
+                        onChange={(e) => {
+                          const next = [...pollOptions];
+                          next[idx] = e.target.value;
+                          setPollOptions(next);
+                        }}
+                        placeholder={`Phương án ${idx + 1}...`}
+                        className="flex-1 px-3 py-1.5 rounded-lg border text-xs font-medium focus:outline-none"
+                        style={{
+                          backgroundColor: 'var(--bg-subtle)',
+                          borderColor: 'var(--border-ui)',
+                          color: 'var(--text-title)',
+                        }}
+                      />
+                      {pollOptions.length > 2 && (
+                        <button
+                          type="button"
+                          onClick={() => setPollOptions(pollOptions.filter((_, i) => i !== idx))}
+                          className="p-1.5 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {pollOptions.length < 10 && (
+                    <button
+                      type="button"
+                      onClick={() => setPollOptions([...pollOptions, ''])}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-sky-500 hover:underline pt-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Thêm phương án
+                    </button>
+                  )}
+                </div>
+
+                <label className="flex items-center gap-2 cursor-pointer select-none pt-1">
+                  <input
+                    type="checkbox"
+                    checked={pollAllowMultiple}
+                    onChange={(e) => setPollAllowMultiple(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded text-sky-500"
+                  />
+                  <span className="text-xs ui-dim font-medium">
+                    Cho phép chọn nhiều phương án (Multi-select)
+                  </span>
+                </label>
+              </div>
+            )}
           </div>
         </div>
 

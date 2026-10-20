@@ -9,6 +9,7 @@ import { sanitizeUserClan } from '@/lib/clan';
 export const publicUser = {
   id: true,
   username: true,
+  displayName: true,
   gdUsername: true,
   avatarUrl: true,
   role: true,
@@ -527,6 +528,59 @@ export async function getCreatorLeaderboard() {
     const ln = (b.createdLevels?.length || 0) - (a.createdLevels?.length || 0);
     if (ln !== 0) return ln;
     return String(a.displayName).localeCompare(String(b.displayName), undefined, { sensitivity: 'base' });
+  });
+}
+
+export async function getStatLeaderboard(stat: 'stars' | 'moons' | 'demons') {
+  const field = stat === 'stars' ? 'gdStars' : stat === 'moons' ? 'gdMoons' : 'gdDemons';
+  const players = await prisma.user.findMany({
+    where: {
+      [field]: { gt: 0 },
+      isBanned: false,
+    },
+    orderBy: { [field]: 'desc' },
+    select: {
+      ...publicUser,
+      classicPp: true,
+      platformerPp: true,
+      gdStars: true,
+      gdMoons: true,
+      gdDemons: true,
+      userBadges: { include: { badge: true } },
+    },
+    take: 150,
+  });
+
+  return players.map((p) => {
+    const statVal = p[field] ?? 0;
+    return {
+      id: p.id,
+      username: p.username,
+      displayName: p.displayName || p.gdUsername || p.username,
+      gdUsername: p.gdUsername,
+      avatarUrl: p.avatarUrl,
+      role: p.role,
+      country: p.country,
+      supporterUntil: p.supporterUntil,
+      isSuperAdmin: isSuperAdminUser(p),
+      gdVerified: p.gdVerified,
+      nameColor: p.nameColor,
+      nameGradient: p.nameGradient,
+      nameGlow: p.nameGlow,
+      nameFont: p.nameFont,
+      clan: sanitizeUserClan(p.clanMember?.clan),
+      clanRole: p.clanMember?.role,
+      statValue: statVal,
+      classicPp: stat === 'stars' ? statVal : p.classicPp,
+      platformerPp: stat === 'moons' ? statVal : p.platformerPp,
+      gdStars: p.gdStars,
+      gdMoons: p.gdMoons,
+      gdDemons: p.gdDemons,
+      isLegacy: false as const,
+      topBadges: [...(p.userBadges || []).map((ub: any) => ub.badge), ...buildLeaderboardRoles(p)]
+        .sort((a, b) => (b.sortOrder ?? 0) - (a.sortOrder ?? 0))
+        .slice(0, 3),
+    };
   });
 }
 

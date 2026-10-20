@@ -82,7 +82,16 @@ export async function GET(req: Request) {
       }
     }
 
+    const now = new Date();
     const rows = await prisma.siteAnnouncement.findMany({
+      where: manage
+        ? {}
+        : {
+            OR: [
+              { expiresAt: null },
+              { expiresAt: { gt: now } },
+            ],
+          },
       orderBy: { createdAt: 'desc' },
       take: 100,
       include: { author: { select: authorSelect } },
@@ -108,6 +117,7 @@ export async function GET(req: Request) {
         serializeAnnouncement(row, {
           includeTargets: manage,
           isRead: viewer ? readIds.has(row.id) : true,
+          viewerId: viewer?.id,
         })
       ),
     });
@@ -141,11 +151,30 @@ export async function POST(req: Request) {
       targetUserIds = resolved.ids;
     }
 
+    let expiresAt: Date | null = null;
+    if (body.expiresInDays && Number(body.expiresInDays) > 0) {
+      expiresAt = new Date(Date.now() + Number(body.expiresInDays) * 24 * 60 * 60 * 1000);
+    } else if (body.expiresAt) {
+      expiresAt = new Date(body.expiresAt);
+    }
+
+    let pollJson = null;
+    if (body.poll && body.poll.question && Array.isArray(body.poll.options) && body.poll.options.length >= 2) {
+      pollJson = {
+        question: clipText(body.poll.question, 200),
+        options: body.poll.options.map((opt: any) => clipText(opt, 100)).filter(Boolean),
+        allowMultiple: Boolean(body.poll.allowMultiple),
+        votes: {},
+      };
+    }
+
     const row = await prisma.siteAnnouncement.create({
       data: {
         ...parsed.data,
         targetUserIds,
         authorId: auth.userId,
+        expiresAt,
+        poll: pollJson ?? undefined,
       },
       include: { author: { select: authorSelect } },
     });

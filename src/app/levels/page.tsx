@@ -18,6 +18,8 @@ import { compareListLevels, compareVnListLevels, placementMatchesTiers } from '@
 import { levelPath } from '@/lib/levelUrl';
 import { DifficultyRatingIcon } from '@/components/DifficultyRatingIcon';
 import { isStaffRole } from '@/lib/roles';
+import { useRouter } from 'next/navigation';
+import { getCachedPageState, setCachedPageState } from '@/lib/pageCache';
 const tabNames: Record<string, string> = {
   featured: 'Featured List',
   classic: 'Classic List',
@@ -36,7 +38,14 @@ const tabDescriptions: Record<string, string> = {
   challenge: 'Danh sách các màn chơi Challenge',
 };
 
-export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main' | 'challenge' }) {
+export default function LevelsListPage({
+  listKind = 'main',
+  initialTab,
+}: {
+  listKind?: 'main' | 'challenge';
+  initialTab?: 'featured' | 'classic' | 'demonlist' | 'pemonlist' | 'vn' | 'challenge';
+}) {
+  const router = useRouter();
   const { t } = useLanguage();
   const { showConfirm, showToast } = useToast();
   const [levels, setLevels] = useState<any[]>([]);
@@ -46,7 +55,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [listTab, setListTab] = useState<'featured' | 'classic' | 'demonlist' | 'pemonlist' | 'vn' | 'challenge'>(
-    listKind === 'challenge' ? 'challenge' : 'featured'
+    initialTab || (listKind === 'challenge' ? 'challenge' : 'featured')
   );
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -103,7 +112,18 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
     fetchLevels();
   }, [search, listTab, currentPage, filterModes, filterTiers, filterFaces, filterVN, filterUnranked]);
 
-  const fetchLevels = () => {
+  const fetchLevels = (force = false) => {
+    const cacheKey = `levels_${listTab}_${search}_${currentPage}_${filterModes.join(',')}_${filterTiers.join(',')}_${filterFaces.join(',')}_${filterVN ? 1 : 0}_${filterUnranked ? 1 : 0}`;
+    if (!force) {
+      const cached = getCachedPageState<{ levels: any[]; totalPages: number }>(cacheKey);
+      if (cached) {
+        setLevels(cached.levels || []);
+        setTotalPages(cached.totalPages || 1);
+        setLoading(false);
+        return;
+      }
+    }
+
     setLoading(true);
     const params = new URLSearchParams();
     params.set('ssp', '1');
@@ -125,6 +145,7 @@ export default function LevelsListPage({ listKind = 'main' }: { listKind?: 'main
         if (data.success) {
           setLevels(data.levels || []);
           setTotalPages(data.totalPages || 1);
+          setCachedPageState(cacheKey, { levels: data.levels || [], totalPages: data.totalPages || 1 });
         }
         setLoading(false);
       })
