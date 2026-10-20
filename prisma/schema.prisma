@@ -66,6 +66,7 @@ model User {
   gdStars       Int       @default(0)
   gdMoons       Int       @default(0)
   gdDemons      Int       @default(0)
+  gdHasGlobalRank Boolean @default(true)
   gdStatsUpdatedAt DateTime?
   tokenVersion  Int       @default(0)
   totpEnabled   Boolean   @default(false)

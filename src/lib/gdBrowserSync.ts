@@ -48,6 +48,7 @@ export async function syncUserGdBrowserStats(
     id: string;
     gdUsername?: string | null;
     gdStatsUpdatedAt?: Date | string | null;
+    gdHasGlobalRank?: boolean | null;
     gdStars?: number;
     gdMoons?: number;
     gdDemons?: number;
@@ -65,8 +66,11 @@ export async function syncUserGdBrowserStats(
   const now = Date.now();
   if (!force && targetUser.gdStatsUpdatedAt) {
     const lastUpdate = new Date(targetUser.gdStatsUpdatedAt).getTime();
-    if (now - lastUpdate < 5 * 60 * 1000) {
-      // Đang trong thời gian cooldown 5 phút
+    // Nếu đã fetch 1 lần mà không thấy có global rank thì 72 giờ tiếp theo không cần fetch nữa
+    // Nếu có global rank bình thường: cooldown 5 phút
+    const cooldownMs = targetUser.gdHasGlobalRank === false ? 72 * 60 * 60 * 1000 : 5 * 60 * 1000;
+    if (now - lastUpdate < cooldownMs) {
+      // Đang trong thời gian cooldown
       return null;
     }
   }
@@ -103,6 +107,7 @@ export async function syncUserGdBrowserStats(
         gdMoons: moons,
         gdDemons: demons,
         creatorPoints: cp,
+        gdHasGlobalRank: hasGlobalRank,
         gdStatsUpdatedAt: new Date(),
       },
     });

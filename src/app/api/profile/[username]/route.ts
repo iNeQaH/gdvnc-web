@@ -55,6 +55,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       gdStars: true,
       gdMoons: true,
       gdDemons: true,
+      gdHasGlobalRank: true,
       gdStatsUpdatedAt: true,
       displayedBadgeIds: true,
       hideAllBadges: true,
@@ -184,6 +185,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         user.gdMoons = synced.moons;
         user.gdDemons = synced.demons;
         user.creatorPoints = synced.cp;
+        user.gdHasGlobalRank = synced.hasGlobalRank;
         user.gdStatsUpdatedAt = new Date();
 
         if (statsChanged) {
@@ -594,11 +596,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
     let nextGdUsername: string | null | undefined =
       body.gdUsername !== undefined ? (clipText(body.gdUsername, 80) || null) : undefined;
     let nextGdVerified: boolean | undefined;
+    let gdUsernameChanged = false;
     if (nextGdUsername !== undefined) {
       const prev = (current.gdUsername || '').trim().toLowerCase();
       const next = (nextGdUsername || '').trim().toLowerCase();
       if (next !== prev) {
         nextGdVerified = false;
+        gdUsernameChanged = true;
       }
     }
 
@@ -672,6 +676,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         country: body.country !== undefined ? clipText(body.country, 80) : undefined,
         gdUsername: nextGdUsername,
         gdVerified: nextGdVerified,
+        ...(gdUsernameChanged ? { gdStatsUpdatedAt: null, gdHasGlobalRank: true } : {}),
         discordTag: body.discordTag !== undefined ? clipText(body.discordTag, 80) : undefined,
         profileConfig: nextProfileConfig !== undefined ? nextProfileConfig : undefined,
         profileTheme: body.profileTheme !== undefined ? body.profileTheme : undefined,
