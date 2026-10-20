@@ -1688,11 +1688,18 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               {leaderMember ? (
                 <Link
                   href={`/profile/${leaderMember.user.username}`}
-                  className="p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm relative transition-all cursor-pointer active:scale-95 border bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/15 group"
+                  className="p-4 rounded-2xl flex flex-col items-center justify-center text-center relative transition-all cursor-pointer active:scale-95 border-2 group shadow-md"
+                  style={{
+                    backgroundColor: isDark ? 'color-mix(in srgb, #f59e0b 16%, #0b0e14)' : '#ffffff',
+                    borderColor: isDark ? 'color-mix(in srgb, #f59e0b 60%, rgba(255,255,255,0.15))' : '#f59e0b',
+                    boxShadow: isDark
+                      ? '0 4px 20px rgba(245, 158, 11, 0.15), inset 0 0 12px rgba(245, 158, 11, 0.08)'
+                      : '0 4px 16px rgba(245, 158, 11, 0.22), 0 1px 3px rgba(0, 0, 0, 0.08)',
+                  }}
                 >
                   <Crown className="w-5 h-5 mb-1.5 text-amber-500 dark:text-amber-400 drop-shadow group-hover:scale-110 transition-transform" />
                   <div className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">Leader</div>
-                  <div className="w-9 h-9 rounded-xl overflow-hidden border border-amber-500/40 bg-amber-500/10 dark:bg-slate-900 my-1.5 shrink-0">
+                  <div className="w-10 h-10 rounded-xl overflow-hidden border-2 border-amber-500/60 bg-amber-500/15 dark:bg-slate-900 my-1.5 shrink-0 shadow-sm">
                     {leaderMember.user.avatarUrl ? (
                       <img src={leaderMember.user.avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -1704,12 +1711,12 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   <div className="font-bold text-xs ui-title truncate max-w-full group-hover:underline">
                     <UserDisplayName user={leaderMember.user} showClanTag={false} />
                   </div>
-                  <div className="text-[10px] font-semibold text-amber-600 dark:text-amber-400/90 mt-1 font-mono">
+                  <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-1 font-mono">
                     {(leaderMember.user?.classicPp || 0).toLocaleString()} Pt
                   </div>
                 </Link>
               ) : (
-                <div className="p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm border bg-amber-500/5 border-amber-500/20 ui-dim">
+                <div className="p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm border-2 border-dashed border-amber-500/30 bg-amber-500/5 ui-dim">
                   <Crown className="w-5 h-5 mb-1.5 text-amber-500/50 dark:text-amber-400/50" />
                   <div className="text-[10px] font-bold uppercase tracking-wider">Leader</div>
                   <div className="text-xs font-semibold mt-1">—</div>
@@ -1720,11 +1727,18 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               {bestPlayer ? (
                 <Link
                   href={`/profile/${bestPlayer.user.username}`}
-                  className="p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm relative transition-all cursor-pointer active:scale-95 border bg-sky-500/10 border-sky-500/30 hover:bg-sky-500/15 group"
+                  className="p-4 rounded-2xl flex flex-col items-center justify-center text-center relative transition-all cursor-pointer active:scale-95 border-2 group shadow-md"
+                  style={{
+                    backgroundColor: isDark ? 'color-mix(in srgb, #0ea5e9 16%, #0b0e14)' : '#ffffff',
+                    borderColor: isDark ? 'color-mix(in srgb, #0ea5e9 60%, rgba(255,255,255,0.15))' : '#0ea5e9',
+                    boxShadow: isDark
+                      ? '0 4px 20px rgba(14, 165, 233, 0.15), inset 0 0 12px rgba(14, 165, 233, 0.08)'
+                      : '0 4px 16px rgba(14, 165, 233, 0.22), 0 1px 3px rgba(0, 0, 0, 0.08)',
+                  }}
                 >
                   <Trophy className="w-5 h-5 mb-1.5 text-sky-500 dark:text-sky-400 drop-shadow group-hover:scale-110 transition-transform" />
                   <div className="text-[10px] font-black uppercase tracking-wider text-sky-600 dark:text-sky-400">Best Player</div>
-                  <div className="w-9 h-9 rounded-xl overflow-hidden border border-sky-500/40 bg-sky-500/10 dark:bg-slate-900 my-1.5 shrink-0">
+                  <div className="w-10 h-10 rounded-xl overflow-hidden border-2 border-sky-500/60 bg-sky-500/15 dark:bg-slate-900 my-1.5 shrink-0 shadow-sm">
                     {bestPlayer.user.avatarUrl ? (
                       <img src={bestPlayer.user.avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -1736,12 +1750,12 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   <div className="font-bold text-xs ui-title truncate max-w-full group-hover:underline">
                     <UserDisplayName user={bestPlayer.user} showClanTag={false} />
                   </div>
-                  <div className="text-[10px] font-semibold text-sky-600 dark:text-sky-400/90 mt-1 font-mono">
+                  <div className="text-[10px] font-bold text-sky-600 dark:text-sky-400 mt-1 font-mono">
                     {(bestPlayer.user?.classicPp || 0).toLocaleString()} Pt
                   </div>
                 </Link>
               ) : (
-                <div className="p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm border bg-sky-500/5 border-sky-500/20 ui-dim">
+                <div className="p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm border-2 border-dashed border-sky-500/30 bg-sky-500/5 ui-dim">
                   <Trophy className="w-5 h-5 mb-1.5 text-sky-500/50 dark:text-sky-400/50" />
                   <div className="text-[10px] font-bold uppercase tracking-wider">Best Player</div>
                   <div className="text-xs font-semibold mt-1">—</div>
@@ -1752,11 +1766,18 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
               {bestCreator ? (
                 <Link
                   href={`/profile/${bestCreator.user.username}`}
-                  className="p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm relative transition-all cursor-pointer active:scale-95 border bg-pink-500/10 border-pink-500/30 hover:bg-pink-500/15 group"
+                  className="p-4 rounded-2xl flex flex-col items-center justify-center text-center relative transition-all cursor-pointer active:scale-95 border-2 group shadow-md"
+                  style={{
+                    backgroundColor: isDark ? 'color-mix(in srgb, #ec4899 16%, #0b0e14)' : '#ffffff',
+                    borderColor: isDark ? 'color-mix(in srgb, #ec4899 60%, rgba(255,255,255,0.15))' : '#ec4899',
+                    boxShadow: isDark
+                      ? '0 4px 20px rgba(236, 72, 153, 0.15), inset 0 0 12px rgba(236, 72, 153, 0.08)'
+                      : '0 4px 16px rgba(236, 72, 153, 0.22), 0 1px 3px rgba(0, 0, 0, 0.08)',
+                  }}
                 >
                   <Hammer className="w-5 h-5 mb-1.5 text-pink-500 dark:text-pink-400 drop-shadow group-hover:scale-110 transition-transform" />
                   <div className="text-[10px] font-black uppercase tracking-wider text-pink-600 dark:text-pink-400">Best Creator</div>
-                  <div className="w-9 h-9 rounded-xl overflow-hidden border border-pink-500/40 bg-pink-500/10 dark:bg-slate-900 my-1.5 shrink-0">
+                  <div className="w-10 h-10 rounded-xl overflow-hidden border-2 border-pink-500/60 bg-pink-500/15 dark:bg-slate-900 my-1.5 shrink-0 shadow-sm">
                     {bestCreator.user.avatarUrl ? (
                       <img src={bestCreator.user.avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -1768,12 +1789,12 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   <div className="font-bold text-xs ui-title truncate max-w-full group-hover:underline">
                     <UserDisplayName user={bestCreator.user} showClanTag={false} />
                   </div>
-                  <div className="text-[10px] font-semibold text-pink-600 dark:text-pink-400/90 mt-1 font-mono">
+                  <div className="text-[10px] font-bold text-pink-600 dark:text-pink-400 mt-1 font-mono">
                     {formatCp(bestCreator.user?.creatorPoints)} CP
                   </div>
                 </Link>
               ) : (
-                <div className="p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm border bg-pink-500/5 border-pink-500/20 ui-dim">
+                <div className="p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm border-2 border-dashed border-pink-500/30 bg-pink-500/5 ui-dim">
                   <Hammer className="w-5 h-5 mb-1.5 text-pink-500/50 dark:text-pink-400/50" />
                   <div className="text-[10px] font-bold uppercase tracking-wider">Best Creator</div>
                   <div className="text-xs font-semibold mt-1">—</div>

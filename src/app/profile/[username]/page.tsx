@@ -162,7 +162,9 @@ export default function ProfilePage() {
   const [recordPage, setRecordPage] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const { theme, setOverrideTheme, setOverrideMode, resolvedMode } = useTheme();
-  const isDark = resolvedMode === 'dark';
+  const configuredProfileMode = data?.profileConfig?.profileMode;
+  const isProfileDark = configuredProfileMode ? configuredProfileMode === 'dark' : resolvedMode === 'dark';
+  const isDark = isProfileDark;
   const isLavender = (data?.profileTheme ? data.profileTheme === 'lavender' : theme === 'lavender');
 
   useEffect(() => {
@@ -1194,8 +1196,32 @@ export default function ProfilePage() {
     <div
       ref={profileContainerRef}
       data-theme={data?.profileTheme || theme}
-      data-mode={data?.profileConfig?.profileMode || (isDark ? 'dark' : 'light')}
-      className={`max-w-[1200px] mx-auto py-8 px-4 space-y-6 relative ${isGlitchTheme ? 'gdvn-profile-glitch' : ''} ${isGlitchTheme && isCardsActive ? 'gdvn-glitch-cards-active' : ''} ${isGlitchTheme && isAvatarActive ? 'gdvn-glitch-avatar-active' : ''} ${isGlitchTheme && isTextActive ? 'gdvn-glitch-text-active' : ''}`}
+      data-mode={isProfileDark ? 'dark' : 'light'}
+      className={`max-w-[1200px] mx-auto py-8 px-4 space-y-6 relative ${isProfileDark ? 'dark' : ''} ${isGlitchTheme ? 'gdvn-profile-glitch' : ''} ${isGlitchTheme && isCardsActive ? 'gdvn-glitch-cards-active' : ''} ${isGlitchTheme && isAvatarActive ? 'gdvn-glitch-avatar-active' : ''} ${isGlitchTheme && isTextActive ? 'gdvn-glitch-text-active' : ''}`}
+      style={{
+        colorScheme: isProfileDark ? 'dark' : 'light',
+        ...(isProfileDark
+          ? {
+              '--bg-page': (data?.profileTheme || theme) === 'lavender' ? '#150f24' : '#0b0c10',
+              '--bg-card': (data?.profileTheme || theme) === 'lavender' ? '#1f1733' : '#12131a',
+              '--bg-subtle': (data?.profileTheme || theme) === 'lavender' ? '#281e42' : '#181a24',
+              '--text-title': '#ffffff',
+              '--text-body': '#cbd5e1',
+              '--text-dim': '#94a3b8',
+              '--border-ui': 'rgba(255, 255, 255, 0.12)',
+              '--border-subtle': 'rgba(255, 255, 255, 0.08)',
+            }
+          : {
+              '--bg-page': '#f1f5f9',
+              '--bg-card': '#ffffff',
+              '--bg-subtle': '#f8fafc',
+              '--text-title': '#0f172a',
+              '--text-body': '#334155',
+              '--text-dim': '#64748b',
+              '--border-ui': '#e2e8f0',
+              '--border-subtle': '#f1f5f9',
+            }),
+      } as any}
     >
       {isGlitchTheme && (
         <>

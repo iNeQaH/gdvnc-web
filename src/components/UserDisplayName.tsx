@@ -176,11 +176,8 @@ export function UserDisplayName({
       const col2 = gradMatch[3].trim();
       const rad = (angle * Math.PI) / 180;
       if (!dark) {
-        // LIGHT MODE: Soft, airy, translucent ambient aura (chống bẩn / thâm đen viền chữ)
-        const ox = Math.round(Math.sin(rad) * 3);
-        const oy = Math.round(-Math.cos(rad) * 3);
-        const a = 0.38 * alphaMultiplier;
-        return `drop-shadow(${ox}px ${oy}px 6px ${hexToRgba(col2, a)}) drop-shadow(${-ox}px ${-oy}px 6px ${hexToRgba(col1, a)})`;
+        // LIGHT MODE: Bright luminous backlight with vibrant colorful aura (loại bỏ hoàn toàn viền đen bẩn)
+        return `drop-shadow(0 0 1px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 4px ${hexToRgba(col2, 0.65 * alphaMultiplier)}) drop-shadow(0 0 8px ${hexToRgba(col1, 0.45 * alphaMultiplier)})`;
       }
       // DARK MODE: Rich vibrant neon glow
       const ox = Math.round(Math.sin(rad) * 4);
@@ -191,8 +188,8 @@ export function UserDisplayName({
     }
 
     if (!dark) {
-      const a = 0.38 * alphaMultiplier;
-      return `drop-shadow(0 0 5px ${hexToRgba(cleanGlow, a)})`;
+      // LIGHT MODE: Bright crisp white backing + vibrant colorful glow so light letters stand out cleanly without dark smudges
+      return `drop-shadow(0 0 1px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 5px ${hexToRgba(cleanGlow, 0.65 * alphaMultiplier)})`;
     }
     const a1 = 0.75 * alphaMultiplier;
     const a2 = 0.45 * alphaMultiplier;
