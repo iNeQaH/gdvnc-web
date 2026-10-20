@@ -4,6 +4,30 @@ import React from 'react';
 import Link from 'next/link';
 import { Crown, ShieldCheck } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
+import { hexToHsv, hsvToHex } from '@/lib/color';
+
+function ensureLuminousGlowColor(colorStr: string, isLightBg: boolean): string {
+  try {
+    const trimmed = colorStr.trim();
+    if (!trimmed.startsWith('#')) return trimmed;
+    const hsv = hexToHsv(trimmed);
+    if (!hsv) return trimmed;
+    let [h, s, v] = hsv;
+
+    // Glow là ánh sáng phát quang, tuyệt đối không được là bóng xám/đen
+    // Trên nền sáng, độ sáng v phải đạt tối thiểu 0.92 để không bị thành vệt đen bẩn
+    if (isLightBg) {
+      v = Math.max(v, 0.92);
+      s = Math.min(1, Math.max(s, 0.70));
+    } else {
+      v = Math.max(v, 0.80);
+      s = Math.min(1, Math.max(s, 0.65));
+    }
+    return hsvToHex(h, s, v);
+  } catch {
+    return colorStr;
+  }
+}
 
 function hexToRgba(color: string, alpha: number): string {
   if (!color) return `rgba(245, 158, 11, ${alpha})`;
@@ -120,12 +144,17 @@ export function UserDisplayName({
   const role = clanRole || user?.clanMember?.role;
 
   let isDark = true;
+  let theme = 'sky';
   try {
     const themeCtx = useTheme();
     isDark = themeCtx.resolvedMode === 'dark';
+    theme = themeCtx.theme;
   } catch {
     isDark = true;
   }
+
+  // Nền sáng nếu ở light mode hoặc đang dùng theme Lavender (nền widget tím nhạt/trắng)
+  const isLightBg = !isDark || theme === 'lavender';
 
   // Style cho Tag Clan (hoàn toàn cô lập, chỉ áp dụng cho tag [TAG], không ảnh hưởng tên)
   const clanTagStyle: React.CSSProperties = {
@@ -151,7 +180,8 @@ export function UserDisplayName({
         tagGlowColor = hexMatches[0];
       }
     }
-    clanTagStyle.filter = `drop-shadow(0 0 4px ${tagGlowColor}99)`;
+    const brightTagColor = ensureLuminousGlowColor(tagGlowColor, isLightBg);
+    clanTagStyle.filter = `drop-shadow(0 0 4px ${brightTagColor}99)`;
   }
 
   // Helper tính toán Drop-shadow Glow tinh tế, độ lan nhỏ gọn ôm sát chữ như Clan tag (không văng bóng, không mờ đục)
@@ -171,16 +201,18 @@ export function UserDisplayName({
       /linear-gradient\s*\(\s*(\d+)deg\s*,\s*(#[a-fA-F0-9]{3,8}|[^\s,]+)\s*,\s*(#[a-fA-F0-9]{3,8}|[^\s,]+)\s*\)/i
     );
     if (gradMatch) {
-      const col1 = gradMatch[2].trim();
-      const col2 = gradMatch[3].trim();
-      const a = 0.8 * alphaMultiplier;
-      // Độ lan nhỏ gọn tâm 0 0 ôm sát nét chữ như clan tag, hòa quyện 2 màu gradient
-      return `drop-shadow(0 0 2px ${hexToRgba(col1, a)}) drop-shadow(0 0 2.5px ${hexToRgba(col2, a * 0.75)})`;
+      const col1 = ensureLuminousGlowColor(gradMatch[2].trim(), isLightBg);
+      const col2 = ensureLuminousGlowColor(gradMatch[3].trim(), isLightBg);
+      const a1 = (isLightBg ? 0.50 : 0.65) * alphaMultiplier;
+      const a2 = (isLightBg ? 0.40 : 0.55) * alphaMultiplier;
+      // Độ lan thanh tú tương tự Clan tag, khử hoàn toàn vệt xám/đen
+      return `drop-shadow(0 0 3px ${hexToRgba(col1, a1)}) drop-shadow(0 0 4px ${hexToRgba(col2, a2)})`;
     }
 
-    const a = 0.8 * alphaMultiplier;
-    // Đơn sắc: độ lan gọn 2.5px thanh thoát, hoàn toàn ôm sát ký tự
-    return `drop-shadow(0 0 2.5px ${hexToRgba(cleanGlow, a)})`;
+    const brightCol = ensureLuminousGlowColor(cleanGlow, isLightBg);
+    const a = (isLightBg ? 0.55 : 0.70) * alphaMultiplier;
+    // Đơn sắc: chuẩn 1 drop-shadow 4px y hệt Clan tag
+    return `drop-shadow(0 0 4px ${hexToRgba(brightCol, a)})`;
   };
 
   // Style cho Tên Supporter (bảo đảm độc lập 100% với màu Clan tag)

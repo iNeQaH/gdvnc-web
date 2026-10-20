@@ -1542,28 +1542,37 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Right Box: All Badges & Bio */}
-            <div className="lg:col-span-7 flex flex-col gap-3">
-              {/* All Badges Box */}
+            {/* Right Column: All Badges Showcase (Enlarged & Scrollable) */}
+            <div className="lg:col-span-7 flex flex-col h-full">
               <div
-                className="p-4 rounded-2xl border flex flex-col gap-2.5"
+                className="p-4 sm:p-5 rounded-2xl border flex-1 flex flex-col justify-between"
                 style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold ui-title flex items-center gap-1.5 uppercase tracking-wide">
-                    <Shield className="w-3.5 h-3.5 text-amber-500" />
-                    {t('profile.all_badges') || 'Tất cả huy hiệu'} ({allBadges.length})
-                  </span>
+                <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500">
+                      <Shield className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs sm:text-sm font-bold ui-title uppercase tracking-wide block">
+                        {t('profile.all_badges') || 'Tất cả huy hiệu'}
+                      </span>
+                      <span className="text-[11px] ui-dim">
+                        {allBadges.length} huy hiệu đã mở khóa
+                      </span>
+                    </div>
+                  </div>
                 </div>
+
                 {allBadges.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5 max-h-[140px] overflow-y-auto pr-1">
+                  <div className="flex-1 overflow-y-auto max-h-[260px] sm:max-h-[290px] pr-1.5 py-3 flex flex-wrap content-start gap-2.5 custom-scrollbar">
                     {allBadges.map((b: any) => (
                       <div
                         key={b.id}
                         className={
                           isLavender
-                            ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl tsumiki-btn tsumiki-badge-btn !m-0 !mb-0 shadow-sm cursor-default"
-                            : "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-black text-white border border-zinc-800/80 shadow-xs cursor-default"
+                            ? "inline-flex items-center gap-2.5 px-3.5 py-2 rounded-xl tsumiki-btn tsumiki-badge-btn !m-0 shadow-sm cursor-default hover:scale-105 transition-transform"
+                            : "inline-flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-black text-white border border-zinc-800/90 shadow-sm cursor-default hover:scale-105 transition-transform"
                         }
                         title={b.description || b.name}
                       >
@@ -1571,91 +1580,16 @@ export default function ProfilePage() {
                           icon={b.icon || 'Star'}
                           color={b.color}
                           glow={b.glowColor}
-                          className={isLavender ? "w-3.5 h-3.5 shrink-0" : "w-3 h-3 shrink-0"}
+                          className={isLavender ? "w-4.5 h-4.5 shrink-0" : "w-4 h-4 shrink-0"}
                         />
-                        <span className="text-[11px] font-bold text-white drop-shadow-sm">{b.name}</span>
+                        <span className="text-xs font-bold text-white drop-shadow-sm">{b.name}</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-xs ui-dim opacity-60 italic py-1">
+                  <div className="flex-1 flex flex-col items-center justify-center text-xs ui-dim opacity-60 italic py-8">
+                    <Shield className="w-8 h-8 stroke-1 mb-2 opacity-40" />
                     {isEn ? 'No badges earned yet.' : 'Chưa có huy hiệu nào.'}
-                  </div>
-                )}
-              </div>
-
-              {/* Bio Box */}
-              <div
-                className="p-4 rounded-2xl border flex-1 flex flex-col justify-between space-y-3"
-                style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold ui-title flex items-center gap-1.5 uppercase tracking-wide">
-                    <FileText className="w-3.5 h-3.5 text-sky-500" />
-                    {t('profile.bio') || 'Tiểu sử'}
-                  </span>
-                  {canEditInfo && !isEditingBio && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setBioInput(data.bio || '');
-                        setIsEditingBio(true);
-                      }}
-                      className="p-1 rounded-lg text-sky-500 hover:bg-sky-500/10 transition-colors cursor-pointer"
-                      title="Chỉnh sửa tiểu sử"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-
-                {isEditingBio ? (
-                  <div className="space-y-2 flex-1 flex flex-col">
-                    <textarea
-                      value={bioInput}
-                      onChange={(e) => setBioInput(e.target.value)}
-                      className="w-full flex-1 min-h-[110px] p-3 rounded-xl border text-xs resize-none"
-                      style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                      placeholder="Nhập tiểu sử (hỗ trợ Discord Markdown: **đậm**, *nghiêng*, # tiêu đề, > trích dẫn, `code`, v.v.)..."
-                      autoFocus
-                    />
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setIsEditingBio(false)}
-                        className="px-3 py-1.5 text-xs font-bold border rounded-xl hover:opacity-80 transition-all cursor-pointer"
-                        style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                      >
-                        {t('common.cancel')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const trimmedBio = bioInput.trim();
-                          await updateProfileField({ bio: trimmedBio });
-                          setData((prev: any) => ({ ...prev, bio: trimmedBio }));
-                          setIsEditingBio(false);
-                          fetchProfile({ silent: true });
-                        }}
-                        className="px-3.5 py-1.5 text-xs font-bold text-white rounded-xl shadow-xs transition-all cursor-pointer"
-                        style={{ backgroundColor: 'var(--accent)' }}
-                      >
-                        {t('common.save')}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    className="w-full flex-1 rounded-xl p-3 border min-h-[110px] max-h-[190px] overflow-y-auto"
-                    style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
-                  >
-                    {data.bio ? (
-                      <DiscordMarkdown content={data.bio} className="text-xs leading-relaxed" />
-                    ) : (
-                      <div className="h-full flex items-center justify-center text-xs ui-dim opacity-60 italic py-4">
-                        {isEn ? 'No bio written yet.' : 'Chưa có tiểu sử.'}
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -1664,99 +1598,176 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Stats Section: Classic, Platformer, Creator Points */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Classic */}
-        <button 
-          type="button"
-          onClick={() => setShowClassicPoints(!showClassicPoints)}
-          className={
-            isLavender
-              ? 'p-4 rounded-2xl flex flex-col items-center justify-center text-center relative transition-all cursor-pointer active:scale-95 tsumiki-btn-yellow text-white'
-              : 'p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md relative transition-all cursor-pointer active:scale-95 border group'
-          }
-          style={
-            !isLavender
-              ? {
-                  backgroundColor: isDark
-                    ? 'var(--bg-card)'
-                    : 'color-mix(in srgb, var(--accent) 8%, var(--bg-subtle))',
-                  borderColor: 'color-mix(in srgb, #f59e0b 35%, var(--border-ui))',
-                }
-              : undefined
-          }
-        >
-          <Star className={`w-5 h-5 mb-1.5 ${isLavender ? 'text-white drop-shadow' : 'text-amber-500 dark:text-amber-400 group-hover:scale-110 transition-transform'}`} />
-          <div className={`text-[11px] font-bold uppercase tracking-wider ${isLavender ? 'text-white/95 drop-shadow-xs' : 'ui-dim'}`}>Classic</div>
-          <div className={`text-xl font-black mt-0.5 transition-all ${isLavender ? 'text-white drop-shadow-sm' : 'text-amber-600 dark:text-amber-400'}`}>
-            {showClassicPoints ? (data.classicPp?.toFixed(2) || '0.00') : ((data.classicPp || 0) > 0.005 && data.classicRank ? "#" + data.classicRank : '#-')}
-          </div>
-          <div className={`text-[10px] font-semibold mt-1 ${isLavender ? 'text-white/90 drop-shadow-xs' : 'ui-dim'}`}>
-            {showClassicPoints ? 'Points (Pt)' : 'Xếp hạng'}
-          </div>
-        </button>
+      {/* Stats & Bio Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Stats Cards (Left 6 cols) */}
+        <div className="lg:col-span-6 flex flex-col justify-between gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 h-full">
+            {/* Classic */}
+            <button 
+              type="button"
+              onClick={() => setShowClassicPoints(!showClassicPoints)}
+              className={
+                isLavender
+                  ? 'p-4 rounded-2xl flex flex-col items-center justify-center text-center relative transition-all cursor-pointer active:scale-95 tsumiki-btn-yellow text-white'
+                  : 'p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md relative transition-all cursor-pointer active:scale-95 border group'
+              }
+              style={
+                !isLavender
+                  ? {
+                      backgroundColor: isDark
+                        ? 'var(--bg-card)'
+                        : 'color-mix(in srgb, var(--accent) 8%, var(--bg-subtle))',
+                      borderColor: 'color-mix(in srgb, #f59e0b 35%, var(--border-ui))',
+                    }
+                  : undefined
+              }
+            >
+              <Star className={`w-5 h-5 mb-1.5 ${isLavender ? 'text-white drop-shadow' : 'text-amber-500 dark:text-amber-400 group-hover:scale-110 transition-transform'}`} />
+              <div className={`text-[11px] font-bold uppercase tracking-wider ${isLavender ? 'text-white/95 drop-shadow-xs' : 'ui-dim'}`}>Classic</div>
+              <div className={`text-xl font-black mt-0.5 transition-all ${isLavender ? 'text-white drop-shadow-sm' : 'text-amber-600 dark:text-amber-400'}`}>
+                {showClassicPoints ? (data.classicPp?.toFixed(2) || '0.00') : ((data.classicPp || 0) > 0.005 && data.classicRank ? "#" + data.classicRank : '#-')}
+              </div>
+              <div className={`text-[10px] font-semibold mt-1 ${isLavender ? 'text-white/90 drop-shadow-xs' : 'ui-dim'}`}>
+                {showClassicPoints ? 'Points (Pt)' : 'Xếp hạng'}
+              </div>
+            </button>
 
-        {/* Platformer */}
-        <button 
-          type="button"
-          onClick={() => setShowPlatformerPoints(!showPlatformerPoints)}
-          className={
-            isLavender
-              ? 'p-4 rounded-2xl flex flex-col items-center justify-center text-center relative transition-all cursor-pointer active:scale-95 tsumiki-btn-blue text-white'
-              : 'p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md relative transition-all cursor-pointer active:scale-95 border group'
-          }
-          style={
-            !isLavender
-              ? {
-                  backgroundColor: isDark
-                    ? 'var(--bg-card)'
-                    : 'color-mix(in srgb, var(--accent) 8%, var(--bg-subtle))',
-                  borderColor: 'color-mix(in srgb, #0ea5e9 35%, var(--border-ui))',
-                }
-              : undefined
-          }
-        >
-          <Moon className={`w-5 h-5 mb-1.5 ${isLavender ? 'text-white drop-shadow' : 'text-sky-500 dark:text-sky-400 group-hover:scale-110 transition-transform'}`} />
-          <div className={`text-[11px] font-bold uppercase tracking-wider ${isLavender ? 'text-white/95 drop-shadow-xs' : 'ui-dim'}`}>Platformer</div>
-          <div className={`text-xl font-black mt-0.5 transition-all ${isLavender ? 'text-white drop-shadow-sm' : 'text-sky-600 dark:text-sky-400'}`}>
-            {showPlatformerPoints ? (data.platformerPp?.toFixed(2) || '0.00') : ((data.platformerPp || 0) > 0.005 && data.platformerRank ? "#" + data.platformerRank : '#-')}
-          </div>
-          <div className={`text-[10px] font-semibold mt-1 ${isLavender ? 'text-white/90 drop-shadow-xs' : 'ui-dim'}`}>
-            {showPlatformerPoints ? 'Points (Pt)' : 'Xếp hạng'}
-          </div>
-        </button>
+            {/* Platformer */}
+            <button 
+              type="button"
+              onClick={() => setShowPlatformerPoints(!showPlatformerPoints)}
+              className={
+                isLavender
+                  ? 'p-4 rounded-2xl flex flex-col items-center justify-center text-center relative transition-all cursor-pointer active:scale-95 tsumiki-btn-blue text-white'
+                  : 'p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md relative transition-all cursor-pointer active:scale-95 border group'
+              }
+              style={
+                !isLavender
+                  ? {
+                      backgroundColor: isDark
+                        ? 'var(--bg-card)'
+                        : 'color-mix(in srgb, var(--accent) 8%, var(--bg-subtle))',
+                      borderColor: 'color-mix(in srgb, #0ea5e9 35%, var(--border-ui))',
+                    }
+                  : undefined
+              }
+            >
+              <Moon className={`w-5 h-5 mb-1.5 ${isLavender ? 'text-white drop-shadow' : 'text-sky-500 dark:text-sky-400 group-hover:scale-110 transition-transform'}`} />
+              <div className={`text-[11px] font-bold uppercase tracking-wider ${isLavender ? 'text-white/95 drop-shadow-xs' : 'ui-dim'}`}>Platformer</div>
+              <div className={`text-xl font-black mt-0.5 transition-all ${isLavender ? 'text-white drop-shadow-sm' : 'text-sky-600 dark:text-sky-400'}`}>
+                {showPlatformerPoints ? (data.platformerPp?.toFixed(2) || '0.00') : ((data.platformerPp || 0) > 0.005 && data.platformerRank ? "#" + data.platformerRank : '#-')}
+              </div>
+              <div className={`text-[10px] font-semibold mt-1 ${isLavender ? 'text-white/90 drop-shadow-xs' : 'ui-dim'}`}>
+                {showPlatformerPoints ? 'Points (Pt)' : 'Xếp hạng'}
+              </div>
+            </button>
 
-        {/* Creator Points */}
-        <button
-          type="button"
-          onClick={() => !isEditingCp && setShowCreatorRank(!showCreatorRank)}
-          className={
-            isLavender
-              ? 'p-4 rounded-2xl flex flex-col items-center justify-center text-center relative transition-all cursor-pointer active:scale-95 tsumiki-btn-pink-cyan text-white'
-              : 'p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md relative transition-all cursor-pointer active:scale-95 border group'
-          }
-          style={
-            !isLavender
-              ? {
-                  backgroundColor: isDark
-                    ? 'var(--bg-card)'
-                    : 'color-mix(in srgb, var(--accent) 8%, var(--bg-subtle))',
-                  borderColor: 'color-mix(in srgb, #ec4899 35%, var(--border-ui))',
-                }
-              : undefined
-          }
-        >
-          <Hammer className={`w-5 h-5 mb-1.5 ${isLavender ? 'text-white drop-shadow' : 'text-pink-500 dark:text-pink-400 group-hover:scale-110 transition-transform'}`} />
-          <div className={`text-[11px] font-bold uppercase tracking-wider ${isLavender ? 'text-white/95 drop-shadow-xs' : 'ui-dim'}`}>Creator Points</div>
-          <div className={`text-xl font-black mt-0.5 transition-all ${isLavender ? 'text-white drop-shadow-sm' : 'text-pink-600 dark:text-pink-400'}`}>
-            {showCreatorRank
-              ? (data.creatorRank ? `#${data.creatorRank}` : '#-')
-              : formatCp(data.creatorPoints)}
+            {/* Creator Points */}
+            <button
+              type="button"
+              onClick={() => !isEditingCp && setShowCreatorRank(!showCreatorRank)}
+              className={
+                isLavender
+                  ? 'col-span-2 sm:col-span-1 p-4 rounded-2xl flex flex-col items-center justify-center text-center relative transition-all cursor-pointer active:scale-95 tsumiki-btn-pink-cyan text-white'
+                  : 'col-span-2 sm:col-span-1 p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md relative transition-all cursor-pointer active:scale-95 border group'
+              }
+              style={
+                !isLavender
+                  ? {
+                      backgroundColor: isDark
+                        ? 'var(--bg-card)'
+                        : 'color-mix(in srgb, var(--accent) 8%, var(--bg-subtle))',
+                      borderColor: 'color-mix(in srgb, #ec4899 35%, var(--border-ui))',
+                    }
+                  : undefined
+              }
+            >
+              <Hammer className={`w-5 h-5 mb-1.5 ${isLavender ? 'text-white drop-shadow' : 'text-pink-500 dark:text-pink-400 group-hover:scale-110 transition-transform'}`} />
+              <div className={`text-[11px] font-bold uppercase tracking-wider ${isLavender ? 'text-white/95 drop-shadow-xs' : 'ui-dim'}`}>Creator Points</div>
+              <div className={`text-xl font-black mt-0.5 transition-all ${isLavender ? 'text-white drop-shadow-sm' : 'text-pink-600 dark:text-pink-400'}`}>
+                {showCreatorRank
+                  ? (data.creatorRank ? `#${data.creatorRank}` : '#-')
+                  : formatCp(data.creatorPoints)}
+              </div>
+              <div className={`text-[10px] font-semibold mt-1 ${isLavender ? 'text-white/90 drop-shadow-xs' : 'ui-dim'}`}>
+                {showCreatorRank ? 'Xếp hạng CP' : `${data.createdLevels?.length || 0} tác phẩm`}
+              </div>
+            </button>
           </div>
-          <div className={`text-[10px] font-semibold mt-1 ${isLavender ? 'text-white/90 drop-shadow-xs' : 'ui-dim'}`}>
-            {showCreatorRank ? 'Xếp hạng CP' : `${data.createdLevels?.length || 0} tác phẩm`}
+        </div>
+
+        {/* Bio Card (Right 6 cols, supports Discord Markdown) */}
+        <div className="lg:col-span-6">
+          <div className="ui-card p-4 rounded-2xl h-full flex flex-col justify-between space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold ui-title flex items-center gap-1.5 uppercase tracking-wide">
+                <FileText className="w-3.5 h-3.5 text-sky-500" />
+                {t('profile.bio') || 'Tiểu sử'}
+              </span>
+              {canEditInfo && !isEditingBio && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBioInput(data.bio || '');
+                    setIsEditingBio(true);
+                  }}
+                  className="p-1 rounded-lg text-sky-500 hover:bg-sky-500/10 transition-colors cursor-pointer"
+                  title="Chỉnh sửa tiểu sử"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {isEditingBio ? (
+              <div className="space-y-2 flex-1 flex flex-col">
+                <textarea
+                  value={bioInput}
+                  onChange={(e) => setBioInput(e.target.value)}
+                  className="w-full flex-1 min-h-[140px] p-3 rounded-xl border text-xs resize-none"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  placeholder="Nhập tiểu sử (hỗ trợ Discord Markdown: **đậm**, *nghiêng*, # tiêu đề, > trích dẫn, `code`, v.v.)..."
+                  autoFocus
+                />
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingBio(false)}
+                    className="px-3 py-1.5 text-xs font-bold border rounded-xl hover:opacity-80 transition-all cursor-pointer"
+                    style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                  >
+                    {t('common.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const trimmedBio = bioInput.trim();
+                      await updateProfileField({ bio: trimmedBio });
+                      setData((prev: any) => ({ ...prev, bio: trimmedBio }));
+                      setIsEditingBio(false);
+                      fetchProfile({ silent: true });
+                    }}
+                    className="px-3.5 py-1.5 text-xs font-bold text-white rounded-xl shadow-xs transition-all cursor-pointer"
+                    style={{ backgroundColor: 'var(--accent)' }}
+                  >
+                    {t('common.save')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="w-full flex-1 rounded-xl p-3.5 border min-h-[140px] max-h-[220px] overflow-y-auto" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}>
+                {data.bio ? (
+                  <DiscordMarkdown content={data.bio} className="text-xs leading-relaxed" />
+                ) : (
+                  <div className="h-full flex items-center justify-center text-xs ui-dim opacity-60 italic py-6">
+                    {isEn ? 'No bio written yet.' : 'Chưa có tiểu sử.'}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        </button>
+        </div>
       </div>
 
       {/* Box 3 - Tabs */}
