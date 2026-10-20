@@ -419,7 +419,8 @@ export default function ClanListPage() {
             const memberCount = clan.memberCount ?? clan._count?.members ?? clan.members?.length ?? 0;
             const tierInfo = getClanTier(sp);
             const isTier2Plus = tierInfo.tier >= 2;
-            const isTier3 = tierInfo.tier === 3;
+            const isTier3 = tierInfo.tier >= 3;
+            const isTier4 = tierInfo.tier >= 4;
             const rawGlow = (clan.themeGradient || '') + ' ' + (clan.themeColor || '');
             const glowMatch = rawGlow.match(/\/\*glow:(\d+):(\d+)\*\//);
             const cardGlowEnabled = glowMatch ? glowMatch[1] === '1' : true;
@@ -584,7 +585,8 @@ export default function ClanListPage() {
             const memberCount = clan.memberCount ?? clan._count?.members ?? clan.members?.length ?? 0;
             const tierInfo = getClanTier(sp);
             const isTier2Plus = tierInfo.tier >= 2;
-            const isTier3 = tierInfo.tier === 3;
+            const isTier3 = tierInfo.tier >= 3;
+            const isTier4 = tierInfo.tier >= 4;
             const rawPrimary = clan.themeColor || clan.color || (isTier3 ? '#c084fc' : isTier2Plus ? '#38bdf8' : '#fbbf24');
             const primaryThemeColor = rawPrimary.match(/#([0-9a-fA-F]{3,8})/) ? rawPrimary.match(/#([0-9a-fA-F]{3,8})/)![0] : rawPrimary;
 

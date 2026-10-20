@@ -76,7 +76,7 @@ export default function ClanSettingsModal({
   // Gradient & Theme options for Tier 2+
   const tierInfo = getClanTier(clan.totalSp || clan.effectiveSp || 0);
   const isTier2OrHigher = Boolean(clan.tier >= 2 || (clan.totalSp || clan.effectiveSp || 0) >= 10);
-  const isTier3 = Boolean(clan.tier === 3 || (clan.totalSp || clan.effectiveSp || 0) >= 20);
+  const isTier3 = Boolean(clan.tier >= 3 || (clan.totalSp || clan.effectiveSp || 0) >= 20);
   const [useTagGradient, setUseTagGradient] = useState(Boolean(clan.colorGradient));
   const [tagGrad1, setTagGrad1] = useState(() => {
     if (clan.colorGradient) {

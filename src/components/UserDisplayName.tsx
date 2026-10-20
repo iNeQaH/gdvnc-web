@@ -171,7 +171,7 @@ export function UserDisplayName({
   }
 
   // Clan Tier 3+: nhẹ nhàng có hiệu ứng glow quanh tag clan theo màu sắc của chính CLAN TAG (không lấy màu theme clan)
-  const clanTierNum = (clan as any)?.tier ?? ((clan as any)?.totalSp !== undefined ? ((clan as any).totalSp >= 50 ? 4 : (clan as any).totalSp >= 20 ? 3 : (clan as any).totalSp >= 8 ? 2 : (clan as any).totalSp >= 3 ? 1 : 0) : 0);
+  const clanTierNum = (clan as any)?.tier ?? ((clan as any)?.totalSp !== undefined ? ((clan as any).totalSp >= 50 ? 4 : (clan as any).totalSp >= 20 ? 3 : (clan as any).totalSp >= 10 ? 2 : (clan as any).totalSp >= 3 ? 1 : 0) : 0);
   if (clanTierNum >= 3) {
     let tagGlowColor = clan?.color || '#38bdf8';
     if (clan?.colorGradient) {

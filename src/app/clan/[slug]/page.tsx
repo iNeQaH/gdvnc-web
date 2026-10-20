@@ -1290,13 +1290,17 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
     ? [...allMembers].sort((a, b) => (b.user?.creatorPoints || 0) - (a.user?.creatorPoints || 0))[0]
     : null;
 
-  const isTier3 = tierInfo.tier === 3;
+  const isTier3 = tierInfo.tier >= 3;
+  const isTier4 = tierInfo.tier >= 4;
 
   let targetSp = 3;
   let targetTierName = 'Tier 1';
-  if (clan.totalSp >= 20) {
+  if (clan.totalSp >= 50) {
     targetSp = clan.totalSp;
-    targetTierName = 'Tier 3';
+    targetTierName = 'Tier 4';
+  } else if (clan.totalSp >= 20) {
+    targetSp = 50;
+    targetTierName = 'Tier 4';
   } else if (clan.totalSp >= 10) {
     targetSp = 20;
     targetTierName = 'Tier 3';
@@ -1309,7 +1313,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
   }
 
   const progressPercentage =
-    clan.totalSp >= 20
+    clan.totalSp >= 50
       ? 100
       : Math.min(100, Math.max(0, Math.round((clan.totalSp / targetSp) * 100)));
 
@@ -1609,7 +1613,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   <Coins className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                   <span className="font-bold text-xs ui-title">{isEn ? 'SP Coin Progress' : 'Tiến trình SP Coin'}</span>
                   <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30">
-                    {clan.totalSp >= 20 ? (isEn ? 'Max Level (Tier 3)' : 'Cấp tối đa (Tier 3)') : (isEn ? `Target ${targetTierName}` : `Mục tiêu ${targetTierName}`)}
+                    {clan.totalSp >= 50 ? (isEn ? 'Max Level (Tier 4)' : 'Cấp tối đa (Tier 4)') : (isEn ? `Target ${targetTierName}` : `Mục tiêu ${targetTierName}`)}
                   </span>
                 </div>
                 <div className="font-mono text-xs font-black text-amber-700 dark:text-amber-300">
@@ -1635,7 +1639,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
 
               <div className="flex items-center justify-between text-[11px] ui-dim">
                 <span className="font-medium">
-                  {clan.totalSp >= 20
+                  {clan.totalSp >= 50
                     ? (isEn ? 'Clan has reached the maximum tier!' : 'Clan đang ở cấp bậc cao nhất!')
                     : (isEn ? `Need ${Math.max(0, targetSp - clan.totalSp)} more SP to reach ${targetTierName}` : `Cần thêm ${Math.max(0, targetSp - clan.totalSp)} SP để lên ${targetTierName}`)}
                 </span>

@@ -258,7 +258,8 @@ export default function ClanSettingsPage({
 
   const tierInfo = getClanTier(clan.totalSp || 0);
   const isTier2Plus = tierInfo.tier >= 2;
-  const isTier3 = tierInfo.tier === 3;
+  const isTier3 = tierInfo.tier >= 3;
+  const isTier4 = tierInfo.tier >= 4;
 
   const isLeader = clan.leader?.id === currentUser?.id;
   const isClanMod = clan.membersGrouped?.mods?.some((m: any) => m.userId === currentUser?.id);
