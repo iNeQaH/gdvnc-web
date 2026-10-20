@@ -184,33 +184,7 @@ export const Sidebar = () => {
     }, 6000);
   };
 
-  const [indicatorStyle, setIndicatorStyle] = useState({ top: 0, height: 0, opacity: 0 });
   const navRef = React.useRef<HTMLElement>(null);
-  const activeLinkRef = React.useRef<HTMLAnchorElement>(null);
-
-  const updateIndicator = () => {
-    if (isLavender && activeLinkRef.current && navRef.current) {
-      setIndicatorStyle({
-        top: activeLinkRef.current.offsetTop,
-        height: activeLinkRef.current.offsetHeight,
-        opacity: 1
-      });
-    } else {
-      setIndicatorStyle(prev => ({ ...prev, opacity: 0 }));
-    }
-  };
-
-  useEffect(() => {
-    updateIndicator();
-    const t1 = setTimeout(updateIndicator, 40);
-    const t2 = setTimeout(updateIndicator, 150);
-    const t3 = setTimeout(updateIndicator, 320);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-    };
-  }, [pathname, isLavender, leaderboardExpanded, levelsExpanded, lastClickedAccordion]);
 
   const handleUpdateUnreadCount = (count: number) => {
     const newCount = Math.max(0, count);
@@ -491,21 +465,6 @@ export const Sidebar = () => {
               {t('nav.menu')}
             </div>
 
-            {isLavender && (
-              <div 
-                className={`absolute rounded-xl z-[1] transition-all duration-250 ease-[cubic-bezier(0.19,1,0.22,1)] tsumiki-indicator ${pathname === "/support" ? "tsumiki-indicator-pink" : ""} ${indicatorStyle.opacity ? "opacity-100" : "opacity-0"}`}
-                style={{ 
-                  left: '0', 
-                  right: '0',
-                  top: `${indicatorStyle.top}px`,
-                  height: `${indicatorStyle.height}px`,
-                  pointerEvents: 'none'
-                }}
-              >
-                <span className="tsumiki-front !rounded-xl" style={{ transform: 'translateY(-3px)' }} />
-              </div>
-            )}
-
             {navLinks.map((item) => {
               const Icon = item.icon;
               const myClan = currentUser?.clanMember?.clan;
@@ -520,8 +479,6 @@ export const Sidebar = () => {
                   : (item.href === '/clan' && isMyClanActive)
                   ? false
                   : pathname === item.href || (pathname.startsWith(item.href + '/') && !isMyClanActive);
-              const actualBgCol = isLavender ? 'transparent' : (isActive ? 'var(--accent-bg)' : 'transparent');
-              const actualTextCol = isLavender && isActive ? '#ffffff' : (item.isPink ? '#f472b6' : (isActive ? 'var(--accent-text)' : 'var(--text-body)'));
 
               const handleItemClick = (e: React.MouseEvent) => {
                 e.preventDefault();
@@ -552,39 +509,55 @@ export const Sidebar = () => {
                 }
               };
 
+              // Class name & Style cho từng loại nav item:
+              // Khử hoàn toàn lỗi chữ trắng trên nền trắng (white on white), đảm bảo độ tương phản cao tuyệt đối
+              const getItemClassName = () => {
+                const base = "w-full relative flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group z-[2] text-left cursor-pointer";
+                if (isAccordion && isExpanded) {
+                  return `${base} ${
+                    isLavender
+                      ? (isDark ? 'bg-white/10 text-white font-bold' : 'bg-indigo-50 text-indigo-950 font-bold border border-indigo-200/60')
+                      : 'bg-[var(--bg-subtle)] text-[var(--text-title)] font-bold'
+                  }`;
+                }
+                if (isActive) {
+                  if (isLavender) {
+                    return `${base} tsumiki-btn shadow-sm !text-indigo-950 dark:!text-white`;
+                  }
+                  return `${base} bg-[var(--accent-bg)] text-[var(--accent-text)] font-bold`;
+                }
+                if (item.isPink) {
+                  return `${base} text-pink-500 dark:text-pink-400 hover:bg-pink-500/10`;
+                }
+                if (isLavender) {
+                  return `${base} text-indigo-950/70 dark:text-indigo-200/70 hover:text-indigo-950 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5`;
+                }
+                return `${base} text-[var(--text-body)] hover:bg-black/5 dark:hover:bg-white/5 hover:text-[var(--text-title)]`;
+              };
+
               return (
                 <React.Fragment key={item.href}>
                   {isAccordion ? (
                     <button
                       type="button"
-                      ref={isActive ? (activeLinkRef as any) : null}
                       onClick={handleItemClick}
-                      className={`w-full relative flex items-center justify-between px-3 py-3 rounded-xl text-xs font-semibold transition-all group z-[2] text-left cursor-pointer ${isLavender && isActive ? '-translate-y-[7px]' : ''}`}
-                      style={{
-                        backgroundColor: actualBgCol,
-                        color: actualTextCol,
-                      }}
+                      className={getItemClassName()}
                     >
                       <div className="flex items-center gap-2.5">
-                        <Icon className={`w-4 h-4 ${isActive ? 'scale-110' : 'group-hover:scale-110'} transition-transform ${item.isPink ? 'text-pink-400' : ''}`} />
+                        <Icon className={`w-4 h-4 transition-transform ${isActive || isExpanded ? 'scale-110' : 'group-hover:scale-110'} ${item.href === '/' ? 'text-amber-500' : 'text-sky-500'}`} />
                         <span>{item.label}</span>
                       </div>
                       <ChevronDown
-                        className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                        className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'rotate-180 opacity-100' : 'opacity-60'}`}
                       />
                     </button>
                   ) : (
                     <Link
                       href={item.href}
-                      ref={isActive ? activeLinkRef : null}
-                      className={`relative flex items-center justify-between px-3 py-3 rounded-xl text-xs font-semibold transition-all group z-[2] ${isLavender && isActive ? '-translate-y-[7px]' : ''}`}
-                      style={{
-                        backgroundColor: actualBgCol,
-                        color: actualTextCol,
-                      }}
+                      className={getItemClassName()}
                     >
                       <div className="flex items-center gap-2.5">
-                        <Icon className={`w-4 h-4 ${isActive ? 'scale-110' : 'group-hover:scale-110'} transition-transform ${item.isPink ? 'text-pink-400' : ''}`} />
+                        <Icon className={`w-4 h-4 transition-transform ${isActive ? 'scale-110' : 'group-hover:scale-110'} ${item.isPink ? 'text-pink-400' : ''}`} />
                         <span>{item.label}</span>
                       </div>
                       {item.href === '/announcements' && announceUnread > 0 ? (
@@ -606,7 +579,7 @@ export const Sidebar = () => {
                         marginBottom: isExpanded ? '4px' : '0px',
                       }}
                     >
-                      <div className="min-h-0 ml-5 pl-2.5 space-y-0.5 border-l-2" style={{ borderColor: 'var(--border-subtle)' }}>
+                      <div className="min-h-0 ml-5 pl-2.5 space-y-0.5 border-l-2" style={{ borderColor: isLavender ? (isDark ? '#4c1d95' : '#c7d2fe') : 'var(--border-subtle)' }}>
                         {leaderboardSubLinks.map((sub) => {
                           const isSubActive = sub.match(pathname);
                           return (
@@ -615,15 +588,27 @@ export const Sidebar = () => {
                               href={sub.href}
                               className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
                                 isSubActive
-                                  ? 'font-bold'
+                                  ? isLavender
+                                    ? (isDark
+                                        ? 'bg-purple-900/50 text-purple-200 font-bold shadow-xs border border-purple-500/30'
+                                        : 'bg-indigo-100 text-indigo-950 font-bold shadow-xs border border-indigo-200')
+                                    : 'bg-[var(--accent-bg)] text-[var(--accent-text)] font-bold'
+                                  : isLavender
+                                  ? (isDark ? 'text-indigo-300/70 hover:text-indigo-100 hover:bg-white/5' : 'text-indigo-950/70 hover:text-indigo-950 hover:bg-indigo-50')
                                   : 'ui-dim hover:text-inherit hover:bg-black/5 dark:hover:bg-white/5'
                               }`}
-                              style={isSubActive ? {
-                                backgroundColor: isLavender ? 'rgba(196, 161, 251, 0.22)' : 'var(--accent-bg)',
-                                color: isLavender ? '#ffffff' : 'var(--accent-text)',
-                              } : {}}
                             >
-                              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: isSubActive ? (isLavender ? '#ffffff' : 'var(--accent)') : 'currentColor', opacity: isSubActive ? 1 : 0.4 }} />
+                              <span
+                                className="w-1.5 h-1.5 rounded-full shrink-0"
+                                style={{
+                                  backgroundColor: isSubActive
+                                    ? isLavender
+                                      ? (isDark ? '#c084fc' : '#4338ca')
+                                      : 'var(--accent)'
+                                    : 'currentColor',
+                                  opacity: isSubActive ? 1 : 0.4
+                                }}
+                              />
                               <span>{sub.label}</span>
                             </Link>
                           );
@@ -643,7 +628,7 @@ export const Sidebar = () => {
                         marginBottom: isExpanded ? '4px' : '0px',
                       }}
                     >
-                      <div className="min-h-0 ml-5 pl-2.5 space-y-0.5 border-l-2" style={{ borderColor: 'var(--border-subtle)' }}>
+                      <div className="min-h-0 ml-5 pl-2.5 space-y-0.5 border-l-2" style={{ borderColor: isLavender ? (isDark ? '#4c1d95' : '#c7d2fe') : 'var(--border-subtle)' }}>
                         {levelsSubLinks.map((sub) => {
                           const isSubActive = sub.match(pathname);
                           return (
@@ -652,15 +637,27 @@ export const Sidebar = () => {
                               href={sub.href}
                               className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
                                 isSubActive
-                                  ? 'font-bold'
+                                  ? isLavender
+                                    ? (isDark
+                                        ? 'bg-purple-900/50 text-purple-200 font-bold shadow-xs border border-purple-500/30'
+                                        : 'bg-indigo-100 text-indigo-950 font-bold shadow-xs border border-indigo-200')
+                                    : 'bg-[var(--accent-bg)] text-[var(--accent-text)] font-bold'
+                                  : isLavender
+                                  ? (isDark ? 'text-indigo-300/70 hover:text-indigo-100 hover:bg-white/5' : 'text-indigo-950/70 hover:text-indigo-950 hover:bg-indigo-50')
                                   : 'ui-dim hover:text-inherit hover:bg-black/5 dark:hover:bg-white/5'
                               }`}
-                              style={isSubActive ? {
-                                backgroundColor: isLavender ? 'rgba(196, 161, 251, 0.22)' : 'var(--accent-bg)',
-                                color: isLavender ? '#ffffff' : 'var(--accent-text)',
-                              } : {}}
                             >
-                              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: isSubActive ? (isLavender ? '#ffffff' : 'var(--accent)') : 'currentColor', opacity: isSubActive ? 1 : 0.4 }} />
+                              <span
+                                className="w-1.5 h-1.5 rounded-full shrink-0"
+                                style={{
+                                  backgroundColor: isSubActive
+                                    ? isLavender
+                                      ? (isDark ? '#c084fc' : '#4338ca')
+                                      : 'var(--accent)'
+                                    : 'currentColor',
+                                  opacity: isSubActive ? 1 : 0.4
+                                }}
+                              />
                               <span>{sub.label}</span>
                             </Link>
                           );
