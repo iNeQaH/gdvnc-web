@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { X, Shield, Coins, Users, Palette, Sparkles, HelpCircle, CheckCircle2 } from 'lucide-react';
+import { X, Shield, Coins, Users, Palette, Sparkles, HelpCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 
 interface ClanInfoModalProps {
@@ -211,6 +211,74 @@ export default function ClanInfoModal({ isOpen, onClose }: ClanInfoModalProps) {
                   <span>{isEn ? 'Exclusive Mythic Tier 4 Badge.' : 'Huy hiệu Tối thượng Mythic Clan Tier 4.'}</span>
                 </li>
               </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 4: Tier Demotion & Member Limit Warnings */}
+        <div className="space-y-2.5">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-rose-500 dark:text-rose-400 flex items-center gap-2">
+            <AlertTriangle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+            <span>{isEn ? '4. Tier Demotion & Member Limit Warnings' : '4. Cảnh báo Tụt Tier & Giới hạn Thành viên'}</span>
+          </h3>
+
+          <div className="p-4 rounded-2xl border bg-rose-500/5 border-rose-500/25 space-y-3">
+            <p className="text-xs ui-dim leading-relaxed">
+              {isEn
+                ? 'When member Supporter durations expire or SP Coins are withdrawn, the total Clan SP may drop, causing the Clan to demote to a lower Tier (e.g. from Tier 4 down to Tier 1).'
+                : 'Khi thời hạn Supporter của thành viên giảm/hết hạn hoặc bị rút SP Coin, tổng điểm SP của Clan có thể bị sụt giảm khiến Clan bị hạ cấp xuống Tier thấp hơn (ví dụ từ Tier 4 tụt xuống Tier 1).'}
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+              <div className="p-3 rounded-xl border space-y-1 bg-black/10 dark:bg-black/30 border-rose-500/20">
+                <span className="font-bold text-rose-400 block text-[11px] uppercase tracking-wider">
+                  {isEn ? '7-Day Grace Period' : '7 Ngày Ân Hạn Bù SP'}
+                </span>
+                <p className="text-[11px] ui-dim leading-relaxed">
+                  {isEn
+                    ? 'The Clan has exactly 7 days to donate/compensate SP back to the required Tier. During this time, higher tier members are temporarily maintained.'
+                    : 'Clan có đúng 7 ngày ân hạn để các thành viên đóng góp bù lại số điểm SP thiếu hụt nhằm lấy lại Tier tương ứng.'}
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl border space-y-1 bg-black/10 dark:bg-black/30 border-rose-500/20">
+                <span className="font-bold text-rose-400 block text-[11px] uppercase tracking-wider">
+                  {isEn ? 'Auto-Eviction of Excess Members' : 'Tự Động Đá Thành Viên Vượt Quá'}
+                </span>
+                <p className="text-[11px] ui-dim leading-relaxed">
+                  {isEn
+                    ? 'If not compensated after 7 days, all members exceeding the new tier limit will be automatically kicked from the clan.'
+                    : 'Nếu sau 7 ngày không bù đủ SP, tất cả thành viên vượt quá giới hạn sức chứa của Tier hiện tại sẽ bị hệ thống tự động mời ra khỏi Clan.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-1 border-t border-rose-500/20">
+              <span className="text-[11px] font-bold text-rose-400 block mb-1">
+                {isEn ? 'Eviction Priority Order:' : 'Thứ tự ưu tiên lọc thành viên bị đá:'}
+              </span>
+              <ol className="text-xs ui-dim space-y-1 list-decimal list-inside pl-1 text-[11px] leading-relaxed">
+                <li>
+                  {isEn
+                    ? 'Non-role members (MEMBER) who are least active / have not logged in for the longest time.'
+                    : 'Ưu tiên những thành viên không có chức vụ (MEMBER) và ít hoạt động nhất (dựa trên lần đăng nhập gần nhất).'}
+                </li>
+                <li>
+                  {isEn
+                    ? 'Members who pledged least SP Coins (0 SP pledged members are kicked first).'
+                    : 'Sau đó là những thành viên đóng góp SP Coin ít hơn (người đóng góp 0 SP bị đá trước).'}
+                </li>
+                <li>
+                  {isEn
+                    ? 'Moderators with least activity / least SP pledged if capacity is still exceeded.'
+                    : 'Nếu vẫn vượt giới hạn: Kiểm duyệt viên (MODERATOR) ít hoạt động / đóng góp ít SP nhất.'}
+                </li>
+                <li>
+                  <strong className="text-rose-400 font-bold">
+                    {isEn ? 'Clan Leader is NEVER kicked under any circumstances.' : 'Trưởng Clan (LEADER) tuyệt đối không bao giờ bị đá khỏi Clan.'}
+                  </strong>
+                </li>
+              </ol>
             </div>
           </div>
         </div>

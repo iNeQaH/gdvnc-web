@@ -206,9 +206,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     });
 
     // 3. Phân chia danh sách thành viên theo quyền hạn & đóng góp SP
+    // SP đóng góp của từng thành viên tự động clamp theo số SP tối đa hiện có (nếu hết supporter thì bằng 0)
     const contribMap = new Map<string, number>();
     for (const c of rawClan.contributions) {
-      if (c.spPledged > 0) contribMap.set(c.userId, c.spPledged);
+      const userMax = calculateUserSp(c.user);
+      const validPledge = Math.min(c.spPledged, userMax);
+      if (validPledge > 0) contribMap.set(c.userId, validPledge);
     }
 
     const mapMember = (m: any) => ({
@@ -231,7 +234,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     if (sessionUser) {
       myMembership = rawClan.members.find((m) => m.userId === sessionUser.userId) || null;
       const myContrib = rawClan.contributions.find((c) => c.userId === sessionUser.userId);
-      myPledge = myContrib ? myContrib.spPledged : 0;
+      const myMax = myContrib ? calculateUserSp(myContrib.user) : 0;
+      myPledge = myContrib ? Math.min(myContrib.spPledged, myMax) : 0;
       if (!myMembership) {
         myPendingRequest = await prisma.clanJoinRequest.findUnique({
           where: {

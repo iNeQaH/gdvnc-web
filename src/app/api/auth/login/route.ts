@@ -284,19 +284,18 @@ export async function POST(req: Request) {
       }
     }
 
-    // Reset failed login attempts on successful login (after password + 2FA)
-    if (user.failedLoginAttempts > 0 || user.lockedUntil) {
-      try {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            failedLoginAttempts: 0,
-            lockedUntil: null,
-          },
-        });
-      } catch (e) {
-        console.error('Failed to reset login attempts:', e);
-      }
+    // Update lastLoginAt & reset failed login attempts on successful login (after password + 2FA)
+    try {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failedLoginAttempts: 0,
+          lockedUntil: null,
+          lastLoginAt: new Date(),
+        },
+      });
+    } catch (e) {
+      console.error('Failed to update login status:', e);
     }
 
     if (user.isBanned && user.bannedUntil && new Date(user.bannedUntil) <= new Date()) {

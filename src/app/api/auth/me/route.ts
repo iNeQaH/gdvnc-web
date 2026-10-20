@@ -45,6 +45,7 @@ export async function GET() {
       easterEggPoints: true,
       easterEggCode: true,
       tokenVersion: true,
+      lastLoginAt: true,
       clanMember: {
         select: {
           role: true,
@@ -83,6 +84,14 @@ export async function GET() {
 
   if (!user) {
     return NextResponse.json({ success: false }, { status: 401 });
+  }
+
+  // Cập nhật lastLoginAt nếu chưa có hoặc quá 30 phút để theo dõi độ hoạt động thành viên
+  if (!user.lastLoginAt || Date.now() - new Date(user.lastLoginAt).getTime() > 1800000) {
+    prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    }).catch(() => {});
   }
 
   let easterEggCode = user.easterEggCode;

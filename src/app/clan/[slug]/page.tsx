@@ -18,6 +18,7 @@ import {
   UserX,
   LogOut,
   AlertTriangle,
+  Clock,
   Loader2,
   X,
   Play,
@@ -1426,6 +1427,47 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
       </div>
 
       <div className={`relative z-[1] max-w-6xl mx-auto space-y-6 transition-all duration-300 ease-in-out ${isRosterOpen ? 'xl:-translate-x-14 2xl:-translate-x-16' : ''}`}>
+        {/* GRACE PERIOD & SUSPENSION WARNING BANNER */}
+        {clan.isSuspended ? (
+          <div className="p-4 sm:p-5 rounded-2xl border-2 border-red-500/50 bg-red-500/10 text-red-400 flex items-start gap-3 shadow-lg">
+            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+            <div className="space-y-1 text-xs">
+              <h4 className="font-black text-sm text-red-400 uppercase tracking-wider">
+                {isEn ? 'Clan Temporarily Suspended' : 'Clan Đang Bị Tạm Ngưng Hoạt Động'}
+              </h4>
+              <p className="ui-dim leading-relaxed">
+                {isEn
+                  ? 'Clan does not meet the minimum 3 SP requirement to remain active. Members need to donate at least 3 SP to reactivate Clan features and visibility.'
+                  : 'Clan hiện không đủ 3 SP tối thiểu để duy trì hoạt động. Các thành viên cần đóng góp tối thiểu 3 SP để mở khóa lại các tính năng và hiển thị của Clan.'}
+              </p>
+            </div>
+          </div>
+        ) : clan.gracePeriodUntil && new Date(clan.gracePeriodUntil) > new Date() ? (
+          <div className="p-4 sm:p-5 rounded-2xl border-2 border-amber-500/50 bg-amber-500/10 text-amber-400 flex items-start gap-3 shadow-lg">
+            <Clock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+            <div className="space-y-1.5 text-xs flex-1">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h4 className="font-black text-sm text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                  <span>{isEn ? '7-Day Grace Period Active' : 'Đang Trong Thời Gian Ân Hạn 7 Ngày'}</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-300 font-mono font-bold">
+                    {Math.max(1, Math.ceil((new Date(clan.gracePeriodUntil).getTime() - Date.now()) / (24 * 60 * 60 * 1000)))}{' '}
+                    {isEn ? 'days left' : 'ngày còn lại'}
+                  </span>
+                </h4>
+              </div>
+              <p className="ui-dim leading-relaxed">
+                {clan.memberCount > tierInfo.maxMembers
+                  ? isEn
+                    ? `Clan has been demoted to ${tierInfo.name} (max ${tierInfo.maxMembers} members) but currently has ${clan.memberCount} members. You have until ${new Date(clan.gracePeriodUntil).toLocaleDateString('vi-VN')} to donate SP and regain a higher tier. Otherwise, ${clan.memberCount - tierInfo.maxMembers} excess members will be automatically evicted!`
+                    : `Clan đã bị hạ cấp xuống ${tierInfo.name} (sức chứa tối đa ${tierInfo.maxMembers} thành viên) nhưng đang có ${clan.memberCount} thành viên. Clan có thời gian ân hạn đến ngày ${new Date(clan.gracePeriodUntil).toLocaleDateString('vi-VN')} để bù SP nâng Tier. Hết thời gian này, ${clan.memberCount - tierInfo.maxMembers} thành viên vượt giới hạn sẽ tự động bị mời ra khỏi Clan!`
+                  : isEn
+                    ? `Clan currently has ${clan.totalSp}/3 SP (below Tier 1 minimum). Please donate SP before ${new Date(clan.gracePeriodUntil).toLocaleDateString('vi-VN')} to avoid Clan suspension!`
+                    : `Clan hiện chỉ có ${clan.totalSp}/3 SP (dưới mức 3 SP tối thiểu của Tier 1). Vui lòng đóng góp SP trước ngày ${new Date(clan.gracePeriodUntil).toLocaleDateString('vi-VN')} để tránh bị tạm ngưng hoạt động!`}
+              </p>
+            </div>
+          </div>
+        ) : null}
+
         {/* HERO CARD (Tương tự cấu trúc trang Profile) */}
         <div
           className="ui-card rounded-3xl border overflow-hidden shadow-2xl relative"

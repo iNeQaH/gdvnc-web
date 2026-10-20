@@ -21,14 +21,15 @@ export function calculateUserSp(
   const now = Date.now();
   const diff = target - now;
   if (diff <= 0) {
-    // Khi hết hạn Supporter, toàn bộ SP Coin không còn hiệu lực
+    // Khi hết hạn Supporter, lập tức trừ tất cả SP Coin về 0 (kể cả trong Clan)
     return 0;
   }
 
-  // Số SP Coin cơ bản tương ứng với số tháng Supporter còn lại
-  const baseSp = Math.max(1, Math.round(diff / (30 * 24 * 60 * 60 * 1000)));
+  // Mỗi tháng Supporter (chu kỳ 30 ngày) tương đương 1 SP coin.
+  // Khi giảm 1 tháng thì trừ 1 SP coin: dùng Math.ceil (còn (0, 30 ngày] = 1 SP, (30, 60 ngày] = 2 SP, v.v.)
+  const baseSp = Math.max(1, Math.ceil(diff / (30 * 24 * 60 * 60 * 1000)));
 
-  // SP Coin thưởng / đổi mã tồn tại đồng thời suốt thời gian người dùng là Supporter, không hết hạn sau 1 tháng
+  // SP Coin thưởng / đổi mã (UserSpGrant) chỉ có hiệu lực khi Supporter còn hạn
   let bonusSp = 0;
   if (user?.spGrants && Array.isArray(user.spGrants)) {
     for (const grant of user.spGrants) {
