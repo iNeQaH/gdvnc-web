@@ -769,7 +769,7 @@ export const Sidebar = () => {
             <div className="p-2.5 mt-2 rounded-2xl border flex items-center justify-between gap-2" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: isLavender ? undefined : "var(--border-ui)" }}>
               <Link
                 href={`/profile/${currentUser.username}`}
-                className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-90"
+                className="group flex items-center gap-2.5 min-w-0 flex-1 hover:brightness-105 transition-all"
               >
                 {currentUser.avatarUrl ? (
                   <img src={currentUser.avatarUrl} alt="Avatar" className="w-10 h-10 rounded-xl object-cover shrink-0" />

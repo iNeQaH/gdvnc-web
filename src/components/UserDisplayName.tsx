@@ -154,7 +154,7 @@ export function UserDisplayName({
     clanTagStyle.filter = `drop-shadow(0 0 4px ${tagGlowColor}99)`;
   }
 
-  // Helper tính toán Drop-shadow Glow không tạo viền đen (hỗ trợ cả đơn sắc lẫn gradient, dùng blend-mode cộng sáng plus-lighter/screen)
+  // Helper tính toán Drop-shadow Glow tinh tế, độ lan nhỏ gọn ôm sát chữ như Clan tag (không văng bóng, không mờ đục)
   const getGlowFilter = (glow: string) => {
     // Trích xuất metadata độ mờ/sáng opacity (nếu có, e.g. /*op:75*/ hoặc /*glow:1:70*/)
     let opacity = 100;
@@ -171,18 +171,16 @@ export function UserDisplayName({
       /linear-gradient\s*\(\s*(\d+)deg\s*,\s*(#[a-fA-F0-9]{3,8}|[^\s,]+)\s*,\s*(#[a-fA-F0-9]{3,8}|[^\s,]+)\s*\)/i
     );
     if (gradMatch) {
-      const angle = parseInt(gradMatch[1], 10) || 135;
       const col1 = gradMatch[2].trim();
       const col2 = gradMatch[3].trim();
-      const rad = (angle * Math.PI) / 180;
-      const ox = Math.round(Math.sin(rad) * 3);
-      const oy = Math.round(-Math.cos(rad) * 3);
-      const a = 0.85 * alphaMultiplier;
-      return `drop-shadow(${ox}px ${oy}px 4px ${hexToRgba(col2, a)}) drop-shadow(${-ox}px ${-oy}px 4px ${hexToRgba(col1, a)})`;
+      const a = 0.8 * alphaMultiplier;
+      // Độ lan nhỏ gọn tâm 0 0 ôm sát nét chữ như clan tag, hòa quyện 2 màu gradient
+      return `drop-shadow(0 0 2px ${hexToRgba(col1, a)}) drop-shadow(0 0 2.5px ${hexToRgba(col2, a * 0.75)})`;
     }
 
-    const a = 0.85 * alphaMultiplier;
-    return `drop-shadow(0 0 4px ${hexToRgba(cleanGlow, a)}) drop-shadow(0 0 8px ${hexToRgba(cleanGlow, a * 0.7)})`;
+    const a = 0.8 * alphaMultiplier;
+    // Đơn sắc: độ lan gọn 2.5px thanh thoát, hoàn toàn ôm sát ký tự
+    return `drop-shadow(0 0 2.5px ${hexToRgba(cleanGlow, a)})`;
   };
 
   // Style cho Tên Supporter (bảo đảm độc lập 100% với màu Clan tag)
@@ -207,6 +205,9 @@ export function UserDisplayName({
   }
 
   const glowFilter = user?.nameGlow ? getGlowFilter(user.nameGlow) : '';
+  if (glowFilter) {
+    nameStyle.filter = glowFilter;
+  }
 
   // Padding chống cắt góc chữ nghiêng / nét bay (đặc biệt là ký tự 'H' của font Angels và nét uốn Rasley/Coraline)
   if (user?.nameFont === 'neon' || user?.nameFont === 'angels') {
@@ -271,35 +272,12 @@ export function UserDisplayName({
   return (
     <span className={`inline-flex items-center gap-1.5 ${wrap ? 'flex-wrap' : 'flex-nowrap min-w-0'} ${className}`}>
       {tagPosition === 'left' && renderTag()}
-      {glowFilter ? (
-        <span className="relative inline-flex items-center min-w-0">
-          <span
-            aria-hidden="true"
-            style={{
-              ...nameStyle,
-              filter: glowFilter,
-              mixBlendMode: 'plus-lighter',
-              position: 'absolute',
-              inset: 0,
-              pointerEvents: 'none',
-              userSelect: 'none',
-            }}
-            className={`font-bold ${wrap ? '' : 'truncate'}`}
-          >
-            {name}
-          </span>
-          <span
-            style={{ ...nameStyle, filter: undefined }}
-            className={`font-bold relative ${wrap ? '' : 'truncate'}`}
-          >
-            {name}
-          </span>
-        </span>
-      ) : (
-        <span style={nameStyle} className={`font-bold ${wrap ? '' : 'truncate'}`}>
-          {name}
-        </span>
-      )}
+      <span
+        style={nameStyle}
+        className={`font-bold transition-[filter] duration-150 group-hover:brightness-125 hover:brightness-125 ${wrap ? '' : 'truncate'}`}
+      >
+        {name}
+      </span>
       {tagPosition === 'right' && renderTag()}
       {renderRoleIcon()}
     </span>

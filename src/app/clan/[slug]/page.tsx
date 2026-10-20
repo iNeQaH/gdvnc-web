@@ -1551,18 +1551,6 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                 </Link>
               )}
 
-              {canManageClan && (
-                <Link
-                  href={`/clan/${clan.slug}/settings?tab=members`}
-                  className="px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all cursor-pointer hover:border-purple-400/50 shadow-xs"
-                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                  title={isEn ? 'Manage Members & Roles' : 'Quản lý Thành viên & Trao Mod'}
-                >
-                  <ShieldCheck className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
-                  <span>{isEn ? 'Roles & Mod' : 'Trao Mod'}</span>
-                </Link>
-              )}
-
               {!myMembership && (
                 clan.myPendingRequest ? (
                   <button
