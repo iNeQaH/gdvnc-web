@@ -1450,11 +1450,19 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                           backgroundImage: clan.colorGradient,
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
-                          filter: isTier3 ? `drop-shadow(0 0 5px ${clan.color || '#38bdf8'}99)` : undefined,
+                          filter: isTier3
+                            ? `drop-shadow(0 0 4px ${
+                                (clan.colorGradient?.match(/#([0-9a-fA-F]{3,8})/g)?.[0]) ||
+                                clan.color ||
+                                '#38bdf8'
+                              }99)`
+                            : undefined,
                         }
                       : {
                           color: clan.color || 'var(--accent)',
-                          filter: isTier3 ? `drop-shadow(0 0 5px ${clan.color || '#38bdf8'}99)` : undefined,
+                          filter: isTier3
+                            ? `drop-shadow(0 0 4px ${clan.color || '#38bdf8'}99)`
+                            : undefined,
                         }
                   }
                 >

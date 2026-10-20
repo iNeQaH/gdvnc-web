@@ -469,8 +469,7 @@ export const Sidebar = () => {
                   GD<span style={{ color: isLavender ? '#4338ca' : 'var(--accent)' }}>VN</span>
                 </div>
                 <div
-                  className="text-[10px] font-bold leading-none mt-0.5 tracking-tight"
-                  style={{ color: isLavender ? '#4338ca' : 'var(--accent)' }}
+                  className={`text-[10px] font-bold leading-none mt-0.5 tracking-tight ${isLavender ? 'text-indigo-950 dark:text-white' : 'ui-title'}`}
                 >
                   Geometry Dash Vietnam
                 </div>

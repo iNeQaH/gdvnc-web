@@ -1280,13 +1280,13 @@ export default function ProfilePage() {
         {/* Info Bar */}
         <div className="px-5 pb-5 pt-0">
           <div className="flex flex-col sm:flex-row sm:items-start gap-4 mb-4">
-            {/* Avatar */}
-            <div data-glitch-avatar className={`relative shrink-0 -mt-12 sm:-mt-14 ${isGlitchTheme ? 'overflow-visible z-30' : ''}`}>
+            {/* Avatar - self-start w-fit to prevent horizontal stretch on mobile */}
+            <div data-glitch-avatar className={`relative shrink-0 self-start w-fit -mt-12 sm:-mt-14 ${isGlitchTheme ? 'overflow-visible z-30' : ''}`}>
               <div
-                className={`p-1 rounded-2xl shadow-xl ${isLavender ? 'tsumiki-btn !m-0 !p-1' : 'bg-white dark:bg-zinc-900 border'} ${isGlitchTheme ? 'overflow-visible' : ''}`}
+                className={`p-1.5 rounded-2xl sm:rounded-3xl shadow-xl inline-block w-fit ${isLavender ? 'tsumiki-btn !m-0 !p-1.5' : 'bg-white dark:bg-zinc-900 border'} ${isGlitchTheme ? 'overflow-visible' : ''}`}
                 style={!isLavender ? { backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' } : {}}
               >
-                <div className={`relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl shadow-inner ${isGlitchTheme ? 'overflow-visible' : 'overflow-hidden'}`}>
+                <div className={`relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl sm:rounded-2xl overflow-hidden shadow-inner ${isGlitchTheme ? 'overflow-visible' : ''}`}>
                   {data.avatarUrl ? (
                     <>
                       <img
@@ -1298,19 +1298,19 @@ export default function ProfilePage() {
                           const fb = e.currentTarget.parentElement?.querySelector('.profile-avatar-fb');
                           if (fb) (fb as HTMLElement).style.display = 'flex';
                         }}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover rounded-xl sm:rounded-2xl"
                       />
-                      <div className="profile-avatar-fb hidden w-full h-full items-center justify-center bg-slate-200 dark:bg-zinc-800">
+                      <div className="profile-avatar-fb hidden w-full h-full items-center justify-center bg-slate-200 dark:bg-zinc-800 rounded-xl sm:rounded-2xl">
                         <UserIcon className="w-12 h-12 text-slate-400" />
                       </div>
                     </>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-slate-200 dark:bg-zinc-800">
+                    <div className="w-full h-full flex items-center justify-center bg-slate-200 dark:bg-zinc-800 rounded-xl sm:rounded-2xl">
                       <UserIcon className="w-12 h-12 text-slate-400" />
                     </div>
                   )}
                   {canEditInfo && (
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold backdrop-blur-xs">
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold backdrop-blur-xs rounded-xl sm:rounded-2xl">
                       <Camera className="w-4 h-4 mb-0.5" />
                       <span>Sửa Avatar</span>
                     </div>
@@ -1452,7 +1452,11 @@ export default function ProfilePage() {
                           }
                         : { color: data.clanMember.clan.color || 'var(--accent)' }),
                       filter: ((data.clanMember.clan as any)?.tier >= 3 || ((data.clanMember.clan as any)?.totalSp !== undefined && (data.clanMember.clan as any).totalSp >= 20))
-                        ? `drop-shadow(0 0 5px ${data.clanMember.clan.color || '#38bdf8'}99)`
+                        ? `drop-shadow(0 0 4px ${
+                            (data.clanMember.clan.colorGradient?.match(/#([0-9a-fA-F]{3,8})/g)?.[0]) ||
+                            data.clanMember.clan.color ||
+                            '#38bdf8'
+                          }99)`
                         : undefined,
                     }}
                   >
