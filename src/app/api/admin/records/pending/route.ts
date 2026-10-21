@@ -22,6 +22,7 @@ export async function GET(req: Request) {
     const q = searchParams.get('q') || '';
     const sort = searchParams.get('sort') || 'newest';
     const role = searchParams.get('role') || 'ALL';
+    const source = searchParams.get('source') || 'ALL';
 
     const whereClause: any = status ? { status } : {};
     
@@ -39,6 +40,14 @@ export async function GET(req: Request) {
       whereClause.user = { ...whereClause.user, supporterUntil: { gt: new Date() } };
     }
 
+    if (source === 'REVIEWED') {
+      // Chỉ lấy record đã có người duyệt thực tế
+      whereClause.reviewedAt = { not: null };
+    } else if (source === 'IMPORTED') {
+      // Lấy record import / chưa có người duyệt
+      whereClause.reviewedAt = null;
+    }
+
     const [records, grouped] = await Promise.all([
       prisma.record.findMany({
         where: whereClause,
@@ -47,9 +56,13 @@ export async function GET(req: Request) {
           level: { include: { _count: { select: { records: { where: { status: 'APPROVED' } } } } } },
           reviewer: { select: REVIEWER_SELECT },
         },
-        orderBy: sort === 'oldest' 
-          ? (status === RecordStatus.PENDING ? { submittedAt: 'asc' } : { reviewedAt: 'asc' })
-          : (status === RecordStatus.PENDING ? { submittedAt: 'desc' } : { reviewedAt: 'desc' }),
+        orderBy: sort === 'oldest'
+          ? (status === RecordStatus.PENDING
+              ? [{ submittedAt: 'asc' }]
+              : [{ reviewedAt: { sort: 'asc', nulls: 'first' } }, { submittedAt: 'asc' }])
+          : (status === RecordStatus.PENDING
+              ? [{ submittedAt: 'desc' }]
+              : [{ reviewedAt: { sort: 'desc', nulls: 'last' } }, { submittedAt: 'desc' }]),
         skip,
         take: ADMIN_LIST_LIMIT,
       }),

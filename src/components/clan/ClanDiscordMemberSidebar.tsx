@@ -222,18 +222,7 @@ export default function ClanDiscordMemberSidebar({
                   </Link>
 
                   <div className="flex items-center gap-1 shrink-0">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 group-hover:hidden" />
-                    {canManage && (
-                      <button
-                        type="button"
-                        onClick={() => onRoleChange(m.id, 'MEMBER')}
-                        className="hidden group-hover:flex items-center gap-0.5 text-[10px] font-bold text-amber-500 dark:text-amber-400 hover:bg-amber-500/10 px-1.5 py-0.5 rounded cursor-pointer transition-colors"
-                        title={isEn ? 'Demote to Member' : 'Hạ cấp xuống Member'}
-                      >
-                        <ArrowDownCircle className="w-3 h-3" />
-                        <span>{isEn ? 'Demote' : 'Hạ cấp'}</span>
-                      </button>
-                    )}
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
                   </div>
                 </div>
               );
@@ -298,30 +287,7 @@ export default function ClanDiscordMemberSidebar({
                       </div>
                     </Link>
 
-                    {(canManage || canKick) && (
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                        {canManage && (
-                          <button
-                            type="button"
-                            onClick={() => onRoleChange(m.id, 'MODERATOR')}
-                            className="p-1 rounded text-emerald-400 hover:bg-emerald-500/10 cursor-pointer transition-colors"
-                            title={isEn ? 'Promote to Clan Mod' : 'Bổ nhiệm làm Mod Clan'}
-                          >
-                            <ArrowUpCircle className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        {canKick && (
-                          <button
-                            type="button"
-                            onClick={() => onKick(m.id, m.user.username)}
-                            className="p-1 rounded text-red-400 hover:bg-red-500/10 cursor-pointer transition-colors"
-                            title={isEn ? 'Kick from Clan' : 'Trục xuất khỏi Clan'}
-                          >
-                            <UserX className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    )}
+
                   </div>
                 );
               })}
@@ -365,30 +331,7 @@ export default function ClanDiscordMemberSidebar({
                     </div>
                   </Link>
 
-                  {(canManage || canKick) && (
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                      {canManage && (
-                        <button
-                          type="button"
-                          onClick={() => onRoleChange(m.id, 'MODERATOR')}
-                          className="p-1 rounded text-emerald-400 hover:bg-emerald-500/10 cursor-pointer transition-colors"
-                          title={isEn ? 'Promote to Clan Mod' : 'Bổ nhiệm làm Mod Clan'}
-                        >
-                          <ArrowUpCircle className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      {canKick && (
-                        <button
-                          type="button"
-                          onClick={() => onKick(m.id, m.user.username)}
-                          className="p-1 rounded text-red-400 hover:bg-red-500/10 cursor-pointer transition-colors"
-                          title={isEn ? 'Kick from Clan' : 'Trục xuất khỏi Clan'}
-                        >
-                          <UserX className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  )}
+
                 </div>
               );
               })

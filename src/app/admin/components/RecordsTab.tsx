@@ -64,6 +64,7 @@ export default function RecordsTab({
   const [recordQuery, setRecordQuery] = useState('');
   const [recordSort, setRecordSort] = useState<'newest' | 'oldest'>('newest');
   const [recordRole, setRecordRole] = useState('ALL');
+  const [recordSource, setRecordSource] = useState<'ALL' | 'REVIEWED' | 'IMPORTED'>('ALL');
   const [recordCounts, setRecordCounts] = useState<QueueCounts>({ pending: 0, approved: 0, rejected: 0 });
   const [loadingRecords, setLoadingRecords] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -75,7 +76,7 @@ export default function RecordsTab({
   const fetchPendingRecords = async (status: QueueStatus = recordFilter, page = 1) => {
     setLoadingRecords(true);
     try {
-      const res = await fetch(`/api/admin/records/pending?status=${status}&page=${page}&q=${encodeURIComponent(recordQuery)}&sort=${recordSort}&role=${recordRole}`);
+      const res = await fetch(`/api/admin/records/pending?status=${status}&page=${page}&q=${encodeURIComponent(recordQuery)}&sort=${recordSort}&role=${recordRole}&source=${recordSource}`);
       const data = await res.json();
       if (data.success) {
         setPendingRecords(data.records || []);
@@ -214,6 +215,17 @@ export default function RecordsTab({
             <option value="MODERATOR">Moderator</option>
             <option value="SUPPORTER">Supporter</option>
             <option value="USER">{t('admin.filter_user')}</option>
+          </select>
+          <select
+            value={recordSource}
+            onChange={(e) => setRecordSource(e.target.value as any)}
+            className="px-2.5 py-2 rounded-xl border text-[11px] font-bold"
+            style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+            title="Lọc nguồn duyệt"
+          >
+            <option value="ALL">Tất cả nguồn</option>
+            <option value="REVIEWED">Có người duyệt (Lọc bỏ import)</option>
+            <option value="IMPORTED">Record import / Không người duyệt</option>
           </select>
         </div>
       </div>

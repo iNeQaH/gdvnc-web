@@ -177,14 +177,8 @@ export default function ProfilePage() {
       (window as any).__profileOverride = overrideObj;
       window.dispatchEvent(new Event('gdvnc_user_update'));
     }
-    // Set theme and mode override for the whole app while viewing this profile
-    if (data.profileTheme) {
-      setOverrideTheme(data.profileTheme);
-    }
-    const targetMode = data.profileConfig?.profileMode;
-    if (targetMode === 'dark' || targetMode === 'light') {
-      setOverrideMode(targetMode);
-    }
+    // Theme của profile đã được áp dụng trực tiếp qua scoped attribute data-theme của container
+    // Không ghi đè global site theme để tránh làm thay đổi theme cá nhân của người xem
   }, [data?.profileConfig, data?.profileTheme, setOverrideTheme, setOverrideMode]);
 
   useEffect(() => {

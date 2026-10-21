@@ -142,7 +142,41 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     }
     const top5Beaten = Array.from(uniqueBeatenLevelsMap.values()).slice(0, 5);
 
-    // 2. Slideshow các level / tác phẩm của Creator trong clan đã được duyệt
+    // 2. Lấy TẤT CẢ các level được tạo và được đánh giá của các thành viên trong Clan
+    // Bao gồm cả level từ CreatorWork (đã duyệt trong admin/creator) lẫn Level có sẵn trong hệ thống được tạo bởi thành viên
+    const clanMembersList = await prisma.user.findMany({
+      where: { id: { in: memberUserIds } },
+      select: {
+        id: true,
+        username: true,
+        gdUsername: true,
+        avatarUrl: true,
+        supporterUntil: true,
+        nameColor: true,
+        nameGradient: true,
+        nameGlow: true,
+        nameFont: true,
+      },
+    });
+
+    const userById = new Map<string, any>();
+    const userByName = new Map<string, any>();
+    const allMemberNamesSet = new Set<string>();
+
+    for (const u of clanMembersList) {
+      userById.set(u.id, u);
+      if (u.username?.trim()) {
+        userByName.set(u.username.trim().toLowerCase(), u);
+        allMemberNamesSet.add(u.username.trim());
+      }
+      if (u.gdUsername?.trim()) {
+        userByName.set(u.gdUsername.trim().toLowerCase(), u);
+        allMemberNamesSet.add(u.gdUsername.trim());
+      }
+    }
+    const allMemberNames = Array.from(allMemberNamesSet);
+
+    // 2.1. Lấy CreatorWork đã duyệt của thành viên clan
     const creatorWorks = await prisma.creatorWork.findMany({
       where: {
         userId: { in: memberUserIds },
@@ -163,47 +197,121 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         },
       },
       orderBy: { submittedAt: 'desc' },
-      take: 20,
+      take: 50,
     });
 
-    // Lookup matching Level rows by gdLevelId to enrich with level thumbnail, youtubeId, difficultyFace, etc.
-    const gdIds = creatorWorks
-      .map((w) => w.gdLevelId)
-      .filter((id): id is number => typeof id === 'number' && id > 0);
+    // 2.2. Lấy TẤT CẢ các level trong cơ sở dữ liệu được tạo bởi thành viên Clan (theo creatorId hoặc creatorName)
+    // và có đánh giá / rating (RATED, FEATURED, EPIC, LEGENDARY, MYTHIC hoặc difficulty > 0)
+    const dbMemberLevels = await prisma.level.findMany({
+      where: {
+        OR: [
+          { creatorId: { in: memberUserIds } },
+          ...allMemberNames.map((name) => ({
+            creatorName: { equals: name, mode: 'insensitive' as const },
+          })),
+        ],
+        AND: [
+          {
+            OR: [
+              { ratingType: { not: 'NONE' } },
+              { difficultyFace: { gt: 0 } },
+              { basePp: { gt: 0 } },
+              { isVN: true },
+              { isChallenge: true },
+            ],
+          },
+        ],
+      },
+      select: {
+        id: true,
+        gdLevelId: true,
+        name: true,
+        difficulty: true,
+        difficultyFace: true,
+        ratingType: true,
+        youtubeId: true,
+        creatorName: true,
+        creatorId: true,
+        mode: true,
+        basePp: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 60,
+    });
 
-    const levelsByGdId = new Map<number, any>();
-    if (gdIds.length > 0) {
-      const dbLevels = await prisma.level.findMany({
-        where: { gdLevelId: { in: gdIds } },
-        select: {
-          id: true,
-          gdLevelId: true,
-          name: true,
-          difficulty: true,
-          difficultyFace: true,
-          ratingType: true,
-          youtubeId: true,
-          creatorName: true,
-          mode: true,
-          basePp: true,
-        },
-      });
-      for (const lvl of dbLevels) {
-        if (lvl.gdLevelId) levelsByGdId.set(lvl.gdLevelId, lvl);
+    // 2.3. Hợp nhất và chuẩn hóa danh sách Featured Creator Works
+    const worksByGdId = new Map<number, any>();
+    const dbLevelByGdId = new Map<number, any>();
+    for (const lvl of dbMemberLevels) {
+      if (lvl.gdLevelId) dbLevelByGdId.set(lvl.gdLevelId, lvl);
+    }
+
+    // A. Nạp từ CreatorWorks
+    for (const work of creatorWorks) {
+      const dbLvl = work.gdLevelId ? dbLevelByGdId.get(work.gdLevelId) : null;
+      const effectiveRating = work.ratingType && work.ratingType !== 'NONE' ? work.ratingType : (dbLvl?.ratingType || 'NONE');
+      const ytMatch = work.videoUrl
+        ? work.videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/)
+        : null;
+      const effectiveYtId = dbLvl?.youtubeId || (ytMatch ? ytMatch[1] : null);
+      const item = {
+        ...work,
+        youtubeId: effectiveYtId,
+        levelId: dbLvl?.id || null,
+        difficultyFace: work.difficultyFace || dbLvl?.difficultyFace || 0,
+        ratingType: effectiveRating,
+        matchedLevel: dbLvl || null,
+      };
+      if (work.gdLevelId) {
+        worksByGdId.set(work.gdLevelId, item);
       }
     }
 
-    const enrichedCreatorWorks = creatorWorks.map((work) => {
-      const lvl = work.gdLevelId ? levelsByGdId.get(work.gdLevelId) : null;
-      return {
-        ...work,
-        youtubeId: lvl?.youtubeId || null,
-        levelId: lvl?.id || null,
-        difficultyFace: work.difficultyFace || lvl?.difficultyFace || 0,
-        ratingType: work.ratingType && work.ratingType !== 'NONE' ? work.ratingType : (lvl?.ratingType || 'NONE'),
-        matchedLevel: lvl || null,
-      };
-    });
+    // B. Nạp từ dbMemberLevels (những level có sẵn trong hệ thống ghép tác giả vào username của thành viên clan)
+    for (const lvl of dbMemberLevels) {
+      if (!lvl.gdLevelId || !worksByGdId.has(lvl.gdLevelId)) {
+        const author = (lvl.creatorId ? userById.get(lvl.creatorId) : null)
+          || (lvl.creatorName ? userByName.get(lvl.creatorName.trim().toLowerCase()) : null)
+          || rawClan.leader;
+
+        const item = {
+          id: `lvl-${lvl.id}`,
+          name: lvl.name,
+          description: null,
+          gdLevelId: lvl.gdLevelId,
+          youtubeId: lvl.youtubeId || null,
+          videoUrl: lvl.youtubeId ? `https://youtube.com/watch?v=${lvl.youtubeId}` : null,
+          imageUrl: lvl.youtubeId ? `https://img.youtube.com/vi/${lvl.youtubeId}/maxresdefault.jpg` : null,
+          ratingType: lvl.ratingType || 'NONE',
+          difficultyFace: lvl.difficultyFace || 0,
+          levelId: lvl.id,
+          matchedLevel: lvl,
+          user: author,
+          createdAt: lvl.createdAt,
+        };
+        if (lvl.gdLevelId) {
+          worksByGdId.set(lvl.gdLevelId, item);
+        }
+      }
+    }
+
+    // C. Sắp xếp tác phẩm: Phẩm chất cao nhất (MYTHIC > LEGENDARY > EPIC > FEATURED > RATED) lên đầu
+    const RATING_WEIGHTS: Record<string, number> = {
+      MYTHIC: 5,
+      LEGENDARY: 4,
+      EPIC: 3,
+      FEATURED: 2,
+      RATED: 1,
+      NONE: 0,
+    };
+
+    const enrichedCreatorWorks = Array.from(worksByGdId.values()).sort((a, b) => {
+      const weightA = RATING_WEIGHTS[a.ratingType] || 0;
+      const weightB = RATING_WEIGHTS[b.ratingType] || 0;
+      if (weightA !== weightB) return weightB - weightA;
+      return (b.gdLevelId || 0) - (a.gdLevelId || 0);
+    }).slice(0, 50);
 
     // 3. Phân chia danh sách thành viên theo quyền hạn & đóng góp SP
     // SP đóng góp của từng thành viên tự động clamp theo số SP tối đa hiện có (nếu hết supporter thì bằng 0)

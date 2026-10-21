@@ -184,16 +184,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     startBorderLoop();
 
     const handleUserUpdate = () => {
-      try {
-        const raw = localStorage.getItem('gdvnc_user');
-        if (raw) {
-          const u = JSON.parse(raw);
-          if (u?.profileTheme && THEMES.includes(u.profileTheme) && u.profileTheme !== theme) {
-            setThemeState(u.profileTheme);
-            localStorage.setItem('gdvnc_theme', u.profileTheme);
-          }
-        }
-      } catch {}
+      // Chỉ cập nhật cấu hình theme tùy biến/hiệu ứng viền, tuyệt đối KHÔNG tự ý ghi đè gdvnc_theme cá nhân
       updateCustomTheme();
       startBorderLoop();
     };
