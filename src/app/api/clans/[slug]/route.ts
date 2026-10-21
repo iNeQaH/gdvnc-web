@@ -247,6 +247,34 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
       if (lvl.gdLevelId) dbLevelByGdId.set(lvl.gdLevelId, lvl);
     }
 
+    // Nạp thêm bất kỳ Level nào trong DB khớp với gdLevelId của CreatorWorks (nếu chưa có trong dbMemberLevels)
+    const cwGdIds = creatorWorks
+      .map((w) => w.gdLevelId)
+      .filter((id): id is number => typeof id === 'number' && id > 0 && !dbLevelByGdId.has(id));
+
+    if (cwGdIds.length > 0) {
+      const extraLevels = await prisma.level.findMany({
+        where: { gdLevelId: { in: cwGdIds } },
+        select: {
+          id: true,
+          gdLevelId: true,
+          name: true,
+          difficulty: true,
+          difficultyFace: true,
+          ratingType: true,
+          youtubeId: true,
+          creatorName: true,
+          creatorId: true,
+          mode: true,
+          basePp: true,
+          createdAt: true,
+        },
+      });
+      for (const lvl of extraLevels) {
+        if (lvl.gdLevelId) dbLevelByGdId.set(lvl.gdLevelId, lvl);
+      }
+    }
+
     // A. Nạp từ CreatorWorks
     for (const work of creatorWorks) {
       const dbLvl = work.gdLevelId ? dbLevelByGdId.get(work.gdLevelId) : null;
@@ -255,8 +283,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         ? work.videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/)
         : null;
       const effectiveYtId = dbLvl?.youtubeId || (ytMatch ? ytMatch[1] : null);
+      const effectiveLevelName = work.levelName || dbLvl?.name || null;
       const item = {
         ...work,
+        levelName: effectiveLevelName,
+        name: effectiveLevelName,
+        creatorName: dbLvl?.creatorName || work.username || work.user?.username,
         youtubeId: effectiveYtId,
         levelId: dbLvl?.id || null,
         difficultyFace: work.difficultyFace || dbLvl?.difficultyFace || 0,
@@ -278,6 +310,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         const item = {
           id: `lvl-${lvl.id}`,
           name: lvl.name,
+          levelName: lvl.name,
+          creatorName: lvl.creatorName || author?.username || author?.gdUsername,
           description: null,
           gdLevelId: lvl.gdLevelId,
           youtubeId: lvl.youtubeId || null,

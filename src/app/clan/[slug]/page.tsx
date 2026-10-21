@@ -533,6 +533,11 @@ function CompactClanLevelsSlideshow({
   if (!works || works.length === 0) return null;
 
   const currentWork = works[currentIndex] || works[0];
+  const currentWorkName =
+    currentWork?.levelName ||
+    currentWork?.name ||
+    currentWork?.matchedLevel?.name ||
+    (currentWork?.gdLevelId ? `Level ${currentWork.gdLevelId}` : 'Untitled Level');
 
   useEffect(() => {
     if (works.length <= 1 || isHovered || embedVideo) return;
@@ -598,7 +603,7 @@ function CompactClanLevelsSlideshow({
         {embedVideo && embedUrl ? (
           <div className="absolute inset-0 z-30 bg-black flex flex-col">
             <div className="p-1 bg-black/80 flex items-center justify-between border-b border-white/10 px-3">
-              <span className="text-xs font-bold text-white truncate">{currentWork.levelName}</span>
+              <span className="text-xs font-bold text-white truncate">{currentWorkName}</span>
               <button
                 type="button"
                 onClick={() => setEmbedVideo(false)}
@@ -611,7 +616,7 @@ function CompactClanLevelsSlideshow({
             <div className="flex-1 w-full h-full">
               <iframe
                 src={embedUrl}
-                title={currentWork.levelName || 'Level Video'}
+                title={currentWorkName}
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
@@ -626,6 +631,18 @@ function CompactClanLevelsSlideshow({
           style={{ transform: `translateX(-${currentIndex * 100}%)` }}
         >
           {works.map((item, idx) => {
+            const itemLevelName =
+              item.levelName ||
+              item.name ||
+              item.matchedLevel?.name ||
+              (item.gdLevelId ? `Level ${item.gdLevelId}` : 'Untitled Level');
+            const itemCreatorName =
+              item.creatorName ||
+              item.user?.username ||
+              item.user?.gdUsername ||
+              item.matchedLevel?.creatorName ||
+              'GD Creator';
+
             const yIdFromUrl = item.videoUrl
               ? (item.videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/) || [])[1]
               : null;
@@ -646,7 +663,7 @@ function CompactClanLevelsSlideshow({
                 <div className="absolute inset-0 overflow-hidden pointer-events-none">
                   <img
                     src={highResThumb}
-                    alt={item.levelName || ''}
+                    alt={itemLevelName}
                     className="w-full h-full object-cover"
                     style={{ filter: 'brightness(0.48) contrast(1.15)' }}
                     onError={(e) => {
@@ -690,15 +707,15 @@ function CompactClanLevelsSlideshow({
                         href={tUrl}
                         className="text-base sm:text-lg font-black text-white hover:text-sky-300 drop-shadow-md tracking-tight block truncate transition-colors"
                       >
-                        {item.levelName || 'Untitled Level'}
+                        {itemLevelName}
                       </Link>
                     ) : (
                       <h3 className="text-base sm:text-lg font-black text-white drop-shadow-md tracking-tight truncate">
-                        {item.levelName || 'Untitled Level'}
+                        {itemLevelName}
                       </h3>
                     )}
                     <div className="text-[11px] text-slate-300 flex items-center gap-2 flex-wrap">
-                      <span>{isEn ? 'by' : 'bởi'} <strong className="text-white font-bold">{item.user?.username || item.creatorName || 'GD Creator'}</strong></span>
+                      <span>{isEn ? 'by' : 'bởi'} <strong className="text-white font-bold">{itemCreatorName}</strong></span>
                       {mLevel?.verifier && (
                         <span className="border-l border-white/20 pl-2 ui-dim">Verifier: <strong className="text-white">{mLevel.verifier}</strong></span>
                       )}
