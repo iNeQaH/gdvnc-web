@@ -2,8 +2,14 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireActiveUser } from '@/lib/auth';
 import { publicApiError } from '@/lib/apiError';
+import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Invalid request.' }, { status: 403 });
+  }
+
   let auth;
   try {
     auth = await requireActiveUser();
@@ -13,6 +19,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  // Rate limit: 20 reactions / 60 seconds per user
+  const limited = rateLimit(`react:${auth.userId}`, 20, 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
   const { id } = await params;
   try {
