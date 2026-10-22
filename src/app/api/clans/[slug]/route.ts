@@ -6,6 +6,8 @@ import { calculateUserSp, getClanTier, syncAndGetClanSp } from '@/lib/clan';
 import { isFullAdminRole, isSuperAdminUser } from '@/lib/roles';
 import { clipText, isHttpsUrl } from '@/lib/validate';
 import { publicApiError } from '@/lib/apiError';
+import { logAudit } from '@/lib/audit';
+import { getClientIp } from '@/lib/requestIp';
 import { isAllowedImageRef } from '@/lib/uploadthing';
 import { clearLeaderboardCache } from '@/lib/leaderboard';
 import { RecordStatus } from '@prisma/client';
@@ -647,6 +649,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ slug:
     });
 
     clearLeaderboardCache();
+    await logAudit(auth.userId, 'DISBAND_CLAN', { clanId: clan.id, clanName: clan.name, clanSlug: clan.slug }, getClientIp(req));
 
     return NextResponse.json({ success: true, message: 'Đã giải tán Clan.' });
   } catch (error) {

@@ -5,6 +5,8 @@ import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { isSuperAdminUser } from '@/lib/roles';
 import { publicApiError } from '@/lib/apiError';
+import { logAudit } from '@/lib/audit';
+import { getClientIp } from '@/lib/requestIp';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!isBrowserSameOriginFetch(req)) {
@@ -68,6 +70,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         message: `Mật khẩu tài khoản của bạn đã được Super Admin "${actor.username}" đặt lại thành công.`,
       },
     });
+
+    await logAudit(actor.id, 'ADMIN_RESET_PASSWORD', { targetUserId: target.id, targetUsername: target.username }, getClientIp(req));
 
     return NextResponse.json({
       success: true,

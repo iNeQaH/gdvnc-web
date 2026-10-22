@@ -1,5 +1,7 @@
 import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { publicApiError } from '@/lib/apiError';
+import { logAudit } from '@/lib/audit';
+import { getClientIp } from '@/lib/requestIp';
 import { requireAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -13,7 +15,8 @@ export async function POST(req: Request) {
   if (!isBrowserSameOriginFetch(req)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
-  try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
+  let adminUser;
+  try { adminUser = await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
 
   try {
     const body = await req.json();
@@ -29,7 +32,8 @@ export async function PATCH(req: Request) {
   if (!isBrowserSameOriginFetch(req)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
-  try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
+  let adminUser;
+  try { adminUser = await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
 
   try {
     const body = await req.json();
@@ -59,7 +63,8 @@ export async function DELETE(req: Request) {
   if (!isBrowserSameOriginFetch(req)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
-  try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
+  let adminUser;
+  try { adminUser = await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
 
   try {
     const { searchParams } = new URL(req.url);
@@ -168,7 +173,8 @@ export async function DELETE(req: Request) {
 }
 
 export async function GET(req: Request) {
-  try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
+  let adminUser;
+  try { adminUser = await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
 
   try {
     const levels = await prisma.level.findMany({

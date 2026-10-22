@@ -503,6 +503,14 @@ Bảng tra cứu trực tiếp: Khi gặp lỗi hoặc cần chỉnh sửa bất
 - **Ngoại lệ duy nhất có chủ đích**: Endpoint webhook bên thứ 3 (`/api/webhooks/sepay`) nhận tín hiệu từ cổng thanh toán SePay bên ngoài nên không áp dụng same-origin, thay vào đó được bảo vệ bằng xác thực API Key hoặc chữ ký điện tử HMAC-SHA256 timing-safe.
 - **Cơ chế hoạt động**: Phân tích header tiêu chuẩn hiện đại `Sec-Fetch-Site` (`cross-site` -> reject, `same-origin` -> accept), kết hợp kiểm tra độ khớp tuyệt đối giữa URL `Origin` / `Referer` với origin của server tiếp nhận. Tương thích linh hoạt với cả iOS Safari và in-app webview.
 
+### 6.7. Hệ Thống Nhật Ký Kiểm Toán Quản Trị Cấp Cao (Admin Audit Logging)
+- **Truy vết toàn diện hành vi nhạy cảm (`logAudit`)**: Mọi thao tác có tính chất thay đổi bảo mật hoặc xóa dữ liệu nghiêm trọng đều được ghi nhận vĩnh viễn vào bảng `AuditLog` kèm `userId`, `action`, `ipAddress` và `details` JSON:
+  - `ADMIN_RESET_PASSWORD`: Ghi nhận Super Admin nào đặt lại mật khẩu cho tài khoản nào.
+  - `SET_SITE_LOCK`: Ghi nhận trạng thái bật/tắt chế độ khoá khẩn cấp website.
+  - `DISBAND_CLAN`: Ghi nhận thông tin người thực hiện, ID, tên và slug của Clan bị giải tán.
+  - `DELETE_LEVEL`: Ghi nhận ID, tên màn chơi và GD Level ID bị xóa khỏi danh sách.
+  - `BAN_USER` / `UNBAN_USER`, `UPDATE_USER_ROLE`: Ghi nhận thời gian, lý do và phân quyền mới.
+
 ---
 
 ## 7. BÁO CÁO TỐI ƯU HÓA HIỆU NĂNG & CODE (PERFORMANCE & OPTIMIZATION)
