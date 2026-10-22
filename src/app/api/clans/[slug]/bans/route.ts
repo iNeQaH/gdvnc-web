@@ -6,6 +6,7 @@ import { clearLeaderboardCache } from '@/lib/leaderboard';
 import { isSuperAdminUser } from '@/lib/roles';
 import { clipText } from '@/lib/validate';
 import { publicApiError } from '@/lib/apiError';
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 
 export const dynamic = 'force-dynamic';
 
@@ -81,6 +82,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Invalid request.' }, { status: 403 });
+  }
+
   let auth;
   try {
     auth = await requireAuth();

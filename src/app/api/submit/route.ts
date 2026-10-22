@@ -17,8 +17,13 @@ import {
   parseSubmitTimeMs,
 } from '@/lib/submitValidation';
 import { publicApiError } from '@/lib/apiError';
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 
 export async function POST(req: Request) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Invalid request.' }, { status: 403 });
+  }
+
   let auth;
   try {
     auth = await requireAuth();

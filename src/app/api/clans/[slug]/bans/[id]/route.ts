@@ -3,11 +3,16 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { isSuperAdminUser } from '@/lib/roles';
 import { publicApiError } from '@/lib/apiError';
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ slug: string; id: string }> }
 ) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Invalid request.' }, { status: 403 });
+  }
+
   let auth;
   try {
     auth = await requireAuth();

@@ -7,6 +7,8 @@ import { clipText } from '@/lib/validate';
 import { publicApiError } from '@/lib/apiError';
 import { isAllowedImageRef } from '@/lib/uploadthing';
 import { clearLeaderboardCache } from '@/lib/leaderboard';
+import { isBrowserSameOriginFetch } from '@/lib/origin';
+import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -112,12 +114,19 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Invalid request.' }, { status: 403 });
+  }
+
   let auth;
   try {
     auth = await requireAuth();
   } catch {
     return NextResponse.json({ error: 'Vui lòng đăng nhập.' }, { status: 401 });
   }
+
+  const limited = rateLimit(`create-clan:${auth.userId}`, 4, 300_000);
+  if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
   try {
     const user = await prisma.user.findUnique({

@@ -4,17 +4,26 @@ import prisma from '@/lib/prisma';
 import { calculateUserSp, syncAndGetClanSp } from '@/lib/clan';
 import { clearLeaderboardCache } from '@/lib/leaderboard';
 import { publicApiError } from '@/lib/apiError';
+import { isBrowserSameOriginFetch } from '@/lib/origin';
+import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Invalid request.' }, { status: 403 });
+  }
+
   let auth;
   try {
     auth = await requireAuth();
   } catch {
     return NextResponse.json({ error: 'Vui lòng đăng nhập.' }, { status: 401 });
   }
+
+  const limited = rateLimit(`clan-donate:${auth.userId}`, 15, 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
   try {
     const { slug } = await params;

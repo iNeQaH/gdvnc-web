@@ -6,6 +6,7 @@ import { clipText, isHttpsUrl } from '@/lib/validate';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { getOrCreateStubLevel } from '@/lib/upsertLevel';
 import { publicApiError } from '@/lib/apiError';
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import {
   parseSubmitFps,
   parseSubmitGdLevelId,
@@ -15,6 +16,10 @@ import {
 } from '@/lib/submitValidation';
 
 export async function POST(req: Request) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Invalid request.' }, { status: 403 });
+  }
+
   let auth;
   try {
     auth = await requireAuth();

@@ -5,11 +5,16 @@ import { calculateUserSp, syncAndGetClanSp } from '@/lib/clan';
 import { clearLeaderboardCache } from '@/lib/leaderboard';
 import { isSuperAdminUser } from '@/lib/roles';
 import { publicApiError } from '@/lib/apiError';
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ slug: string; id: string }> }
 ) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Invalid request.' }, { status: 403 });
+  }
+
   let auth;
   try {
     auth = await requireAuth();

@@ -3,17 +3,26 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { isFullAdminRole, isSuperAdminUser } from '@/lib/roles';
 import { publicApiError } from '@/lib/apiError';
+import { isBrowserSameOriginFetch } from '@/lib/origin';
+import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Invalid request.' }, { status: 403 });
+  }
+
   let auth;
   try {
     auth = await requireAuth();
   } catch {
     return NextResponse.json({ error: 'Vui lòng đăng nhập.' }, { status: 401 });
   }
+
+  const limited = rateLimit(`clan-transfer:${auth.userId}`, 5, 300_000);
+  if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
   try {
     const { slug } = await params;
