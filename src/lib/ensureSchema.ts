@@ -613,34 +613,54 @@ export async function seedSystemBadges(db: PrismaClient): Promise<void> {
  * Adds hotfix/phase-2 columns if Neon/local DB is behind Prisma schema.
  * One catalog probe when everything is already there; indexes run in the background.
  */
+export const REQUIRED_SCHEMA_KEYS = [
+  'User.tokenVersion',
+  'User.isBanned',
+  'User.bannedUntil',
+  'User.failedLoginAttempts',
+  'User.lockedUntil',
+  'User.lastFailedLoginAt',
+  'User.lastLoginAt',
+  'Otp.failedAttempts',
+  'User.hardestClassicLevelId',
+  'User.hardestPlatformerLevelId',
+  'PageVisit.id',
+  'ListChangeLog.id',
+  'Level.classicRank',
+  'RedeemCode.id',
+  'RedeemCode.expiresAt',
+  'RedeemCode.rewardType',
+  'RedeemCodeUse.id',
+  'UserSpGrant.id',
+  'Clan.id',
+  'ClanMember.id',
+  'ClanJoinRequest.id',
+  'ClanSpContribution.id',
+  'ClanBan.id',
+  'User.nameColor',
+  'User.hasGlitchTheme',
+  'User.easterEggCompleted',
+  'User.easterEggCode',
+  'User.displayName',
+  'User.gdStars',
+  'User.gdMoons',
+  'User.gdDemons',
+  'User.gdHasGlobalRank',
+  'User.gdStatsUpdatedAt',
+  'User.likedUserIds',
+  'User.displayedBadgeIds',
+  'User.hideAllBadges',
+  'Badge.systemKey',
+  'Badge.color2',
+  'Badge.effect',
+  'SiteAnnouncement.expiresAt',
+  'SiteAnnouncement.likedUserIds',
+  'SiteAnnouncement.poll',
+];
+
 export async function applyPendingSchema(db: PrismaClient): Promise<void> {
   const have = await columnSet(db);
-  const complete =
-    have.has('User.tokenVersion') &&
-    have.has('User.isBanned') &&
-    have.has('User.bannedUntil') &&
-    have.has('Otp.failedAttempts') &&
-    have.has('User.hardestClassicLevelId') &&
-    have.has('User.hardestPlatformerLevelId') &&
-    have.has('PageVisit.id') &&
-    have.has('ListChangeLog.id') &&
-    have.has('Level.classicRank') &&
-    have.has('RedeemCode.id') &&
-    have.has('RedeemCode.expiresAt') &&
-    have.has('RedeemCode.rewardType') &&
-    have.has('RedeemCodeUse.id') &&
-    have.has('UserSpGrant.id') &&
-    have.has('Clan.id') &&
-    have.has('ClanMember.id') &&
-    have.has('ClanJoinRequest.id') &&
-    have.has('ClanSpContribution.id') &&
-    have.has('ClanBan.id') &&
-    have.has('User.nameColor') &&
-    have.has('User.hasGlitchTheme') &&
-    have.has('User.easterEggCompleted') &&
-    have.has('User.displayName') &&
-    have.has('Badge.systemKey') &&
-    have.has('SiteAnnouncement.expiresAt');
+  const complete = REQUIRED_SCHEMA_KEYS.every((key) => have.has(key));
   if (complete) return;
   await addMissingColumns(db, have);
   void addIndexesInBackground(db);
