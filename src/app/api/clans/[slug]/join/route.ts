@@ -4,14 +4,24 @@ import prisma from '@/lib/prisma';
 import { syncAndGetClanSp } from '@/lib/clan';
 import { clipText } from '@/lib/validate';
 import { publicApiError } from '@/lib/apiError';
+import { isBrowserSameOriginFetch } from '@/lib/origin';
+import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Invalid request.' }, { status: 403 });
+  }
+
   let auth;
   try {
     auth = await requireAuth();
   } catch {
     return NextResponse.json({ error: 'Vui lòng đăng nhập.' }, { status: 401 });
   }
+
+  // Rate limit: tối đa 6 lượt gửi đơn gia nhập / 60 giây per user để chống spam thông báo cho Leader/Mod
+  const limited = rateLimit(`clan-join:${auth.userId}`, 6, 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
   try {
     const { slug } = await params;
@@ -146,6 +156,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ slug: string }> }) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Invalid request.' }, { status: 403 });
+  }
+
   let auth;
   try {
     auth = await requireAuth();

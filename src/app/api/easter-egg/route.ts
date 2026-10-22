@@ -6,6 +6,8 @@ import { calculateUserSp } from '@/lib/clanTypes';
 import { sendGlitchRewardEmail } from '@/lib/mail';
 import { publicApiError } from '@/lib/apiError';
 import { isSuperAdminUsername, isStaffRole } from '@/lib/roles';
+import { isBrowserSameOriginFetch } from '@/lib/origin';
+import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -181,8 +183,21 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Invalid request.' }, { status: 403 });
+  }
+
+  let auth;
   try {
-    const auth = await requireAuth();
+    auth = await requireAuth();
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const limited = rateLimit(`easter-egg:${auth.userId}`, 25, 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
+
+  try {
     const body = await req.json().catch(() => ({}));
     const action = body?.action;
 
