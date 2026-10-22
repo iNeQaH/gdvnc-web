@@ -1,3 +1,4 @@
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { requireFullAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -8,6 +9,9 @@ import { logAudit } from '@/lib/audit';
 import { getClientIp } from '@/lib/requestIp';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   let actorJwt;
   try {
     actorJwt = await requireFullAdmin();

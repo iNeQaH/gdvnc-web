@@ -498,6 +498,11 @@ Bảng tra cứu trực tiếp: Khi gặp lỗi hoặc cần chỉnh sửa bất
   - Mọi đường dẫn truy xuất file đều được giải quyết qua `path.resolve` và kiểm tra nghiêm ngặt `targetPath.startsWith(uploadsDir + path.sep)`.
   - Mọi nỗ lực chèn ký tự `../` hoặc bypass ký tự unicode đều bị phát hiện và chặn với mã lỗi HTTP 403 Forbidden.
 
+### 6.6. Phòng Vệ Chiều Sâu CSRF & Same-Origin Fetch (`isBrowserSameOriginFetch`)
+- **Phủ sóng toàn diện 67/68 route mutation**: Toàn bộ các API handler có khả năng làm thay đổi dữ liệu (`POST`, `PUT`, `PATCH`, `DELETE`) trong hệ thống (gồm 27 API Admin, 10 API Clan, API nộp bài/kỷ lục, đổi mật khẩu, cập nhật profile, quản lý thông báo, upload ảnh, site lock...) đều được tích hợp bộ kiểm tra `isBrowserSameOriginFetch(req)`.
+- **Ngoại lệ duy nhất có chủ đích**: Endpoint webhook bên thứ 3 (`/api/webhooks/sepay`) nhận tín hiệu từ cổng thanh toán SePay bên ngoài nên không áp dụng same-origin, thay vào đó được bảo vệ bằng xác thực API Key hoặc chữ ký điện tử HMAC-SHA256 timing-safe.
+- **Cơ chế hoạt động**: Phân tích header tiêu chuẩn hiện đại `Sec-Fetch-Site` (`cross-site` -> reject, `same-origin` -> accept), kết hợp kiểm tra độ khớp tuyệt đối giữa URL `Origin` / `Referer` với origin của server tiếp nhận. Tương thích linh hoạt với cả iOS Safari và in-app webview.
+
 ---
 
 ## 7. BÁO CÁO TỐI ƯU HÓA HIỆU NĂNG & CODE (PERFORMANCE & OPTIMIZATION)

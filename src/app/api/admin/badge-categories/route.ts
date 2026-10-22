@@ -1,3 +1,4 @@
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { publicApiError } from '@/lib/apiError';
 import { requireAdmin, requireSuperAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
@@ -32,6 +33,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try { await requireSuperAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
 
   try {

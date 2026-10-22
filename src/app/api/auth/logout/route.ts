@@ -1,3 +1,4 @@
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { NextResponse } from 'next/server';
 import { clearAuthCookie, getAuthUser, bumpTokenVersion } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
@@ -6,6 +7,9 @@ import { getClientIp } from '@/lib/requestIp';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try {
     const user = await getAuthUser();
     if (user?.userId) {

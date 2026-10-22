@@ -1,3 +1,4 @@
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -475,6 +476,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ username: string }> }) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try {
     const auth = await requireAuth();
     const { username } = await params;
@@ -747,6 +751,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ username: string }> }) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try {
     const auth = await requireAuth();
     const { username } = await params;

@@ -1,3 +1,4 @@
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import { requireSuperAdmin } from '@/lib/auth';
@@ -8,6 +9,9 @@ import { refreshTimelineLevelCopy } from '@/lib/gdRefreshJobs';
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try {
     await requireSuperAdmin();
   } catch {

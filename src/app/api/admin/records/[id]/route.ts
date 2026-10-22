@@ -1,3 +1,4 @@
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { publicApiError } from '@/lib/apiError';
 import { requireAdmin } from '@/lib/auth';
 import { clipReviewNote, notifyWithNote } from '@/lib/reviewNote';
@@ -9,6 +10,9 @@ import { clearLeaderboardCache } from '@/lib/leaderboard';
 import { resolveStaffReviewerId } from '@/lib/reviewerDisplay';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   let admin;
   try { admin = await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
 
@@ -98,6 +102,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 }
 
 export async function DELETE(req: Request, context: any) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try { await requireAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
 
   try {

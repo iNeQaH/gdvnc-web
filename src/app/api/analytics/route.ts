@@ -1,3 +1,4 @@
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
@@ -6,6 +7,9 @@ import { rateLimit } from '@/lib/rateLimit';
 import { getAuthUser } from '@/lib/auth';
 
 export async function POST(req: Request) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try {
     const ip = getClientIp(req) || '127.0.0.1';
     const rl = rateLimit(`analytics:${ip}`, 60, 60_000);

@@ -1,3 +1,4 @@
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { requireSuperAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -6,6 +7,9 @@ import { isSuperAdminUser } from '@/lib/roles';
 import { publicApiError } from '@/lib/apiError';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   let actorJwt;
   try {
     actorJwt = await requireSuperAdmin();

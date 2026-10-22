@@ -1,3 +1,4 @@
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import { estimateDataUrlBytes } from '@/lib/profileEmbed';
@@ -10,6 +11,9 @@ const MAX_COVER_BYTES = 8 * 1024 * 1024;
 const ALLOWED = /^data:image\/(jpeg|jpg|png|webp|gif);base64,/i;
 
 export async function POST(req: Request) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   let auth;
   try {
     auth = await requireAuth();

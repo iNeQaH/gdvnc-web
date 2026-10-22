@@ -1,12 +1,16 @@
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { NextResponse } from 'next/server';
 import { requireSuperAdmin } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { publicApiError } from '@/lib/apiError';
 
 export async function DELETE(
-  _req: Request,
+  req: Request,
   props: { params: Promise<{ id: string }> }
 ) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try {
     await requireSuperAdmin();
   } catch {
@@ -37,6 +41,9 @@ export async function PATCH(
   req: Request,
   props: { params: Promise<{ id: string }> }
 ) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try {
     await requireSuperAdmin();
   } catch {

@@ -1,3 +1,4 @@
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { publicApiError } from '@/lib/apiError';
 import { requireFullAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
@@ -6,6 +7,9 @@ import { RecordStatus } from '@prisma/client';
 import { recalculateCreatorPoints } from '@/lib/recalculateCreatorPoints';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try { await requireFullAdmin(); } catch { return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }); }
 
   try {

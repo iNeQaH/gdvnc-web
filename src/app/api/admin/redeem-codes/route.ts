@@ -1,3 +1,4 @@
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { NextResponse } from 'next/server';
 import { requireSuperAdmin } from '@/lib/auth';
 import prisma from '@/lib/prisma';
@@ -35,6 +36,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   let adminUser;
   try {
     adminUser = await requireSuperAdmin();

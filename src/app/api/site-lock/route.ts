@@ -1,3 +1,4 @@
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { NextResponse } from 'next/server';
 import { requireSuperAdmin } from '@/lib/auth';
 import { isSiteLocked, setSiteLocked } from '@/lib/siteLock';
@@ -14,6 +15,9 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try {
     await requireSuperAdmin();
   } catch {

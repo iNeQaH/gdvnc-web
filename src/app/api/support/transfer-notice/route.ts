@@ -1,3 +1,4 @@
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
@@ -9,6 +10,9 @@ import { clipText } from '@/lib/validate';
 import { supportTransferContent } from '@/lib/supportPayment';
 
 export async function POST(req: Request) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   let auth;
   try {
     auth = await requireAuth();

@@ -1,3 +1,4 @@
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireFullAdmin } from '@/lib/auth';
@@ -27,6 +28,9 @@ export async function GET() {
 }
 
 export async function PUT(req: Request) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try {
     await requireFullAdmin();
   } catch {

@@ -1,3 +1,4 @@
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { NextResponse } from 'next/server';
 import { publicApiError } from '@/lib/apiError';
 import { requireSuperAdmin } from '@/lib/auth';
@@ -72,6 +73,9 @@ export async function GET() {
 }
 
 export async function DELETE(req: Request) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try {
     await requireSuperAdmin();
   } catch {
@@ -97,6 +101,9 @@ export async function DELETE(req: Request) {
 }
 
 export async function POST(req: Request) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try {
     await requireSuperAdmin();
   } catch {

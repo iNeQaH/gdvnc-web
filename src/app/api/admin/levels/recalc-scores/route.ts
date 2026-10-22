@@ -1,3 +1,4 @@
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { publicApiError } from '@/lib/apiError';
@@ -8,7 +9,10 @@ import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST() {
+export async function POST(req: Request) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   try {
     await requireAdmin();
   } catch {

@@ -1,9 +1,13 @@
+import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { requireFullAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { deleteUserAccount } from '@/lib/deleteUser';
 import { publicApiError } from '@/lib/apiError';
 
 export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
+  if (!isBrowserSameOriginFetch(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   let actorJwt;
   try {
     actorJwt = await requireFullAdmin();
