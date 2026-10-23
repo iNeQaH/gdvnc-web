@@ -163,12 +163,11 @@ function renderClanTierBadge(tierInfo: any, primaryColor: string, gradient?: str
   );
 }
 
-const SORT_OPTIONS: { value: 'activity' | 'members' | 'sp' | 'newest' | 'oldest'; label: string; icon: any }[] = [
+const SORT_OPTIONS: { value: 'activity' | 'members' | 'sp' | 'created'; label: string; icon: any }[] = [
   { value: 'activity', label: 'Điểm hoạt động cao nhất', icon: Flame },
   { value: 'members', label: 'Đông thành viên nhất', icon: Users },
   { value: 'sp', label: 'SP Coin cao nhất', icon: Coins },
-  { value: 'newest', label: 'Mới nhất', icon: Sparkles },
-  { value: 'oldest', label: 'Cũ nhất', icon: Clock },
+  { value: 'created', label: 'Theo ngày tạo', icon: Clock },
 ];
 
 export default function ClanListPage() {
@@ -184,7 +183,7 @@ export default function ClanListPage() {
 
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<'activity' | 'members' | 'sp' | 'newest' | 'oldest'>('activity');
+  const [sort, setSort] = useState<'activity' | 'members' | 'sp' | 'created'>('activity');
   const [order, setOrder] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -257,7 +256,13 @@ export default function ClanListPage() {
   }, [search, sort, order]);
 
   const userClan = currentUser?.clanMember?.clan || currentUser?.clan;
-  const currentSortOption = SORT_OPTIONS.find((o) => o.value === sort) || SORT_OPTIONS[0];
+  const sortOptions = [
+    { value: 'activity' as const, label: isEn ? 'Highest Activity' : 'Điểm hoạt động cao nhất', icon: Flame },
+    { value: 'members' as const, label: isEn ? 'Most Members' : 'Đông thành viên nhất', icon: Users },
+    { value: 'sp' as const, label: isEn ? 'Highest SP Coin' : 'SP Coin cao nhất', icon: Coins },
+    { value: 'created' as const, label: isEn ? 'By Creation Date' : 'Theo ngày tạo', icon: Clock },
+  ];
+  const currentSortOption = sortOptions.find((o) => o.value === sort) || sortOptions[0];
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
@@ -350,7 +355,7 @@ export default function ClanListPage() {
                 className="absolute right-0 sm:left-0 top-full mt-1.5 z-40 w-52 rounded-xl border shadow-xl py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
                 style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
               >
-                {SORT_OPTIONS.map((opt) => {
+                {sortOptions.map((opt) => {
                   const Icon = opt.icon;
                   const isSelected = sort === opt.value;
                   return (

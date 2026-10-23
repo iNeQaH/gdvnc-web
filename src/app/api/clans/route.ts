@@ -118,8 +118,8 @@ export async function GET(req: Request) {
     filtered.sort((a, b) => {
       let cmp = 0;
       if (sort === 'members') cmp = b.memberCount - a.memberCount;
+      else if (sort === 'created' || sort === 'newest') cmp = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       else if (sort === 'oldest') cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      else if (sort === 'newest') cmp = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       else if (sort === 'sp') cmp = (b.totalSp - a.totalSp) || (b.memberCount - a.memberCount);
       else {
         // Mặc định: theo điểm hoạt động, theo số thành viên, theo thời gian tạo
