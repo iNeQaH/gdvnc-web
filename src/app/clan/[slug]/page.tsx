@@ -31,7 +31,11 @@ import {
   Plus,
   Edit,
   Rocket,
+  Flame,
+  HelpCircle,
+  AlertCircle,
 } from 'lucide-react';
+import { getVnTodayString } from '@/lib/activityPoints';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import { UserDisplayName } from '@/components/UserDisplayName';
@@ -801,9 +805,13 @@ function CompactClanLevelsSlideshow({
 function ClanPodiumLeaderboard({
   members,
   isEn,
+  todayVn,
+  onOpenActivityInfo,
 }: {
   members: any[];
   isEn?: boolean;
+  todayVn?: string;
+  onOpenActivityInfo?: () => void;
 }) {
   if (!members || members.length === 0) {
     return (
@@ -811,9 +819,9 @@ function ClanPodiumLeaderboard({
         className="ui-card relative w-full h-full min-h-[340px] rounded-2xl overflow-hidden border shadow-xl flex flex-col items-center justify-center p-6 text-center space-y-3"
         style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
       >
-        <Trophy className="w-10 h-10 ui-dim opacity-30" />
+        <Flame className="w-10 h-10 ui-dim opacity-30" />
         <div>
-          <h2 className="text-sm font-bold ui-title">Leaderboard</h2>
+          <h2 className="text-sm font-bold ui-title">{isEn ? 'Activity Leaderboard' : 'BXH Hoạt Động'}</h2>
           <p className="text-xs ui-dim mt-1 max-w-xs">
             {isEn ? 'No member rankings available.' : 'Chưa có dữ liệu xếp hạng thành viên.'}
           </p>
@@ -865,12 +873,24 @@ function ClanPodiumLeaderboard({
       <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--border-subtle)' }}>
         <div>
           <h2 className="text-sm font-bold ui-title flex items-center gap-1.5">
-            <Trophy className="w-4 h-4 text-amber-500 dark:text-amber-400" /> Leaderboard
+            <Flame className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+            {isEn ? 'Activity Leaderboard' : 'BXH Thành Viên Hoạt Động'}
           </h2>
           <p className="text-[11px] ui-dim mt-0.5">
-            {isEn ? 'Member rankings by Classic Pt' : 'Bảng xếp hạng thành viên theo điểm Classic Pt'}
+            {isEn ? 'Most active clan members today (Star +1, Moon +1, Demon +10)' : 'Bảng xếp hạng thành viên hoạt động nhiều nhất (Star +1, Moon +1, Demon +10)'}
           </p>
         </div>
+        {onOpenActivityInfo && (
+          <button
+            type="button"
+            onClick={onOpenActivityInfo}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 hover:text-amber-400 transition-colors border border-amber-500/20 text-xs font-bold cursor-pointer shrink-0"
+            title={isEn ? 'Activity points mechanism explanation' : 'Giải thích cơ chế điểm hoạt động'}
+            aria-label="Activity Info"
+          >
+            <HelpCircle className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Podium Stage Container */}
@@ -883,7 +903,9 @@ function ClanPodiumLeaderboard({
             const isRank4 = rank === 4;
             const isRank5 = rank === 5;
 
-            const ptVal = (item.user?.classicPp || 0).toLocaleString();
+            const isToday = item.user?.activityDate === todayVn;
+            const actPoints = isToday ? (item.user?.activityPoints ?? 0) : 0;
+            const ptVal = actPoints.toLocaleString();
 
             // Pedestal heights (compacted to match Clan's Hardest height, #4 and #5 symmetric)
             const pedestalHeight = isRank1
@@ -932,8 +954,10 @@ function ClanPodiumLeaderboard({
                         ? 'bg-amber-800 border-amber-600 text-white'
                         : 'bg-slate-700 border-slate-500 text-[9px] text-white'
                     }`}
+                    title={isEn ? `Today activity score: +${actPoints}` : `Điểm hoạt động hôm nay: +${actPoints}`}
                   >
-                    {ptVal} Pt
+                    <Flame className="w-2.5 h-2.5 shrink-0 text-amber-300 inline mr-0.5" />
+                    {ptVal} {isEn ? 'Pts' : 'Điểm'}
                   </span>
                 </div>
 
@@ -1034,6 +1058,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
   const [isRosterOpen, setIsRosterOpen] = useState(false);
 
   // Actions state
+  const [isActivityInfoOpen, setIsActivityInfoOpen] = useState(false);
   const [pledgeAmount, setPledgeAmount] = useState<number>(1);
   const [withdrawAmount, setWithdrawAmount] = useState<number>(1);
   const [spModalTab, setSpModalTab] = useState<'upgrade' | 'withdraw'>('upgrade');
@@ -1291,10 +1316,17 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
     ...(clan.membersGrouped?.members || []),
   ];
 
+  const todayVn = getVnTodayString();
+  const getMemberActivityPoints = (m: any) => {
+    if (!m?.user) return 0;
+    return m.user.activityDate === todayVn ? (m.user.activityPoints || 0) : 0;
+  };
+
   const leaderboardMembers = [...allMembers].sort((a, b) => {
-    const ptA = a.user?.classicPp ?? 0;
-    const ptB = b.user?.classicPp ?? 0;
-    return ptB - ptA;
+    const actA = getMemberActivityPoints(a);
+    const actB = getMemberActivityPoints(b);
+    if (actB !== actA) return actB - actA;
+    return (b.user?.classicPp ?? 0) - (a.user?.classicPp ?? 0);
   });
 
   const totalClanPt = allMembers.reduce((sum: number, m: any) => sum + (m.user?.classicPp || 0), 0);
@@ -1901,7 +1933,12 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
 
         {/* ROW 3: SIDE-BY-SIDE PODIUM LEADERBOARD & CLAN'S HARDEST */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
-          <ClanPodiumLeaderboard members={leaderboardMembers} isEn={isEn} />
+          <ClanPodiumLeaderboard
+            members={leaderboardMembers}
+            isEn={isEn}
+            todayVn={todayVn}
+            onOpenActivityInfo={() => setIsActivityInfoOpen(true)}
+          />
           <ClanHardestSlideshow topBeaten={clan.top5Beaten || []} isEn={isEn} />
         </div>
 
@@ -2410,6 +2447,96 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           />
         )}
       </div>
+
+      {/* ACTIVITY POINTS INFO MODAL (?) */}
+      {isActivityInfoOpen && (
+        <div className="fixed inset-0 z-[1000000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+          <div
+            className="relative w-full max-w-lg rounded-2xl border p-5 sm:p-6 shadow-2xl space-y-4"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+          >
+            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center shadow-inner">
+                  <Flame className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold ui-title">
+                    {isEn ? 'Clan Activity Points System' : 'Cơ Chế Điểm Hoạt Động Clan'}
+                  </h3>
+                  <p className="text-xs ui-dim">
+                    {isEn ? 'Rules & calculation details' : 'Cách tính và nguyên tắc cộng điểm'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsActivityInfoOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-slate-500/10 transition-colors text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs sm:text-sm leading-relaxed ui-dim">
+              <p>
+                {isEn
+                  ? 'The Clan Leaderboard ranks members based on their daily activity points earned today compared to the previous day.'
+                  : 'Bảng xếp hạng Clan vinh danh các thành viên hoạt động nhiều nhất dựa trên số điểm tích lũy trong ngày hôm nay so với ngày hôm trước.'}
+              </p>
+
+              <div className="p-3.5 rounded-xl border space-y-2" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}>
+                <div className="font-bold text-amber-500 dark:text-amber-400 text-xs uppercase tracking-wider">
+                  {isEn ? 'Points Calculation Formula' : 'Công thức tính điểm hoạt động'}
+                </div>
+                <ul className="space-y-1.5 pl-4 list-disc text-xs sm:text-sm">
+                  <li>
+                    <strong className="text-amber-500 dark:text-amber-400">{isEn ? '+1 point' : '+1 điểm'}</strong> {isEn ? 'for each Star gained higher than yesterday' : 'cho mỗi Star (sao) tăng thêm'}
+                  </li>
+                  <li>
+                    <strong className="text-amber-500 dark:text-amber-400">{isEn ? '+1 point' : '+1 điểm'}</strong> {isEn ? 'for each Moon gained higher than yesterday' : 'cho mỗi Moon (mặt trăng) tăng thêm'}
+                  </li>
+                  <li>
+                    <strong className="text-amber-500 dark:text-amber-400">{isEn ? '+10 points' : '+10 điểm'}</strong> {isEn ? 'for each Demon beaten higher than yesterday' : 'cho mỗi Demon (quỷ) tăng thêm'}
+                  </li>
+                </ul>
+              </div>
+
+              <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 text-amber-700 dark:text-amber-300 text-xs space-y-1.5">
+                <div className="font-bold flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {isEn ? 'Important Guidelines:' : 'Lưu ý quan trọng:'}
+                </div>
+                <p>
+                  {isEn
+                    ? '• If your stars, moons, or demons are lower or equal to the previous day, no points are added (0 points).'
+                    : '• Nếu số sao, moon hoặc demon thấp hơn hoặc bằng ngày hôm trước thì không tính điểm (0 điểm).'}
+                </p>
+                <p>
+                  {isEn
+                    ? '• Points and stats are only updated when you visit your OWN profile page.'
+                    : '• Điểm và chỉ số chỉ được hệ thống cập nhật khi bạn truy cập vào trang Profile cá nhân của chính mình.'}
+                </p>
+                <p>
+                  {isEn
+                    ? '• Daily activity points automatically reset at midnight (00:00 UTC+7).'
+                    : '• Điểm hoạt động sẽ tự động làm mới sang ngày mới lúc 00:00 (Giờ Việt Nam UTC+7).'}
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsActivityInfoOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition-colors cursor-pointer shadow-md"
+              >
+                {isEn ? 'Got it' : 'Đã hiểu'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* DEDICATED FULL-HEIGHT DISCORD RIGHT SIDEBAR (Docked to window right edge) */}
       <ClanDiscordMemberSidebar

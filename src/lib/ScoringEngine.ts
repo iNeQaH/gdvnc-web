@@ -7,7 +7,7 @@
 
 export const MAX_PP = 400;
 export const MIN_PP = 20;
-export const LIST_SIZE = 500;
+export const LIST_SIZE = 1000;
 const BASE_PP_EXP_K = Math.log(MAX_PP / MIN_PP) / (LIST_SIZE - 1);
 
 export const RANKED_DECAY = 0.95;
@@ -37,7 +37,7 @@ export function unrankedBonusPp(difficultyFace: number | null | undefined): numb
 
 /**
  * Base PP stored on a level.
- * Ranked placement always wins (placement 1..500 gives 20..400 PP).
+ * Ranked placement always wins (placement 1..1000 gives 20..400 PP).
  * Unranked levels scale by difficulty: Extreme 7, Insane 6, Hard 5, Medium 4, Easy 3.
  */
 export function calculateLevelBasePp(

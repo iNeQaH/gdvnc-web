@@ -15,7 +15,7 @@ export function isExtendedListPlacement(placement: number | null | undefined): b
   return isRankedPlacement(placement) && placement >= LIST_EXTENDED_MIN && placement <= LIST_EXTENDED_MAX;
 }
 
-/** List filter: 151+ or unranked (PP still uses LIST_SIZE 500). */
+/** List filter: 151+ or unranked (PP still uses LIST_SIZE 1000). */
 export function isLegacyTier(placement: number | null | undefined): boolean {
   return !isRankedPlacement(placement) || placement >= LIST_LEGACY_MIN;
 }

@@ -69,6 +69,11 @@ model User {
   gdDemons      Int       @default(0)
   gdHasGlobalRank Boolean @default(true)
   gdStatsUpdatedAt DateTime?
+  activityPoints     Int       @default(0)
+  activityDate       String?
+  activityPrevStars  Int       @default(0)
+  activityPrevMoons  Int       @default(0)
+  activityPrevDemons Int       @default(0)
   likedUserIds  String[]  @default([])
   tokenVersion  Int       @default(0)
   totpEnabled   Boolean   @default(false)
@@ -131,6 +136,7 @@ model User {
   @@index([gdStars(sort: Desc)])
   @@index([gdMoons(sort: Desc)])
   @@index([gdDemons(sort: Desc)])
+  @@index([activityPoints(sort: Desc)])
   @@index([role])
   @@index([gdUsername])
   @@index([hardestClassicLevelId])

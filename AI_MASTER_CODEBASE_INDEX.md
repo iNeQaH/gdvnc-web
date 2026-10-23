@@ -143,7 +143,7 @@ Khi nhận được yêu cầu từ người dùng (fix bug, thêm feature, tố
 #### [ScoringEngine.ts](file:///d:/Programs/GDVN/gdvnc-web-main/src/lib/ScoringEngine.ts)
 - **Chức năng**: Động cơ tính điểm kỹ năng (PP - Pointercrate/Performance Points) cho người chơi.
 - **Công thức tính điểm**:
-  - Level Ranked (vị trí 1 đến 500): Tính theo hàm mũ giảm dần: $P(x) = MIN\_PP \times e^{k \times (500 - x)}$, trong đó $MAX\_PP = 400$, $MIN\_PP = 20$.
+  - Level Ranked (vị trí 1 đến 1000): Tính theo hàm mũ giảm dần: $P(x) = MIN\_PP \times e^{k \times (1000 - x)}$, trong đó $MAX\_PP = 400$, $MIN\_PP = 20$.
   - Level Unranked (ngoài list Demonlist): Thưởng điểm theo độ khó: Extreme Demon = 7 PP, Insane Demon = 6 PP, Hard = 5 PP, Medium = 4 PP, Easy = 3 PP.
   - Tính điểm theo tiến độ (`awardedPpForProgress`): Đạt `minPercent` nhận 10% điểm base, đạt 100% nhận 100% điểm base, nội suy tuyến tính ở giữa.
   - Điểm tổng của người chơi (`calculatePlayerPp`): Điểm các level được xếp giảm dần và nhân trọng số lũy thừa $0.95^i$ để ngăn chặn cày cuốc số lượng vượt qua trình độ cao cấp.
@@ -156,6 +156,17 @@ Khi nhận được yêu cầu từ người dùng (fix bug, thêm feature, tố
   - `dedupeRecordsByLevel(records)`: Lọc giữ lại kỷ lục tốt nhất của mỗi user trên từng level (tiến độ cao nhất, thời gian ngắn nhất).
   - `pickHardestLevel(records, mode)`: Xác định màn chơi khó nhất người chơi từng vượt qua để hiển thị trên profile và bảng xếp hạng.
 - **Database**: Bảng `User`, `Record`, `Level`, `Clan`, `ClanMember`.
+
+#### [activityPoints.ts](file:///d:/Programs/GDVN/gdvnc-web-main/src/lib/activityPoints.ts)
+- **Chức năng**: Hệ thống tính toán điểm hoạt động hàng ngày cho thành viên Clan.
+- **Cơ chế tính điểm**:
+  - So sánh tổng số Star, Moon, Demon ngày hôm nay so với baseline ngày hôm trước.
+  - Mỗi Star tăng: +1 điểm.
+  - Mỗi Moon tăng: +1 điểm.
+  - Mỗi Demon tăng: +10 điểm.
+  - Nếu bằng hoặc giảm: 0 điểm.
+- **Quy tắc cập nhật**: Điểm và chỉ số chỉ được hệ thống tự động cập nhật khi người dùng đăng nhập và xem trang Profile cá nhân của chính mình.
+- **Bảng xếp hạng Clan**: Thay thế bảng xếp hạng Classic Pt thành Bảng xếp hạng thành viên hoạt động nhiều nhất (kèm nút modal giải thích chi tiết cơ chế).
 
 #### [gdBrowserSync.ts](file:///d:/Programs/GDVN/gdvnc-web-main/src/lib/gdBrowserSync.ts)
 - **Chức năng**: Tự động đồng bộ các chỉ số Geometry Dash chính thức (Stars, Moons, Demons, CP) từ GDBrowser API.
@@ -406,7 +417,7 @@ Khi nhận được yêu cầu từ người dùng (fix bug, thêm feature, tố
 
 #### Trang Danh Sách Màn Chơi (`/levels`)
 - **[src/app/levels/page.tsx](file:///d:/Programs/GDVN/gdvnc-web-main/src/app/levels/page.tsx)** & Các trang con:
-  - `/levels/classic`: Danh sách quỷ dữ truyền thống Top 1 - 500.
+  - `/levels/classic`: Danh sách quỷ dữ truyền thống Top 1 - 1000.
   - `/levels/platformer`: Danh sách quỷ dữ đi cảnh (Platformer).
   - `/levels/featured` & `/levels/vn`: Danh sách các màn chơi đặc sắc do người Việt Nam sáng tạo.
   - `/levels/challenge`: Danh sách thử thách sóng ngắn / wave / ship siêu khó.

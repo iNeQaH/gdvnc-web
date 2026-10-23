@@ -1,3 +1,4 @@
+import { computeActivityPoints } from '@/lib/activityPoints';
 import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
@@ -58,6 +59,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       gdDemons: true,
       gdHasGlobalRank: true,
       gdStatsUpdatedAt: true,
+      activityPoints: true,
+      activityDate: true,
+      activityPrevStars: true,
+      activityPrevMoons: true,
+      activityPrevDemons: true,
       likedUserIds: true,
       displayedBadgeIds: true,
       hideAllBadges: true,
@@ -173,8 +179,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
     }
 
     const viewer = await getSessionUser();
-    if (viewer?.userId && !user.isBanned) {
-      // 1. Tự động lấy stats từ GDBrowser (Star, Moon, Demon, Creator Points)
+    const isSelf = Boolean(viewer?.userId && viewer.userId === user.id);
+    if (isSelf && !user.isBanned) {
+      // 1. Chỉ khi người đó vào trang profile của bản thân thì mới được cập nhật star, moon, demon từ GDBrowser
       const synced = await syncUserGdBrowserStats(user, viewer);
       if (synced) {
         const statsChanged =
@@ -194,6 +201,29 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
           clearLeaderboardCache();
         }
       }
+
+      // Cập nhật Điểm Hoạt Động Clan (so sánh ngày hôm nay với baseline ngày hôm trước: star +1, moon +1, demon +10)
+      const currentStats = {
+        stars: user.gdStars || 0,
+        moons: user.gdMoons || 0,
+        demons: user.gdDemons || 0,
+      };
+      const actResult = computeActivityPoints(currentStats, user);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          activityPoints: actResult.activityPoints,
+          activityDate: actResult.activityDate,
+          activityPrevStars: actResult.activityPrevStars,
+          activityPrevMoons: actResult.activityPrevMoons,
+          activityPrevDemons: actResult.activityPrevDemons,
+        },
+      });
+      user.activityPoints = actResult.activityPoints;
+      user.activityDate = actResult.activityDate;
+      user.activityPrevStars = actResult.activityPrevStars;
+      user.activityPrevMoons = actResult.activityPrevMoons;
+      user.activityPrevDemons = actResult.activityPrevDemons;
       // 2. Tự động liên kết các level đã có trong database của người đó vào creatorId
       await autoLinkUserCreatedLevels(user.id, user.gdUsername, user.username);
       // 3. Tự động xét Role Creator theo phẩm chất level cao nhất mà user sở hữu (không ghi đè creatorPoints)
@@ -421,6 +451,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         gdMoons: user.gdMoons || 0,
         gdDemons: user.gdDemons || 0,
         gdStatsUpdatedAt: user.gdStatsUpdatedAt,
+        activityPoints: user.activityPoints || 0,
+        activityDate: user.activityDate,
+        activityPrevStars: user.activityPrevStars || 0,
+        activityPrevMoons: user.activityPrevMoons || 0,
+        activityPrevDemons: user.activityPrevDemons || 0,
         displayedBadgeIds: user.displayedBadgeIds || [],
         hideAllBadges: user.hideAllBadges || false,
         userSp,

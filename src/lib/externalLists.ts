@@ -59,8 +59,8 @@ async function fetchPointercrateListed(): Promise<ExternalListLevel[]> {
   const all: ExternalListLevel[] = [];
   let after = 0;
   // Official list is large; stop once we have enough ranked entries for our PP curve.
-  const maxPlacement = 500;
-  for (let page = 0; page < 8; page++) {
+  const maxPlacement = 1000;
+  for (let page = 0; page < 15; page++) {
     const data = await fetchJson(
       `https://pointercrate.com/api/v2/demons/listed/?limit=100&after=${after}`
     );

@@ -13,9 +13,11 @@ import {
   ChevronRight,
   LogOut,
   Coins,
+  Flame,
   Sparkles,
 } from 'lucide-react';
 import { UserDisplayName } from '@/components/UserDisplayName';
+import { getVnTodayString } from '@/lib/activityPoints';
 import { useTheme } from '@/components/ThemeProvider';
 import { getUserListRowStyle } from '@/lib/userListRowStyle';
 
@@ -54,6 +56,7 @@ export default function ClanDiscordMemberSidebar({
   const members: any[] = clan.membersGrouped?.members || [];
   const { resolvedMode } = useTheme();
   const isDark = resolvedMode === 'dark';
+  const todayVn = getVnTodayString();
   const canManage = isLeader || isOwnerWeb;
   const canKick = isLeader || isOwnerWeb || isClanMod;
 
@@ -162,9 +165,16 @@ export default function ClanDiscordMemberSidebar({
                         </span>
                       )}
                     </div>
-                    <span className="font-mono text-[10px] text-amber-600 dark:text-amber-400 font-bold block mt-0.5">
-                      {(leader.user.classicPp || 0).toLocaleString()} Pt
-                    </span>
+                    {(() => {
+                        const isToday = leader.user?.activityDate === todayVn;
+                        const act = isToday ? (leader.user?.activityPoints || 0) : 0;
+                        return (
+                          <span className="font-mono text-[10px] text-amber-600 dark:text-amber-400 font-bold block mt-0.5">
+                            {act > 0 && <span className="text-amber-500 mr-1.5"><Flame className="w-2.5 h-2.5 inline mr-0.5" />+{act} Act •</span>}
+                            {(leader.user?.classicPp || 0).toLocaleString()} Pt
+                          </span>
+                        );
+                      })()}
                   </div>
                 </Link>
               </div>
@@ -215,9 +225,16 @@ export default function ClanDiscordMemberSidebar({
                           </span>
                         )}
                       </div>
-                      <span className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400/90 font-bold block">
-                        {(m.user.classicPp || 0).toLocaleString()} Pt
-                      </span>
+                      {(() => {
+                        const isToday = m.user?.activityDate === todayVn;
+                        const act = isToday ? (m.user?.activityPoints || 0) : 0;
+                        return (
+                          <span className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400/90 font-bold block mt-0.5">
+                            {act > 0 && <span className="text-amber-500 mr-1.5"><Flame className="w-2.5 h-2.5 inline mr-0.5" />+{act} Act •</span>}
+                            {(m.user?.classicPp || 0).toLocaleString()} Pt
+                          </span>
+                        );
+                      })()}
                     </div>
                   </Link>
 
@@ -325,9 +342,16 @@ export default function ClanDiscordMemberSidebar({
 
                     <div className="min-w-0 flex-1">
                       <UserDisplayName user={m.user} showClanTag={false} />
-                      <span className="font-mono text-[10px] ui-dim font-bold block">
-                        {(m.user.classicPp || 0).toLocaleString()} Pt
-                      </span>
+                      {(() => {
+                        const isToday = m.user?.activityDate === todayVn;
+                        const act = isToday ? (m.user?.activityPoints || 0) : 0;
+                        return (
+                          <span className="font-mono text-[10px] ui-dim font-bold block mt-0.5">
+                            {act > 0 && <span className="text-amber-500 mr-1.5"><Flame className="w-2.5 h-2.5 inline mr-0.5" />+{act} Act •</span>}
+                            {(m.user?.classicPp || 0).toLocaleString()} Pt
+                          </span>
+                        );
+                      })()}
                     </div>
                   </Link>
 

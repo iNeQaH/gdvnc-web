@@ -8,7 +8,7 @@ async function columnSet(db: PrismaClient) {
     FROM information_schema.columns
     WHERE table_schema = 'public'
       AND (
-        (table_name = 'User' AND column_name IN ('tokenVersion', 'hardestClassicLevelId', 'hardestPlatformerLevelId', 'isBanned', 'bannedUntil', 'banReason', 'failedLoginAttempts', 'lockedUntil', 'lastFailedLoginAt', 'lastLoginAt', 'displayName', 'gdStars', 'gdMoons', 'gdDemons', 'gdHasGlobalRank', 'gdStatsUpdatedAt', 'likedUserIds', 'displayedBadgeIds', 'hideAllBadges'))
+        (table_name = 'User' AND column_name IN ('tokenVersion', 'hardestClassicLevelId', 'hardestPlatformerLevelId', 'isBanned', 'bannedUntil', 'banReason', 'failedLoginAttempts', 'lockedUntil', 'lastFailedLoginAt', 'lastLoginAt', 'displayName', 'gdStars', 'gdMoons', 'gdDemons', 'gdHasGlobalRank', 'gdStatsUpdatedAt', 'likedUserIds', 'displayedBadgeIds', 'hideAllBadges', 'activityPoints', 'activityDate', 'activityPrevStars', 'activityPrevMoons', 'activityPrevDemons'))
         OR (table_name = 'Otp' AND column_name = 'failedAttempts')
         OR (table_name = 'PageVisit' AND column_name = 'id')
         OR (table_name = 'ListChangeLog' AND column_name = 'id')
@@ -314,6 +314,21 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
   try {
     await db.$executeRawUnsafe(`UPDATE "Badge" SET "glowColor" = NULL WHERE "effect" = 'none' OR "effect" IS NULL OR "effect" = ''`);
   } catch {}
+  if (!have.has('User.activityPoints')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "activityPoints" INTEGER NOT NULL DEFAULT 0`);
+  }
+  if (!have.has('User.activityDate')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "activityDate" TEXT`);
+  }
+  if (!have.has('User.activityPrevStars')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "activityPrevStars" INTEGER NOT NULL DEFAULT 0`);
+  }
+  if (!have.has('User.activityPrevMoons')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "activityPrevMoons" INTEGER NOT NULL DEFAULT 0`);
+  }
+  if (!have.has('User.activityPrevDemons')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "activityPrevDemons" INTEGER NOT NULL DEFAULT 0`);
+  }
   if (!have.has('User.displayedBadgeIds')) {
     await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "displayedBadgeIds" TEXT[] NOT NULL DEFAULT '{}'`);
   }
@@ -650,6 +665,11 @@ export const REQUIRED_SCHEMA_KEYS = [
   'User.likedUserIds',
   'User.displayedBadgeIds',
   'User.hideAllBadges',
+  'User.activityPoints',
+  'User.activityDate',
+  'User.activityPrevStars',
+  'User.activityPrevMoons',
+  'User.activityPrevDemons',
   'Badge.systemKey',
   'Badge.color2',
   'Badge.effect',
