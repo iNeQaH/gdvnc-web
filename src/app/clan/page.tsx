@@ -7,6 +7,7 @@ import {
   Search,
   Plus,
   Coins,
+  Flame,
   Crown,
   LayoutGrid,
   List,
@@ -162,15 +163,17 @@ function renderClanTierBadge(tierInfo: any, primaryColor: string, gradient?: str
   );
 }
 
-const SORT_OPTIONS: { value: 'members' | 'sp' | 'newest' | 'oldest'; label: string; icon: any }[] = [
-  { value: 'sp', label: 'SP Coin cao nhất', icon: Coins },
+const SORT_OPTIONS: { value: 'activity' | 'members' | 'sp' | 'newest' | 'oldest'; label: string; icon: any }[] = [
+  { value: 'activity', label: 'Điểm hoạt động cao nhất', icon: Flame },
   { value: 'members', label: 'Đông thành viên nhất', icon: Users },
+  { value: 'sp', label: 'SP Coin cao nhất', icon: Coins },
   { value: 'newest', label: 'Mới nhất', icon: Sparkles },
   { value: 'oldest', label: 'Cũ nhất', icon: Clock },
 ];
 
 export default function ClanListPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const isEn = language === 'en';
   const { resolvedMode } = useTheme();
   const isDark = resolvedMode === 'dark';
 
@@ -181,7 +184,7 @@ export default function ClanListPage() {
 
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<'members' | 'sp' | 'newest' | 'oldest'>('sp');
+  const [sort, setSort] = useState<'activity' | 'members' | 'sp' | 'newest' | 'oldest'>('activity');
   const [order, setOrder] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -558,9 +561,9 @@ export default function ClanListPage() {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5" title="Tổng SP Coin duy trì">
-                      <Coins className="w-3.5 h-3.5 text-amber-400" />
-                      <span className="font-mono text-amber-400 font-bold">{sp} SP</span>
+                    <div className="flex items-center gap-1.5" title={isEn ? "Today's clan activity points" : "Điểm hoạt động Clan hôm nay"}>
+                      <Flame className="w-3.5 h-3.5 text-amber-400" />
+                      <span className="font-mono text-amber-400 font-bold">{clan.activityPoints ?? 0} {isEn ? 'Pts' : 'Điểm'}</span>
                     </div>
 
                     {clan.leader && (
@@ -669,9 +672,9 @@ export default function ClanListPage() {
                     <span>{memberCount} / {tierInfo.maxMembers}</span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-amber-400 font-mono font-bold">
-                    <Coins className="w-3.5 h-3.5" />
-                    <span>{sp} SP</span>
+                  <div className="flex items-center gap-1.5 text-amber-400 font-mono font-bold" title={isEn ? "Today's clan activity points" : "Điểm hoạt động Clan hôm nay"}>
+                    <Flame className="w-3.5 h-3.5" />
+                    <span>{clan.activityPoints ?? 0} {isEn ? 'Pts' : 'Điểm'}</span>
                   </div>
 
                   <div className="shrink-0">

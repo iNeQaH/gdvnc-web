@@ -1,3 +1,4 @@
+import { getVnTodayString } from '@/lib/activityPoints';
 import { requireAuth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -16,7 +17,7 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const q = (searchParams.get('q') || searchParams.get('search') || '').trim().toLowerCase();
-    const sort = searchParams.get('sort') || 'sp';
+    const sort = searchParams.get('sort') || 'activity';
     const order = searchParams.get('order') === 'asc' ? 'asc' : 'desc';
 
     const clans = await prisma.clan.findMany({
@@ -25,7 +26,15 @@ export async function GET(req: Request) {
           select: { id: true, username: true, avatarUrl: true, supporterUntil: true },
         },
         members: {
-          select: { userId: true },
+          select: {
+            userId: true,
+            user: {
+              select: {
+                activityPoints: true,
+                activityDate: true,
+              },
+            },
+          },
         },
         contributions: {
           include: {
@@ -55,6 +64,14 @@ export async function GET(req: Request) {
         totalSp += Math.min(contrib.spPledged, userMax);
       }
 
+      const todayVn = getVnTodayString();
+      let activityPoints = 0;
+      for (const m of c.members) {
+        if (m.user && m.user.activityDate === todayVn) {
+          activityPoints += (m.user.activityPoints || 0);
+        }
+      }
+
       const tierInfo = getClanTier(totalSp);
       const isSuspended = c.isSuspended || (totalSp < 3 && c.gracePeriodUntil && new Date(c.gracePeriodUntil) < now);
 
@@ -72,6 +89,7 @@ export async function GET(req: Request) {
         themeGradient: tierInfo.tier >= 2 ? c.themeGradient : null,
         totalSp,
         effectiveSp: totalSp,
+        activityPoints,
         tier: tierInfo.tier,
         tierName: tierInfo.name,
         maxMembers: tierInfo.maxMembers,
@@ -102,7 +120,14 @@ export async function GET(req: Request) {
       if (sort === 'members') cmp = b.memberCount - a.memberCount;
       else if (sort === 'oldest') cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       else if (sort === 'newest') cmp = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      else cmp = (b.totalSp - a.totalSp) || (b.memberCount - a.memberCount); // mặc định: SP Coin cao nhất
+      else if (sort === 'sp') cmp = (b.totalSp - a.totalSp) || (b.memberCount - a.memberCount);
+      else {
+        // Mặc định: theo điểm hoạt động, theo số thành viên, theo thời gian tạo
+        cmp =
+          (b.activityPoints - a.activityPoints) ||
+          (b.memberCount - a.memberCount) ||
+          (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      }
 
       return order === 'asc' ? -cmp : cmp;
     });
