@@ -2063,15 +2063,15 @@ export default function ProfilePage() {
                     </td>
                     <td className="px-4 py-2.5 text-center font-bold">
                       <span className="px-2 py-0.5 rounded text-[10px]" style={{
-                        backgroundColor: level.ratingType === 'MYTHIC' ? 'rgba(168, 85, 247, 0.15)' : 
+                        backgroundColor: level.ratingType === 'MYTHIC' ? 'rgba(6, 182, 212, 0.15)' : 
                                          level.ratingType === 'LEGENDARY' ? 'rgba(236, 72, 153, 0.15)' : 
-                                         level.ratingType === 'EPIC' ? 'rgba(234, 179, 8, 0.15)' :
-                                         level.ratingType === 'FEATURE' ? 'rgba(250, 204, 21, 0.15)' :
-                                         level.ratingType === 'RATE' ? 'rgba(202, 138, 4, 0.15)' : 'var(--bg-subtle)',
-                        color: level.ratingType === 'MYTHIC' ? '#a855f7' :
+                                         level.ratingType === 'EPIC' ? 'rgba(249, 115, 22, 0.15)' :
+                                         level.ratingType === 'FEATURE' ? 'rgba(250, 204, 21, 0.2)' :
+                                         level.ratingType === 'RATE' ? 'rgba(254, 240, 138, 0.15)' : 'var(--bg-subtle)',
+                        color: level.ratingType === 'MYTHIC' ? '#06b6d4' :
                                level.ratingType === 'LEGENDARY' ? '#ec4899' :
-                               level.ratingType === 'EPIC' ? '#eab308' :
-                               level.ratingType === 'FEATURE' ? '#facc15' :
+                               level.ratingType === 'EPIC' ? '#f97316' :
+                               level.ratingType === 'FEATURE' ? '#eab308' :
                                level.ratingType === 'RATE' ? '#ca8a04' : 'var(--text-dim)',
                       }}>
                         {level.ratingType !== 'NONE' ? level.ratingType : 'UNRATED'}

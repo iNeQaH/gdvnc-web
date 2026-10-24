@@ -490,11 +490,11 @@ export default function LevelDataGrid({ currentUser }: { currentUser: any }) {
     }
     if (key === 'ratingType') {
       const colors: Record<string, string> = {
-        MYTHIC: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
-        LEGENDARY: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+        MYTHIC: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
+        LEGENDARY: 'bg-pink-500/15 text-pink-400 border-pink-500/30',
         EPIC: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
-        FEATURE: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
-        RATE: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+        FEATURE: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/40',
+        RATE: 'bg-yellow-100/10 text-yellow-200/80 border-yellow-200/20',
       };
       const cls = colors[val] || 'opacity-40';
       return (

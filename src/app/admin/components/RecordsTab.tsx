@@ -43,7 +43,7 @@ function getRatingInfo(ratingType?: string | null): { label: string; className: 
     case 'MYTHIC':
       return {
         label: 'Mythic',
-        className: 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30',
+        className: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30',
       };
     case 'LEGENDARY':
       return {
@@ -58,12 +58,12 @@ function getRatingInfo(ratingType?: string | null): { label: string; className: 
     case 'FEATURE':
       return {
         label: 'Feature',
-        className: 'bg-yellow-500/15 text-amber-700 dark:text-yellow-400 border-yellow-500/30',
+        className: 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/40',
       };
     case 'RATE':
       return {
         label: 'Rate',
-        className: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+        className: 'bg-yellow-100/70 dark:bg-yellow-950/30 text-amber-600/80 dark:text-yellow-200/70 border-yellow-200/50 dark:border-yellow-700/30',
       };
     default:
       return {
