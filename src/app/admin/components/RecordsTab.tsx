@@ -23,6 +23,55 @@ import {
   type ReviewDecision,
 } from './AdminQueueShared';
 import { AdminListPager } from './SharedUI';
+import { formatDifficultyLabel } from '@/lib/gdDifficulty';
+
+function getDifficultyLabel(face?: number | null, difficulty?: string | null): string {
+  const diffStr = (difficulty || '').trim();
+  const faceNum = face ?? 0;
+  if (faceNum > 0) {
+    return formatDifficultyLabel(faceNum, diffStr);
+  }
+  if (diffStr && !/^unrated$/i.test(diffStr) && !/^n\/?a$/i.test(diffStr)) {
+    return diffStr;
+  }
+  return formatDifficultyLabel(faceNum, diffStr);
+}
+
+function getRatingInfo(ratingType?: string | null): { label: string; className: string } {
+  const raw = String(ratingType || '').trim().toUpperCase();
+  switch (raw) {
+    case 'MYTHIC':
+      return {
+        label: 'Mythic',
+        className: 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30',
+      };
+    case 'LEGENDARY':
+      return {
+        label: 'Legendary',
+        className: 'bg-pink-500/15 text-pink-600 dark:text-pink-400 border-pink-500/30',
+      };
+    case 'EPIC':
+      return {
+        label: 'Epic',
+        className: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30',
+      };
+    case 'FEATURE':
+      return {
+        label: 'Feature',
+        className: 'bg-yellow-500/15 text-amber-700 dark:text-yellow-400 border-yellow-500/30',
+      };
+    case 'RATE':
+      return {
+        label: 'Rate',
+        className: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+      };
+    default:
+      return {
+        label: 'Unrated',
+        className: 'bg-stone-500/10 text-stone-600 dark:text-stone-400 border-stone-500/20',
+      };
+  }
+}
 
 function ReviewerLine({
   item,
@@ -239,11 +288,15 @@ export default function RecordsTab({
         </div>
       ) : (
         <div className="space-y-3">
-          {pendingRecords.map((rec) => (
-            <div
-              key={rec.id}
-              className="ui-card p-4 sm:p-5 space-y-3"
-            >
+          {pendingRecords.map((rec) => {
+            const diffLabel = getDifficultyLabel(rec.level?.difficultyFace, rec.level?.difficulty);
+            const ratingInfo = getRatingInfo(rec.level?.ratingType);
+
+            return (
+              <div
+                key={rec.id}
+                className="ui-card p-4 sm:p-5 space-y-3"
+              >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
                 <div className="flex items-center gap-2.5">
                   {rec.user ? (
@@ -281,9 +334,15 @@ export default function RecordsTab({
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] ui-dim">
-                      {t('admin.level_label', { name: rec.level.name, placement: rec.level.placement || '-', mode: rec.level.mode })}
-                      <span className="ml-2 font-bold px-1.5 py-0.5 rounded text-[10px]" style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}>
+                    <div className="text-[11px] ui-dim flex items-center gap-1.5 flex-wrap">
+                      <span>{t('admin.level_label', { name: rec.level.name, placement: rec.level.placement || '-', mode: rec.level.mode })}</span>
+                      <span>·</span>
+                      <span className="font-semibold ui-title">{diffLabel}</span>
+                      <span>·</span>
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border ${ratingInfo.className}`}>
+                        {ratingInfo.label}
+                      </span>
+                      <span className="ml-1 font-bold px-1.5 py-0.5 rounded text-[10px]" style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}>
                         {rec.level.classicRank === null && rec.level.placement === null
                           ? 'Level chưa được xếp hạng'
                           : `Hiện có ${rec.level._count?.records || 0} record`}
@@ -366,7 +425,8 @@ export default function RecordsTab({
               </div>
               )}
             </div>
-          ))}
+            );
+          })}
           <AdminListPager
             page={recordPage}
             total={queueFilterTotal(recordCounts, recordFilter)}
