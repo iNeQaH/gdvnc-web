@@ -299,6 +299,7 @@ async function applyListedLevelsToDb(mode: 'CLASSIC' | 'PLATFORMER', external: E
     verifierName: string | null;
     youtubeId: string | null;
     description: string | null;
+    ratingType?: string;
     isChallenge: boolean;
   }> = [];
   const toUpdate: Array<{ id: string; placement: number; basePp: number; youtubeId?: string; minPercent?: number }> = [];
@@ -321,6 +322,7 @@ async function applyListedLevelsToDb(mode: 'CLASSIC' | 'PLATFORMER', external: E
         verifierName: row.verifierName,
         youtubeId: row.youtubeId,
         description: row.description,
+        ratingType: 'RATE',
         isChallenge: false,
       });
       continue;

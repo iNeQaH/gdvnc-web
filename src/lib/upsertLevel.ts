@@ -434,8 +434,10 @@ export async function upsertLevelFromForm(input: {
     derivedRating = input.ratingType;
   } else if (gdbRating !== 'NONE') {
     derivedRating = gdbRating;
-  } else if (existingLevel?.ratingType) {
+  } else if (existingLevel?.ratingType && existingLevel.ratingType !== 'NONE') {
     derivedRating = existingLevel.ratingType;
+  } else if (!isChallengeLevel && (derivedFace >= 10 || /demon/i.test(difficulty) || targetPlacement != null || targetClassicRank != null || targetVnPlacement != null)) {
+    derivedRating = 'RATE';
   }
 
   const finalPp = calculateLevelBasePp(targetPlacement, derivedFace, isChallengeLevel);

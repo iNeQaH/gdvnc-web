@@ -37,8 +37,28 @@ function getDifficultyLabel(face?: number | null, difficulty?: string | null): s
   return formatDifficultyLabel(faceNum, diffStr);
 }
 
-function getRatingInfo(ratingType?: string | null): { label: string; className: string } {
-  const raw = String(ratingType || '').trim().toUpperCase();
+function getRatingInfo(level?: {
+  ratingType?: string | null;
+  difficulty?: string | null;
+  difficultyFace?: number | null;
+  isChallenge?: boolean | null;
+  placement?: number | null;
+  classicRank?: number | null;
+  vnPlacement?: number | null;
+} | null): { label: string; className: string } {
+  let raw = String(level?.ratingType || '').trim().toUpperCase();
+
+  // Nếu ratingType là NONE hoặc chưa được gán, kiểm tra xem level có phải là level đã được rate hay không:
+  // (Trong GD, các màn Demon, có xếp hạng danh sách hoặc rank classic đều là level được rate)
+  if (!raw || raw === 'NONE') {
+    const isChallenge = Boolean(level?.isChallenge);
+    const isDemon = (level?.difficultyFace ?? 0) >= 10 || /demon/i.test(level?.difficulty || '');
+    const hasRank = level?.placement != null || level?.classicRank != null || level?.vnPlacement != null;
+    if (!isChallenge && (isDemon || hasRank)) {
+      raw = 'RATE';
+    }
+  }
+
   switch (raw) {
     case 'MYTHIC':
       return {
@@ -290,7 +310,7 @@ export default function RecordsTab({
         <div className="space-y-3">
           {pendingRecords.map((rec) => {
             const diffLabel = getDifficultyLabel(rec.level?.difficultyFace, rec.level?.difficulty);
-            const ratingInfo = getRatingInfo(rec.level?.ratingType);
+            const ratingInfo = getRatingInfo(rec.level);
 
             return (
               <div
