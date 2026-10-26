@@ -51,6 +51,11 @@ next-env.d.ts
 # Next.js recreates these on `next dev`; they are not part of the app
 /AGENTS.md
 /CLAUDE.md
+/AI_MASTER_CODEBASE_INDEX.md
+AI_MASTER_CODEBASE_INDEX.md
+/.agents/
+.agents/
+skills-lock.json
 
 # Local user uploads, snapshots & metrics
 /user-data/
@@ -72,6 +77,10 @@ user-data/
 *.bat
 *.cmd
 *.ps1
+star.bat
+start.bat
+run.bat
+*.py
 sync-all.mjs
 sync-users.mjs
 test-db.mjs
