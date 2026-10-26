@@ -85,7 +85,14 @@ function getRatingInfo(level?: {
         label: 'Rate',
         className: 'bg-yellow-100/70 dark:bg-yellow-950/30 text-amber-600/80 dark:text-yellow-200/70 border-yellow-200/50 dark:border-yellow-700/30',
       };
+    case 'UNRATED':
     default:
+      if (level?.isChallenge) {
+        return {
+          label: 'Challenge',
+          className: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
+        };
+      }
       return {
         label: 'Unrated',
         className: 'bg-stone-500/10 text-stone-600 dark:text-stone-400 border-stone-500/20',
