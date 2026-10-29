@@ -373,7 +373,7 @@ export default function LevelsListPage({
                 : vnRanking
                   ? (lvl.vnPlacement ? '#' + lvl.vnPlacement : '-')
                   : isChallengeList
-                    ? '#' + (lvl.placement || listRank)
+                    ? (lvl.placement ? '#' + lvl.placement : '#-')
                     : (lvl.placement ? '#' + lvl.placement : '#' + listRank);
             if (viewMode === 'list') {
               return (

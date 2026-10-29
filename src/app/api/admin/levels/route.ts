@@ -5,8 +5,8 @@ import { getClientIp } from '@/lib/requestIp';
 import { requireAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { calculateBasePp } from '@/lib/ScoringEngine';
-import { upsertLevelFromForm, triggerBackgroundPpRecalc } from '@/lib/upsertLevel';
+import { calculateBasePp, calculateLevelBasePp } from '@/lib/ScoringEngine';
+import { upsertLevelFromForm, triggerBackgroundPpRecalc, shiftChallengePlacements } from '@/lib/upsertLevel';
 import { schedulePersistLocalListSnapshot } from '@/lib/listSnapshot';
 import { LevelMode, Prisma, RecordStatus } from '@prisma/client';
 import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
@@ -46,11 +46,32 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ success: true });
     }
     if (body?.id && typeof body.isChallenge === 'boolean') {
-      await prisma.level.update({
-        where: { id: body.id },
-        data: { isChallenge: body.isChallenge },
+      const level = await prisma.level.findUnique({ where: { id: body.id } });
+      if (!level) return NextResponse.json({ error: 'Level not found' }, { status: 404 });
+
+      let affectedIds: string[] = [level.id];
+      await prisma.$transaction(async (tx) => {
+        if (!body.isChallenge) {
+          const unrankedFace = level.difficultyFace || 0;
+          const newBasePp = calculateLevelBasePp(null, unrankedFace, false);
+          await tx.level.update({
+            where: { id: body.id },
+            data: { isChallenge: false, placement: null, basePp: newBasePp },
+          });
+          const { affectedIds: shifted } = await shiftChallengePlacements(tx, null, body.id);
+          affectedIds.push(...shifted);
+        } else {
+          const newBasePp = calculateLevelBasePp(null, level.difficultyFace, true);
+          await tx.level.update({
+            where: { id: body.id },
+            data: { isChallenge: true, placement: null, basePp: newBasePp },
+          });
+        }
       });
-      bustPublicCache(CACHE_TAGS.levels);
+      if (affectedIds.length > 0) {
+        await triggerBackgroundPpRecalc(affectedIds, level.mode);
+      }
+      bustPublicCache(CACHE_TAGS.levels, CACHE_TAGS.highlights, CACHE_TAGS.leaderboard);
       return NextResponse.json({ success: true });
     }
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
@@ -109,10 +130,8 @@ export async function DELETE(req: Request) {
 
       if (oldPlacement !== null) {
         if (level.isChallenge) {
-          await tx.level.updateMany({
-            where: { isChallenge: true, placement: { gt: oldPlacement } },
-            data: { placement: { decrement: 1 } },
-          });
+          const { affectedIds: shifted } = await shiftChallengePlacements(tx, null, id);
+          affectedLevelIds.push(...shifted);
         } else {
           await tx.level.updateMany({
             where: { mode, isChallenge: false, placement: { gt: oldPlacement } },

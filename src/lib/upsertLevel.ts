@@ -26,6 +26,7 @@ export async function triggerBackgroundPpRecalc(levelIds: string[], mode: LevelM
 }
 
 export async function refreshAllLevelBasePp() {
+  await normalizeAllChallengePlacements();
   const levels = await prisma.level.findMany({
     select: { id: true, placement: true, difficultyFace: true, isChallenge: true, basePp: true },
   });
@@ -206,39 +207,111 @@ async function shiftVnPlacements(
   }
 }
 
-async function shiftChallengePlacements(
+export async function shiftChallengePlacements(
   tx: any,
   targetPlacement: number | null,
-  existingLevel: { id: string; placement: number | null } | null
-) {
-  if (targetPlacement === null) return;
-  const excludeId = existingLevel?.id;
-  const baseWhere = {
-    isChallenge: true,
-    ...(excludeId ? { id: { not: excludeId } } : {}),
-  };
+  currentLevelId: string | null
+): Promise<{ affectedIds: string[]; finalPlacement: number | null }> {
+  const affectedIds: string[] = [];
 
-  if (!existingLevel || existingLevel.placement === null) {
-    await tx.level.updateMany({
-      where: { ...baseWhere, placement: { gte: targetPlacement } },
-      data: { placement: { increment: 1 } },
-    });
+  const otherLevels = await tx.level.findMany({
+    where: {
+      isChallenge: true,
+      placement: { not: null },
+      ...(currentLevelId ? { id: { not: currentLevelId } } : {}),
+    },
+    select: {
+      id: true,
+      name: true,
+      placement: true,
+      difficultyFace: true,
+      basePp: true,
+    },
+    orderBy: [
+      { placement: 'asc' },
+      { difficultyFace: 'desc' },
+      { name: 'asc' },
+      { createdAt: 'asc' },
+    ],
+  });
+
+  const updates: { id: string; placement: number; basePp: number }[] = [];
+  let finalPlacement: number | null = null;
+
+  if (targetPlacement === null) {
+    finalPlacement = null;
+    let rank = 1;
+    for (const lvl of otherLevels) {
+      const nextRank = rank++;
+      const correctPp = calculateLevelBasePp(nextRank, lvl.difficultyFace, true);
+      if (lvl.placement !== nextRank || Math.abs((lvl.basePp ?? 0) - correctPp) > 0.01) {
+        updates.push({ id: lvl.id, placement: nextRank, basePp: correctPp });
+        affectedIds.push(lvl.id);
+      }
+    }
   } else {
-    const oldPlacement = existingLevel.placement;
-    if (oldPlacement !== null && oldPlacement !== targetPlacement) {
-      if (oldPlacement < targetPlacement) {
-        await tx.level.updateMany({
-          where: { ...baseWhere, placement: { gt: oldPlacement, lte: targetPlacement } },
-          data: { placement: { decrement: 1 } },
-        });
-      } else {
-        await tx.level.updateMany({
-          where: { ...baseWhere, placement: { gte: targetPlacement, lt: oldPlacement } },
-          data: { placement: { increment: 1 } },
-        });
+    const effectivePlacement = Math.max(1, Math.min(targetPlacement, otherLevels.length + 1));
+    finalPlacement = effectivePlacement;
+    let rank = 1;
+    for (const lvl of otherLevels) {
+      if (rank === effectivePlacement) {
+        rank++;
+      }
+      const nextRank = rank++;
+      const correctPp = calculateLevelBasePp(nextRank, lvl.difficultyFace, true);
+      if (lvl.placement !== nextRank || Math.abs((lvl.basePp ?? 0) - correctPp) > 0.01) {
+        updates.push({ id: lvl.id, placement: nextRank, basePp: correctPp });
+        affectedIds.push(lvl.id);
       }
     }
   }
+
+  for (const u of updates) {
+    await tx.level.update({
+      where: { id: u.id },
+      data: { placement: u.placement, basePp: u.basePp },
+    });
+  }
+
+  return { affectedIds, finalPlacement };
+}
+
+export async function normalizeAllChallengePlacements(txArg?: any): Promise<number> {
+  const db = txArg || prisma;
+  const levels = await db.level.findMany({
+    where: { isChallenge: true, placement: { not: null } },
+    select: { id: true, name: true, placement: true, difficultyFace: true, basePp: true },
+    orderBy: [
+      { placement: 'asc' },
+      { difficultyFace: 'desc' },
+      { name: 'asc' },
+      { createdAt: 'asc' },
+    ],
+  });
+
+  const updates: { id: string; placement: number; basePp: number }[] = [];
+  const affected: string[] = [];
+  let rank = 1;
+  for (const lvl of levels) {
+    const nextRank = rank++;
+    const correctPp = calculateLevelBasePp(nextRank, lvl.difficultyFace, true);
+    if (lvl.placement !== nextRank || Math.abs((lvl.basePp ?? 0) - correctPp) > 0.01) {
+      updates.push({ id: lvl.id, placement: nextRank, basePp: correctPp });
+      affected.push(lvl.id);
+    }
+  }
+
+  for (const u of updates) {
+    await db.level.update({
+      where: { id: u.id },
+      data: { placement: u.placement, basePp: u.basePp },
+    });
+  }
+
+  if (affected.length > 0) {
+    await triggerBackgroundPpRecalc(affected, LevelMode.CLASSIC);
+  }
+  return updates.length;
 }
 
 async function shiftClassicRankPlacements(
@@ -392,9 +465,11 @@ export async function upsertLevelFromForm(input: {
       existingLevel.mode !== pMode);
 
   const challengePlacementChanged =
-    isChallengeLevel &&
-    (!existingLevel ||
-      existingLevel.placement !== targetPlacement);
+    isChallengeLevel
+      ? (!existingLevel ||
+          !existingLevel.isChallenge ||
+          existingLevel.placement !== targetPlacement)
+      : !!existingLevel?.isChallenge;
 
   const classicRankChanged =
     !existingLevel ||
@@ -472,7 +547,19 @@ export async function upsertLevelFromForm(input: {
         affectedLevelIds.push(...shifted);
       }
       if (challengePlacementChanged) {
-        await shiftChallengePlacements(tx, targetPlacement, existingLevel);
+        const { affectedIds: shifted, finalPlacement } = await shiftChallengePlacements(
+          tx,
+          isChallengeLevel ? targetPlacement : null,
+          existingLevel?.id || null
+        );
+        affectedLevelIds.push(...shifted);
+        if (isChallengeLevel && finalPlacement !== null) {
+          updateData.placement = finalPlacement;
+          updateData.basePp = calculateLevelBasePp(finalPlacement, derivedFace, true);
+        } else if (!isChallengeLevel && existingLevel?.isChallenge) {
+          updateData.placement = null;
+          updateData.basePp = calculateLevelBasePp(null, derivedFace, false);
+        }
       }
       if (vnChanged) {
         await shiftVnPlacements(tx, targetVnPlacement, existingLevel, isVnLevel && !isChallengeLevel);
@@ -502,7 +589,7 @@ export async function upsertLevelFromForm(input: {
     { maxWait: 15000, timeout: 30000 }
   );
 
-  if (affectedLevelIds.length > 0 && (placementChanged || !existingLevel || Math.abs((existingLevel.basePp ?? 0) - finalPp) > 0.01)) {
+  if (affectedLevelIds.length > 0 && (placementChanged || challengePlacementChanged || !existingLevel || Math.abs((existingLevel.basePp ?? 0) - finalPp) > 0.01)) {
     await triggerBackgroundPpRecalc(affectedLevelIds, pMode);
   }
 
