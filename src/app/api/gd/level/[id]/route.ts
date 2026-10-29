@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 import { mapDifficultyFace, mapRatingType, pickGdCreatorName, pickGdLevelName } from '@/lib/gdDifficulty';
 import { getClientIp } from '@/lib/requestIp';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { fetchGdLevel } from '@/lib/boomlings';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const limited = rateLimit(`gd:${getClientIp(_req)}`, 40, 60_000);
@@ -15,17 +16,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   }
 
   try {
-    const res = await fetch(`https://gdbrowser.com/api/level/${id}`, {
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) {
-      return NextResponse.json({ error: "Can't fetch level, please submit manually" }, { status: 404 });
-    }
-
-    const data = await res.json();
-
-    // Workaround for GDBrowser's "Generation Retro" meme when the GD server fails or level is not found
-    if (String(data.id) !== String(id)) {
+    const data = await fetchGdLevel(Number(id));
+    if (!data) {
       return NextResponse.json({ error: "Can't fetch level, please submit manually" }, { status: 404 });
     }
 

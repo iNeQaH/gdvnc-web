@@ -3,6 +3,7 @@ import { LevelMode } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { clipText } from '@/lib/validate';
 import { fetchGdBrowser } from '@/lib/upsertLevel';
+import { fetchGdLevelsBatch } from '@/lib/boomlings';
 import { fetchGdvnSheetRows, type GdvnSheetRow } from '@/lib/gdvnSheet';
 import { parseYoutubeVideoField } from '@/lib/timeline/glow';
 import { purgeSheetTimelineEvents } from '@/lib/timeline/purgeSheetEvents';
@@ -45,17 +46,15 @@ async function resolveEpicYoutubeIds(rows: GdvnSheetRow[]) {
   }
 
   const missing = levels.filter((l) => !l.youtubeId).slice(0, GDB_FETCH_CAP);
-  await chunked(missing, 5, async (chunk) => {
-    await Promise.all(
-      chunk.map(async (level) => {
-        const gdb = await fetchGdBrowser(level.gdLevelId);
-        const yt = parseYoutubeVideoField(gdb?.video) || parseYoutubeVideoField(gdb?.youtube);
-        if (!yt) return;
-        await prisma.level.update({ where: { id: level.id }, data: { youtubeId: yt } });
-        byGd.set(level.gdLevelId, yt);
-      })
-    );
-  });
+  const missingIds = missing.map((l) => l.gdLevelId);
+  const levelsMap = await fetchGdLevelsBatch(missingIds);
+  for (const level of missing) {
+    const gdb = levelsMap.get(level.gdLevelId) || (await fetchGdBrowser(level.gdLevelId));
+    const yt = parseYoutubeVideoField(gdb?.video) || parseYoutubeVideoField(gdb?.youtube);
+    if (!yt) continue;
+    await prisma.level.update({ where: { id: level.id }, data: { youtubeId: yt } });
+    byGd.set(level.gdLevelId, yt);
+  }
 
   return byGd;
 }

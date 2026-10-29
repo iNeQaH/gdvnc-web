@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { clipText } from '@/lib/validate';
 import { fetchGdBrowser } from '@/lib/upsertLevel';
+import { fetchGdLevelsBatch } from '@/lib/boomlings';
 import { pickGdCreatorName, pickGdLevelName } from '@/lib/gdDifficulty';
 import { SHEET_SOURCE_PREFIX } from '@/lib/timeline/sheetEvent';
 import { parseYoutubeVideoField } from '@/lib/timeline/glow';
@@ -33,26 +34,27 @@ export async function refreshLevelCreatorNames(cursor?: string | null): Promise<
   let failed = 0;
   let skipped = 0;
 
-  await Promise.all(
-    batch.map(async (level) => {
-      const gdb = await fetchGdBrowser(level.gdLevelId);
-      const creator = pickGdCreatorName(gdb);
-      if (!creator) {
-        failed += 1;
-        return;
-      }
-      const next = clipText(creator, 80);
-      if ((level.creatorName || '').trim() === next) {
-        skipped += 1;
-        return;
-      }
-      await prisma.level.update({
-        where: { id: level.id },
-        data: { creatorName: next },
-      });
-      updated += 1;
-    })
-  );
+  const ids = batch.map((b) => b.gdLevelId);
+  const levelsMap = await fetchGdLevelsBatch(ids);
+
+  for (const level of batch) {
+    const gdb = levelsMap.get(level.gdLevelId) || (await fetchGdBrowser(level.gdLevelId));
+    const creator = pickGdCreatorName(gdb);
+    if (!creator) {
+      failed += 1;
+      continue;
+    }
+    const next = clipText(creator, 80);
+    if ((level.creatorName || '').trim() === next) {
+      skipped += 1;
+      continue;
+    }
+    await prisma.level.update({
+      where: { id: level.id },
+      data: { creatorName: next },
+    });
+    updated += 1;
+  }
 
   return {
     scanned: batch.length,

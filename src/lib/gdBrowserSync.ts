@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { fetchGdProfile } from '@/lib/boomlings';
 
 export async function checkAndAwardGrinderBadges(
   userId: string,
@@ -76,30 +77,16 @@ export async function syncUserGdBrowserStats(
   }
 
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 4500);
+    const data = await fetchGdProfile(targetUser.gdUsername);
+    if (!data) return null;
 
-    const res = await fetch(`https://gdbrowser.com/api/profile/${encodeURIComponent(targetUser.gdUsername.trim())}`, {
-      signal: controller.signal,
-      headers: { 'User-Agent': 'GDVN-Web/2.0' },
-      cache: 'no-store',
-    });
-    clearTimeout(timer);
+    const rawRank = data.rank;
+    const hasGlobalRank = data.hasGlobalRank;
 
-    if (!res.ok) return null;
-    const data = await res.json().catch(() => null);
-    if (!data || typeof data !== 'object') return null;
-
-    // Kiểm tra global rank từ GDBrowser: chỉ chấp nhận khi có rank và rank >= 1
-    const rawRank = data.rank !== undefined && data.rank !== null ? parseInt(String(data.rank), 10) : 0;
-    const hasGlobalRank = !isNaN(rawRank) && rawRank >= 1;
-
-    // Chỉ những người có global rank mới được chấp nhận lấy điểm stars, moons và demons
-    const stars = hasGlobalRank ? Math.max(0, parseInt(data.stars, 10) || 0) : 0;
-    const moons = hasGlobalRank ? Math.max(0, parseInt(data.moons, 10) || 0) : 0;
-    const demons = hasGlobalRank ? Math.max(0, parseInt(data.demons, 10) || 0) : 0;
-    const cp = data.cp !== undefined ? Math.max(0, parseInt(data.cp, 10) || 0) : Math.max(0, targetUser.creatorPoints || 0);
-
+    const stars = hasGlobalRank ? Math.max(0, data.stars || 0) : 0;
+    const moons = hasGlobalRank ? Math.max(0, data.moons || 0) : 0;
+    const demons = hasGlobalRank ? Math.max(0, data.demons || 0) : 0;
+    const cp = data.cp !== undefined ? Math.max(0, data.cp || 0) : Math.max(0, targetUser.creatorPoints || 0);
     await prisma.user.update({
       where: { id: targetUser.id },
       data: {

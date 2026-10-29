@@ -1,3 +1,4 @@
+import { fetchGdLevel } from '@/lib/boomlings';
 import prisma from '@/lib/prisma';
 import { LevelMode, Prisma, RecordStatus } from '@prisma/client';
 import { calculateBasePp, calculateLevelBasePp } from '@/lib/ScoringEngine';
@@ -88,20 +89,7 @@ export function preferText(incoming?: string | null, existing?: string | null): 
 }
 
 export async function fetchGdBrowser(gdLevelId: number): Promise<any | null> {
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
-    const gdbRes = await fetch(`https://gdbrowser.com/api/level/${gdLevelId}`, {
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-    if (!gdbRes.ok) return null;
-    const json = await gdbRes.json();
-    if (String(json.id) !== String(gdLevelId)) return null;
-    return json;
-  } catch {
-    return null;
-  }
+  return fetchGdLevel(gdLevelId);
 }
 
 async function shiftPlacementsAndRecalcPp(

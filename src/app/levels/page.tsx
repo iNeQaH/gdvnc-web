@@ -210,7 +210,7 @@ export default function LevelsListPage({
 
   const getThumbnail = (lvl: any) => {
     if (lvl.youtubeId) return 'https://img.youtube.com/vi/' + lvl.youtubeId + '/hqdefault.jpg';
-    return 'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
+    return '/difficulties/EXTREME DEMON.png';
   };
 
   const searching = Boolean(search.trim());

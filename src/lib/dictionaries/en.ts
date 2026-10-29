@@ -661,7 +661,7 @@ const en = {
   'admin.sync_sheet_fail': 'Could not sync the Google Sheet.',
   'admin.refresh_creators': 'Refetch creator names',
   'admin.refresh_creators_working': 'Fetching creators…',
-  'admin.refresh_creators_desc': 'Call GDBrowser for every level and write only the creator name. Existing names are replaced when GD returns a username.',
+  'admin.refresh_creators_desc': 'Call Geometry Dash servers (Boomlings) for every level and write only the creator name. Existing names are replaced when GD returns a username.',
   'admin.refresh_creators_confirm': 'Fetch creator names for the whole list from Geometry Dash? This may take a few minutes and only updates creator names.',
   'admin.refresh_creators_ok': 'Creator names updated: {summary}',
   'admin.refresh_creators_fail': 'Could not refetch creator names.',

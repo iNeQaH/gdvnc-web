@@ -289,7 +289,7 @@ function ClanHardestSlideshow({
 
   const highResThumb = ytId
     ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`
-    : 'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
+    : '/difficulties/EXTREME DEMON.png';
 
   const embedUrl = ytId ? `https://www.youtube.com/embed/${ytId}?autoplay=1` : null;
 
@@ -368,7 +368,7 @@ function ClanHardestSlideshow({
             const ytId = level.youtubeId || (ytMatch ? ytMatch[1] : null);
             const highResThumb = ytId
               ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`
-              : 'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
+              : '/difficulties/EXTREME DEMON.png';
 
             const rankLabel = level.classicRank
               ? `#${level.classicRank}`
@@ -395,7 +395,7 @@ function ClanHardestSlideshow({
                         (e.currentTarget as HTMLImageElement).src = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
                       } else {
                         (e.currentTarget as HTMLImageElement).src =
-                          'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
+                          '/difficulties/EXTREME DEMON.png';
                       }
                     }}
                   />
@@ -572,7 +572,7 @@ function CompactClanLevelsSlideshow({
   const ytId = currentWork.youtubeId || ytIdFromUrl;
   const highResThumb = ytId
     ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`
-    : currentWork.imageUrl || 'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
+    : currentWork.imageUrl || '/difficulties/EXTREME DEMON.png';
 
   const matchedLevel = currentWork.matchedLevel;
   const targetLevelUrl = matchedLevel ? levelPath(matchedLevel) : currentWork.gdLevelId ? `/levels?search=${currentWork.gdLevelId}` : null;
@@ -653,7 +653,7 @@ function CompactClanLevelsSlideshow({
             const yId = item.youtubeId || yIdFromUrl;
             const highResThumb = yId
               ? `https://img.youtube.com/vi/${yId}/maxresdefault.jpg`
-              : item.imageUrl || 'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
+              : item.imageUrl || '/difficulties/EXTREME DEMON.png';
 
             const mLevel = item.matchedLevel;
             const tUrl = mLevel ? levelPath(mLevel) : item.gdLevelId ? `/levels?search=${item.gdLevelId}` : null;
@@ -675,7 +675,7 @@ function CompactClanLevelsSlideshow({
                         (e.currentTarget as HTMLImageElement).src = `https://img.youtube.com/vi/${yId}/hqdefault.jpg`;
                       } else {
                         (e.currentTarget as HTMLImageElement).src =
-                          'https://raw.githubusercontent.com/GDColon/GDBrowser/master/assets/difficulties/demon-extreme-featured.png';
+                          '/difficulties/EXTREME DEMON.png';
                       }
                     }}
                   />

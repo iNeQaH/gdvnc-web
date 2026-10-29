@@ -653,7 +653,7 @@ const vi: Record<DictKey, string> = {
   'admin.sync_sheet_fail': 'Không đồng bộ được Google Sheet.',
   'admin.refresh_creators': 'Lấy lại tên creator',
   'admin.refresh_creators_working': 'Đang lấy tên creator…',
-  'admin.refresh_creators_desc': 'Gọi GDBrowser cho mọi level và chỉ ghi lại tên creator. Tên cũ được thay khi GD trả về username.',
+  'admin.refresh_creators_desc': 'Gọi máy chủ Geometry Dash (Boomlings) cho mọi level và chỉ ghi lại tên creator. Tên cũ được thay khi GD trả về username.',
   'admin.refresh_creators_confirm': 'Lấy lại tên creator cho toàn bộ danh sách từ Geometry Dash? Có thể mất vài phút và chỉ cập nhật tên creator.',
   'admin.refresh_creators_ok': 'Đã cập nhật tên creator: {summary}',
   'admin.refresh_creators_fail': 'Không lấy lại được tên creator.',
