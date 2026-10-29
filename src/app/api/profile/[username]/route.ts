@@ -181,8 +181,20 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
     const viewer = await getSessionUser();
     const isSelf = Boolean(viewer?.userId && viewer.userId === user.id);
     if (isSelf && !user.isBanned) {
-      // 1. Chỉ khi người đó vào trang profile của bản thân thì mới được cập nhật star, moon, demon từ GDBrowser
-      const synced = await syncUserGdBrowserStats(user, viewer);
+      const forceSync = new URL(req.url).searchParams.get('force') === '1';
+
+      // Lưu lại snapshot cũ TRƯỚC KHI sync để tính Điểm Hoạt Động Clan chính xác
+      const prevStars = user.gdStars || 0;
+      const prevMoons = user.gdMoons || 0;
+      const prevDemons = user.gdDemons || 0;
+      const prevActivityDate = user.activityDate;
+      const prevActivityPoints = user.activityPoints || 0;
+      const prevActivityStars = user.activityPrevStars;
+      const prevActivityMoons = user.activityPrevMoons;
+      const prevActivityDemons = user.activityPrevDemons;
+
+      // 1. Cập nhật star, moon, demon từ Geometry Dash (Boomlings)
+      const synced = await syncUserGdBrowserStats(user, viewer, forceSync);
       if (synced) {
         const statsChanged =
           user.gdStars !== synced.stars ||
@@ -208,7 +220,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         moons: user.gdMoons || 0,
         demons: user.gdDemons || 0,
       };
-      const actResult = computeActivityPoints(currentStats, user);
+      const actResult = computeActivityPoints(currentStats, {
+        activityDate: prevActivityDate,
+        activityPoints: prevActivityPoints,
+        activityPrevStars: prevActivityStars,
+        activityPrevMoons: prevActivityMoons,
+        activityPrevDemons: prevActivityDemons,
+        gdStars: prevStars,
+        gdMoons: prevMoons,
+        gdDemons: prevDemons,
+      });
       await prisma.user.update({
         where: { id: user.id },
         data: {

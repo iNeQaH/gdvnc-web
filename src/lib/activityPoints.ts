@@ -35,8 +35,8 @@ export interface ActivityPointsResult {
 
 /**
  * Tính toán điểm hoạt động cho người dùng khi xem Profile của bản thân:
- * @param currentStats Chỉ số hiện tại (từ GDBrowser hoặc database)
- * @param userState Trạng thái đã lưu trong DB của người dùng
+ * @param currentStats Chỉ số hiện tại (từ Boomlings/GD)
+ * @param userState Trạng thái cũ trong DB của người dùng (trước khi ghi đè chỉ số mới)
  */
 export function computeActivityPoints(
   currentStats: { stars: number; moons: number; demons: number },
@@ -64,11 +64,19 @@ export function computeActivityPoints(
     baselineMoons = userState.activityPrevMoons ?? userState.gdMoons ?? 0;
     baselineDemons = userState.activityPrevDemons ?? userState.gdDemons ?? 0;
   } else {
-    // Lần đầu vào trong ngày mới (hoặc khởi tạo lần đầu):
-    // Các chỉ số đang lưu trong DB chính là chốt sổ của ngày hôm trước
-    baselineStars = userState.gdStars ?? 0;
-    baselineMoons = userState.gdMoons ?? 0;
-    baselineDemons = userState.gdDemons ?? 0;
+    // Lần đầu vào trong ngày mới:
+    // Nếu user chưa từng có stats (khởi tạo lần đầu): baseline chính là currentStats để không bị nhảy điểm đột biến
+    const hasExistingStats = (userState.gdStars ?? 0) > 0 || (userState.activityPrevStars ?? 0) > 0;
+    if (!hasExistingStats && (currentStats.stars > 0 || currentStats.moons > 0 || currentStats.demons > 0)) {
+      baselineStars = currentStats.stars;
+      baselineMoons = currentStats.moons;
+      baselineDemons = currentStats.demons;
+    } else {
+      // Các chỉ số đang lưu trong DB chính là chốt sổ của ngày hôm trước
+      baselineStars = userState.gdStars ?? 0;
+      baselineMoons = userState.gdMoons ?? 0;
+      baselineDemons = userState.gdDemons ?? 0;
+    }
   }
 
   const deltaStars = Math.max(0, currentStats.stars - baselineStars);

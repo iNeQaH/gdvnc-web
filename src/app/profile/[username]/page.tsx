@@ -206,6 +206,28 @@ export default function ProfilePage() {
   const [hasLiked, setHasLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [likeLoading, setLikeLoading] = useState(false);
+  const [syncingGd, setSyncingGd] = useState(false);
+
+  const handleSyncGdStats = async () => {
+    if (syncingGd) return;
+    setSyncingGd(true);
+    try {
+      const res = await fetch(`/api/profile/${encodeURIComponent(username)}?force=1`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data) {
+          setData(json.data);
+          showToast(isEn ? 'GD Stats & clan activity points updated!' : 'Đã cập nhật chỉ số GD & Điểm hoạt động Clan thành công!', 'success');
+        }
+      } else {
+        showToast(isEn ? 'Failed to sync GD stats' : 'Không thể cập nhật chỉ số GD lúc này', 'error');
+      }
+    } catch {
+      showToast(isEn ? 'Connection error' : 'Lỗi kết nối máy chủ', 'error');
+    } finally {
+      setSyncingGd(false);
+    }
+  };
 
   // Super Admin Password Reset & Ban States
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
@@ -1544,8 +1566,19 @@ export default function ProfilePage() {
                   <span className="ui-dim font-bold text-[11px] uppercase">GD</span>
                 </div>
                 <div className="flex items-center gap-1.5 truncate">
-                  <span className="ui-title font-semibold truncate max-w-[160px]">{data.gdUsername || (isEn ? 'Not linked' : 'Chưa liên kết')}</span>
+                  <span className="ui-title font-semibold truncate max-w-[150px]">{data.gdUsername || (isEn ? 'Not linked' : 'Chưa liên kết')}</span>
                   {data.gdVerified && <span title="Đã xác minh"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" /></span>}
+                  {isOwner && data.gdUsername && (
+                    <button
+                      type="button"
+                      onClick={handleSyncGdStats}
+                      disabled={syncingGd}
+                      className="p-1 rounded-md hover:bg-zinc-700/20 text-zinc-400 hover:text-sky-400 transition-colors cursor-pointer"
+                      title={isEn ? 'Refresh GD stats & clan activity points' : 'Cập nhật chỉ số GD & Điểm hoạt động Clan'}
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${syncingGd ? 'animate-spin text-sky-400' : ''}`} />
+                    </button>
+                  )}
                 </div>
               </div>
 

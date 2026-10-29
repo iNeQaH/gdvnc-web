@@ -5,7 +5,7 @@
  * - In-flight deduplication: Chống gửi trùng request đồng thời
  * - Bộ nhớ đệm accountID (24h) & Level info (5 phút)
  * - Gom nhiều Level vào 1 request (type=10 batching, nhanh gấp 16 lần)
- * - Circuit Breaker & Fallback tự động khi có sự cố mạng
+ * - Circuit Breaker tự phục hồi & Fallback thông minh
  */
 
 const BOOMLINGS_BASE = process.env.BOOMLINGS_API_URL || 'https://www.boomlings.com/database';
@@ -64,23 +64,32 @@ const accountIdCache = new Map<string, { accountId: number; expiresAt: number }>
 const levelCache = new Map<number, { data: NormalizedGdLevel; expiresAt: number }>();
 const inFlightRequests = new Map<string, Promise<string>>();
 
-// Circuit Breaker: nếu Boomlings liên tục lỗi, tạm chuyển sang fallback
+// Circuit Breaker: nếu Boomlings liên tục lỗi mạng, tạm mở 60 giây rồi tự thử lại
 let consecutiveFailures = 0;
 let circuitBreakerOpenUntil = 0;
 
 function isCircuitBreakerOpen(): boolean {
-  return Date.now() < circuitBreakerOpenUntil;
+  if (circuitBreakerOpenUntil > 0) {
+    if (Date.now() < circuitBreakerOpenUntil) {
+      return true;
+    }
+    // Breaker timeout đã hết: tự động reset để thử lại
+    circuitBreakerOpenUntil = 0;
+    consecutiveFailures = 0;
+  }
+  return false;
 }
 
 function recordSuccess() {
   consecutiveFailures = 0;
+  circuitBreakerOpenUntil = 0;
 }
 
 function recordFailure() {
   consecutiveFailures += 1;
-  if (consecutiveFailures >= 4) {
-    // Tạm mở circuit breaker trong 5 phút
-    circuitBreakerOpenUntil = Date.now() + 5 * 60 * 1000;
+  if (consecutiveFailures >= 5) {
+    // Tạm dừng gọi Boomlings trong 60 giây nếu liên tục lỗi
+    circuitBreakerOpenUntil = Date.now() + 60 * 1000;
   }
 }
 
@@ -113,9 +122,9 @@ export function parseRobTopMap(raw: string, delimiter = ':'): Record<string, str
   return map;
 }
 
-async function fetchBoomlingsRaw(endpoint: string, params: Record<string, string | number>, timeoutMs = 6000): Promise<string> {
+async function fetchBoomlingsRaw(endpoint: string, params: Record<string, string | number>, timeoutMs = 7000): Promise<string> {
   if (isCircuitBreakerOpen()) {
-    throw new Error('Boomlings circuit breaker is open');
+    throw new Error('Boomlings circuit breaker is temporarily open');
   }
 
   const cacheKey = `${endpoint}?${JSON.stringify(params)}`;
@@ -295,33 +304,32 @@ export async function fetchGdLevel(gdLevelId: number): Promise<NormalizedGdLevel
     return cached.data;
   }
 
-  // 2. Thử gọi trực tiếp Boomlings
+  // 2. Thử gọi trực tiếp Boomlings bằng type=10 (chính xác theo ID)
   try {
-    const raw = await fetchBoomlingsRaw('getGJLevels21.php', { str: gdLevelId, type: 0 });
+    const raw = await fetchBoomlingsRaw('getGJLevels21.php', { str: gdLevelId, type: 10 });
     if (raw && raw !== '-1') {
       const [levelsPart, creatorsPart] = raw.split('#');
-      const firstLevelStr = levelsPart?.split('|')?.[0];
-      if (firstLevelStr) {
-        const lvl = parseRobTopMap(firstLevelStr);
-        if (Number(lvl['1']) === gdLevelId) {
-          let creatorName = 'Unknown';
-          if (creatorsPart) {
-            for (const c of creatorsPart.split('|')) {
-              const [pId, cName] = c.split(':');
-              if (pId === lvl['6']) {
-                creatorName = cName;
-                break;
-              }
-            }
+      if (levelsPart) {
+        const creatorsMap = new Map<string, string>();
+        if (creatorsPart) {
+          for (const c of creatorsPart.split('|')) {
+            const [pId, cName] = c.split(':');
+            if (pId && cName) creatorsMap.set(pId, cName);
           }
-          const data = normalizeRawLevel(lvl, creatorName);
-          levelCache.set(gdLevelId, { data, expiresAt: Date.now() + 5 * 60 * 1000 });
-          return data;
+        }
+
+        for (const item of levelsPart.split('|')) {
+          const lvl = parseRobTopMap(item);
+          if (Number(lvl['1']) === gdLevelId) {
+            const creatorName = creatorsMap.get(lvl['6']) || 'Unknown';
+            const data = normalizeRawLevel(lvl, creatorName);
+            levelCache.set(gdLevelId, { data, expiresAt: Date.now() + 5 * 60 * 1000 });
+            return data;
+          }
         }
       }
     }
   } catch (err) {
-    // Lỗi Boomlings: nếu có bật fallback sang GDBrowser
     if (!ENABLE_GDBROWSER_FALLBACK) {
       console.warn(`[boomlings] fetchGdLevel failed for ${gdLevelId}:`, err);
       return null;
@@ -462,6 +470,8 @@ export async function fetchGdProfile(username: string): Promise<NormalizedGdProf
   // 1. Thử gọi trực tiếp Boomlings
   try {
     let accountId: number | null = null;
+    let fallbackStatsFromSearch: Record<string, string> | null = null;
+
     const cachedAcc = accountIdCache.get(userKey);
     if (cachedAcc && cachedAcc.expiresAt > Date.now()) {
       accountId = cachedAcc.accountId;
@@ -478,6 +488,7 @@ export async function fetchGdProfile(username: string): Promise<NormalizedGdProf
             const foundAcc = Number(parsed['16'] || 0);
             if (foundAcc > 0) {
               accountId = foundAcc;
+              fallbackStatsFromSearch = parsed;
               accountIdCache.set(userKey, { accountId, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
               break;
             }
@@ -488,38 +499,60 @@ export async function fetchGdProfile(username: string): Promise<NormalizedGdProf
 
     // Nếu đã có accountID: gọi getGJUserInfo20.php để lấy toàn bộ thông số chuẩn
     if (accountId) {
-      const infoRaw = await fetchBoomlingsRaw('getGJUserInfo20.php', { targetAccountID: accountId });
-      if (infoRaw && infoRaw !== '-1') {
-        const data = parseRobTopMap(infoRaw);
+      try {
+        const infoRaw = await fetchBoomlingsRaw('getGJUserInfo20.php', { targetAccountID: accountId });
+        if (infoRaw && infoRaw !== '-1') {
+          const data = parseRobTopMap(infoRaw);
 
-        // Đảm bảo đúng username
-        if (data['1']?.toLowerCase() === userKey) {
-          const rawRank = Number(data['30'] || 0);
-          const hasGlobalRank = !isNaN(rawRank) && rawRank >= 1;
+          // Đảm bảo đúng username
+          if (data['1']?.toLowerCase() === userKey) {
+            const rawRank = Number(data['30'] || 0);
+            const hasGlobalRank = !isNaN(rawRank) && rawRank >= 1;
 
-          return {
-            username: data['1'],
-            playerId: Number(data['2'] || 0),
-            accountId,
-            stars: Number(data['3'] || 0),
-            moons: Number(data['52'] || 0),
-            demons: Number(data['4'] || 0),
-            diamonds: Number(data['46'] || 0),
-            secretCoins: Number(data['13'] || 0),
-            userCoins: Number(data['17'] || 0),
-            cp: Number(data['8'] || 0),
-            rank: rawRank,
-            hasGlobalRank,
-            youtube: data['20'] || undefined,
-            twitter: data['44'] || undefined,
-            twitch: data['45'] || undefined,
-            discord: data['59'] || undefined,
-            demonBreakdown: data['55'] ? data['55'].split(',').map(Number) : undefined,
-          };
-        } else {
-          // Username không khớp nữa (người dùng đổi tên): xóa cache accountId
-          accountIdCache.delete(userKey);
+            return {
+              username: data['1'],
+              playerId: Number(data['2'] || 0),
+              accountId,
+              stars: Number(data['3'] || 0),
+              moons: Number(data['52'] || 0),
+              demons: Number(data['4'] || 0),
+              diamonds: Number(data['46'] || 0),
+              secretCoins: Number(data['13'] || 0),
+              userCoins: Number(data['17'] || 0),
+              cp: Number(data['8'] || 0),
+              rank: rawRank,
+              hasGlobalRank,
+              youtube: data['20'] || undefined,
+              twitter: data['44'] || undefined,
+              twitch: data['45'] || undefined,
+              discord: data['59'] || undefined,
+              demonBreakdown: data['55'] ? data['55'].split(',').map(Number) : undefined,
+            };
+          } else {
+            // Username không khớp nữa (người dùng đổi tên): xóa cache accountId
+            accountIdCache.delete(userKey);
+          }
         }
+      } catch (infoErr) {
+        console.warn(`[boomlings] getGJUserInfo20.php error for accountId ${accountId}:`, infoErr);
+      }
+
+      // Nếu getGJUserInfo20 không phản hồi nhưng getGJUsers20 có dữ liệu: trả dữ liệu từ getGJUsers20!
+      if (fallbackStatsFromSearch) {
+        return {
+          username: fallbackStatsFromSearch['1'] || cleanUser,
+          playerId: Number(fallbackStatsFromSearch['2'] || 0),
+          accountId,
+          stars: Number(fallbackStatsFromSearch['3'] || 0),
+          moons: Number(fallbackStatsFromSearch['52'] || 0),
+          demons: Number(fallbackStatsFromSearch['4'] || 0),
+          diamonds: Number(fallbackStatsFromSearch['46'] || 0),
+          secretCoins: Number(fallbackStatsFromSearch['13'] || 0),
+          userCoins: Number(fallbackStatsFromSearch['17'] || 0),
+          cp: Number(fallbackStatsFromSearch['8'] || 0),
+          rank: 0,
+          hasGlobalRank: false,
+        };
       }
     }
   } catch (err) {

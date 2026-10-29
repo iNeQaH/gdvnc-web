@@ -69,7 +69,7 @@ export async function syncUserGdBrowserStats(
     const lastUpdate = new Date(targetUser.gdStatsUpdatedAt).getTime();
     // Nếu đã fetch 1 lần mà không thấy có global rank thì 72 giờ tiếp theo không cần fetch nữa
     // Nếu có global rank bình thường: cooldown 5 phút
-    const cooldownMs = targetUser.gdHasGlobalRank === false ? 72 * 60 * 60 * 1000 : 5 * 60 * 1000;
+    const cooldownMs = 5 * 60 * 1000; // Cooldown chuẩn 5 phút cho mọi người chơi
     if (now - lastUpdate < cooldownMs) {
       // Đang trong thời gian cooldown
       return null;
@@ -83,9 +83,10 @@ export async function syncUserGdBrowserStats(
     const rawRank = data.rank;
     const hasGlobalRank = data.hasGlobalRank;
 
-    const stars = hasGlobalRank ? Math.max(0, data.stars || 0) : 0;
-    const moons = hasGlobalRank ? Math.max(0, data.moons || 0) : 0;
-    const demons = hasGlobalRank ? Math.max(0, data.demons || 0) : 0;
+    // Luôn ghi nhận điểm Stars, Moons, Demons thực tế từ GD
+    const stars = Math.max(0, data.stars || 0);
+    const moons = Math.max(0, data.moons || 0);
+    const demons = Math.max(0, data.demons || 0);
     const cp = data.cp !== undefined ? Math.max(0, data.cp || 0) : Math.max(0, targetUser.creatorPoints || 0);
     await prisma.user.update({
       where: { id: targetUser.id },
