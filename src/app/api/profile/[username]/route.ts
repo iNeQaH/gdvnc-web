@@ -181,8 +181,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
     const viewer = await getSessionUser();
     const isSelf = Boolean(viewer?.userId && viewer.userId === user.id);
     if (isSelf && !user.isBanned) {
-      const forceSync = new URL(req.url).searchParams.get('force') === '1';
-
       // Lưu lại snapshot cũ TRƯỚC KHI sync để tính Điểm Hoạt Động Clan chính xác
       const prevStars = user.gdStars || 0;
       const prevMoons = user.gdMoons || 0;
@@ -194,7 +192,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       const prevActivityDemons = user.activityPrevDemons;
 
       // 1. Cập nhật star, moon, demon từ Geometry Dash (Boomlings)
-      const synced = await syncUserGdBrowserStats(user, viewer, forceSync);
+      const synced = await syncUserGdBrowserStats(user, viewer);
       if (synced) {
         const statsChanged =
           user.gdStars !== synced.stars ||
