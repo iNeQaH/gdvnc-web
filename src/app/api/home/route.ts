@@ -6,7 +6,6 @@ import { playerDisplayName } from '@/lib/leaderboard';
 import { LevelMode } from '@prisma/client';
 import { calculateUserSp, getClanTier } from '@/lib/clanTypes';
 import { getVnTodayString } from '@/lib/activityPoints';
-import { WEB_CHANGELOGS } from '@/lib/webChangelogs';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,6 +58,7 @@ export async function GET() {
           topDemonPlayerRow,
           topCreatorRow,
           clans,
+          levelLogs,
         ] = await Promise.all([
           // 1. Home Posts (admin posts / featured spotlight)
           prisma.homePost.findMany({
@@ -274,6 +274,18 @@ export async function GET() {
               },
             },
           }),
+
+          // 14. Level List Change Logs (Nhật ký thay đổi danh sách màn chơi)
+          prisma.$queryRaw<any[]>`
+            SELECT 
+              "id", "list", "eventType", "gdLevelId", "levelName",
+              "oldPlacement", "newPlacement", "aboveLevelName", "belowLevelName",
+              "pushedOutLevelName", "causedByLevelName", "causedByPlacement",
+              "details", "createdAt"
+            FROM "ListChangeLog"
+            ORDER BY "createdAt" DESC
+            LIMIT 6
+          `.catch(() => []),
         ]);
 
         // Process clans
@@ -328,7 +340,7 @@ export async function GET() {
           announcements,
           recentSupporters: mappedRecentSupporters,
           topSupporters: mappedTopSupporters,
-          changelogs: WEB_CHANGELOGS,
+          changelogs: levelLogs || [],
           highlights: {
             topPlayer: topPlayerRow ? { ...topPlayerRow, displayName: playerDisplayName(topPlayerRow) } : null,
             topPlatformerPlayer: topPlatformerPlayerRow ? { ...topPlatformerPlayerRow, displayName: playerDisplayName(topPlatformerPlayerRow) } : null,

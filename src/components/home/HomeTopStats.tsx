@@ -262,7 +262,7 @@ export function HomeTopStats({
       hueDuration: '11s',
       hueDelay: '1.1s',
       name: supporter ? (supporter.displayName || supporter.username) : '—',
-      detail: supporter?.supporterTotalMonths ? `${supporter.supporterTotalMonths} tháng đồng hành` : 'Hỗ trợ server',
+      detail: supporter?.supporterTotalMonths ? `${supporter.supporterTotalMonths} tháng support` : 'Hỗ trợ server',
       href: supporter?.username ? `/profile/${supporter.username}` : '#',
     },
   ];

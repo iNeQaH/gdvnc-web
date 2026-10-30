@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   Sparkles, Megaphone, Heart, Crown, History, Plus, 
-  ExternalLink, Trophy, ArrowRight,
+  ExternalLink, Trophy, ArrowRight, ArrowDownRight,
   Pin, Trash2
 } from 'lucide-react';
 import { HomeTopStats } from '@/components/home/HomeTopStats';
@@ -52,12 +52,18 @@ interface Supporter {
   lastSupportedAt?: string;
 }
 
-interface ChangelogEntry {
-  version: string;
-  date: string;
-  title: string;
-  description?: string;
-  changes: string[];
+interface LevelChangeLog {
+  id: string;
+  list: string;
+  eventType: string;
+  gdLevelId: number;
+  levelName: string;
+  oldPlacement?: number | null;
+  newPlacement?: number | null;
+  aboveLevelName?: string | null;
+  belowLevelName?: string | null;
+  details?: string | null;
+  createdAt: string;
 }
 
 export default function HomePage() {
@@ -67,7 +73,7 @@ export default function HomePage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [recentSupporters, setRecentSupporters] = useState<Supporter[]>([]);
   const [topSupporters, setTopSupporters] = useState<Supporter[]>([]);
-  const [changelogs, setChangelogs] = useState<ChangelogEntry[]>([]);
+  const [changelogs, setChangelogs] = useState<LevelChangeLog[]>([]);
   const [highlights, setHighlights] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -400,48 +406,95 @@ export default function HomePage() {
       {/* 5. 2-COLUMN SECTION: CHANGELOG & SUPPORTER VINH DANH */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* NHẬT KÝ CẬP NHẬT GỘP VÀO TRANG CHỦ */}
+        {/* NHẬT KÝ THAY ĐỔI DANH SÁCH LEVEL */}
         <section className="ui-card p-5 sm:p-6 rounded-2xl border border-border/50 flex flex-col justify-between space-y-4">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-extrabold text-base sm:text-lg flex items-center gap-2">
                 <History className="w-5 h-5 text-emerald-400" />
-                Nhật Ký Cập Nhật Web
+                Nhật Ký Thay Đổi Danh Sách
               </h3>
+              <Link
+                href="/changelog"
+                className="text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1 group"
+              >
+                <span>Xem tất cả</span>
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               {changelogs.length > 0 ? (
-                changelogs.slice(0, 3).map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3 rounded-xl bg-card/60 border border-border/40 space-y-1.5"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                          v{item.version}
-                        </span>
-                        <span className="text-sm font-bold text-foreground truncate">
-                          {item.title}
-                        </span>
+                changelogs.slice(0, 4).map((log, idx) => {
+                  const listBadge =
+                    log.list === 'PEMON'
+                      ? { label: 'Platformer', class: 'bg-sky-500/15 text-sky-400 border-sky-500/30' }
+                      : log.list === 'CHALLENGE'
+                      ? { label: 'Challenge', class: 'bg-purple-500/15 text-purple-400 border-purple-500/30' }
+                      : { label: 'Demon List', class: 'bg-amber-500/15 text-amber-400 border-amber-500/30' };
+
+                  const isAdded = log.eventType === 'LEVEL_ADDED';
+                  const isRemoved = log.eventType === 'LEVEL_REMOVED' || log.eventType === 'LEVEL_DROPPED';
+
+                  return (
+                    <div
+                      key={log.id || idx}
+                      className="p-2.5 sm:p-3 rounded-xl bg-card/60 hover:bg-card/90 transition-all border border-border/40 flex items-center justify-between gap-3"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {/* Event Icon */}
+                        <div
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 font-bold text-xs ${
+                            isAdded
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                              : isRemoved
+                              ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                              : 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
+                          }`}
+                        >
+                          {isAdded ? (
+                            <Plus className="w-4 h-4" />
+                          ) : isRemoved ? (
+                            <ArrowDownRight className="w-4 h-4" />
+                          ) : (
+                            <Sparkles className="w-4 h-4" />
+                          )}
+                        </div>
+
+                        {/* Content */}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${listBadge.class}`}>
+                              {listBadge.label}
+                            </span>
+                            <Link
+                              href={`/levels/${log.gdLevelId}`}
+                              className="text-xs sm:text-sm font-bold text-foreground hover:text-emerald-400 transition-colors truncate"
+                            >
+                              {log.levelName}
+                            </Link>
+                          </div>
+                          <div className="text-[11px] text-muted-foreground truncate mt-0.5">
+                            {isAdded && log.newPlacement && (
+                              <span className="text-emerald-400 font-bold">Thêm vào Top #{log.newPlacement}</span>
+                            )}
+                            {isRemoved && (
+                              <span className="text-rose-400 font-bold">Rời khỏi danh sách</span>
+                            )}
+                            {log.details && <span className="ml-1 text-muted-foreground/80">• {log.details}</span>}
+                          </div>
+                        </div>
                       </div>
-                      <span className="text-[11px] text-muted-foreground">
-                        {item.date}
+
+                      <span className="text-[10px] sm:text-[11px] text-muted-foreground shrink-0 whitespace-nowrap">
+                        {new Date(log.createdAt).toLocaleDateString('vi-VN')}
                       </span>
                     </div>
-                    <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
-                      {item.changes.slice(0, 3).map((c, i) => (
-                        <li key={i} className="truncate">
-                          {c}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))
+                  );
+                })
               ) : (
-                <p className="text-xs text-muted-foreground py-4 text-center">
-                  Đang đồng bộ nhật ký...
+                <p className="text-xs text-muted-foreground py-6 text-center">
+                  Chưa có nhật ký thay đổi danh sách nào gần đây.
                 </p>
               )}
             </div>
@@ -481,7 +534,7 @@ export default function HomePage() {
                       {s.username}
                     </div>
                     <div className="text-[10px] font-semibold text-amber-400">
-                      {s.supporterTotalMonths || 1} tháng đồng hành
+                      {s.supporterTotalMonths || 1} tháng support
                     </div>
                   </div>
                 </Link>
