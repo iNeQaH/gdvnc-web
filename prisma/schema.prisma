@@ -684,6 +684,7 @@ model HomePost {
   videoUrl    String?
   poll        Json?
   isPinned    Boolean   @default(false)
+  likedUserIds String[] @default([])
   authorId    String?
   author      User?     @relation("HomePostAuthor", fields: [authorId], references: [id], onDelete: SetNull)
   createdAt   DateTime  @default(now())

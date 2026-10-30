@@ -6,6 +6,7 @@ import { playerDisplayName } from '@/lib/leaderboard';
 import { LevelMode } from '@prisma/client';
 import { calculateUserSp, getClanTier } from '@/lib/clanTypes';
 import { getVnTodayString } from '@/lib/activityPoints';
+import { WEB_CHANGELOGS } from '@/lib/webChangelogs';
 
 export const dynamic = 'force-dynamic';
 
@@ -113,11 +114,14 @@ export async function GET() {
           // 3. Recent Supporters (tên + số tháng, lọc hideSupporterPublic)
           prisma.user.findMany({
             where: {
-              lastSupportedAt: { not: null },
+              OR: [
+                { lastSupportedAt: { not: null } },
+                { supporterUntil: { gt: now } },
+              ],
               hideSupporterPublic: false,
               isBanned: false,
             },
-            orderBy: { lastSupportedAt: 'desc' },
+            orderBy: [{ lastSupportedAt: 'desc' }, { supporterUntil: 'desc' }],
             take: 12,
             select: {
               id: true,
@@ -125,7 +129,9 @@ export async function GET() {
               displayName: true,
               avatarUrl: true,
               supporterTotalMonths: true,
+              supporterUntil: true,
               lastSupportedAt: true,
+              clanMember: { select: { clan: { select: { tag: true } } } },
               nameColor: true,
               nameGradient: true,
               nameGlow: true,
@@ -136,11 +142,14 @@ export async function GET() {
           // 4. Top Supporters (nhiều tháng nhất, lọc hideSupporterPublic)
           prisma.user.findMany({
             where: {
-              supporterTotalMonths: { gt: 0 },
+              OR: [
+                { supporterTotalMonths: { gt: 0 } },
+                { supporterUntil: { gt: now } },
+              ],
               hideSupporterPublic: false,
               isBanned: false,
             },
-            orderBy: [{ supporterTotalMonths: 'desc' }, { lastSupportedAt: 'desc' }],
+            orderBy: [{ supporterTotalMonths: 'desc' }, { supporterUntil: 'desc' }, { lastSupportedAt: 'desc' }],
             take: 8,
             select: {
               id: true,
@@ -148,6 +157,8 @@ export async function GET() {
               displayName: true,
               avatarUrl: true,
               supporterTotalMonths: true,
+              supporterUntil: true,
+              clanMember: { select: { clan: { select: { tag: true } } } },
               nameColor: true,
               nameGradient: true,
               nameGlow: true,
@@ -299,12 +310,25 @@ export async function GET() {
         const clansBySp = [...rankedClans].sort((a, b) => b.totalSp - a.totalSp);
         const topSpClan = clansBySp[0] || null;
 
+        const mappedRecentSupporters = recentSupporters.map((s: any) => ({
+          ...s,
+          clan: s.clanMember?.clan || null,
+          supporterTotalMonths: s.supporterTotalMonths || 1,
+        }));
+
+        const mappedTopSupporters = topSupporters.map((s: any) => ({
+          ...s,
+          clan: s.clanMember?.clan || null,
+          supporterTotalMonths: s.supporterTotalMonths || 1,
+        }));
+
         return {
           success: true,
           posts,
           announcements,
-          recentSupporters,
-          topSupporters,
+          recentSupporters: mappedRecentSupporters,
+          topSupporters: mappedTopSupporters,
+          changelogs: WEB_CHANGELOGS,
           highlights: {
             topPlayer: topPlayerRow ? { ...topPlayerRow, displayName: playerDisplayName(topPlayerRow) } : null,
             topPlatformerPlayer: topPlatformerPlayerRow ? { ...topPlatformerPlayerRow, displayName: playerDisplayName(topPlatformerPlayerRow) } : null,
@@ -317,7 +341,7 @@ export async function GET() {
             topActivityClan,
             topSpClan,
             topCreator: topCreatorRow ? { ...topCreatorRow, displayName: playerDisplayName(topCreatorRow) } : null,
-            topSupporter: topSupporters.length > 0 ? { ...topSupporters[0], displayName: playerDisplayName(topSupporters[0]) } : null,
+            topSupporter: mappedTopSupporters.length > 0 ? { ...mappedTopSupporters[0], displayName: playerDisplayName(mappedTopSupporters[0]) } : null,
           },
         };
       },

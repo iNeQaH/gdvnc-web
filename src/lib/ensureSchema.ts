@@ -24,6 +24,7 @@ async function columnSet(db: PrismaClient) {
         OR (table_name = 'ClanBan' AND column_name = 'id')
         OR (table_name = 'Badge' AND column_name IN ('systemKey', 'color2', 'effect'))
         OR (table_name = 'SiteAnnouncement' AND column_name IN ('expiresAt', 'likedUserIds', 'poll'))
+        OR (table_name = 'HomePost' AND column_name IN ('id', 'likedUserIds'))
       )
   `;
   return new Set(rows.map((row) => `${row.table_name}.${row.column_name}`));
@@ -375,6 +376,9 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
   if (!have.has('Clan.socialLinks')) {
     await db.$executeRawUnsafe(`ALTER TABLE "Clan" ADD COLUMN IF NOT EXISTS "socialLinks" JSONB`);
   }
+  if (!have.has('HomePost.likedUserIds')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "HomePost" ADD COLUMN IF NOT EXISTS "likedUserIds" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]`);
+  }
   if (!have.has('HomePost.id')) {
     await db.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "HomePost" (
@@ -390,6 +394,7 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "expiresAt" TIMESTAMP(3),
+        "likedUserIds" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
         CONSTRAINT "HomePost_pkey" PRIMARY KEY ("id")
       )
     `);
@@ -727,6 +732,7 @@ export const REQUIRED_SCHEMA_KEYS = [
   'RedeemCode.rewardTheme',
   'Clan.socialLinks',
   'HomePost.id',
+  'HomePost.likedUserIds',
 ];
 
 export async function applyPendingSchema(db: PrismaClient): Promise<void> {

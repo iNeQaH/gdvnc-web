@@ -20,6 +20,7 @@ interface HomePost {
   videoUrl?: string | null;
   poll?: any;
   isPinned: boolean;
+  likedUserIds?: string[];
   createdAt: string;
   author: {
     username: string;
@@ -120,6 +121,39 @@ export default function HomePage() {
     }
   };
 
+  const handleLikePost = async (postId: string) => {
+    if (!currentUser) {
+      alert('Vui lòng đăng nhập để thả tim bài viết!');
+      return;
+    }
+    const targetPost = posts.find((p) => p.id === postId);
+    if (!targetPost) return;
+
+    const currentLikes = targetPost.likedUserIds || [];
+    const isLiked = currentLikes.includes(currentUser.id);
+    const nextLikes = isLiked
+      ? currentLikes.filter((uid) => uid !== currentUser.id)
+      : [...currentLikes, currentUser.id];
+
+    // Optimistic update
+    setPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, likedUserIds: nextLikes } : p))
+    );
+
+    try {
+      const res = await fetch(`/api/home-posts/${postId}/react`, { method: 'POST' });
+      if (!res.ok) {
+        setPosts((prev) =>
+          prev.map((p) => (p.id === postId ? { ...p, likedUserIds: currentLikes } : p))
+        );
+      }
+    } catch {
+      setPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, likedUserIds: currentLikes } : p))
+      );
+    }
+  };
+
   const getYoutubeEmbed = (url: string) => {
     try {
       const parsed = new URL(url);
@@ -129,7 +163,7 @@ export default function HomePage() {
       } else if (parsed.hostname.includes('youtu.be')) {
         id = parsed.pathname.slice(1);
       }
-      return id ? `https://www.youtube-nocookie.com/embed/${id}` : null;
+      return id ? `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&playsinline=1` : null;
     } catch {
       return null;
     }
@@ -242,19 +276,32 @@ export default function HomePage() {
                       </div>
                     )}
 
-                    {/* EXTERNAL LINK */}
-                    {post.linkUrl && (
-                      <div className="pt-1">
+                    {/* FOOTER: LIKE BUTTON & EXTERNAL LINK */}
+                    <div className="flex items-center justify-between pt-3 border-t border-border/40 gap-3 flex-wrap">
+                      <button
+                        onClick={() => handleLikePost(post.id)}
+                        className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none ${
+                          post.likedUserIds?.includes(currentUser?.id)
+                            ? 'bg-rose-500/15 text-rose-500 border-rose-500/40 shadow-xs'
+                            : 'bg-card/60 text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 border-border/40'
+                        }`}
+                        title="Thả tim bài viết"
+                      >
+                        <Heart className={`w-4 h-4 transition-transform ${post.likedUserIds?.includes(currentUser?.id) ? 'fill-current text-rose-500 scale-110' : ''}`} />
+                        <span>{post.likedUserIds?.length || 0}</span>
+                      </button>
+
+                      {post.linkUrl && (
                         <a
                           href={post.linkUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-primary hover:underline"
+                          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-primary hover:underline ml-auto"
                         >
                           Xem chi tiết liên kết <ExternalLink className="w-3.5 h-3.5" />
                         </a>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -266,31 +313,26 @@ export default function HomePage() {
           )}
         </section>
 
-      {/* 2. THÔNG BÁO MỚI NHẤT: 1 ITEM DUY NHẤT, KHÔNG CÓ TIÊU ĐỀ BOX, HIỆN ĐẦY ĐỦ TIÊU ĐỀ & NỘI DUNG NGẮN */}
+      {/* 2. THÔNG BÁO MỚI NHẤT: 1 ITEM DUY NHẤT, KHÔNG CÓ TIÊU ĐỀ BOX, CHỈ HIỆN TIÊU ĐỀ */}
       {latestAnnouncement && (
         <Link
           href={`/announcements/${latestAnnouncement.id}`}
-          className="ui-card p-4 sm:p-5 rounded-2xl border border-sky-500/30 hover:border-sky-500/60 bg-gradient-to-r from-sky-500/10 via-card/90 to-card/60 transition-all flex items-start justify-between gap-4 group shadow-xs select-none"
+          className="ui-card p-3.5 sm:p-4 rounded-2xl border border-sky-500/30 hover:border-sky-500/60 bg-gradient-to-r from-sky-500/10 via-card/90 to-card/60 transition-all flex items-center justify-between gap-4 group shadow-xs select-none"
         >
-          <div className="flex items-start gap-3.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center shrink-0 mt-0.5">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center shrink-0">
               <Megaphone className="w-4 h-4" />
             </div>
-            <div className="space-y-1.5 min-w-0">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <span className="font-extrabold text-sm sm:text-base text-foreground group-hover:text-sky-400 transition-colors drop-shadow-xs">
-                  {latestAnnouncement.title}
-                </span>
-                <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">
-                  • {new Date(latestAnnouncement.createdAt).toLocaleDateString('vi-VN')}
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm text-foreground/80 line-clamp-2 leading-relaxed">
-                {latestAnnouncement.excerpt || latestAnnouncement.body || 'Nhấn để xem chi tiết thông báo mới nhất từ ban quản trị.'}
-              </p>
+            <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
+              <span className="font-extrabold text-sm sm:text-base text-foreground group-hover:text-sky-400 transition-colors drop-shadow-xs truncate">
+                {latestAnnouncement.title}
+              </span>
+              <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">
+                • {new Date(latestAnnouncement.createdAt).toLocaleDateString('vi-VN')}
+              </span>
             </div>
           </div>
-          <div className="shrink-0 text-xs font-bold text-sky-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform pt-1">
+          <div className="shrink-0 text-xs font-bold text-sky-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
             <span className="hidden sm:inline">Chi tiết</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>
