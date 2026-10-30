@@ -1313,6 +1313,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
   const allMembers = [
     ...(clan.membersGrouped?.leader ? [clan.membersGrouped.leader] : []),
     ...(clan.membersGrouped?.mods || []),
+    ...(clan.membersGrouped?.contributors || []),
     ...(clan.membersGrouped?.members || []),
   ];
 
@@ -1942,124 +1943,21 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
           <ClanHardestSlideshow topBeaten={clan.top5Beaten || []} isEn={isEn} />
         </div>
 
-        {/* ROW 4: MEDIA SHOWCASE & FAVORITE LEVEL (If set) */}
-        {(videoEmbedUrl || clan.favoriteLevel) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
-            {videoEmbedUrl && (
-              <div
-                className="ui-card rounded-2xl border p-4 space-y-3"
-                style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
-              >
-                <h2 className="text-xs font-bold ui-title flex items-center gap-2">
-                  <Video className="w-3.5 h-3.5 text-red-400" /> {isEn ? 'Clan Showcase Video' : 'Video giới thiệu Clan'}
-                </h2>
-                <div className="aspect-video w-full rounded-xl overflow-hidden border bg-black shadow-inner" style={{ borderColor: 'var(--border-ui)' }}>
-                  <iframe
-                    src={videoEmbedUrl}
-                    title="Clan Trailer"
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              </div>
-            )}
-
-            {clan.favoriteLevel && (
-              <div
-                className="ui-card rounded-2xl border p-4 space-y-3 flex flex-col justify-between"
-                style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
-              >
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xs font-bold ui-title flex items-center gap-2 text-pink-400">
-                    <Heart className="w-3.5 h-3.5 fill-pink-500" /> {isEn ? 'Favorite Clan Level' : 'Màn chơi yêu thích của Clan'}
-                  </h2>
-                  <span className="font-mono text-xs font-black text-amber-500 dark:text-amber-400 px-2.5 py-0.5 rounded-lg border border-amber-500/30 bg-amber-500/10">
-                    {clan.favoriteLevel.basePp || 0} Pt
-                  </span>
-                </div>
-
-                {/* Level Card Showcase with Thumbnail or Hero Background */}
-                <div
-                  className="relative aspect-video w-full rounded-xl overflow-hidden border flex flex-col justify-between p-3.5 sm:p-4 group transition-all"
-                  style={{
-                    backgroundColor: 'var(--bg-subtle)',
-                    borderColor: 'var(--border-subtle)',
-                  }}
-                >
-                  {/* Background: YouTube thumbnail if available, or dark gradient artwork */}
-                  {clan.favoriteLevel.youtubeId ? (
-                    <>
-                      <img
-                        src={`https://img.youtube.com/vi/${clan.favoriteLevel.youtubeId}/hqdefault.jpg`}
-                        alt=""
-                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/30 pointer-events-none" />
-                    </>
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/80 via-slate-900/90 to-purple-950/80 pointer-events-none" />
-                  )}
-
-                  {/* Top Level Metadata Badges */}
-                  <div className="relative z-10 flex items-center justify-between gap-2">
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-black/60 text-white/90 backdrop-blur-xs border border-white/10">
-                      ID: #{clan.favoriteLevel.gdLevelId || clan.favoriteLevel.id}
-                    </span>
-                    {clan.favoriteLevel.mode && (
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-black/60 text-sky-400 backdrop-blur-xs border border-white/10">
-                        {clan.favoriteLevel.mode}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Center/Bottom Level Info with prominent Difficulty Icon */}
-                  <div className="relative z-10 flex items-end justify-between gap-3 mt-auto">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="p-1 rounded-xl bg-black/60 backdrop-blur-xs border border-white/15 shrink-0 shadow-lg group-hover:scale-110 transition-transform">
-                        <DifficultyRatingIcon
-                          difficultyFace={clan.favoriteLevel.difficultyFace}
-                          ratingType={clan.favoriteLevel.ratingType}
-                          className="w-10 h-10 sm:w-12 sm:h-12"
-                        />
-                      </div>
-                      <div className="min-w-0 text-white drop-shadow-md">
-                        <h3 className="font-black text-base sm:text-lg truncate group-hover:text-amber-300 transition-colors">
-                          {clan.favoriteLevel.name}
-                        </h3>
-                        <p className="text-xs text-white/80 truncate">
-                          {isEn ? 'by' : 'bởi'} <span className="font-bold text-white">{clan.favoriteLevel.creatorName || 'GD Creator'}</span>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2 pt-1">
-                  <Link
-                    href={levelPath(clan.favoriteLevel)}
-                    className="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-center border flex items-center justify-center gap-1.5 transition-all hover:brightness-110 shadow-xs cursor-pointer"
-                    style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-fg)', borderColor: 'var(--accent)' }}
-                  >
-                    <span>{isEn ? 'View Level Details' : 'Chi tiết màn chơi'}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                  {clan.favoriteLevel.youtubeId && (
-                    <a
-                      href={`https://youtu.be/${clan.favoriteLevel.youtubeId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="py-2 px-3 rounded-xl text-xs font-bold border border-red-500/40 text-red-500 hover:bg-red-500/10 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer shadow-xs"
-                      title={isEn ? 'Watch completion on YouTube' : 'Xem video hoàn thành trên YouTube'}
-                    >
-                      <Video className="w-3.5 h-3.5 text-red-500" />
-                      <span>YouTube</span>
-                    </a>
-                  )}
-                </div>
-              </div>
-            )}
+        {/* ROW 4: MEDIA SHOWCASE (If set) */}
+        {videoEmbedUrl && (
+          <div
+            className="ui-card rounded-2xl border p-4 shadow-xl"
+            style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-card)' }}
+          >
+            <div className="aspect-video w-full rounded-xl overflow-hidden border bg-black shadow-inner" style={{ borderColor: 'var(--border-ui)' }}>
+              <iframe
+                src={videoEmbedUrl}
+                title="Clan Trailer"
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
           </div>
         )}
 

@@ -768,14 +768,14 @@ export default function ClanSettingsPage({
                   <span>{isEn ? 'Clan Members' : 'Số lượng thành viên'}</span>
                 </span>
                 <span className="text-xs font-extrabold ui-title">
-                  {clan.memberCount ?? (1 + (clan.membersGrouped?.mods?.length || 0) + (clan.membersGrouped?.members?.length || 0))} / {tierInfo.maxMembers} {isEn ? 'members' : 'thành viên'}
+                  {clan.memberCount ?? (1 + (clan.membersGrouped?.mods?.length || 0) + (clan.membersGrouped?.contributors?.length || 0) + (clan.membersGrouped?.members?.length || 0))} / {tierInfo.maxMembers} {isEn ? 'members' : 'thành viên'}
                 </span>
               </label>
               <div className="w-full px-4 py-2.5 rounded-xl border text-xs font-bold flex items-center justify-between bg-slate-50 dark:bg-black/30 border-slate-200 dark:border-white/10">
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-sky-400" />
                   <span className="ui-title">
-                    {clan.memberCount ?? (1 + (clan.membersGrouped?.mods?.length || 0) + (clan.membersGrouped?.members?.length || 0))} / {tierInfo.maxMembers} {isEn ? 'members' : 'thành viên'}
+                    {clan.memberCount ?? (1 + (clan.membersGrouped?.mods?.length || 0) + (clan.membersGrouped?.contributors?.length || 0) + (clan.membersGrouped?.members?.length || 0))} / {tierInfo.maxMembers} {isEn ? 'members' : 'thành viên'}
                   </span>
                 </div>
                 <span className="text-[11px] ui-dim font-medium">
@@ -1155,7 +1155,10 @@ export default function ClanSettingsPage({
               {(() => {
                 const leader = clan.membersGrouped?.leader;
                 const mods: any[] = clan.membersGrouped?.mods || [];
-                const regularMembers: any[] = clan.membersGrouped?.members || [];
+                const regularMembers: any[] = [
+                  ...(clan.membersGrouped?.contributors || []),
+                  ...(clan.membersGrouped?.members || []),
+                ];
                 const allList = [
                   ...(leader ? [{ ...leader, role: 'LEADER' }] : []),
                   ...mods.map((m) => ({ ...m, role: 'MODERATOR' })),
@@ -1586,6 +1589,11 @@ export default function ClanSettingsPage({
                 {clan.membersGrouped?.mods?.map((m: any) => (
                   <option key={m.userId} value={m.userId}>
                     [Mod] {m.user.username}
+                  </option>
+                ))}
+                {clan.membersGrouped?.contributors?.map((m: any) => (
+                  <option key={m.userId} value={m.userId}>
+                    {m.user.username}
                   </option>
                 ))}
                 {clan.membersGrouped?.members?.map((m: any) => (

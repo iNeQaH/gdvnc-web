@@ -22,6 +22,18 @@ export function getVnTodayString(nowMs: number = Date.now()): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+/**
+ * Trả về chuỗi ngày hôm qua theo múi giờ Việt Nam (UTC+7): "YYYY-MM-DD"
+ */
+export function getVnYesterdayString(nowMs: number = Date.now()): string {
+  const vnMs = nowMs + 7 * 3600_000 - 24 * 3600_000;
+  const vnDate = new Date(vnMs);
+  const yyyy = vnDate.getUTCFullYear();
+  const mm = String(vnDate.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(vnDate.getUTCDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export interface ActivityPointsResult {
   activityPoints: number;
   activityDate: string;
@@ -53,6 +65,7 @@ export function computeActivityPoints(
   nowMs: number = Date.now()
 ): ActivityPointsResult {
   const todayVn = getVnTodayString(nowMs);
+  const yesterdayVn = getVnYesterdayString(nowMs);
 
   let baselineStars: number;
   let baselineMoons: number;
@@ -60,23 +73,21 @@ export function computeActivityPoints(
 
   if (userState.activityDate === todayVn) {
     // Đã vào profile trước đó trong ngày hôm nay: giữ nguyên baseline ngày hôm trước
-    baselineStars = userState.activityPrevStars ?? userState.gdStars ?? 0;
-    baselineMoons = userState.activityPrevMoons ?? userState.gdMoons ?? 0;
-    baselineDemons = userState.activityPrevDemons ?? userState.gdDemons ?? 0;
+    baselineStars = userState.activityPrevStars ?? userState.gdStars ?? currentStats.stars;
+    baselineMoons = userState.activityPrevMoons ?? userState.gdMoons ?? currentStats.moons;
+    baselineDemons = userState.activityPrevDemons ?? userState.gdDemons ?? currentStats.demons;
+  } else if (userState.activityDate === yesterdayVn) {
+    // Ngày mới liên tiếp (hôm qua có hoạt động/đồng bộ):
+    // Chỉ số chốt sổ của ngày hôm qua chính là baseline để tính điểm tăng trưởng cho hôm nay
+    baselineStars = userState.gdStars ?? currentStats.stars;
+    baselineMoons = userState.gdMoons ?? currentStats.moons;
+    baselineDemons = userState.gdDemons ?? currentStats.demons;
   } else {
-    // Lần đầu vào trong ngày mới:
-    // Nếu user chưa từng có stats (khởi tạo lần đầu): baseline chính là currentStats để không bị nhảy điểm đột biến
-    const hasExistingStats = (userState.gdStars ?? 0) > 0 || (userState.activityPrevStars ?? 0) > 0;
-    if (!hasExistingStats && (currentStats.stars > 0 || currentStats.moons > 0 || currentStats.demons > 0)) {
-      baselineStars = currentStats.stars;
-      baselineMoons = currentStats.moons;
-      baselineDemons = currentStats.demons;
-    } else {
-      // Các chỉ số đang lưu trong DB chính là chốt sổ của ngày hôm trước
-      baselineStars = userState.gdStars ?? 0;
-      baselineMoons = userState.gdMoons ?? 0;
-      baselineDemons = userState.gdDemons ?? 0;
-    }
+    // Lần đầu vào hoặc không hoạt động hôm qua (bỏ lỡ >= 1 ngày, hoặc thành viên mới):
+    // Thiết lập baseline bằng đúng chỉ số hiện tại để KHÔNG bị cộng dồn stats cũ của nhiều ngày/tuần trước
+    baselineStars = currentStats.stars;
+    baselineMoons = currentStats.moons;
+    baselineDemons = currentStats.demons;
   }
 
   const deltaStars = Math.max(0, currentStats.stars - baselineStars);

@@ -161,6 +161,9 @@ export async function POST(req: Request) {
         username: true,
         role: true,
         supporterUntil: true,
+        gdStars: true,
+        gdMoons: true,
+        gdDemons: true,
         spGrants: {
           orderBy: { expiresAt: 'asc' },
           select: { id: true, amount: true, expiresAt: true },
@@ -262,6 +265,18 @@ export async function POST(req: Request) {
           clanId: c.id,
           userId: user.id,
           role: 'LEADER',
+        },
+      });
+
+      // Thiết lập baseline ngày tạo clan: không cộng dồn stats cũ
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          activityPoints: 0,
+          activityDate: getVnTodayString(),
+          activityPrevStars: user.gdStars || 0,
+          activityPrevMoons: user.gdMoons || 0,
+          activityPrevDemons: user.gdDemons || 0,
         },
       });
 
