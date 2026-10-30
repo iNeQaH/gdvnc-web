@@ -1,3 +1,4 @@
+import { getVnTodayString } from '@/lib/activityPoints';
 import prisma from '@/lib/prisma';
 import { LevelMode, RecordStatus } from '@prisma/client';
 import { pickDecoAndLayoutBadges, cpFromVnLevels } from '@/lib/creatorPoints';
@@ -573,6 +574,107 @@ export async function getStatLeaderboard(stat: 'stars' | 'moons' | 'demons') {
       statValue: statVal,
       classicPp: stat === 'stars' ? statVal : p.classicPp,
       platformerPp: stat === 'moons' ? statVal : p.platformerPp,
+      gdStars: p.gdStars,
+      gdMoons: p.gdMoons,
+      gdDemons: p.gdDemons,
+      isLegacy: false as const,
+      topBadges: [...(p.userBadges || []).map((ub: any) => ub.badge), ...buildLeaderboardRoles(p)]
+        .sort((a, b) => (b.sortOrder ?? 0) - (a.sortOrder ?? 0))
+        .slice(0, 3),
+    };
+  });
+}
+
+
+export async function getActivityLeaderboard() {
+  const todayVn = getVnTodayString();
+  const players = await prisma.user.findMany({
+    where: {
+      activityDate: todayVn,
+      activityPoints: { gt: 0 },
+      isBanned: false,
+    },
+    select: {
+      id: true,
+      username: true,
+      displayName: true,
+      gdUsername: true,
+      avatarUrl: true,
+      role: true,
+      country: true,
+      supporterUntil: true,
+      gdVerified: true,
+      nameColor: true,
+      nameGradient: true,
+      nameGlow: true,
+      nameFont: true,
+      activityPoints: true,
+      activityDate: true,
+      gdStars: true,
+      gdMoons: true,
+      gdDemons: true,
+      activityPrevStars: true,
+      activityPrevMoons: true,
+      activityPrevDemons: true,
+      displayedBadgeIds: true,
+      hideAllBadges: true,
+      userBadges: {
+        include: { badge: true },
+      },
+      clanMember: {
+        select: {
+          role: true,
+          clan: {
+            select: {
+              name: true,
+              tag: true,
+              slug: true,
+              color: true,
+              colorGradient: true,
+              isSuspended: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: [
+      { activityPoints: 'desc' },
+      { gdStars: 'desc' },
+      { username: 'asc' },
+    ],
+    take: 100,
+  });
+
+  return players.map((p, idx) => {
+    const starsGained = Math.max(0, (p.gdStars || 0) - (p.activityPrevStars || 0));
+    const moonsGained = Math.max(0, (p.gdMoons || 0) - (p.activityPrevMoons || 0));
+    const demonsGained = Math.max(0, (p.gdDemons || 0) - (p.activityPrevDemons || 0));
+
+    return {
+      id: p.id,
+      rank: idx + 1,
+      username: p.username,
+      displayName: p.displayName || p.gdUsername || p.username,
+      gdUsername: p.gdUsername,
+      avatarUrl: p.avatarUrl,
+      role: p.role,
+      country: p.country,
+      supporterUntil: p.supporterUntil,
+      isSuperAdmin: isSuperAdminUser(p),
+      gdVerified: p.gdVerified,
+      nameColor: p.nameColor,
+      nameGradient: p.nameGradient,
+      nameGlow: p.nameGlow,
+      nameFont: p.nameFont,
+      clan: sanitizeUserClan(p.clanMember?.clan),
+      clanRole: p.clanMember?.role,
+      activityPoints: p.activityPoints,
+      starsGained,
+      moonsGained,
+      demonsGained,
+      statValue: p.activityPoints,
+      classicPp: p.activityPoints,
+      platformerPp: 0,
       gdStars: p.gdStars,
       gdMoons: p.gdMoons,
       gdDemons: p.gdDemons,

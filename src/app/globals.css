@@ -874,3 +874,65 @@ input[type="number"] {
 
 
 @import "../styles/themes/glitch.css";
+
+
+@keyframes newsTicker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-news-ticker {
+  display: flex;
+  width: max-content;
+  animation: newsTicker 35s linear infinite;
+}
+
+.animate-news-ticker:hover {
+  animation-play-state: paused;
+}
+
+/* Dynamic subtle continuous hue cycle for leaderboard highlights */
+@keyframes cardHuePulse {
+  0%, 100% {
+    filter: hue-rotate(0deg);
+  }
+  33% {
+    filter: hue-rotate(28deg);
+  }
+  66% {
+    filter: hue-rotate(-22deg);
+  }
+}
+
+.animate-hue-cycle {
+  animation: cardHuePulse 8s ease-in-out infinite;
+}
+
+/* Asynchronous gentle fade in/out glow pulse for highlights */
+@keyframes smoothGlowBreathe {
+  0%, 15%, 85%, 100% {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  45% {
+    box-shadow: 0 0 var(--glow-radius, 20px) var(--glow-color, rgba(245, 158, 11, 0.5)),
+                0 0 calc(var(--glow-radius, 20px) * 0.4) var(--glow-color, rgba(245, 158, 11, 0.3)),
+                0 4px 14px rgba(0, 0, 0, 0.12);
+    border-color: var(--glow-border, currentColor);
+  }
+  60% {
+    box-shadow: 0 0 calc(var(--glow-radius, 20px) * 0.6) var(--glow-color, rgba(245, 158, 11, 0.35));
+    border-color: var(--glow-border, currentColor);
+  }
+}
+
+.animate-card-breathe {
+  animation: 
+    smoothGlowBreathe var(--breathe-duration, 3.8s) ease-in-out infinite,
+    cardHuePulse var(--hue-duration, 8s) ease-in-out infinite;
+  animation-delay: var(--breathe-delay, 0s), var(--hue-delay, 0s);
+  will-change: box-shadow, border-color, filter;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+

@@ -47,6 +47,11 @@ model User {
   gdVerified    Boolean   @default(false)
   country       String?   @default("Vietnam")
   supporterUntil DateTime?
+  hideSupporterPublic Boolean @default(false)
+  supporterTotalMonths Int    @default(0)
+  supporterTotalAmount Int    @default(0)
+  lastSupportedAt      DateTime?
+  ownedThemes   String[]  @default([])
   isBanned       Boolean   @default(false)
   bannedUntil    DateTime?
   profileTheme   String?   @default("sky")
@@ -91,6 +96,7 @@ model User {
   reviewedRecords Record[]        @relation("RecordReviewer")
   notifications   Notification[]
   authoredAnnouncements SiteAnnouncement[] @relation("AnnouncementAuthor")
+  homePosts             HomePost[]         @relation("HomePostAuthor")
   announcementReads AnnouncementRead[]
   userBadges      UserBadge[]
   displayedBadgeIds String[]      @default([])
@@ -420,6 +426,8 @@ model SiteAnnouncement {
   @@index([expiresAt])
 }
 
+
+
 model AnnouncementRead {
   announcementId String
   userId         String
@@ -508,6 +516,7 @@ model RedeemCode {
   code        String          @unique
   months      Int             @default(0)
   rewardType  String          @default("SUPPORTER_DAYS")
+  rewardTheme String?
   days        Int             @default(30)
   spAmount    Int             @default(0)
   maxUses     Int?            @default(1)
@@ -523,6 +532,8 @@ model RedeemCode {
   @@index([isActive])
   @@index([expiresAt])
 }
+
+
 
 model RedeemCodeUse {
   id         String     @id @default(uuid())
@@ -569,6 +580,7 @@ model Clan {
   colorGradient   String?
   themeColor      String?
   themeGradient   String?
+  socialLinks     Json?
 
   isSuspended      Boolean     @default(false)
   gracePeriodUntil DateTime?
@@ -648,6 +660,8 @@ model ClanBan {
   @@index([expiresAt])
 }
 
+
+
 model UserSpGrant {
   id        String   @id @default(uuid())
   userId    String
@@ -661,5 +675,22 @@ model UserSpGrant {
   @@index([expiresAt])
 }
 
+model HomePost {
+  id          String    @id @default(uuid())
+  title       String
+  body        String    @db.Text
+  linkUrl     String?
+  levelGdId   String?
+  videoUrl    String?
+  poll        Json?
+  isPinned    Boolean   @default(false)
+  authorId    String?
+  author      User?     @relation("HomePostAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  expiresAt   DateTime?
 
-
+  @@index([createdAt])
+  @@index([isPinned])
+  @@index([authorId])
+}

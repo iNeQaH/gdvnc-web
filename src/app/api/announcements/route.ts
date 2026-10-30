@@ -6,6 +6,7 @@ import { getSessionUser, requireFullAdmin } from '@/lib/auth';
 import { clipText } from '@/lib/validate';
 import { sanitizeFaqHtml } from '@/lib/faqSanitize';
 import { getClientIp } from '@/lib/requestIp';
+import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import {
   canSeeAnnouncement,
@@ -187,6 +188,8 @@ export async function POST(req: Request) {
       const { appEventEmitter } = require('@/lib/eventEmitter');
       appEventEmitter.emit('notification', { announcementId: row.id, audience: row.audience });
     } catch {}
+
+    bustPublicCache(CACHE_TAGS.home);
 
     return NextResponse.json({
       success: true,

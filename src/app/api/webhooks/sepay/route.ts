@@ -210,7 +210,12 @@ export async function POST(req: Request) {
 
     await prisma.user.update({
       where: { id: targetUser.id },
-      data: { supporterUntil: nextDate },
+      data: {
+        supporterUntil: nextDate,
+        supporterTotalMonths: { increment: monthsToGrant },
+        supporterTotalAmount: { increment: transferAmount },
+        lastSupportedAt: now,
+      },
     });
 
     // Đồng bộ thời hạn các SP Coin đã có của user theo hạn Supporter mới

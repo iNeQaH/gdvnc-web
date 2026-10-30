@@ -18,6 +18,7 @@ import {
   Sparkles,
   Lock,
   Users,
+  Globe,
 } from 'lucide-react';
 import ColorPicker from '@/components/ColorPicker';
 import { CircularAnglePicker } from '@/components/CircularAnglePicker';
@@ -71,6 +72,10 @@ export default function ClanSettingsModal({
   const [coverUrl, setCoverUrl] = useState(clan.coverUrl || '');
   const [videoUrl, setVideoUrl] = useState(clan.videoUrl || '');
   const [favoriteLevelId, setFavoriteLevelId] = useState(clan.favoriteLevelId || '');
+  const [discordLink, setDiscordLink] = useState(clan.socialLinks?.discord || '');
+  const [messengerLink, setMessengerLink] = useState(clan.socialLinks?.messenger || '');
+  const [steamLink, setSteamLink] = useState(clan.socialLinks?.steam || '');
+  const [zaloLink, setZaloLink] = useState(clan.socialLinks?.zalo || '');
   const [color, setColor] = useState(clan.color || '#f59e0b');
 
   // Gradient & Theme options for Tier 2+
@@ -190,6 +195,12 @@ export default function ClanSettingsModal({
         coverUrl: coverUrl.trim() || null,
         videoUrl: videoUrl.trim() || null,
         favoriteLevelId: favoriteLevelId.trim() || null,
+        socialLinks: {
+          discord: discordLink.trim() || undefined,
+          messenger: messengerLink.trim() || undefined,
+          steam: steamLink.trim() || undefined,
+          zalo: zaloLink.trim() || undefined,
+        },
         color: color || null,
         themeColor: themeColor || null,
       };
@@ -521,6 +532,79 @@ export default function ClanSettingsModal({
                 placeholder={isEn ? 'Introduce your clan, Discord link, rules...' : 'Giới thiệu về Clan của bạn, link Discord, quy định...'}
                 className="w-full px-3 py-2 rounded-xl text-xs resize-y ui-input"
               />
+            </div>
+          </div>
+
+          {/* Social Links for Clan */}
+          <div className="p-4 rounded-xl border space-y-3" style={{ borderColor: 'var(--border-ui)', backgroundColor: 'var(--bg-subtle)' }}>
+            <div>
+              <div className="text-xs font-bold ui-title flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 text-sky-400" />
+                <span>{isEn ? 'Clan Social Links' : 'Liên Kết Mạng Xã Hội Clan'}</span>
+              </div>
+              <div className="text-[11px] ui-dim mt-0.5">
+                {isEn
+                  ? 'Displayed as logo buttons at the bottom of the Clan About box.'
+                  : 'Hiển thị dưới dạng nút logo dưới cùng của box Giới thiệu Clan.'}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold ui-title flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#5865F2]" />
+                  Discord
+                </label>
+                <input
+                  type="url"
+                  value={discordLink}
+                  onChange={(e) => setDiscordLink(e.target.value)}
+                  placeholder="https://discord.gg/..."
+                  className="w-full px-3 py-2 rounded-xl text-xs ui-input"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold ui-title flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#006AFF]" />
+                  Messenger
+                </label>
+                <input
+                  type="url"
+                  value={messengerLink}
+                  onChange={(e) => setMessengerLink(e.target.value)}
+                  placeholder="https://m.me/..."
+                  className="w-full px-3 py-2 rounded-xl text-xs ui-input"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold ui-title flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#171a21]" />
+                  Steam
+                </label>
+                <input
+                  type="url"
+                  value={steamLink}
+                  onChange={(e) => setSteamLink(e.target.value)}
+                  placeholder="https://steamcommunity.com/..."
+                  className="w-full px-3 py-2 rounded-xl text-xs ui-input"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold ui-title flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#0068FF]" />
+                  Zalo
+                </label>
+                <input
+                  type="url"
+                  value={zaloLink}
+                  onChange={(e) => setZaloLink(e.target.value)}
+                  placeholder="https://zalo.me/g/..."
+                  className="w-full px-3 py-2 rounded-xl text-xs ui-input"
+                />
+              </div>
             </div>
           </div>
 

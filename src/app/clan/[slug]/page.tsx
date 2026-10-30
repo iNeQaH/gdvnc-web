@@ -1,5 +1,7 @@
 'use client';
 
+import { ClanSocialButtons } from '@/components/clan/ClanSocialButtons';
+
 import React, { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -1928,6 +1930,9 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                   </p>
                 )}
               </div>
+
+              {/* Clan Social Buttons */}
+              <ClanSocialButtons socialLinks={clan.socialLinks} />
             </div>
           </div>
         </div>

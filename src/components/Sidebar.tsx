@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
-  Star, 
+  Star,
   Folder, 
   Goal,
   BookOpen,
@@ -29,6 +29,8 @@ import {
   Crosshair,
   Wrench,
   Flame,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { useTheme } from './ThemeProvider';
@@ -45,7 +47,7 @@ export const Sidebar = () => {
   const { showToast } = useToast();
   const pathname = usePathname();
   const router = useRouter();
-  const { theme, resolvedMode } = useTheme();
+  const { theme, resolvedMode, setMode } = useTheme();
   const isDark = resolvedMode === 'dark';
   const isLavender = theme === 'lavender';
   const { language, setLanguage, t } = useLanguage();
@@ -61,7 +63,7 @@ export const Sidebar = () => {
   const [eggAlertMessage, setEggAlertMessage] = useState<string | null>(null);
   const [isEggOverlayOpen, setIsEggOverlayOpen] = useState(false);
 
-  const isLbActive = pathname === '/' || pathname.startsWith('/leaderboard');
+  const isLbActive = pathname.startsWith('/leaderboard');
   const isLvlActive = pathname.startsWith('/levels');
   const [leaderboardExpanded, setLeaderboardExpanded] = useState(isLbActive);
   const [levelsExpanded, setLevelsExpanded] = useState(isLvlActive && !isLbActive);
@@ -345,8 +347,9 @@ export const Sidebar = () => {
   }, []);
 
   const leaderboardSubLinks = [
-    { href: '/leaderboard/classic', label: t('leaderboard.classic') || 'Classic', match: (p: string) => p === '/' || p === '/leaderboard' || p === '/leaderboard/classic' },
+    { href: '/leaderboard/classic', label: t('leaderboard.classic') || 'Classic', match: (p: string) => p === '/leaderboard' || p === '/leaderboard/classic' },
     { href: '/leaderboard/platformer', label: t('leaderboard.platformer') || 'Platformer', match: (p: string) => p === '/leaderboard/platformer' },
+    { href: '/leaderboard/activity', label: 'Daily', match: (p: string) => p === '/leaderboard/activity' },
     { href: '/leaderboard/challenge', label: t('tags.challenge') || 'Challenge', match: (p: string) => p === '/leaderboard/challenge' },
     { href: '/leaderboard/creator', label: t('leaderboard.creator') || 'Creator', match: (p: string) => p === '/leaderboard/creator' },
     { href: '/leaderboard/stars', label: 'Stars', match: (p: string) => p === '/leaderboard/stars' },
@@ -368,7 +371,6 @@ export const Sidebar = () => {
     { href: '/', label: t('nav.leaderboard'), icon: Star },
     { href: '/levels', label: t('nav.demonlist'), icon: Folder },
     { href: '/clan', label: t('nav.clan') || 'Clan', icon: Users },
-    { href: '/changelog', label: t('nav.changelog'), icon: ScrollText },
     { href: '/guidelines', label: t('nav.guidelines'), icon: BookOpen },
     // { href: '/timeline', label: t('nav.timeline'), icon: History },
     { href: '/submit', label: t('nav.submit'), icon: ClipboardList },
@@ -738,11 +740,32 @@ export const Sidebar = () => {
         {/* Bottom User Area, Language, Theme & Zoom Controls */}
         <div className="space-y-3 pt-4 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
           <div className="flex items-center gap-1.5 px-1 w-full">
+            {/* Toggle Sáng / Tối */}
+            <button
+              type="button"
+              onClick={() => setMode(isDark ? 'light' : 'dark')}
+              aria-label={isDark ? 'Chuyển sang chế độ sáng' : 'Chuyển sang chế độ tối'}
+              title={isDark ? 'Chuyển sang chế độ sáng' : 'Chuyển sang chế độ tối'}
+              className={`h-9 flex-1 min-w-0 rounded-xl border text-[11px] font-bold cursor-pointer hover:opacity-90 flex items-center justify-center transition-all ${isLavender ? 'tsumiki-btn !m-0 !mb-0' : ''}`}
+              style={{
+                backgroundColor: 'var(--bg-subtle)',
+                borderColor: isLavender ? undefined : 'var(--border-ui)',
+                color: isLavender ? undefined : 'var(--text-title)',
+              }}
+            >
+              {isDark ? (
+                <Sun className="w-4 h-4 text-amber-400 fill-amber-400/20" />
+              ) : (
+                <Moon className="w-4 h-4 text-sky-500 fill-sky-500/20" />
+              )}
+            </button>
+
+            {/* Language Switcher */}
             <button
               type="button"
               onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
               aria-label={t('sidebar.language')}
-              className={`h-9 flex-1 min-w-0 rounded-xl border text-[11px] font-bold font-sans leading-none cursor-pointer focus:outline-none flex items-center justify-center appearance-none p-0 ${isLavender ? 'tsumiki-btn' : ''}`}
+              className={`h-9 flex-1 min-w-0 rounded-xl border text-[11px] font-bold font-sans leading-none cursor-pointer focus:outline-none flex items-center justify-center appearance-none p-0 ${isLavender ? 'tsumiki-btn !m-0 !mb-0' : ''}`}
               style={{
                 backgroundColor: 'var(--bg-subtle)',
                 borderColor: isLavender ? undefined : "var(--border-ui)",
@@ -773,12 +796,7 @@ export const Sidebar = () => {
           </div>
 
 
-          <div className="flex items-center gap-2 px-1 pb-1">
-            <span className="text-[11px] font-medium ui-dim shrink-0 leading-none">{t('sidebar.theme')}</span>
-            <div className="min-w-0 flex-1">
-              <ThemeSwitcher dropUp />
-            </div>
-          </div>
+
 
           {/* User Status Card */}
           {currentUser ? (

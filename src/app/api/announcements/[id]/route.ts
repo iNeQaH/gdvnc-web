@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSessionUser, requireFullAdmin } from '@/lib/auth';
 import { clipText } from '@/lib/validate';
+import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 import {
   canSeeAnnouncement,
   isAnnouncementAudience,
@@ -97,6 +98,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       include: { author: { select: authorSelect } },
     });
 
+    bustPublicCache(CACHE_TAGS.home);
+
     return NextResponse.json({
       success: true,
       announcement: serializeAnnouncement(row, { includeTargets: true }),
@@ -147,6 +150,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   try {
     await prisma.announcementRead.deleteMany({ where: { announcementId: id } });
     await prisma.siteAnnouncement.delete({ where: { id } });
+    bustPublicCache(CACHE_TAGS.home);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return publicApiError(error, 'Failed to delete announcement.', 500);

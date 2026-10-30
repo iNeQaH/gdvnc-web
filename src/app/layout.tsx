@@ -7,6 +7,7 @@ import { ToastProvider } from "@/components/GlobalToast";
 import { Sidebar } from "@/components/Sidebar";
 import { SiteLockGate } from "@/components/SiteLockGate";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
+import { Footer } from "@/components/Footer";
 
 const inter = Inter({ subsets: ['latin', 'vietnamese'] });
 
@@ -72,15 +73,7 @@ export default function RootLayout({
                       {children}
                     </main>
 
-                    <footer 
-                      className="border-t py-4 text-center text-xs tracking-widest font-black ui-dim backdrop-blur-xl transition-colors" 
-                      style={{ 
-                        backgroundColor: 'color-mix(in srgb, var(--bg-card) 70%, transparent)',
-                        borderColor: 'var(--border-subtle)',
-                      }}
-                    >
-                      GDVN
-                    </footer>
+                    <Footer />
                   </div>
                 </div>
               </SiteLockGate>

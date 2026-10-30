@@ -441,6 +441,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         tag: rawClan.tag,
         slug: rawClan.slug,
         description: rawClan.description,
+        socialLinks: rawClan.socialLinks,
         avatarUrl: rawClan.avatarUrl,
         coverUrl: rawClan.coverUrl,
         videoUrl: rawClan.videoUrl,
@@ -531,6 +532,38 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ slug: 
 
     const updateData: any = {};
     if (body.description !== undefined) updateData.description = clipText(body.description, 1000)?.trim() || null;
+
+    if (body.socialLinks !== undefined) {
+      if (body.socialLinks === null) {
+        updateData.socialLinks = null;
+      } else if (typeof body.socialLinks === 'object') {
+        const cleanSocial: Record<string, string> = {};
+        const validateLink = (url: any) => {
+          if (typeof url !== 'string') return null;
+          const trimmed = url.trim();
+          if (!trimmed) return null;
+          if (!trimmed.startsWith('https://')) return null;
+          return trimmed.slice(0, 300);
+        };
+        if (body.socialLinks.discord) {
+          const d = validateLink(body.socialLinks.discord);
+          if (d) cleanSocial.discord = d;
+        }
+        if (body.socialLinks.messenger) {
+          const m = validateLink(body.socialLinks.messenger);
+          if (m) cleanSocial.messenger = m;
+        }
+        if (body.socialLinks.steam) {
+          const st = validateLink(body.socialLinks.steam);
+          if (st) cleanSocial.steam = st;
+        }
+        if (body.socialLinks.zalo) {
+          const z = validateLink(body.socialLinks.zalo);
+          if (z) cleanSocial.zalo = z;
+        }
+        updateData.socialLinks = Object.keys(cleanSocial).length > 0 ? cleanSocial : null;
+      }
+    }
 
     if (body.avatarUrl !== undefined) {
       const av = clipText(body.avatarUrl, 500)?.trim() || null;

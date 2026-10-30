@@ -59,7 +59,8 @@ export async function POST(req: Request) {
 
     const code = rawCode.toUpperCase();
 
-    const rewardType = body?.rewardType === 'SP_COIN' ? 'SP_COIN' : 'SUPPORTER_DAYS';
+    const rewardType = body?.rewardType === 'THEME' ? 'THEME' : (body?.rewardType === 'SP_COIN' ? 'SP_COIN' : 'SUPPORTER_DAYS');
+    const rewardTheme = rewardType === 'THEME' ? (String(body?.rewardTheme || 'futurism').trim()) : null;
     let days = 30;
     let months = 1;
     let spAmount = 0;

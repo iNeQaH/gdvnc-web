@@ -85,6 +85,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       nameGlow: true,
       nameFont: true,
       hasGlitchTheme: true,
+      ownedThemes: true,
+      hideSupporterPublic: true,
       easterEggCompleted: true,
       clanMember: {
         include: {
@@ -558,6 +560,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         supporterUntil: true,
         profileConfig: true,
         hasGlitchTheme: true,
+        ownedThemes: true,
+        hideSupporterPublic: true,
       },
     });
     if (!current) {
@@ -568,15 +572,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
       isSuperAdminUser(auth) ||
       Boolean(current.supporterUntil && new Date(current.supporterUntil) > new Date());
 
-    if (
-      body.profileTheme === 'glitch' &&
-      !current.hasGlitchTheme &&
-      !isSuperAdminUser(auth)
-    ) {
-      return NextResponse.json(
-        { error: 'Giao diện này chưa được mở khoá.' },
-        { status: 403 }
-      );
+    const SPECIAL_THEME_IDS = ['glitch', 'futurism', 'floral-cat', 'miku-teto', 'cute-cat', 'owo'];
+    if (body.profileTheme !== undefined && SPECIAL_THEME_IDS.includes(body.profileTheme)) {
+      const ownsTheme =
+        (current.ownedThemes || []).includes(body.profileTheme) ||
+        (body.profileTheme === 'glitch' && current.hasGlitchTheme) ||
+        isSuperAdminUser(auth);
+      if (!ownsTheme) {
+        return NextResponse.json(
+          { error: 'Giao diện đặc biệt này chưa được mở khóa.' },
+          { status: 403 }
+        );
+      }
     }
 
     if (
@@ -746,6 +753,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         nameColor: body.nameColor !== undefined ? (clipText(body.nameColor, 30)?.trim() || null) : undefined,
         nameGradient: body.nameGradient !== undefined ? (clipText(body.nameGradient, 120)?.trim() || null) : undefined,
         nameGlow: body.nameGlow !== undefined ? (clipText(body.nameGlow, 160)?.trim() || null) : undefined,
+        hideSupporterPublic: body.hideSupporterPublic !== undefined ? Boolean(body.hideSupporterPublic) : undefined,
         nameFont: body.nameFont !== undefined ? (clipText(body.nameFont, 50)?.trim() || null) : undefined,
       },
       select: {

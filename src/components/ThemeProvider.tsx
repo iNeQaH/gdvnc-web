@@ -7,7 +7,13 @@ import {
   getStoredCustomThemeConfig,
 } from '@/lib/customTheme';
 
-export type ThemeType = 'sky' | 'mint' | 'peach' | 'lavender' | 'mono' | 'sakura' | 'custom' | 'glitch';
+export type RegularThemeType = 'sky' | 'mint' | 'peach' | 'lavender' | 'mono' | 'sakura' | 'custom';
+export type SpecialThemeType = 'glitch';
+export type ThemeType = RegularThemeType | SpecialThemeType;
+
+export const REGULAR_THEMES: RegularThemeType[] = ['sky', 'mint', 'peach', 'lavender', 'mono', 'sakura', 'custom'];
+export const SPECIAL_THEMES: SpecialThemeType[] = ['glitch'];
+export const THEMES: ThemeType[] = [...REGULAR_THEMES, ...SPECIAL_THEMES];
 export type ModeType = 'light' | 'dark' | 'system';
 
 interface ThemeContextProps {
@@ -20,7 +26,7 @@ interface ThemeContextProps {
   setOverrideMode: (mode: ModeType | null) => void;
 }
 
-const THEMES: ThemeType[] = ['sky', 'mint', 'peach', 'lavender', 'mono', 'sakura', 'custom', 'glitch'];
+// THEMES exported above
 const MODES: ModeType[] = ['light', 'dark', 'system'];
 const RGB_VARS = ['--accent', '--accent-hover', '--accent-bg', '--accent-text', '--accent-fg'] as const;
 

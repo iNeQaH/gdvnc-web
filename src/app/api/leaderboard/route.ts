@@ -1,6 +1,6 @@
 import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
-import { getCreatorLeaderboard, getPlayerLeaderboard, getStatLeaderboard } from '@/lib/leaderboard';
+import { getCreatorLeaderboard, getPlayerLeaderboard, getStatLeaderboard, getActivityLeaderboard } from '@/lib/leaderboard';
 import { checkSiteLockAndBlock } from '@/lib/siteLock';
 import { cachedJson, CACHE_TAGS, PUBLIC_CACHE_HEADERS } from '@/lib/publicCache';
 
@@ -30,6 +30,10 @@ export async function GET(req: Request) {
         }
         if (mode === 'DEMONS') {
           const leaderboard = await getStatLeaderboard('demons');
+          return { success: true, leaderboard };
+        }
+        if (mode === 'ACTIVITY') {
+          const leaderboard = await getActivityLeaderboard();
           return { success: true, leaderboard };
         }
 

@@ -70,7 +70,7 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: auth.userId },
-      select: { id: true, username: true, supporterUntil: true, role: true, profileConfig: true, profileTheme: true, hasGlitchTheme: true },
+      select: { id: true, username: true, supporterUntil: true, role: true, profileConfig: true, profileTheme: true, hasGlitchTheme: true, ownedThemes: true },
     });
 
     if (!user) {
@@ -79,6 +79,87 @@ export async function POST(req: Request) {
 
     const now = new Date();
     const isGlitchTheme = redeemCode.rewardType === 'GLITCH_THEME';
+    const isTheme = redeemCode.rewardType === 'THEME';
+
+    if (isTheme) {
+      const targetTheme = redeemCode.rewardTheme || 'futurism';
+      const alreadyHasTheme = (user.ownedThemes || []).includes(targetTheme) || (targetTheme === 'glitch' && user.hasGlitchTheme);
+      if (alreadyHasTheme) {
+        return NextResponse.json({ error: 'Bạn đã sở hữu giao diện này rồi.' }, { status: 400 });
+      }
+
+      const updatedUser = await prisma.$transaction(async (tx) => {
+        const claimed = await tx.redeemCode.updateMany({
+          where: {
+            id: redeemCode.id,
+            isActive: true,
+            ...(isUnlimited || redeemCode.maxUses === null ? {} : { usedCount: { lt: redeemCode.maxUses } }),
+          },
+          data: {
+            usedCount: { increment: 1 },
+          },
+        });
+        if (claimed.count === 0) {
+          throw new Error('CODE_EXHAUSTED');
+        }
+
+        if (!isUnlimited && redeemCode.maxUses !== null && redeemCode.usedCount + 1 >= redeemCode.maxUses) {
+          await tx.redeemCode.updateMany({
+            where: { id: redeemCode.id, usedCount: { gte: redeemCode.maxUses } },
+            data: { isActive: false },
+          });
+        }
+
+        await tx.redeemCodeUse.create({
+          data: {
+            codeId: redeemCode.id,
+            userId: user.id,
+            months: 0,
+            rewardType: 'THEME',
+            days: 0,
+            spAmount: 0,
+          },
+        });
+
+        const newOwned = Array.from(new Set([...(user.ownedThemes || []), targetTheme]));
+        const updated = await tx.user.update({
+          where: { id: user.id },
+          data: {
+            ownedThemes: newOwned,
+            profileTheme: targetTheme,
+            ...(targetTheme === 'glitch' ? { hasGlitchTheme: true } : {}),
+          },
+          select: {
+            id: true,
+            username: true,
+            supporterUntil: true,
+            role: true,
+            profileConfig: true,
+            profileTheme: true,
+            hasGlitchTheme: true,
+            ownedThemes: true,
+          },
+        });
+
+        await tx.notification.create({
+          data: {
+            userId: user.id,
+            title: 'Mở khóa Giao diện thành công',
+            message: `Bạn đã kích hoạt mã thành công và sở hữu vĩnh viễn giao diện đặc biệt "${targetTheme}"!`,
+          },
+        });
+
+        return updated;
+      });
+
+      return NextResponse.json({
+        success: true,
+        rewardType: 'THEME',
+        theme: targetTheme,
+        user: updatedUser,
+        message: `Mở khóa thành công giao diện đặc biệt "${targetTheme}"!`,
+      });
+    }
     const isSpCoin = redeemCode.rewardType === 'SP_COIN';
 
     if (isGlitchTheme) {

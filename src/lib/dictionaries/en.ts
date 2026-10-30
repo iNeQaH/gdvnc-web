@@ -1,5 +1,6 @@
 const en = {
   // Navigation & Sidebar
+  'nav.home': 'Home',
   'nav.leaderboard': 'Leaderboard',
   'nav.demonlist': 'Levels',
   'nav.clan': 'Clan',

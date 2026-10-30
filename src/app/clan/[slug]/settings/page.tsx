@@ -7,6 +7,7 @@ import {
   Settings,
   ArrowLeft,
   Users,
+  Globe,
   Shield,
   Palette,
   Image as ImageIcon,
@@ -82,6 +83,10 @@ export default function ClanSettingsPage({
   const [coverUrl, setCoverUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [favoriteLevelId, setFavoriteLevelId] = useState('');
+  const [discordLink, setDiscordLink] = useState('');
+  const [messengerLink, setMessengerLink] = useState('');
+  const [steamLink, setSteamLink] = useState('');
+  const [zaloLink, setZaloLink] = useState('');
   const [uploadingCover, setUploadingCover] = useState(false);
 
   // Tag styling state
@@ -175,6 +180,10 @@ export default function ClanSettingsPage({
       // Populate form state
       setName(c.name || '');
       setDescription(c.description || '');
+      setDiscordLink(c.socialLinks?.discord || '');
+      setMessengerLink(c.socialLinks?.messenger || '');
+      setSteamLink(c.socialLinks?.steam || '');
+      setZaloLink(c.socialLinks?.zalo || '');
       setCoverUrl(c.coverUrl || '');
       setVideoUrl(c.videoUrl || '');
       setFavoriteLevelId(
@@ -307,6 +316,12 @@ export default function ClanSettingsPage({
         coverUrl: coverUrl.trim() || null,
         videoUrl: videoUrl.trim() || null,
         favoriteLevelId: favoriteLevelId.trim() || null,
+        socialLinks: {
+          discord: discordLink.trim() || undefined,
+          messenger: messengerLink.trim() || undefined,
+          steam: steamLink.trim() || undefined,
+          zalo: zaloLink.trim() || undefined,
+        },
         color: color || null,
         themeColor: themeColor || null,
       };

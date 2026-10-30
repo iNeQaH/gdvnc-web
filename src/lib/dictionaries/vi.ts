@@ -1,6 +1,7 @@
 import type { DictKey } from './keys';
 
 const vi: Record<DictKey, string> = {
+  'nav.home': 'Trang Chủ',
   'nav.leaderboard': 'Bảng Xếp Hạng',
   'nav.demonlist': 'Danh sách level',
   'nav.clan': 'Clan',

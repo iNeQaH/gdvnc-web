@@ -1,5 +1,6 @@
 'use client';
 
+import AppearanceTab from '@/components/settings/AppearanceTab';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -59,6 +60,7 @@ export default function SettingsPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'general' | 'profile' | 'appearance' | 'name_style'>('general');
+  const [profileSubTab, setProfileSubTab] = useState<'info' | 'theme'>('info');
   const [profileMode, setProfileMode] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -1061,8 +1063,39 @@ export default function SettingsPage() {
       )}
 
       {/* Tab 2: Profile (Thông Tin Cá Nhân) */}
+      {/* Tab 2: Profile (Trang Cá Nhân & Giao Diện Hồ Sơ) */}
       {activeTab === 'profile' && (
         <div className="space-y-6 animate-in fade-in-50 duration-200">
+          {/* Sub-tab navigation inside Profile */}
+          <div className="flex items-center gap-2 p-1.5 rounded-2xl w-fit border shadow-xs" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}>
+            <button
+              type="button"
+              onClick={() => setProfileSubTab('info')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                profileSubTab === 'info'
+                  ? 'bg-sky-500 text-white shadow-sm'
+                  : 'ui-dim hover:text-white'
+              }`}
+            >
+              <UserIcon className="w-3.5 h-3.5" />
+              <span>{language === 'en' ? 'Profile Details' : 'Thông Tin Cá Nhân'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setProfileSubTab('theme')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                profileSubTab === 'theme'
+                  ? 'bg-purple-500 text-white shadow-sm'
+                  : 'ui-dim hover:text-white'
+              }`}
+            >
+              <Palette className="w-3.5 h-3.5" />
+              <span>{language === 'en' ? 'Profile Theme & Appearance' : 'Giao Diện Hồ Sơ'}</span>
+            </button>
+          </div>
+
+          {profileSubTab === 'info' && (
+            <div className="space-y-6">
           <div className="ui-card p-6 space-y-6">
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
               <div>
@@ -1267,12 +1300,41 @@ export default function SettingsPage() {
               </button>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Tab 3: Appearance (Giao Diện) */}
-      {activeTab === 'appearance' && (
-        <div className="space-y-6 animate-in fade-in-50 duration-200">
+          {/* Toggle ẩn danh supporter */}
+          <div className="ui-card p-5 flex items-center justify-between gap-4 border" style={{ borderColor: 'var(--border-subtle)' }}>
+            <div className="space-y-0.5">
+              <div className="text-xs font-bold ui-title flex items-center gap-2">
+                <Heart className="w-3.5 h-3.5 text-pink-500" />
+                {language === 'en' ? 'Hide from Supporter Leaderboards' : 'Ẩn danh khỏi bảng vinh danh Supporter'}
+              </div>
+              <div className="text-[11px] ui-dim">
+                {language === 'en'
+                  ? 'When enabled, your username will not appear in the supporter highlights on the homepage.'
+                  : 'Khi bật, tên của bạn sẽ không xuất hiện trong các box vinh danh Supporter trên trang chủ.'}
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={Boolean(data?.hideSupporterPublic)}
+              onChange={async (e) => {
+                const nextVal = e.target.checked;
+                setData({ ...data, hideSupporterPublic: nextVal });
+                await fetch('/api/profile/' + currentUser.username, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ hideSupporterPublic: nextVal }),
+                });
+                showToast(language === 'en' ? 'Supporter visibility updated!' : 'Đã cập nhật tùy chọn hiển thị Supporter!', 'success');
+              }}
+              className="w-4 h-4 rounded cursor-pointer accent-sky-500 shrink-0"
+            />
+          </div>
+            </div>
+          )}
+
+          {profileSubTab === 'theme' && (
+            <div className="space-y-6">
           {/* Profile Theme Card */}
           <div className="ui-card p-6 space-y-4">
             <div className="border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
@@ -1300,8 +1362,18 @@ export default function SettingsPage() {
                 },
                 { id: 'lavender', label: 'iNeQaH', color: 'bg-purple-500', supporterOnly: true },
                 ...(data?.hasGlitchTheme || currentUser?.hasGlitchTheme
-                  ? [{ id: 'glitch', label: '???', color: 'gdvn-swatch-glitch', supporterOnly: false }]
+                  ? [{ id: 'glitch', label: '??? (Glitch)', color: 'gdvn-swatch-glitch', supporterOnly: false }]
                   : []),
+                ...((() => {
+                  const o = Array.isArray(data?.ownedThemes) ? data.ownedThemes : (Array.isArray(currentUser?.ownedThemes) ? currentUser.ownedThemes : []);
+                  return [
+                    ...(o.includes('futurism') || isSuperAdmin ? [{ id: 'futurism', label: 'Futurism', color: 'bg-cyan-500', supporterOnly: false }] : []),
+                    ...(o.includes('floral-cat') || isSuperAdmin ? [{ id: 'floral-cat', label: 'Floral Cozy Cat', color: 'bg-emerald-500', supporterOnly: false }] : []),
+                    ...(o.includes('miku-teto') || isSuperAdmin ? [{ id: 'miku-teto', label: 'Miku Teto Akita', color: 'bg-teal-400', supporterOnly: false }] : []),
+                    ...(o.includes('cute-cat') || isSuperAdmin ? [{ id: 'cute-cat', label: 'Cute Cat', color: 'bg-pink-400', supporterOnly: false }] : []),
+                    ...(o.includes('owo') || isSuperAdmin ? [{ id: 'owo', label: 'OwO Theme', color: 'bg-purple-400', supporterOnly: false }] : []),
+                  ];
+                })()),
               ].map((th) => {
                 const isSelected = (data.profileTheme || 'sky') === th.id;
                 const isLocked = Boolean(th.supporterOnly && !canAccessSupporter);
@@ -1979,7 +2051,14 @@ export default function SettingsPage() {
               )}
             </div>
           </div>
+            </div>
+          )}
         </div>
+      )}
+
+      {/* Tab 3: Appearance (Giao Diện Trình Duyệt Client) */}
+      {activeTab === 'appearance' && (
+        <AppearanceTab currentUser={data || currentUser} />
       )}
 
       {/* Tab 4: Font & Name Style */}

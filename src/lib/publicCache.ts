@@ -7,6 +7,7 @@ export const CACHE_TAGS = {
   timeline: 'public-timeline',
   faq: 'public-faq',
   siteLock: 'site-lock',
+  home: 'public-home',
 } as const;
 
 /** Browser 1 phút, CDN 5 phút, SWR 30 phút — API public không phụ thuộc cookie. */

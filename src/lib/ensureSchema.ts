@@ -354,6 +354,46 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
   if (!have.has('SiteAnnouncement.poll')) {
     await db.$executeRawUnsafe(`ALTER TABLE "SiteAnnouncement" ADD COLUMN IF NOT EXISTS "poll" JSONB`);
   }
+  if (!have.has('User.ownedThemes')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "ownedThemes" TEXT[] NOT NULL DEFAULT '{}'`);
+  }
+  if (!have.has('User.hideSupporterPublic')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "hideSupporterPublic" BOOLEAN NOT NULL DEFAULT false`);
+  }
+  if (!have.has('User.supporterTotalMonths')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "supporterTotalMonths" INTEGER NOT NULL DEFAULT 0`);
+  }
+  if (!have.has('User.supporterTotalAmount')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "supporterTotalAmount" INTEGER NOT NULL DEFAULT 0`);
+  }
+  if (!have.has('User.lastSupportedAt')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "lastSupportedAt" TIMESTAMP(3)`);
+  }
+  if (!have.has('RedeemCode.rewardTheme')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "RedeemCode" ADD COLUMN IF NOT EXISTS "rewardTheme" TEXT`);
+  }
+  if (!have.has('Clan.socialLinks')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "Clan" ADD COLUMN IF NOT EXISTS "socialLinks" JSONB`);
+  }
+  if (!have.has('HomePost.id')) {
+    await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "HomePost" (
+        "id" TEXT NOT NULL,
+        "title" TEXT NOT NULL,
+        "body" TEXT NOT NULL,
+        "linkUrl" TEXT,
+        "levelGdId" TEXT,
+        "videoUrl" TEXT,
+        "poll" JSONB,
+        "isPinned" BOOLEAN NOT NULL DEFAULT false,
+        "authorId" TEXT,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "expiresAt" TIMESTAMP(3),
+        CONSTRAINT "HomePost_pkey" PRIMARY KEY ("id")
+      )
+    `);
+  }
 }
 
 /** Indexes/FKs — do not block the request that needed the new columns. */
@@ -363,6 +403,9 @@ async function addIndexesInBackground(db: PrismaClient) {
     `CREATE INDEX IF NOT EXISTS "ClanBan_userId_idx" ON "ClanBan"("userId")`,
     `CREATE INDEX IF NOT EXISTS "ClanBan_expiresAt_idx" ON "ClanBan"("expiresAt")`,
     `CREATE INDEX IF NOT EXISTS "Level_creatorId_idx" ON "Level"("creatorId")`,
+    `CREATE INDEX IF NOT EXISTS "HomePost_createdAt_idx" ON "HomePost"("createdAt")`,
+    `CREATE INDEX IF NOT EXISTS "HomePost_isPinned_idx" ON "HomePost"("isPinned")`,
+    `CREATE INDEX IF NOT EXISTS "HomePost_authorId_idx" ON "HomePost"("authorId")`,
     `CREATE INDEX IF NOT EXISTS "Record_reviewerId_idx" ON "Record"("reviewerId")`,
     `CREATE INDEX IF NOT EXISTS "Record_userId_status_idx" ON "Record"("userId", "status")`,
     `CREATE INDEX IF NOT EXISTS "Record_levelId_status_idx" ON "Record"("levelId", "status")`,
@@ -676,6 +719,14 @@ export const REQUIRED_SCHEMA_KEYS = [
   'SiteAnnouncement.expiresAt',
   'SiteAnnouncement.likedUserIds',
   'SiteAnnouncement.poll',
+  'User.ownedThemes',
+  'User.hideSupporterPublic',
+  'User.supporterTotalMonths',
+  'User.supporterTotalAmount',
+  'User.lastSupportedAt',
+  'RedeemCode.rewardTheme',
+  'Clan.socialLinks',
+  'HomePost.id',
 ];
 
 export async function applyPendingSchema(db: PrismaClient): Promise<void> {

@@ -41,6 +41,8 @@ export async function GET() {
       nameGlow: true,
       nameFont: true,
       hasGlitchTheme: true,
+      ownedThemes: true,
+      hideSupporterPublic: true,
       easterEggCompleted: true,
       easterEggPoints: true,
       easterEggCode: true,

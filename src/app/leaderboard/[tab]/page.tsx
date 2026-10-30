@@ -1,9 +1,9 @@
 'use client';
 
 import { use } from 'react';
-import HomePage from '@/app/page';
+import LeaderboardView from '@/components/leaderboard/LeaderboardView';
 
-const TAB_TO_MODE: Record<string, 'CLASSIC' | 'PLATFORMER' | 'CHALLENGE' | 'CREATOR' | 'STARS' | 'MOONS' | 'DEMONS'> = {
+const TAB_TO_MODE: Record<string, 'CLASSIC' | 'PLATFORMER' | 'CHALLENGE' | 'CREATOR' | 'STARS' | 'MOONS' | 'DEMONS' | 'ACTIVITY'> = {
   classic: 'CLASSIC',
   platformer: 'PLATFORMER',
   challenge: 'CHALLENGE',
@@ -11,6 +11,7 @@ const TAB_TO_MODE: Record<string, 'CLASSIC' | 'PLATFORMER' | 'CHALLENGE' | 'CREA
   stars: 'STARS',
   moons: 'MOONS',
   demons: 'DEMONS',
+  activity: 'ACTIVITY',
 };
 
 export default function LeaderboardTabPage({ params }: { params: Promise<{ tab: string }> }) {
@@ -18,5 +19,5 @@ export default function LeaderboardTabPage({ params }: { params: Promise<{ tab: 
   const tab = resolvedParams.tab.toLowerCase();
   const mode = TAB_TO_MODE[tab] || 'CLASSIC';
 
-  return <HomePage initialMode={mode} />;
+  return <LeaderboardView initialMode={mode} />;
 }
