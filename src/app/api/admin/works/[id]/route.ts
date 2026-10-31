@@ -54,7 +54,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         isChallenge: true,
         difficultyFace: true,
         ratingType: true,
-        user: { select: { gdUsername: true, creatorPoints: true } },
+        user: { select: { username: true, gdUsername: true, creatorPoints: true } },
       },
     });
 
@@ -90,23 +90,28 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     if (work.gdLevelId) {
-      await upsertLevelFromForm({
-        gdLevelId: work.gdLevelId,
-        name: work.levelName || undefined,
-        videoUrl: work.videoUrl || '',
-        minPercent: work.minPercent,
-        placement: work.placement,
-        vnPlacement: work.vnPlacement,
-        mode: work.mode,
-        isVN: work.isVN,
-        isChallenge: work.isChallenge,
-        difficultyFace: work.difficultyFace,
-        ratingType: work.ratingType,
-      });
-      await prisma.level.updateMany({
-        where: { gdLevelId: work.gdLevelId },
-        data: { creatorId: work.userId },
-      });
+      try {
+        await upsertLevelFromForm({
+          gdLevelId: work.gdLevelId,
+          name: work.levelName || undefined,
+          creatorName: work.username || work.user?.gdUsername || work.user?.username || undefined,
+          videoUrl: work.videoUrl || '',
+          minPercent: work.minPercent,
+          placement: work.placement,
+          vnPlacement: work.vnPlacement,
+          mode: work.mode,
+          isVN: work.isVN,
+          isChallenge: work.isChallenge,
+          difficultyFace: work.difficultyFace,
+          ratingType: work.ratingType,
+        });
+        await prisma.level.updateMany({
+          where: { gdLevelId: work.gdLevelId },
+          data: { creatorId: work.userId },
+        });
+      } catch (lvlErr) {
+        console.warn('[Admin Works] upsertLevelFromForm warning:', lvlErr);
+      }
     }
 
     const ownWork = gdNamesEqual(work.username, work.user.gdUsername);

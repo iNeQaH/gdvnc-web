@@ -128,7 +128,8 @@ export default function HomePage() {
   };
 
   const handleLikePost = async (postId: string) => {
-    if (!currentUser) {
+    const currentUserId = currentUser?.id || currentUser?.userId;
+    if (!currentUserId) {
       alert('Vui lòng đăng nhập để thả tim bài viết!');
       return;
     }
@@ -136,10 +137,10 @@ export default function HomePage() {
     if (!targetPost) return;
 
     const currentLikes = targetPost.likedUserIds || [];
-    const isLiked = currentLikes.includes(currentUser.id);
+    const isLiked = currentLikes.includes(currentUserId);
     const nextLikes = isLiked
-      ? currentLikes.filter((uid) => uid !== currentUser.id)
-      : [...currentLikes, currentUser.id];
+      ? currentLikes.filter((uid) => uid !== currentUserId)
+      : [...currentLikes, currentUserId];
 
     // Optimistic update
     setPosts((prev) =>
@@ -148,7 +149,14 @@ export default function HomePage() {
 
     try {
       const res = await fetch(`/api/home-posts/${postId}/react`, { method: 'POST' });
-      if (!res.ok) {
+      if (res.ok) {
+        const resData = await res.json();
+        if (Array.isArray(resData?.likedUserIds)) {
+          setPosts((prev) =>
+            prev.map((p) => (p.id === postId ? { ...p, likedUserIds: resData.likedUserIds } : p))
+          );
+        }
+      } else {
         setPosts((prev) =>
           prev.map((p) => (p.id === postId ? { ...p, likedUserIds: currentLikes } : p))
         );
@@ -256,7 +264,7 @@ export default function HomePage() {
 
                     {/* VIDEO EMBED */}
                     {embedUrl && (
-                      <div className="aspect-video w-full max-w-3xl rounded-xl overflow-hidden border border-border/50 shadow">
+                      <div className="aspect-video w-full rounded-2xl overflow-hidden border border-border/50 shadow-md">
                         <iframe
                           src={embedUrl}
                           title={post.title}
@@ -283,31 +291,37 @@ export default function HomePage() {
                     )}
 
                     {/* FOOTER: LIKE BUTTON & EXTERNAL LINK */}
-                    <div className="flex items-center justify-between pt-3 border-t border-border/40 gap-3 flex-wrap">
-                      <button
-                        onClick={() => handleLikePost(post.id)}
-                        className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none ${
-                          post.likedUserIds?.includes(currentUser?.id)
-                            ? 'bg-rose-500/15 text-rose-500 border-rose-500/40 shadow-xs'
-                            : 'bg-card/60 text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 border-border/40'
-                        }`}
-                        title="Thả tim bài viết"
-                      >
-                        <Heart className={`w-4 h-4 transition-transform ${post.likedUserIds?.includes(currentUser?.id) ? 'fill-current text-rose-500 scale-110' : ''}`} />
-                        <span>{post.likedUserIds?.length || 0}</span>
-                      </button>
+                    {(() => {
+                      const currentUserId = currentUser?.id || currentUser?.userId;
+                      const isPostLiked = Boolean(currentUserId && post.likedUserIds?.includes(currentUserId));
+                      return (
+                        <div className="flex items-center justify-between pt-1 gap-3 flex-wrap">
+                          <button
+                            onClick={() => handleLikePost(post.id)}
+                            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none ${
+                              isPostLiked
+                                ? 'bg-rose-500/15 text-rose-500 border-rose-500/40 shadow-xs'
+                                : 'bg-card/60 text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 border-border/40'
+                            }`}
+                            title="Thả tim bài viết"
+                          >
+                            <Heart className={`w-4 h-4 transition-transform ${isPostLiked ? 'fill-current text-rose-500 scale-110' : ''}`} />
+                            <span>{post.likedUserIds?.length || 0}</span>
+                          </button>
 
-                      {post.linkUrl && (
-                        <a
-                          href={post.linkUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-primary hover:underline ml-auto"
-                        >
-                          Xem chi tiết liên kết <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      )}
-                    </div>
+                          {post.linkUrl && (
+                            <a
+                              href={post.linkUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-primary hover:underline ml-auto"
+                            >
+                              Xem chi tiết liên kết <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })}

@@ -905,6 +905,85 @@ export default function ClanSettingsPage({
               </div>
             </div>
 
+            {/* Social Links */}
+            <div className="space-y-3 pt-2">
+              <label className="text-xs font-bold ui-title flex items-center gap-2">
+                <Globe className="w-4 h-4 text-sky-400" />
+                <span>{isEn ? 'Clan Social Links' : 'Liên kết mạng xã hội của Clan'}</span>
+              </label>
+              <p className="text-[11px] ui-dim">
+                {isEn
+                  ? 'Display direct social media buttons on your clan profile for members and visitors.'
+                  : 'Hiển thị các nút mạng xã hội trực tiếp trên hồ sơ Clan để thành viên và khách liên hệ.'}
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Discord */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold ui-title flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#5865F2]" />
+                    <span>Discord Server</span>
+                  </label>
+                  <input
+                    type="url"
+                    value={discordLink}
+                    onChange={(e) => setDiscordLink(e.target.value)}
+                    disabled={!canEditInfo}
+                    className="w-full px-3.5 py-2.5 rounded-xl border text-xs ui-title bg-white dark:bg-black/40 border-slate-200 dark:border-white/10 focus:outline-hidden focus:border-[#5865F2] transition-colors font-mono"
+                    placeholder="https://discord.gg/..."
+                  />
+                </div>
+
+                {/* Facebook Messenger */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold ui-title flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#006AFF]" />
+                    <span>Facebook / Messenger</span>
+                  </label>
+                  <input
+                    type="url"
+                    value={messengerLink}
+                    onChange={(e) => setMessengerLink(e.target.value)}
+                    disabled={!canEditInfo}
+                    className="w-full px-3.5 py-2.5 rounded-xl border text-xs ui-title bg-white dark:bg-black/40 border-slate-200 dark:border-white/10 focus:outline-hidden focus:border-[#006AFF] transition-colors font-mono"
+                    placeholder="https://m.me/... hoặc https://facebook.com/..."
+                  />
+                </div>
+
+                {/* Steam Group */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold ui-title flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#1b2838]" />
+                    <span>Steam Group</span>
+                  </label>
+                  <input
+                    type="url"
+                    value={steamLink}
+                    onChange={(e) => setSteamLink(e.target.value)}
+                    disabled={!canEditInfo}
+                    className="w-full px-3.5 py-2.5 rounded-xl border text-xs ui-title bg-white dark:bg-black/40 border-slate-200 dark:border-white/10 focus:outline-hidden focus:border-sky-400 transition-colors font-mono"
+                    placeholder="https://steamcommunity.com/groups/..."
+                  />
+                </div>
+
+                {/* Zalo Group */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold ui-title flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#0068FF]" />
+                    <span>Zalo Group / Chat</span>
+                  </label>
+                  <input
+                    type="url"
+                    value={zaloLink}
+                    onChange={(e) => setZaloLink(e.target.value)}
+                    disabled={!canEditInfo}
+                    className="w-full px-3.5 py-2.5 rounded-xl border text-xs ui-title bg-white dark:bg-black/40 border-slate-200 dark:border-white/10 focus:outline-hidden focus:border-[#0068FF] transition-colors font-mono"
+                    placeholder="https://zalo.me/g/..."
+                  />
+                </div>
+              </div>
+            </div>
+
             {canEditInfo && (
               <div className="flex justify-end pt-4 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
                 <button

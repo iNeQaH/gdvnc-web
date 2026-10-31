@@ -23,7 +23,11 @@ export const SHORT_CACHE_HEADERS = {
 
 export function bustPublicCache(...tags: string[]) {
   for (const tag of tags) {
-    revalidateTag(tag, 'max');
+    try {
+      revalidateTag(tag, 'max');
+    } catch {
+      // ignore
+    }
   }
 }
 

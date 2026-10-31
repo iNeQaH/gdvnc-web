@@ -432,16 +432,12 @@ export async function upsertLevelFromForm(input: {
     gdbData = await fetchGdBrowser(gdLevelId);
   }
 
-  if (!existingLevel && !gdbData && (!namedForm || !creatorForm)) {
-    throw new Error('Không thể lấy thông tin Level từ máy chủ GD. Điền tên level và tên creator, hoặc kiểm tra lại ID.');
-  }
-
   const gdbFace = gdbData ? mapDifficultyFace(gdbData) : 0;
   const gdbRating = gdbData ? mapRatingType(gdbData) : 'NONE';
   const gdbDiff = gdbData?.difficulty ? String(gdbData.difficulty) : null;
 
-  const name = namedForm || existingLevel?.name || pickGdLevelName(gdbData) || 'Unknown';
-  const creatorName = creatorForm || existingLevel?.creatorName || pickGdCreatorName(gdbData) || 'Unknown';
+  const name = namedForm || existingLevel?.name || pickGdLevelName(gdbData) || (gdLevelId ? `Level ${gdLevelId}` : 'Unknown');
+  const creatorName = creatorForm || existingLevel?.creatorName || pickGdCreatorName(gdbData) || 'GD Creator';
   const difficulty = gdbDiff || existingLevel?.difficulty || (gdbFace ? formatDifficultyLabel(gdbFace) : 'Demon');
   const description =
     existingLevel?.description ||

@@ -38,14 +38,15 @@ const userHighlightSelect = {
 
 export async function GET() {
   try {
-    const data = await cachedJson(
-      async () => {
-        const now = new Date();
-        const todayVn = getVnTodayString();
+    const now = new Date();
+    const [cachedData, freshPosts] = await Promise.all([
+      cachedJson(
+        async () => {
+          const innerNow = new Date();
+          const todayVn = getVnTodayString();
 
-        const [
-          posts,
-          announcements,
+          const [
+            announcements,
           recentSupporters,
           topSupporters,
           dbClassic,
@@ -60,30 +61,7 @@ export async function GET() {
           clans,
           levelLogs,
         ] = await Promise.all([
-          // 1. Home Posts (admin posts / featured spotlight)
-          prisma.homePost.findMany({
-            where: {
-              OR: [
-                { expiresAt: null },
-                { expiresAt: { gt: now } },
-              ],
-            },
-            orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
-            take: 10,
-            include: {
-              author: {
-                select: {
-                  id: true,
-                  username: true,
-                  displayName: true,
-                  avatarUrl: true,
-                  role: true,
-                },
-              },
-            },
-          }),
-
-          // 2. Latest System Announcements
+          // 1. Latest System Announcements
           prisma.siteAnnouncement.findMany({
             where: {
               audience: 'ALL',
@@ -336,7 +314,6 @@ export async function GET() {
 
         return {
           success: true,
-          posts,
           announcements,
           recentSupporters: mappedRecentSupporters,
           topSupporters: mappedTopSupporters,
@@ -360,12 +337,33 @@ export async function GET() {
       ['home-portal-v2'],
       [CACHE_TAGS.highlights, CACHE_TAGS.home],
       15
-    );
+    ),
+    prisma.homePost.findMany({
+        where: {
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gt: now } },
+          ],
+        },
+        orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
+        take: 10,
+        include: {
+          author: {
+            select: {
+              id: true,
+              username: true,
+              displayName: true,
+              avatarUrl: true,
+              role: true,
+            },
+          },
+        },
+      }),
+    ]);
 
-    return NextResponse.json(data, {
+    return NextResponse.json({ ...cachedData, posts: freshPosts }, {
       headers: {
-        'Cache-Control': 'no-cache, must-revalidate',
-        'CDN-Cache-Control': 'public, s-maxage=15, stale-while-revalidate=30',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
       },
     });
   } catch (error: any) {

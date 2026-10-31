@@ -27,6 +27,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const submission = await prisma.levelSubmission.findUnique({
       where: { id },
+      include: {
+        user: { select: { id: true, username: true, gdUsername: true } },
+      },
     });
     if (!submission) {
       return NextResponse.json({ error: 'Không tìm thấy yêu cầu thêm level.' }, { status: 404 });
@@ -58,6 +61,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const result = await upsertLevelFromForm({
       gdLevelId: submission.gdLevelId,
+      creatorName: submission.user?.gdUsername || submission.user?.username || undefined,
       videoUrl: submission.videoUrl || '',
       minPercent: submission.minPercent,
       placement: submission.placement,
