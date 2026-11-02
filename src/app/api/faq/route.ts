@@ -1,29 +1,35 @@
 import { isBrowserSameOriginFetch } from '@/lib/origin';
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { requireFullAdmin } from '@/lib/auth';
+import prisma from '@/lib/prisma';
+import { requireAdmin } from '@/lib/auth';
 import { clipText } from '@/lib/validate';
-import { sanitizeFaqHtml } from '@/lib/faqSanitize';
-import { bustPublicCache, cachedJson, CACHE_TAGS, PUBLIC_CACHE_HEADERS } from '@/lib/publicCache';
+import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 import { publicApiError } from '@/lib/apiError';
 
 const FAQ_KEY = 'helps-faq';
 
 export async function GET() {
   try {
-    const html = await cachedJson(
-      async () => {
-        const row = await prisma.siteContent.findUnique({ where: { key: FAQ_KEY } });
-        return row?.html || '';
-      },
-      ['faq-html'],
-      [CACHE_TAGS.faq],
-      300
+    const row = await prisma.siteContent.findUnique({ where: { key: FAQ_KEY } });
+    const content = row?.html || '';
+    return NextResponse.json(
+      { success: true, content, html: content },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        },
+      }
     );
-    return NextResponse.json({ success: true, html }, { headers: PUBLIC_CACHE_HEADERS });
   } catch (error) {
-    console.error('FAQ GET', error);
-    return NextResponse.json({ success: true, html: '' });
+    console.error('FAQ GET error', error);
+    return NextResponse.json(
+      { success: true, content: '', html: '' },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        },
+      }
+    );
   }
 }
 
@@ -32,21 +38,21 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
   try {
-    await requireFullAdmin();
+    await requireAdmin();
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     const body = await req.json();
-    const html = sanitizeFaqHtml(clipText(body?.html, 200000));
+    const markdown = clipText(body?.content ?? body?.markdown ?? body?.html ?? '', 200000);
     const row = await prisma.siteContent.upsert({
       where: { key: FAQ_KEY },
-      create: { key: FAQ_KEY, html },
-      update: { html },
+      create: { key: FAQ_KEY, html: markdown },
+      update: { html: markdown },
     });
     bustPublicCache(CACHE_TAGS.faq);
-    return NextResponse.json({ success: true, html: row.html });
+    return NextResponse.json({ success: true, content: row.html, html: row.html });
   } catch (error) {
     return publicApiError(error, 'Không thể lưu FAQ.', 500);
   }

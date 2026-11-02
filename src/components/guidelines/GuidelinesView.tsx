@@ -12,6 +12,9 @@ import {
   X,
   Eye,
   FileCode,
+  Columns2,
+  Copy,
+  Check,
   Sparkles,
   ChevronRight,
   ExternalLink,
@@ -33,8 +36,32 @@ export default function GuidelinesView({ currentTab }: GuidelinesViewProps) {
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editTab, setEditTab] = useState<'editor' | 'preview'>('editor');
+  const [editTab, setEditTab] = useState<'split' | 'editor' | 'preview'>('split');
   const [saveToast, setSaveToast] = useState<string>('');
+  const [copied, setCopied] = useState<boolean>(false);
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+  const insertFormat = (before: string, after: string = '', defaultText: string = '') => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const current = draft;
+    const selected = current.substring(start, end) || defaultText;
+    const replacement = `${before}${selected}${after}`;
+    const nextVal = current.substring(0, start) + replacement + current.substring(end);
+    setDraft(nextVal);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + before.length, start + before.length + selected.length);
+    }, 15);
+  };
+
+  const handleCopyRaw = () => {
+    navigator.clipboard.writeText(draft);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const isAdmin = currentUser?.role === 'ADMIN';
 
@@ -86,7 +113,7 @@ export default function GuidelinesView({ currentTab }: GuidelinesViewProps) {
 
   const startEdit = () => {
     setDraft(content);
-    setEditTab('editor');
+    setEditTab('split');
     setIsEditing(true);
   };
 
@@ -215,32 +242,41 @@ export default function GuidelinesView({ currentTab }: GuidelinesViewProps) {
           style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
         >
           <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black/20 border border-white/5">
+              <button
+                type="button"
+                onClick={() => setEditTab('split')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  editTab === 'split' ? 'shadow-xs' : 'opacity-70 hover:opacity-100'
+                }`}
+                style={{
+                  backgroundColor: editTab === 'split' ? 'var(--accent)' : 'transparent',
+                  color: editTab === 'split' ? 'var(--accent-fg)' : 'var(--text-title)',
+                }}
+              >
+                <Columns2 className="w-3.5 h-3.5" /> Chia đôi (Song song)
+              </button>
               <button
                 type="button"
                 onClick={() => setEditTab('editor')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                  editTab === 'editor'
-                    ? 'shadow-xs'
-                    : 'opacity-70 hover:opacity-100'
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  editTab === 'editor' ? 'shadow-xs' : 'opacity-70 hover:opacity-100'
                 }`}
                 style={{
-                  backgroundColor: editTab === 'editor' ? 'var(--accent)' : 'var(--bg-subtle)',
+                  backgroundColor: editTab === 'editor' ? 'var(--accent)' : 'transparent',
                   color: editTab === 'editor' ? 'var(--accent-fg)' : 'var(--text-title)',
                 }}
               >
-                <FileCode className="w-3.5 h-3.5" /> Soạn thảo (Markdown)
+                <FileCode className="w-3.5 h-3.5" /> Soạn thảo (Raw)
               </button>
               <button
                 type="button"
                 onClick={() => setEditTab('preview')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                  editTab === 'preview'
-                    ? 'shadow-xs'
-                    : 'opacity-70 hover:opacity-100'
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  editTab === 'preview' ? 'shadow-xs' : 'opacity-70 hover:opacity-100'
                 }`}
                 style={{
-                  backgroundColor: editTab === 'preview' ? 'var(--accent)' : 'var(--bg-subtle)',
+                  backgroundColor: editTab === 'preview' ? 'var(--accent)' : 'transparent',
                   color: editTab === 'preview' ? 'var(--accent-fg)' : 'var(--text-title)',
                 }}
               >
@@ -248,15 +284,180 @@ export default function GuidelinesView({ currentTab }: GuidelinesViewProps) {
               </button>
             </div>
 
-            <div className="text-[11px] ui-dim flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-amber-400" />
-              <span>Hỗ trợ cú pháp Discord Markdown: <code># H1</code>, <code>## H2</code>, <code>**in đậm**</code>, <code>||spoiler||</code>, <code>- danh sách</code></span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopyRaw}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold border border-white/10 hover:bg-white/5 transition-colors flex items-center gap-1.5 cursor-pointer text-zinc-300"
+              >
+                {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                {copied ? 'Đã sao chép' : 'Sao chép Raw'}
+              </button>
             </div>
           </div>
 
-          {editTab === 'editor' ? (
-            <div className="space-y-2">
+          {/* Quick Format Toolbar */}
+          <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-2xl bg-black/10 border border-white/5 text-xs">
+            <button
+              type="button"
+              onClick={() => insertFormat('# ', '', 'Tiêu đề')}
+              title="Heading 1"
+              className="px-2 py-1 rounded-md font-black hover:bg-white/10 transition-colors cursor-pointer text-zinc-300"
+            >
+              H1
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormat('## ', '', 'Tiêu đề')}
+              title="Heading 2"
+              className="px-2 py-1 rounded-md font-black hover:bg-white/10 transition-colors cursor-pointer text-zinc-300"
+            >
+              H2
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormat('### ', '', 'Tiêu đề')}
+              title="Heading 3"
+              className="px-2 py-1 rounded-md font-black hover:bg-white/10 transition-colors cursor-pointer text-zinc-300"
+            >
+              H3
+            </button>
+            <span className="w-px h-4 bg-white/10 mx-1" />
+            <button
+              type="button"
+              onClick={() => insertFormat('**', '**', 'in đậm')}
+              title="In đậm (Bold)"
+              className="px-2 py-1 rounded-md font-bold hover:bg-white/10 transition-colors cursor-pointer text-zinc-300"
+            >
+              B
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormat('*', '*', 'in nghiêng')}
+              title="In nghiêng (Italic)"
+              className="px-2 py-1 rounded-md italic hover:bg-white/10 transition-colors cursor-pointer text-zinc-300"
+            >
+              I
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormat('__', '__', 'gạch chân')}
+              title="Gạch chân (Underline)"
+              className="px-2 py-1 rounded-md underline hover:bg-white/10 transition-colors cursor-pointer text-zinc-300"
+            >
+              U
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormat('~~', '~~', 'gạch ngang')}
+              title="Gạch ngang (Strikethrough)"
+              className="px-2 py-1 rounded-md line-through hover:bg-white/10 transition-colors cursor-pointer text-zinc-300"
+            >
+              S
+            </button>
+            <span className="w-px h-4 bg-white/10 mx-1" />
+            <button
+              type="button"
+              onClick={() => insertFormat('> ', '', 'Nội dung trích dẫn')}
+              title="Trích dẫn (Quote)"
+              className="px-2 py-1 rounded-md font-mono hover:bg-white/10 transition-colors cursor-pointer text-zinc-300"
+            >
+              &gt; Quote
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormat('||', '||', 'spoiler')}
+              title="Nội dung ẩn (Spoiler)"
+              className="px-2 py-1 rounded-md font-mono hover:bg-white/10 transition-colors cursor-pointer text-zinc-300"
+            >
+              || Spoiler
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormat('- ', '', 'Mục danh sách')}
+              title="Gạch đầu dòng"
+              className="px-2 py-1 rounded-md hover:bg-white/10 transition-colors cursor-pointer text-zinc-300"
+            >
+              • Danh sách
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormat('`', '`', 'code')}
+              title="Inline code"
+              className="px-2 py-1 rounded-md font-mono hover:bg-white/10 transition-colors cursor-pointer text-amber-400"
+            >
+              `Code`
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormat('```\n', '\n```', 'code block')}
+              title="Code block"
+              className="px-2 py-1 rounded-md font-mono hover:bg-white/10 transition-colors cursor-pointer text-amber-400"
+            >
+              ```Code Block```
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormat('\n---\n', '', '')}
+              title="Dải phân cách (Divider)"
+              className="px-2 py-1 rounded-md font-mono hover:bg-white/10 transition-colors cursor-pointer text-zinc-300"
+            >
+              --- Divider
+            </button>
+          </div>
+
+          {editTab === 'split' ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-[460px]">
+              <div className="space-y-1.5 flex flex-col">
+                <div className="text-[11px] uppercase font-bold ui-dim flex items-center justify-between">
+                  <span>Soạn thảo Raw Markdown:</span>
+                  <span className="font-mono text-[10px]">{draft.length.toLocaleString()} ký tự</span>
+                </div>
+                <textarea
+                  ref={textareaRef}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder="Nhập nội dung quy định bằng cú pháp Discord Markdown..."
+                  rows={22}
+                  className="w-full flex-1 px-4 py-3 rounded-2xl border text-xs sm:text-sm font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-sky-500 resize-y min-h-[420px]"
+                  style={{
+                    backgroundColor: 'var(--bg-subtle)',
+                    borderColor: 'var(--border-ui)',
+                    color: 'var(--text-title)',
+                  }}
+                />
+              </div>
+
+              <div className="space-y-1.5 flex flex-col">
+                <div className="text-[11px] uppercase font-bold text-sky-400 flex items-center justify-between">
+                  <span>Xem trước thời gian thực:</span>
+                  <span className="text-[10px] ui-dim">Live preview</span>
+                </div>
+                <div
+                  className="flex-1 p-5 rounded-2xl border overflow-y-auto max-h-[620px] min-h-[420px]"
+                  style={{
+                    backgroundColor: 'var(--bg-subtle)',
+                    borderColor: 'var(--border-subtle)',
+                  }}
+                >
+                  {draft.trim() ? (
+                    <DiscordMarkdown content={draft} />
+                  ) : (
+                    <div className="text-xs ui-dim italic p-4 text-center">
+                      Chưa có nội dung để xem trước. Nhập mã markdown bên trái để xem kết quả.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : editTab === 'editor' ? (
+            <div className="space-y-1.5">
+              <div className="text-[11px] uppercase font-bold ui-dim flex items-center justify-between">
+                <span>Soạn thảo Raw Markdown:</span>
+                <span className="font-mono text-[10px]">{draft.length.toLocaleString()} ký tự</span>
+              </div>
               <textarea
+                ref={textareaRef}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder="Nhập nội dung quy định bằng cú pháp Discord Markdown..."
@@ -271,7 +472,7 @@ export default function GuidelinesView({ currentTab }: GuidelinesViewProps) {
             </div>
           ) : (
             <div
-              className="p-6 rounded-2xl border min-h-[300px]"
+              className="p-6 sm:p-8 rounded-2xl border min-h-[350px]"
               style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-subtle)' }}
             >
               <div className="text-[11px] uppercase font-bold ui-dim mb-3 pb-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>

@@ -236,6 +236,12 @@ export function parseDiscordMarkdown(rawText: string): React.ReactNode[] {
       continue;
     }
 
+    // Check for Horizontal Divider (--- or *** or ___)
+    if (/^(\s*[-*_]\s*){3,}$/.test(line.trim())) {
+      elements.push(<hr key={`hr-${i}`} className="my-4 border-t border-white/15" />);
+      continue;
+    }
+
     // Check for Bullet list (- ... or * ...)
     if (/^[-*]\s+/.test(line)) {
       elements.push(

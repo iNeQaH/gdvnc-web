@@ -767,7 +767,7 @@ const vi: Record<DictKey, string> = {
   'helps.faq_save': 'Lưu FAQ',
   'helps.faq_saving': 'Đang lưu…',
   'helps.faq_loading': 'Đang tải…',
-  'helps.faq_hint': 'Được dùng HTML và embed (iframe). Trang có thể dài — cuộn để đọc.',
+  'helps.faq_hint': 'Hỗ trợ cú pháp Discord Markdown: # Tiêu đề, > Trích dẫn, **In đậm**, ||Spoiler||, - Danh sách và HTML/iframe.',
 
   'timeline.brand': 'THE CHRONICLES',
   'timeline.tagline': 'Lịch sử GDVN',
