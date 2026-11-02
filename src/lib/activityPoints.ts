@@ -71,28 +71,66 @@ export function computeActivityPoints(
   let baselineMoons: number;
   let baselineDemons: number;
 
-  if (userState.activityDate === todayVn) {
-    // Đã vào profile trước đó trong ngày hôm nay: giữ nguyên baseline ngày hôm trước
-    baselineStars = userState.activityPrevStars ?? userState.gdStars ?? currentStats.stars;
-    baselineMoons = userState.activityPrevMoons ?? userState.gdMoons ?? currentStats.moons;
-    baselineDemons = userState.activityPrevDemons ?? userState.gdDemons ?? currentStats.demons;
+  const hasPreviousBaseline =
+    Boolean(userState.activityPrevStars && userState.activityPrevStars > 0) ||
+    Boolean(userState.gdStars && userState.gdStars > 0);
+
+  if (!hasPreviousBaseline && (currentStats.stars > 0 || currentStats.moons > 0 || currentStats.demons > 0)) {
+    // Trường hợp 1: Tài khoản mới xác minh / lần đầu nhận stats từ Geometry Dash (chưa từng có baseline > 0):
+    // Toàn bộ stars, moons, demons nhận về là chỉ số quá khứ (lifetime), KHÔNG PHẢI điểm cày hôm nay.
+    // Thiết lập baseline bằng đúng currentStats, điểm hoạt động hôm nay = 0.
+    baselineStars = currentStats.stars;
+    baselineMoons = currentStats.moons;
+    baselineDemons = currentStats.demons;
+  } else if (userState.activityDate === todayVn) {
+    // Trường hợp 2: Đã vào profile hoặc đã chốt baseline trước đó trong ngày hôm nay:
+    // Lấy baseline đã lưu. Nếu baseline cũ bằng 0 mà currentStats > 0 thì chốt bằng currentStats.
+    const prevS = (userState.activityPrevStars && userState.activityPrevStars > 0)
+      ? userState.activityPrevStars
+      : ((userState.gdStars && userState.gdStars > 0) ? userState.gdStars : currentStats.stars);
+    const prevM = (userState.activityPrevMoons && userState.activityPrevMoons > 0)
+      ? userState.activityPrevMoons
+      : ((userState.gdMoons && userState.gdMoons > 0) ? userState.gdMoons : currentStats.moons);
+    const prevD = (userState.activityPrevDemons && userState.activityPrevDemons > 0)
+      ? userState.activityPrevDemons
+      : ((userState.gdDemons && userState.gdDemons > 0) ? userState.gdDemons : currentStats.demons);
+
+    baselineStars = prevS;
+    baselineMoons = prevM;
+    baselineDemons = prevD;
   } else if (userState.activityDate === yesterdayVn) {
-    // Ngày mới liên tiếp (hôm qua có hoạt động/đồng bộ):
-    // Chỉ số chốt sổ của ngày hôm qua chính là baseline để tính điểm tăng trưởng cho hôm nay
-    baselineStars = userState.gdStars ?? currentStats.stars;
-    baselineMoons = userState.gdMoons ?? currentStats.moons;
-    baselineDemons = userState.gdDemons ?? currentStats.demons;
+    // Trường hợp 3: Ngày mới liên tiếp (hôm qua có hoạt động/đồng bộ):
+    // Chỉ số chốt sổ của ngày hôm qua chính là baseline để tính điểm tăng trưởng cho hôm nay.
+    const prevS = (userState.gdStars && userState.gdStars > 0) ? userState.gdStars : currentStats.stars;
+    const prevM = (userState.gdMoons && userState.gdMoons > 0) ? userState.gdMoons : currentStats.moons;
+    const prevD = (userState.gdDemons && userState.gdDemons > 0) ? userState.gdDemons : currentStats.demons;
+
+    baselineStars = prevS;
+    baselineMoons = prevM;
+    baselineDemons = prevD;
   } else {
-    // Lần đầu vào hoặc không hoạt động hôm qua (bỏ lỡ >= 1 ngày, hoặc thành viên mới):
-    // Thiết lập baseline bằng đúng chỉ số hiện tại để KHÔNG bị cộng dồn stats cũ của nhiều ngày/tuần trước
+    // Trường hợp 4: Lần đầu vào hoặc không hoạt động hôm qua (bỏ lỡ >= 1 ngày, hoặc thành viên mới):
+    // Thiết lập baseline bằng đúng chỉ số hiện tại để KHÔNG bị cộng dồn stats cũ của nhiều ngày/tuần trước.
     baselineStars = currentStats.stars;
     baselineMoons = currentStats.moons;
     baselineDemons = currentStats.demons;
   }
 
-  const deltaStars = Math.max(0, currentStats.stars - baselineStars);
-  const deltaMoons = Math.max(0, currentStats.moons - baselineMoons);
-  const deltaDemons = Math.max(0, currentStats.demons - baselineDemons);
+  let deltaStars = Math.max(0, currentStats.stars - baselineStars);
+  let deltaMoons = Math.max(0, currentStats.moons - baselineMoons);
+  let deltaDemons = Math.max(0, currentStats.demons - baselineDemons);
+
+  // Safeguard: Phát hiện và triệt tiêu bước nhảy đột biến bất thường
+  // (ví dụ: đổi tên tài khoản GD, gắn nick mới, hoặc sync sau khi admin duyệt verify).
+  // Không ai cày được > 500 stars, > 300 moons hoặc > 50 demons trong một ngày.
+  if (deltaStars > 500 || deltaMoons > 300 || deltaDemons > 50) {
+    baselineStars = currentStats.stars;
+    baselineMoons = currentStats.moons;
+    baselineDemons = currentStats.demons;
+    deltaStars = 0;
+    deltaMoons = 0;
+    deltaDemons = 0;
+  }
 
   const points = deltaStars * 1 + deltaMoons * 1 + deltaDemons * 10;
 
