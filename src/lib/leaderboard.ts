@@ -210,7 +210,23 @@ export async function getPlayerLeaderboard(mode: 'CLASSIC' | 'PLATFORMER' | 'CHA
   const ppField = mode === 'PLATFORMER' ? 'platformerPp' : mode === 'CHALLENGE' ? 'challengePp' : 'classicPp';
 
   if (device !== 'ALL') {
-    const deviceWhere = device === 'PC' ? { device: 'PC' } : { device: { in: ['Android', 'iOS'] } };
+    const deviceWhere =
+      device === 'PC'
+        ? {
+            OR: [
+              { device: { equals: 'PC', mode: 'insensitive' as const } },
+            ],
+          }
+        : {
+            OR: [
+              { device: { in: ['Mobile', 'Mobile (Android)', 'Mobile (iOS)', 'Android', 'iOS', 'Tablet', 'iPad', 'mobile', 'android', 'ios', 'tablet'] } },
+              { device: { contains: 'mobile', mode: 'insensitive' as const } },
+              { device: { contains: 'android', mode: 'insensitive' as const } },
+              { device: { contains: 'ios', mode: 'insensitive' as const } },
+              { device: { contains: 'tablet', mode: 'insensitive' as const } },
+              { device: { contains: 'ipad', mode: 'insensitive' as const } },
+            ],
+          };
     const userRecords = await prisma.record.findMany({
       where: {
         status: RecordStatus.APPROVED,
