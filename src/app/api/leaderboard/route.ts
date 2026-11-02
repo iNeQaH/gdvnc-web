@@ -42,7 +42,7 @@ export async function GET(req: Request) {
         const leaderboard = await getPlayerLeaderboard(playerMode, device);
         return { success: true, leaderboard };
       },
-      ['leaderboard-v4', mode, device],
+      ['leaderboard-v5', mode, device],
       [CACHE_TAGS.leaderboard],
       300
     );
