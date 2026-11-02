@@ -29,7 +29,6 @@ async function main() {
       OR: [
         { activityPoints: { gt: 300 } },
         { activityPrevStars: 0, gdStars: { gt: 50 } },
-        { activityPrevStars: null, gdStars: { gt: 50 } },
       ],
     },
   });
