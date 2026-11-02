@@ -1,4 +1,4 @@
-import { getVnTodayString } from '@/lib/activityPoints';
+import { getVnWeekString } from '@/lib/activityPoints';
 import { requireAuth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -64,10 +64,10 @@ export async function GET(req: Request) {
         totalSp += Math.min(contrib.spPledged, userMax);
       }
 
-      const todayVn = getVnTodayString();
+      const currentWeekVn = getVnWeekString();
       let activityPoints = 0;
       for (const m of c.members) {
-        if (m.user && m.user.activityDate === todayVn) {
+        if (m.user && m.user.activityDate === currentWeekVn) {
           activityPoints += (m.user.activityPoints || 0);
         }
       }
@@ -273,7 +273,7 @@ export async function POST(req: Request) {
         where: { id: user.id },
         data: {
           activityPoints: 0,
-          activityDate: getVnTodayString(),
+          activityDate: getVnWeekString(),
           activityPrevStars: user.gdStars || 0,
           activityPrevMoons: user.gdMoons || 0,
           activityPrevDemons: user.gdDemons || 0,

@@ -598,7 +598,8 @@ export default function HomePage({
 }: {
   initialMode?: 'CLASSIC' | 'PLATFORMER' | 'CHALLENGE' | 'CREATOR' | 'STARS' | 'MOONS' | 'DEMONS' | 'ACTIVITY';
 } = {}) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const isEn = language === 'en';
   const { theme, resolvedMode } = useTheme();
   const isDark = resolvedMode === 'dark';
   const isLavender = theme === 'lavender';
@@ -818,7 +819,7 @@ export default function HomePage({
               { id: 'STARS', label: 'Stars', icon: <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" /> },
               { id: 'MOONS', label: 'Moons', icon: <Moon className="w-3.5 h-3.5 text-sky-400 fill-sky-400" /> },
               { id: 'DEMONS', label: 'Demons', icon: <img src="/difficulties/EXTREME DEMON.png" alt="Demons" className="w-3.5 h-3.5 object-contain shrink-0 inline-block" /> },
-              { id: 'ACTIVITY', label: 'Daily', icon: <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> },
+              { id: 'ACTIVITY', label: isEn ? 'Weekly' : 'Tuần', icon: <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> },
             ]}
           />
         </div>
@@ -896,8 +897,8 @@ export default function HomePage({
                     <th className="px-5 py-3">{t('leaderboard.player')}</th>
                     {mode === 'ACTIVITY' ? (
                       <>
-                        <th className="px-5 py-3 text-center">Tăng Trưởng Hôm Nay</th>
-                        <th className="px-5 py-3 text-right">Điểm Hoạt Động</th>
+                        <th className="px-5 py-3 text-center">{isEn ? 'Weekly Growth' : 'Tăng Trưởng Tuần Này'}</th>
+                        <th className="px-5 py-3 text-right">{isEn ? 'Weekly Points' : 'Điểm Hoạt Động'}</th>
                       </>
                     ) : mode === 'CREATOR' ? (
                       <>

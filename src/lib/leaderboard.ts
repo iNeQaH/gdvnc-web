@@ -1,4 +1,4 @@
-import { getVnTodayString } from '@/lib/activityPoints';
+import { getVnWeekString } from '@/lib/activityPoints';
 import prisma from '@/lib/prisma';
 import { LevelMode, RecordStatus } from '@prisma/client';
 import { pickDecoAndLayoutBadges, cpFromVnLevels } from '@/lib/creatorPoints';
@@ -587,10 +587,10 @@ export async function getStatLeaderboard(stat: 'stars' | 'moons' | 'demons') {
 
 
 export async function getActivityLeaderboard() {
-  const todayVn = getVnTodayString();
+  const currentWeekVn = getVnWeekString();
   const players = await prisma.user.findMany({
     where: {
-      activityDate: todayVn,
+      activityDate: currentWeekVn,
       activityPoints: { gt: 0 },
       isBanned: false,
     },

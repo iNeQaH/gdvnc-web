@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { claimLegacyRecords } from '@/lib/claimLegacyRecords';
 import { syncUserGdBrowserStats } from '@/lib/gdBrowserSync';
-import { getVnTodayString } from '@/lib/activityPoints';
+import { getVnWeekString } from '@/lib/activityPoints';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!isBrowserSameOriginFetch(req)) {
@@ -67,7 +67,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       data: {
         gdVerified: true,
         activityPoints: 0,
-        activityDate: getVnTodayString(),
+        activityDate: getVnWeekString(),
         activityPrevStars: syncedStars,
         activityPrevMoons: syncedMoons,
         activityPrevDemons: syncedDemons,

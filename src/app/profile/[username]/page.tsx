@@ -1599,11 +1599,11 @@ export default function ProfilePage() {
                 <div
                   className="flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-medium"
                   style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
-                  title={isEn ? 'Daily clan activity points earned today' : 'Điểm hoạt động Clan kiếm được trong ngày hôm nay'}
+                  title={isEn ? 'Clan activity points earned this week' : 'Điểm hoạt động Clan kiếm được trong tuần này'}
                 >
                   <div className="flex items-center gap-2">
                     <Flame className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
-                    <span className="ui-dim font-bold text-[11px] uppercase">{isEn ? 'Activity' : 'Hoạt Động'}</span>
+                    <span className="ui-dim font-bold text-[11px] uppercase">{isEn ? 'Weekly Act' : 'Hoạt Động Tuần'}</span>
                   </div>
                   <span className="ui-title font-semibold font-mono text-amber-500 dark:text-amber-400">
                     +{Number(data.activityPoints || 0).toLocaleString()} {isEn ? 'Pts' : 'Điểm'}

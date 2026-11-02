@@ -566,7 +566,7 @@ export default function ClanListPage() {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5" title={isEn ? "Today's clan activity points" : "Điểm hoạt động Clan hôm nay"}>
+                    <div className="flex items-center gap-1.5" title={isEn ? "This week's clan activity points" : "Điểm hoạt động Clan tuần này"}>
                       <Flame className="w-3.5 h-3.5 text-amber-400" />
                       <span className="font-mono text-amber-400 font-bold">{clan.activityPoints ?? 0} {isEn ? 'Pts' : 'Điểm'}</span>
                     </div>
@@ -677,7 +677,7 @@ export default function ClanListPage() {
                     <span>{memberCount} / {tierInfo.maxMembers}</span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-amber-400 font-mono font-bold" title={isEn ? "Today's clan activity points" : "Điểm hoạt động Clan hôm nay"}>
+                  <div className="flex items-center gap-1.5 text-amber-400 font-mono font-bold" title={isEn ? "This week's clan activity points" : "Điểm hoạt động Clan tuần này"}>
                     <Flame className="w-3.5 h-3.5" />
                     <span>{clan.activityPoints ?? 0} {isEn ? 'Pts' : 'Điểm'}</span>
                   </div>

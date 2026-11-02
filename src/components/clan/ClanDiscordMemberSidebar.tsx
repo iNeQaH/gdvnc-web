@@ -17,7 +17,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { UserDisplayName } from '@/components/UserDisplayName';
-import { getVnTodayString } from '@/lib/activityPoints';
+import { getVnWeekString } from '@/lib/activityPoints';
 import { useTheme } from '@/components/ThemeProvider';
 import { getUserListRowStyle } from '@/lib/userListRowStyle';
 
@@ -56,7 +56,7 @@ export default function ClanDiscordMemberSidebar({
   const members: any[] = clan.membersGrouped?.members || [];
   const { resolvedMode } = useTheme();
   const isDark = resolvedMode === 'dark';
-  const todayVn = getVnTodayString();
+  const currentWeekVn = getVnWeekString();
   const canManage = isLeader || isOwnerWeb;
   const canKick = isLeader || isOwnerWeb || isClanMod;
 
@@ -166,7 +166,7 @@ export default function ClanDiscordMemberSidebar({
                       )}
                     </div>
                     {(() => {
-                        const isToday = leader.user?.activityDate === todayVn;
+                        const isToday = leader.user?.activityDate === currentWeekVn;
                         const act = isToday ? (leader.user?.activityPoints || 0) : 0;
                         return (
                           <span className="font-mono text-[10px] text-amber-600 dark:text-amber-400 font-bold block mt-0.5">
@@ -226,7 +226,7 @@ export default function ClanDiscordMemberSidebar({
                         )}
                       </div>
                       {(() => {
-                        const isToday = m.user?.activityDate === todayVn;
+                        const isToday = m.user?.activityDate === currentWeekVn;
                         const act = isToday ? (m.user?.activityPoints || 0) : 0;
                         return (
                           <span className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400/90 font-bold block mt-0.5">
@@ -343,7 +343,7 @@ export default function ClanDiscordMemberSidebar({
                     <div className="min-w-0 flex-1">
                       <UserDisplayName user={m.user} showClanTag={false} />
                       {(() => {
-                        const isToday = m.user?.activityDate === todayVn;
+                        const isToday = m.user?.activityDate === currentWeekVn;
                         const act = isToday ? (m.user?.activityPoints || 0) : 0;
                         return (
                           <span className="font-mono text-[10px] ui-dim font-bold block mt-0.5">

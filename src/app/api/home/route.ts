@@ -5,7 +5,7 @@ import { cachedJson, CACHE_TAGS, PUBLIC_CACHE_HEADERS } from '@/lib/publicCache'
 import { playerDisplayName } from '@/lib/leaderboard';
 import { LevelMode } from '@prisma/client';
 import { calculateUserSp, getClanTier } from '@/lib/clanTypes';
-import { getVnTodayString } from '@/lib/activityPoints';
+import { getVnWeekString } from '@/lib/activityPoints';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,7 +43,7 @@ export async function GET() {
       cachedJson(
         async () => {
           const innerNow = new Date();
-          const todayVn = getVnTodayString();
+          const currentWeekVn = getVnWeekString();
 
           const [
             announcements,
@@ -277,7 +277,7 @@ export async function GET() {
 
           let totalActivityPoints = 0;
           for (const m of c.members) {
-            if (m.user.activityDate === todayVn) {
+            if (m.user.activityDate === currentWeekVn) {
               totalActivityPoints += m.user.activityPoints || 0;
             }
           }
