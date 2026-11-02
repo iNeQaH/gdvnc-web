@@ -683,7 +683,7 @@ export default function HomePage({
   }, [mode, deviceFilter]);
 
   const fetchLeaderboard = async (currentMode: string, currentDevice: string = 'ALL') => {
-    const cacheKey = `lb_${currentMode}_${currentDevice}`;
+    const cacheKey = `lb_v5_${currentMode}_${currentDevice}`;
     const cached = getCachedPageState<any[]>(cacheKey);
     if (cached) {
       setLeaderboard(cached);
