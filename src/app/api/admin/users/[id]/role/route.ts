@@ -122,8 +122,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
 
     if (isSupporterChanged && updated.supporterUntil) {
+      if (!target.supporterUntil || new Date(target.supporterUntil) <= new Date()) {
+        await prisma.clanSpContribution.deleteMany({ where: { userId: id } });
+      }
       await prisma.userSpGrant.updateMany({
-        where: { userId: id },
+        where: { userId: id, amount: { gt: 0 } },
         data: { expiresAt: updated.supporterUntil },
       });
     }

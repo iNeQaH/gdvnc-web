@@ -45,6 +45,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       avatarUrl: true,
       coverUrl: true,
       supporterUntil: true,
+      supporterTotalMonths: true,
+      gdIconSet: true,
       spGrants: {
         select: {
           id: true,
@@ -182,7 +184,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
 
     const viewer = await getSessionUser();
     const isSelf = Boolean(viewer?.userId && viewer.userId === user.id);
-    if (isSelf && !user.isBanned) {
+    const shouldSync = !user.isBanned && (isSelf || Boolean(user.gdUsername));
+    if (shouldSync) {
       // Lưu lại snapshot cũ TRƯỚC KHI sync để tính Điểm Hoạt Động Clan chính xác
       const prevStars = user.gdStars || 0;
       const prevMoons = user.gdMoons || 0;
@@ -194,7 +197,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       const prevActivityDemons = user.activityPrevDemons;
 
       // 1. Cập nhật star, moon, demon từ Geometry Dash (Boomlings)
-      const synced = await syncUserGdBrowserStats(user, viewer);
+      const syncViewer = viewer || { userId: user.id };
+      const synced = await syncUserGdBrowserStats(user, syncViewer);
       if (synced) {
         const statsChanged =
           user.gdStars !== synced.stars ||
@@ -208,6 +212,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         user.creatorPoints = synced.cp;
         user.gdHasGlobalRank = synced.hasGlobalRank;
         user.gdStatsUpdatedAt = new Date();
+        if (synced.iconSet) {
+          (user as any).gdIconSet = synced.iconSet;
+        }
 
         if (statsChanged) {
           clearLeaderboardCache();
@@ -453,6 +460,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
 
     const userSp = calculateUserSp({ supporterUntil: user.supporterUntil, spGrants: user.spGrants });
 
+    let activeSupporterMonths = 0;
+    if (user.supporterUntil) {
+      const remainingMs = new Date(user.supporterUntil).getTime() - Date.now();
+      if (remainingMs > 0) {
+        activeSupporterMonths = Math.max(1, Math.ceil(remainingMs / (30 * 24 * 60 * 60 * 1000)));
+      }
+    }
+    const supporterMonths = Math.max(user.supporterTotalMonths || 0, activeSupporterMonths);
+
     return NextResponse.json(
       {
       success: true,
@@ -466,6 +482,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         avatarUrl: user.avatarUrl,
         coverUrl: user.coverUrl,
         supporterUntil: user.supporterUntil,
+        supporterTotalMonths: user.supporterTotalMonths || 0,
+        supporterMonths,
+        gdIconSet: (user as any).gdIconSet || null,
         spGrants: user.spGrants || [],
         spPoints: user.spPoints || 0,
         gdStars: user.gdStars || 0,

@@ -1,4 +1,4 @@
-import { getVnTodayString } from '@/lib/activityPoints';
+import { getVnWeekString } from '@/lib/activityPoints';
 import { requireAuth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -111,28 +111,13 @@ export async function POST(
           where: { id: joinRequest.userId },
           data: {
             activityPoints: 0,
-            activityDate: getVnTodayString(),
+            activityDate: getVnWeekString(),
             activityPrevStars: joinRequest.user.gdStars || 0,
             activityPrevMoons: joinRequest.user.gdMoons || 0,
             activityPrevDemons: joinRequest.user.gdDemons || 0,
           },
         });
 
-        // Nếu user có SP, tự động đóng góp SP của họ cho clan
-        if (userSp > 0) {
-          await tx.clanSpContribution.upsert({
-            where: { userId: joinRequest.userId },
-            create: {
-              clanId: clan.id,
-              userId: joinRequest.userId,
-              spPledged: userSp,
-            },
-            update: {
-              clanId: clan.id,
-              spPledged: userSp,
-            },
-          });
-        }
 
         await tx.clanJoinRequest.delete({ where: { id: requestId } });
       });

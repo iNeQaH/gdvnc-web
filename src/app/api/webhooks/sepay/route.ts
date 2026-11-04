@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import prisma from '@/lib/prisma';
 import { calculateSupportPrice, detectMonthsFromAmount } from '@/lib/supportPayment';
 import { logAudit } from '@/lib/audit';
+import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
 
 function verifySePayAuth(req: Request, rawBody: string, secret: string): boolean {
   if (!secret) return false;
@@ -64,14 +65,14 @@ function parseTransactionMemo(content: string) {
     monthsFromMemo = parseInt(m3[1], 10);
   }
 
-  // 2. Pattern 1: GDVN <username> ...
-  const gdvnMatch = clean.match(/GDVN\s+([A-Z0-9_.-]+)/);
+  // 2. Pattern 1: GDVN <username> ... (hoặc GDVN<username> dính liền)
+  const gdvnMatch = clean.match(/(?:GDVN|SEVQRGDVN)\s*([A-Z0-9_.-]+?)(?:\s*SUPPORT|\s*\d+T|\s|$)/);
   if (gdvnMatch && gdvnMatch[1] && gdvnMatch[1] !== 'SUPPORT') {
     candidates.push(gdvnMatch[1]);
   }
 
   // 3. Pattern 2: <username> SUPPORT ...
-  const supportMatch = clean.match(/([A-Z0-9_.-]+)\s+SUPPORT/);
+  const supportMatch = clean.match(/([A-Z0-9_.-]+)\s*SUPPORT/);
   if (supportMatch && supportMatch[1] && supportMatch[1] !== 'GDVN') {
     candidates.push(supportMatch[1]);
   }
@@ -93,6 +94,7 @@ function parseTransactionMemo(content: string) {
   }
 
   // Also include base names for candidates with trailing numbers (e.g. SOW205 -> SOW)
+  // đặt ở cuối để ưu tiên username gốc chính xác trước
   const baseCandidates: string[] = [];
   for (const c of candidates) {
     if (/\d+$/.test(c)) {
@@ -146,19 +148,23 @@ export async function POST(req: Request) {
 
     // Idempotency check: prevent duplicate webhook processing for the same SePay transaction ID
     if (sepayTxId) {
-      const existingTx = await prisma.auditLog.findFirst({
-        where: {
-          action: 'SEPAY_WEBHOOK',
-          details: {
-            path: ['sepayTxId'],
-            equals: sepayTxId,
+      try {
+        const existingTx = await prisma.auditLog.findFirst({
+          where: {
+            action: 'SEPAY_WEBHOOK',
+            details: {
+              path: ['sepayTxId'],
+              equals: sepayTxId,
+            },
           },
-        },
-        select: { id: true },
-      });
-      if (existingTx) {
-        console.log(`[SePay Webhook] Duplicate transaction ${sepayTxId} ignored.`);
-        return NextResponse.json({ success: true, note: 'Duplicate transaction already processed' });
+          select: { id: true },
+        });
+        if (existingTx) {
+          console.log(`[SePay Webhook] Duplicate transaction ${sepayTxId} ignored.`);
+          return NextResponse.json({ success: true, note: 'Duplicate transaction already processed' });
+        }
+      } catch (auditErr) {
+        console.warn('[SePay Webhook] Audit lookup check error, continuing:', auditErr);
       }
     }
 
@@ -168,11 +174,18 @@ export async function POST(req: Request) {
     let targetUser: any = null;
     let matchedCandidate = '';
     for (const cand of candidates) {
+      const cleanCand = cand.replace(/[^A-Z0-9]/gi, '');
       const u = await prisma.user.findFirst({
         where: {
           OR: [
-            { username: { equals: cand, mode: 'insensitive' } },
-            { gdUsername: { equals: cand, mode: 'insensitive' } },
+            { username: { equals: cand, mode: 'insensitive' as const } },
+            { displayName: { equals: cand, mode: 'insensitive' as const } },
+            { gdUsername: { equals: cand, mode: 'insensitive' as const } },
+            ...(cleanCand.length >= 3 && cleanCand !== cand ? [
+              { username: { equals: cleanCand, mode: 'insensitive' as const } },
+              { displayName: { equals: cleanCand, mode: 'insensitive' as const } },
+              { gdUsername: { equals: cleanCand, mode: 'insensitive' as const } },
+            ] : []),
           ],
         },
       });

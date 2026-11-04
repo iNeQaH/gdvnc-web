@@ -114,26 +114,26 @@ export function AnnouncementPoll({
                 />
               )}
 
-              <div className="relative z-10 flex items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2.5 min-w-0">
+              <div className="relative z-10 flex items-start sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-start sm:items-center gap-2.5 min-w-0 flex-1">
                   <div
-                    className={`w-4 h-4 rounded-${poll.allowMultiple ? 'md' : 'full'} border flex items-center justify-center shrink-0 ${
+                    className={`mt-0.5 sm:mt-0 w-4 h-4 rounded-${poll.allowMultiple ? 'md' : 'full'} border flex items-center justify-center shrink-0 ${
                       isSelected ? 'bg-sky-500 border-sky-500 text-white' : 'border-zinc-500/40'
                     }`}
                   >
                     {isSelected && <Check className="w-3 h-3" />}
                   </div>
-                  <span className={`font-semibold truncate ${isSelected ? 'ui-title font-bold' : 'ui-title'}`}>
+                  <span className={`font-semibold break-words whitespace-normal text-left leading-snug min-w-0 flex-1 ${isSelected ? 'ui-title font-bold' : 'ui-title'}`}>
                     {opt.text}
                   </span>
                   {isMyChoice && (
-                    <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-0.5 shrink-0">
+                    <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-0.5 shrink-0 self-start sm:self-center mt-0.5 sm:mt-0">
                       <CheckCircle2 className="w-3 h-3" /> Đã chọn
                     </span>
                   )}
                 </div>
 
-                <div className="text-right shrink-0">
+                <div className="text-right shrink-0 self-start sm:self-center">
                   <span className="font-mono font-bold text-xs ui-title">{opt.percentage}%</span>
                   <span className="text-[10px] ui-dim ml-1.5">({opt.votes})</span>
                 </div>

@@ -373,7 +373,12 @@ export async function POST(req: Request) {
         });
       }
 
-      // 2. Update user supporter date
+      // 2. Xóa đóng góp clan cũ nếu supporter trước đó đã hết hạn để tránh tự động trừ SP
+      if (!currentUntil || new Date(currentUntil) <= now) {
+        await tx.clanSpContribution.deleteMany({ where: { userId: user.id } });
+      }
+
+      // 3. Update user supporter date
       const updated = await tx.user.update({
         where: { id: user.id },
         data: { supporterUntil: nextDate },

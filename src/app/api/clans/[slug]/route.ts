@@ -26,6 +26,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
           select: {
             id: true,
             username: true,
+            displayName: true,
             avatarUrl: true,
             supporterUntil: true,
             nameColor: true,
@@ -65,6 +66,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
               select: {
                 id: true,
                 username: true,
+                displayName: true,
                 avatarUrl: true,
                 supporterUntil: true,
                 nameColor: true,
@@ -382,7 +384,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     });
 
     const leaderRaw = rawClan.members.find((m) => m.role === 'LEADER');
-    const leaderMember = leaderRaw ? mapMember(leaderRaw) : null;
+    const leaderMember = leaderRaw
+      ? mapMember(leaderRaw)
+      : rawClan.leader
+      ? {
+          id: `leader-${rawClan.leader.id}`,
+          clanId: rawClan.id,
+          userId: rawClan.leader.id,
+          role: 'LEADER',
+          joinedAt: rawClan.createdAt,
+          user: rawClan.leader,
+          spPledged: contribMap.get(rawClan.leader.id) || 0,
+        }
+      : null;
     const modMembers = rawClan.members.filter((m) => m.role === 'MODERATOR').map(mapMember);
     const nonModMembers = rawClan.members.filter((m) => m.role === 'MEMBER').map(mapMember);
     const contributorMembers = nonModMembers.filter((m) => (m.spPledged || 0) > 0);
@@ -415,6 +429,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
               select: {
                 id: true,
                 username: true,
+                displayName: true,
                 avatarUrl: true,
                 supporterUntil: true,
                 nameColor: true,

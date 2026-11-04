@@ -19,6 +19,7 @@ import {
   ChevronRight,
   ExternalLink,
   Info,
+  ShieldCheck,
 } from 'lucide-react';
 import { AnimatedTabs } from '@/components/AnimatedTabs';
 import DiscordMarkdown from '@/components/DiscordMarkdown';
@@ -538,6 +539,76 @@ export default function GuidelinesView({ currentTab }: GuidelinesViewProps) {
                 <span>Bạn là Quản trị viên: Nhấn nút <b>"Sửa trang này"</b> ở góc trên để tự viết nội dung bằng Discord Markdown.</span>
               </div>
             )}
+          </div>
+
+          {/* Chính sách bảo vệ dữ liệu cá nhân theo Nghị định 13/2023/NĐ-CP */}
+          <div
+            className="p-6 sm:p-7 rounded-3xl border space-y-3"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-black text-sm sm:text-base ui-title">
+                  Chính Sách Bảo Vệ Dữ Liệu Cá Nhân (Nghị định 13/2023/NĐ-CP)
+                </h3>
+                <span className="text-[11px] ui-dim">
+                  Cam kết bảo vệ quyền riêng tư & dữ liệu người dùng tại GDVN
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2 text-xs ui-dim leading-relaxed pt-1">
+              <p>
+                <b>1. Dữ liệu thu thập:</b> GDVN chỉ thu thập các thông tin tối thiểu cần thiết để vận hành tài khoản bao gồm Địa chỉ Email (xác thực OTP đăng ký & khôi phục mật khẩu), Tên người dùng (Username/DisplayName), và ID tài khoản Geometry Dash công khai do người dùng tự nguyện liên kết.
+              </p>
+              <p>
+                <b>2. Mục đích xử lý:</b> Dữ liệu được sử dụng duy nhất cho việc xác thực người chơi, duy trì bảng xếp hạng thành tích, trao huy hiệu danh dự và bảo đảm an toàn hệ thống chống gian lận.
+              </p>
+              <p>
+                <b>3. Bảo mật & Bên thứ ba:</b> Chúng tôi cam kết tuyệt đối không bán, chia sẻ hoặc chuyển giao thông tin cá nhân của người dùng cho bất kỳ bên thứ ba nào vì mục đích thương mại hay quảng cáo.
+              </p>
+              <p>
+                <b>4. Quyền của chủ thể dữ liệu:</b> Bạn có đầy đủ quyền xem, chỉnh sửa thông tin, yêu cầu trích xuất hoặc xóa vĩnh viễn tài khoản và toàn bộ dữ liệu cá nhân bất kỳ lúc nào tại trang Cài đặt Profile cá nhân hoặc liên hệ Ban Quản Trị.
+              </p>
+            </div>
+          </div>
+
+          {/* Chính sách bảo vệ dữ liệu cá nhân theo Nghị định 13/2023/NĐ-CP */}
+          <div
+            className="p-6 sm:p-7 rounded-3xl border space-y-3"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-black text-sm sm:text-base ui-title">
+                  Chính Sách Bảo Vệ Dữ Liệu Cá Nhân (Nghị định 13/2023/NĐ-CP)
+                </h3>
+                <span className="text-[11px] ui-dim">
+                  Cam kết bảo vệ quyền riêng tư & dữ liệu người dùng tại GDVN
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2 text-xs ui-dim leading-relaxed pt-1">
+              <p>
+                <b>1. Dữ liệu thu thập:</b> GDVN chỉ thu thập các thông tin tối thiểu cần thiết để vận hành tài khoản bao gồm Địa chỉ Email (xác thực OTP đăng ký & khôi phục mật khẩu), Tên người dùng (Username/DisplayName), và ID tài khoản Geometry Dash công khai do người dùng tự nguyện liên kết.
+              </p>
+              <p>
+                <b>2. Mục đích xử lý:</b> Dữ liệu được sử dụng duy nhất cho việc xác thực người chơi, duy trì bảng xếp hạng thành tích, trao huy hiệu danh dự và bảo đảm an toàn hệ thống chống gian lận.
+              </p>
+              <p>
+                <b>3. Bảo mật & Bên thứ ba:</b> Chúng tôi cam kết tuyệt đối không bán, chia sẻ hoặc chuyển giao thông tin cá nhân của người dùng cho bất kỳ bên thứ ba nào vì mục đích thương mại hay quảng cáo.
+              </p>
+              <p>
+                <b>4. Quyền của chủ thể dữ liệu:</b> Bạn có đầy đủ quyền xem, chỉnh sửa thông tin, yêu cầu trích xuất hoặc xóa vĩnh viễn tài khoản và toàn bộ dữ liệu cá nhân bất kỳ lúc nào tại trang Cài đặt Profile cá nhân hoặc liên hệ Ban Quản Trị.
+              </p>
+            </div>
           </div>
 
           {/* 3 Subpage Cards */}

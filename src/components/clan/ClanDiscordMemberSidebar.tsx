@@ -146,7 +146,7 @@ export default function ClanDiscordMemberSidebar({
                         <img src={leader.user.avatarUrl} alt="" className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center font-bold text-amber-600 dark:text-amber-400 text-xs">
-                          {leader.user.username[0]?.toUpperCase()}
+                          {(leader.user.displayName || leader.user.username)[0]?.toUpperCase()}
                         </div>
                       )}
                     </div>
@@ -206,7 +206,7 @@ export default function ClanDiscordMemberSidebar({
                           <img src={m.user.avatarUrl} alt="" className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center font-bold text-emerald-600 dark:text-emerald-400 text-xs">
-                            {m.user.username[0]?.toUpperCase()}
+                            {(m.user.displayName || m.user.username)[0]?.toUpperCase()}
                           </div>
                         )}
                       </div>
@@ -298,9 +298,16 @@ export default function ClanDiscordMemberSidebar({
                             +{m.spPledged} SP
                           </span>
                         </div>
-                        <span className="font-mono text-[10px] ui-dim font-bold block">
-                          {(m.user.classicPp || 0).toLocaleString()} Pt
-                        </span>
+                        {(() => {
+                          const isToday = m.user?.activityDate === currentWeekVn;
+                          const act = isToday ? (m.user?.activityPoints || 0) : 0;
+                          return (
+                            <span className="font-mono text-[10px] ui-dim font-bold block mt-0.5">
+                              {act > 0 && <span className="text-amber-500 mr-1.5"><Flame className="w-2.5 h-2.5 inline mr-0.5" />+{act} Act •</span>}
+                              {(m.user.classicPp || 0).toLocaleString()} Pt
+                            </span>
+                          );
+                        })()}
                       </div>
                     </Link>
 

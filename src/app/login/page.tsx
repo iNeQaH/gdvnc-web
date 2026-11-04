@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { AnimatedTabs } from '@/components/AnimatedTabs';
 import { KeyRound, User, Mail, ArrowRight, AlertCircle, CheckCircle2, ShieldCheck, RefreshCw, Send, Lock, Eye, EyeOff } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
@@ -368,6 +369,8 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
                   value={loginIdentifier}
                   onChange={(e) => setLoginIdentifier(e.target.value)}
                   placeholder={t('auth.identifier_ph')}
+                  autoComplete="username"
+                  inputMode="email"
                   className="w-full pl-9 pr-3 py-2.5 rounded-xl text-xs border focus:outline-none focus:ring-1 focus:ring-sky-500"
                   style={{
                     backgroundColor: 'var(--bg-subtle)',
@@ -475,6 +478,28 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
                   : `Lưu ý: Còn ${remainingAttempts} lần thử trước khi bị áp dụng thời gian chờ.`}
               </div>
             )}
+
+            {/* Tuân thủ Nghị định 13/2023/NĐ-CP về Bảo vệ dữ liệu cá nhân */}
+            <div className="pt-1.5 pb-0.5">
+              <label className="flex items-start gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  required
+                  className="mt-0.5 rounded text-sky-500 cursor-pointer accent-sky-500 shrink-0"
+                />
+                <span className="text-[11px] ui-dim leading-snug">
+                  {language === 'en' ? (
+                    <>
+                      I agree to the <Link href="/guidelines" className="text-sky-500 hover:underline">Guidelines</Link> and consent to the processing of personal data (Email, GD Account) in accordance with Vietnam Decree 13/2023/NĐ-CP.
+                    </>
+                  ) : (
+                    <>
+                      Tôi đồng ý với <Link href="/guidelines" className="text-sky-500 hover:underline font-semibold">Quy định</Link> và chấp thuận cho phép xử lý dữ liệu cá nhân (Email, GD Account) theo Nghị định 13/2023/NĐ-CP.
+                    </>
+                  )}
+                </span>
+              </label>
+            </div>
 
             <button
               type="submit"

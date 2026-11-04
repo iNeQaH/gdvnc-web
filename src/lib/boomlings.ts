@@ -12,6 +12,23 @@ const BOOMLINGS_BASE = process.env.BOOMLINGS_API_URL || 'https://www.boomlings.c
 const GD_SECRET = 'Wmfd2893gb7';
 const ENABLE_GDBROWSER_FALLBACK = process.env.GD_ENABLE_GDBROWSER_FALLBACK !== 'false';
 
+export interface GdPlayerIconSet {
+  cube: number;
+  ship: number;
+  ball: number;
+  ufo: number;
+  wave: number;
+  robot: number;
+  spider: number;
+  swing: number;
+  jetpack: number;
+  deathEffect?: number;
+  glow: boolean;
+  color1: number;
+  color2: number;
+  color3?: number;
+}
+
 export interface NormalizedGdProfile {
   username: string;
   playerId: number;
@@ -30,6 +47,7 @@ export interface NormalizedGdProfile {
   twitch?: string;
   discord?: string;
   demonBreakdown?: number[];
+  iconSet?: GdPlayerIconSet;
 }
 
 export interface NormalizedGdLevel {
@@ -509,6 +527,23 @@ export async function fetchGdProfile(username: string): Promise<NormalizedGdProf
             const rawRank = Number(data['30'] || 0);
             const hasGlobalRank = !isNaN(rawRank) && rawRank >= 1;
 
+            const iconSet: GdPlayerIconSet = {
+              cube: Number(data['21'] || 1),
+              ship: Number(data['22'] || 1),
+              ball: Number(data['23'] || 1),
+              ufo: Number(data['24'] || 1),
+              wave: Number(data['25'] || 1),
+              robot: Number(data['26'] || 1),
+              spider: Number(data['43'] || 1),
+              swing: Number(data['53'] || 1),
+              jetpack: Number(data['54'] || 1),
+              deathEffect: Number(data['48'] || 1),
+              glow: data['28'] === '1',
+              color1: Number(data['10'] || 0),
+              color2: Number(data['11'] || 0),
+              color3: Number(data['51'] || 0),
+            };
+
             return {
               username: data['1'],
               playerId: Number(data['2'] || 0),
@@ -527,6 +562,7 @@ export async function fetchGdProfile(username: string): Promise<NormalizedGdProf
               twitch: data['45'] || undefined,
               discord: data['59'] || undefined,
               demonBreakdown: data['55'] ? data['55'].split(',').map(Number) : undefined,
+              iconSet,
             };
           } else {
             // Username không khớp nữa (người dùng đổi tên): xóa cache accountId
@@ -577,6 +613,23 @@ export async function fetchGdProfile(username: string): Promise<NormalizedGdProf
       const rawRank = data.rank !== undefined && data.rank !== null ? parseInt(String(data.rank), 10) : 0;
       const hasGlobalRank = !isNaN(rawRank) && rawRank >= 1;
 
+      const fallbackIconSet: GdPlayerIconSet = {
+        cube: Number(data.icon || 1),
+        ship: Number(data.ship || 1),
+        ball: Number(data.ball || 1),
+        ufo: Number(data.ufo || 1),
+        wave: Number(data.wave || 1),
+        robot: Number(data.robot || 1),
+        spider: Number(data.spider || 1),
+        swing: Number(data.swing || 1),
+        jetpack: Number(data.jetpack || 1),
+        deathEffect: Number(data.deathEffect || 1),
+        glow: !!data.glow,
+        color1: Number(data.col1 ?? data.color1 ?? 0),
+        color2: Number(data.col2 ?? data.color2 ?? 0),
+        color3: Number(data.colG ?? data.col3 ?? data.color3 ?? 0),
+      };
+
       return {
         username: data.username || cleanUser,
         playerId: Number(data.playerID || 0),
@@ -593,6 +646,7 @@ export async function fetchGdProfile(username: string): Promise<NormalizedGdProf
         youtube: data.youtube || undefined,
         twitter: data.twitter || undefined,
         twitch: data.twitch || undefined,
+        iconSet: fallbackIconSet,
       };
     } catch {
       return null;

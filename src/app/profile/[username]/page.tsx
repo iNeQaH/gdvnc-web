@@ -20,6 +20,7 @@ import GdUnverifiedNotice from '@/components/GdUnverifiedNotice';
 import { logoutClient } from '@/lib/sessionClient';
 import { calculateUserSp } from '@/lib/clanTypes';
 import DeviceBadge from '@/components/DeviceBadge';
+import GdIconSetDisplay from '@/components/GdIconSetDisplay';
 import DiscordMarkdown from '@/components/DiscordMarkdown';
 
 const RECORD_PAGE_SIZE = 10;
@@ -807,33 +808,6 @@ export default function ProfilePage() {
     }
   };
 
-  const handleResetCp = () => {
-    if (!currentUser || !isFullAdmin || !data) return;
-    showConfirm(t('profile.cp_reset_confirm'), async () => {
-      try {
-        const res = await fetch(`/api/admin/users/${data.id}/cp`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'reset',
-            currentAdminUsername: currentUser.username,
-          }),
-        });
-        const resData = await res.json();
-        if (res.ok && resData.success) {
-          showToast(t('profile.cp_reset_ok'), 'success');
-          setCpInput(String(resData.creatorPoints ?? 0));
-          setIsEditingCp(false);
-          fetchProfile();
-        } else {
-          showToast(resData.error || t('admin.action_fail'), 'error');
-        }
-      } catch (e) {
-        showToast(t('common.server_error'), 'error');
-      }
-    });
-  };
-
   const handleResetPassword = async () => {
     if (!currentUser || !isSuperAdmin || !data) return;
     const pwd = newPasswordInput.trim();
@@ -1262,6 +1236,7 @@ export default function ProfilePage() {
         className={`max-w-[1200px] mx-auto py-8 px-4 space-y-6 relative min-h-screen ${isProfileDark ? 'dark' : ''} ${isGlitchTheme ? 'gdvn-profile-glitch' : ''} ${isGlitchTheme && isCardsActive ? 'gdvn-glitch-cards-active' : ''} ${isGlitchTheme && isAvatarActive ? 'gdvn-glitch-avatar-active' : ''} ${isGlitchTheme && isTextActive ? 'gdvn-glitch-text-active' : ''}`}
         style={{
           colorScheme: isProfileDark ? 'dark' : 'light',
+          color: 'var(--text-body)',
           ...(isProfileDark
             ? {
                 '--bg-page': profileBgColor,
@@ -1444,6 +1419,27 @@ export default function ProfilePage() {
                     </div>
                   )}
 
+                  {(() => {
+                    const activeMonths = data.supporterUntil && new Date(data.supporterUntil) > new Date()
+                      ? Math.max(1, Math.ceil((new Date(data.supporterUntil).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)))
+                      : 0;
+                    const displayMonths = Math.max(data.supporterMonths || 0, activeMonths);
+                    if (displayMonths <= 0 || data.hideSupporterPublic) return null;
+                    return (
+                      <span
+                        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black border shadow-xs transition-transform"
+                        style={{
+                          backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                          borderColor: 'rgba(56, 189, 248, 0.35)',
+                          color: '#38bdf8',
+                        }}
+                        title={isEn ? `Supporter for ${displayMonths} month(s)` : `Đã ủng hộ ${displayMonths} tháng`}
+                      >
+                        <Sparkles className="w-3 h-3 text-sky-400" />
+                        <span>Supporter • {displayMonths} {isEn ? 'mo' : 'tháng'}</span>
+                      </span>
+                    );
+                  })()}
                   {data.isBanned && (
                     <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/30 flex items-center gap-1">
                       <Flame className="w-3 h-3" /> Bị đình chỉ
@@ -1667,6 +1663,10 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+{data.gdIconSet && (
+        <GdIconSetDisplay iconSet={data.gdIconSet} />
+      )}
 
       {/* Stats & Bio Section */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -2178,31 +2178,7 @@ export default function ProfilePage() {
               </div>
             </button>
 
-            {/* 2. Sửa / Reset Creator Points */}
-            <button
-              type="button"
-              disabled={!isFullAdmin && !isSuperAdmin}
-              onClick={handleResetCp}
-              className="p-3.5 rounded-2xl border transition-all text-left group hover:scale-[1.01] active:scale-[0.99] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="w-8 h-8 rounded-xl bg-pink-500/10 text-pink-500 flex items-center justify-center border border-pink-500/20 group-hover:bg-pink-500 group-hover:text-white transition-colors">
-                  <Hammer className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-pink-500">
-                  {formatCp(data.creatorPoints)} CP
-                </span>
-              </div>
-              <div className="text-xs font-bold ui-title group-hover:text-pink-500 transition-colors">
-                Reset Creator Points
-              </div>
-              <div className="text-[11px] ui-dim mt-0.5 leading-snug">
-                Đặt lại điểm sáng tạo về 0 hoặc tính toán lại
-              </div>
-            </button>
-
-            {/* 3. Đặt lại Mật khẩu (Owner web) */}
+            {/* 2. Đặt lại Mật khẩu (Owner web) */}
             <button
               type="button"
               disabled={!isSuperAdmin}
@@ -2411,10 +2387,14 @@ export default function ProfilePage() {
                       : 'var(--text-dim)',
                   }}
                 >
-                  <span className="font-semibold text-[10px] uppercase opacity-75">Hạn Supporter:</span>
+                  <span className="font-semibold text-[10px] uppercase opacity-75">{isEn ? 'Supporter Duration:' : 'Thời gian Supporter:'}</span>
                   <span className="font-bold text-xs truncate">
                     {data.supporterUntil && new Date(data.supporterUntil) > new Date()
-                      ? new Date(data.supporterUntil).toLocaleDateString(language === 'en' ? 'en-US' : 'vi-VN')
+                      ? (() => {
+                          const activeMonths = Math.max(1, Math.ceil((new Date(data.supporterUntil).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)));
+                          const m = Math.max(data.supporterMonths || 0, activeMonths);
+                          return `${m} ${isEn ? 'months' : 'tháng'}`;
+                        })()
                       : (isEn ? 'Not active' : 'Chưa kích hoạt')}
                   </span>
                 </div>
@@ -2629,18 +2609,7 @@ export default function ProfilePage() {
                   </div>
                 )}
               </button>
-              {isFullAdmin && (
-              <div className="flex items-center justify-end gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={handleResetCp}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border hover:opacity-80"
-                  style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                >
-                  <RotateCcw className="w-3 h-3" /> {t('profile.reset_cp')}
-                </button>
-              </div>
-              )}
+
             </div>
 
             {/* Action buttons */}

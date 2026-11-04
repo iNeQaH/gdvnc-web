@@ -71,14 +71,14 @@ function parseInlineTokens(text: string, keyPrefix: string): React.ReactNode[] {
       nodes.push(
         <code
           key={key}
-          className="px-1.5 py-0.5 rounded bg-black/40 text-amber-300 font-mono text-xs border border-white/10"
+          className="px-1.5 py-0.5 rounded bg-slate-200/90 dark:bg-black/50 text-pink-600 dark:text-amber-300 font-mono text-xs border border-slate-300/80 dark:border-white/10"
         >
           {code}
         </code>
       );
     } else if (bold !== undefined) {
       nodes.push(
-        <strong key={key} className="font-extrabold text-[color:var(--text-title,#fff)]">
+        <strong key={key} className="font-extrabold text-[color:var(--text-title)]">
           {parseInlineTokens(bold, `${key}-b`)}
         </strong>
       );
@@ -108,7 +108,7 @@ function parseInlineTokens(text: string, keyPrefix: string): React.ReactNode[] {
           href={linkUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sky-400 hover:text-sky-300 hover:underline font-semibold break-all"
+          className="text-sky-500 dark:text-sky-400 underline underline-offset-2 hover:opacity-80 transition-opacity font-medium break-all"
         >
           {linkText}
         </a>
@@ -120,7 +120,7 @@ function parseInlineTokens(text: string, keyPrefix: string): React.ReactNode[] {
           href={rawUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sky-400 hover:text-sky-300 hover:underline font-semibold break-all"
+          className="text-sky-500 dark:text-sky-400 underline underline-offset-2 hover:opacity-80 transition-opacity font-medium break-all"
         >
           {rawUrl}
         </a>
@@ -137,11 +137,12 @@ function parseInlineTokens(text: string, keyPrefix: string): React.ReactNode[] {
   return nodes;
 }
 
-export function parseDiscordMarkdown(rawText: string): React.ReactNode[] {
-  if (!rawText) return [];
+export function parseDiscordMarkdown(content: string): React.ReactNode[] {
+  if (!content) return [];
 
-  const lines = rawText.split(/\r?\n/);
+  const lines = content.replace(/\r\n/g, '\n').split('\n');
   const elements: React.ReactNode[] = [];
+
   let inCodeBlock = false;
   let codeBlockLines: string[] = [];
   let codeBlockLang = '';
@@ -149,17 +150,23 @@ export function parseDiscordMarkdown(rawText: string): React.ReactNode[] {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    // Handle code blocks: ```lang
-    if (line.trim().startsWith('```')) {
-      if (inCodeBlock) {
-        // End of code block
+    // Check for Multi-line Code Block toggle (```[lang])
+    if (line.startsWith('```')) {
+      if (!inCodeBlock) {
+        inCodeBlock = true;
+        codeBlockLang = line.slice(3).trim();
+        codeBlockLines = [];
+        continue;
+      } else {
+        // Closing code block
+        inCodeBlock = false;
         elements.push(
           <div
             key={`cb-${i}`}
-            className="my-3 rounded-xl overflow-hidden border border-white/10 bg-black/60 shadow-inner font-mono text-xs"
+            className="my-3 rounded-xl overflow-hidden border border-slate-300/70 dark:border-white/10 bg-slate-900 shadow-inner font-mono text-xs"
           >
             {codeBlockLang && (
-              <div className="px-3 py-1 bg-white/5 border-b border-white/10 text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+              <div className="px-3 py-1 bg-white/5 border-b border-white/5 text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
                 {codeBlockLang}
               </div>
             )}
@@ -168,15 +175,8 @@ export function parseDiscordMarkdown(rawText: string): React.ReactNode[] {
             </pre>
           </div>
         );
-        inCodeBlock = false;
         codeBlockLines = [];
         codeBlockLang = '';
-        continue;
-      } else {
-        // Start of code block
-        inCodeBlock = true;
-        codeBlockLang = line.trim().slice(3).trim();
-        codeBlockLines = [];
         continue;
       }
     }
@@ -186,10 +186,10 @@ export function parseDiscordMarkdown(rawText: string): React.ReactNode[] {
       continue;
     }
 
-    // Check for Headers
+    // Check for Headings (#, ##, ###)
     if (line.startsWith('### ')) {
       elements.push(
-        <h3 key={`h3-${i}`} className="text-base font-bold text-[color:var(--text-title,#fff)] mt-3 mb-1">
+        <h3 key={`h3-${i}`} className="text-base font-bold text-[color:var(--text-title)] mt-3 mb-1">
           {parseInlineTokens(line.slice(4), `h3-${i}`)}
         </h3>
       );
@@ -197,7 +197,7 @@ export function parseDiscordMarkdown(rawText: string): React.ReactNode[] {
     }
     if (line.startsWith('## ')) {
       elements.push(
-        <h2 key={`h2-${i}`} className="text-lg font-black text-[color:var(--text-title,#fff)] mt-4 mb-1">
+        <h2 key={`h2-${i}`} className="text-lg font-black text-[color:var(--text-title)] mt-4 mb-1">
           {parseInlineTokens(line.slice(3), `h2-${i}`)}
         </h2>
       );
@@ -205,7 +205,7 @@ export function parseDiscordMarkdown(rawText: string): React.ReactNode[] {
     }
     if (line.startsWith('# ')) {
       elements.push(
-        <h1 key={`h1-${i}`} className="text-xl font-black text-[color:var(--text-title,#fff)] mt-4 mb-1.5 border-b border-white/10 pb-1">
+        <h1 key={`h1-${i}`} className="text-xl font-black text-[color:var(--text-title)] mt-4 mb-1.5 border-b border-[color:var(--border-subtle)] pb-1">
           {parseInlineTokens(line.slice(2), `h1-${i}`)}
         </h1>
       );
@@ -215,7 +215,7 @@ export function parseDiscordMarkdown(rawText: string): React.ReactNode[] {
     // Check for Subtext (-# ...)
     if (line.startsWith('-# ')) {
       elements.push(
-        <p key={`sub-${i}`} className="text-[11px] opacity-70 leading-normal my-0.5">
+        <p key={`sub-${i}`} className="text-[11px] opacity-75 leading-normal my-0.5 text-[color:var(--text-body)]">
           {parseInlineTokens(line.slice(3), `sub-${i}`)}
         </p>
       );
@@ -228,7 +228,7 @@ export function parseDiscordMarkdown(rawText: string): React.ReactNode[] {
       elements.push(
         <blockquote
           key={`quote-${i}`}
-          className="border-l-4 border-sky-500 pl-3 py-1 my-1 italic bg-sky-500/10 rounded-r-lg text-slate-200 text-sm"
+          className="border-l-4 border-sky-500 pl-3 py-1 my-1 italic bg-sky-500/10 rounded-r-lg text-[color:var(--text-body)] text-sm"
         >
           {parseInlineTokens(quoteText, `quote-${i}`)}
         </blockquote>
@@ -238,14 +238,14 @@ export function parseDiscordMarkdown(rawText: string): React.ReactNode[] {
 
     // Check for Horizontal Divider (--- or *** or ___)
     if (/^(\s*[-*_]\s*){3,}$/.test(line.trim())) {
-      elements.push(<hr key={`hr-${i}`} className="my-4 border-t border-white/15" />);
+      elements.push(<hr key={`hr-${i}`} className="my-4 border-t border-[color:var(--border-subtle)]" />);
       continue;
     }
 
     // Check for Bullet list (- ... or * ...)
     if (/^[-*]\s+/.test(line)) {
       elements.push(
-        <li key={`li-${i}`} className="ml-5 list-disc text-sm leading-relaxed my-0.5">
+        <li key={`li-${i}`} className="ml-5 list-disc text-sm leading-relaxed my-0.5 text-[color:var(--text-body)]">
           {parseInlineTokens(line.replace(/^[-*]\s+/, ''), `li-${i}`)}
         </li>
       );
@@ -255,7 +255,7 @@ export function parseDiscordMarkdown(rawText: string): React.ReactNode[] {
     // Check for Numbered list (1. ...)
     if (/^\d+\.\s+/.test(line)) {
       elements.push(
-        <li key={`oli-${i}`} className="ml-5 list-decimal text-sm leading-relaxed my-0.5">
+        <li key={`oli-${i}`} className="ml-5 list-decimal text-sm leading-relaxed my-0.5 text-[color:var(--text-body)]">
           {parseInlineTokens(line.replace(/^\d+\.\s+/, ''), `oli-${i}`)}
         </li>
       );
@@ -282,7 +282,7 @@ export function parseDiscordMarkdown(rawText: string): React.ReactNode[] {
 
     // Standard paragraph line
     elements.push(
-      <p key={`p-${i}`} className="min-h-[1.25rem] leading-relaxed text-sm">
+      <p key={`p-${i}`} className="min-h-[1.25rem] leading-relaxed text-sm text-[color:var(--text-body)]">
         {parseInlineTokens(line, `p-${i}`)}
       </p>
     );
@@ -293,7 +293,7 @@ export function parseDiscordMarkdown(rawText: string): React.ReactNode[] {
     elements.push(
       <div
         key="cb-unclosed"
-        className="my-3 rounded-xl overflow-hidden border border-white/10 bg-black/60 shadow-inner font-mono text-xs"
+        className="my-3 rounded-xl overflow-hidden border border-slate-300/70 dark:border-white/10 bg-slate-900 shadow-inner font-mono text-xs"
       >
         <pre className="p-3 text-amber-200 overflow-x-auto leading-relaxed">
           <code>{codeBlockLines.join('\n')}</code>
@@ -315,5 +315,5 @@ export default function DiscordMarkdown({
   if (!content) return null;
   const hasHtml = /<\/?(p|div|b|strong|i|em|u|h[1-6]|ul|ol|li|br|blockquote|table|pre|code)[^>]*>/i.test(content);
   const normalized = hasHtml ? htmlToDiscordMarkdown(content) : content;
-  return <div className={`discord-markdown space-y-1 ${className}`}>{parseDiscordMarkdown(normalized)}</div>;
+  return <div className={`discord-markdown space-y-1 text-[color:var(--text-body)] ${className}`}>{parseDiscordMarkdown(normalized)}</div>;
 }

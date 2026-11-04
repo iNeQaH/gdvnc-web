@@ -37,12 +37,12 @@ export async function checkAndAwardGrinderBadges(
 }
 
 /**
- * Tự động đồng bộ stats (Star, Moon, Demon, Creator Points) từ GDBrowser khi có user đăng nhập xem profile:
- * - Điều kiện: người xem phải đã đăng nhập (viewer != null).
+ * Tự động đồng bộ stats (Star, Moon, Demon, Creator Points, Icon Set) từ Boomlings khi có user xem profile:
+ * - Điều kiện: người xem đã đăng nhập hoặc xem profile công khai (viewer != null).
  * - Cooldown: 5 phút (300,000ms) tính từ lần cập nhật gần nhất.
- * - Chỉ những người có global rank trong GDBrowser (rank >= 1) mới được chấp nhận lấy điểm Stars, Moons và Demons.
+ * - Chỉ những người có global rank trong Geometry Dash (rank >= 1) mới được chấp nhận lấy điểm Stars, Moons và Demons.
  * - Nếu không có global rank (rank = 0 hoặc unranked), stars/moons/demons không được chấp nhận (= 0) và gỡ badge Grinder tự động.
- * - Creator Points (CP) vẫn được lấy từ GDBrowser nếu có.
+ * - Creator Points (CP) và GD Icon Set vẫn được lưu bình thường.
  */
 export async function syncUserGdBrowserStats(
   targetUser: {
@@ -57,7 +57,7 @@ export async function syncUserGdBrowserStats(
   },
   viewerUser?: { id?: string; userId?: string } | null,
   force = false
-): Promise<{ stars: number; moons: number; demons: number; cp: number; rank: number; hasGlobalRank: boolean } | null> {
+): Promise<{ stars: number; moons: number; demons: number; cp: number; rank: number; hasGlobalRank: boolean; iconSet?: any } | null> {
   const viewerId = viewerUser?.id || viewerUser?.userId;
   // Khách (chưa đăng nhập) không được kích hoạt cập nhật (trừ khi force = true)
   if (!viewerId && !force) return null;
@@ -97,6 +97,7 @@ export async function syncUserGdBrowserStats(
         creatorPoints: cp,
         gdHasGlobalRank: hasGlobalRank,
         gdStatsUpdatedAt: new Date(),
+        ...(data.iconSet ? { gdIconSet: data.iconSet as any } : {}),
       },
     });
 
@@ -123,9 +124,17 @@ export async function syncUserGdBrowserStats(
       }
     }
 
-    return { stars, moons, demons, cp, rank: hasGlobalRank ? rawRank : 0, hasGlobalRank };
+    return {
+      stars,
+      moons,
+      demons,
+      cp,
+      rank: hasGlobalRank ? rawRank : 0,
+      hasGlobalRank,
+      iconSet: data.iconSet,
+    };
   } catch (err) {
-    // GDBrowser timeout hoặc lỗi mạng: bỏ qua âm thầm
+    // Boomlings timeout hoặc lỗi mạng: bỏ qua âm thầm
     return null;
   }
 }

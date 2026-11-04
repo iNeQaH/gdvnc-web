@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     const clans = await prisma.clan.findMany({
       include: {
         leader: {
-          select: { id: true, username: true, avatarUrl: true, supporterUntil: true },
+          select: { id: true, username: true, displayName: true, avatarUrl: true, supporterUntil: true },
         },
         members: {
           select: {

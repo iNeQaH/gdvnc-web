@@ -92,10 +92,10 @@ export function HomePostPoll({
                 />
               )}
 
-              <div className="relative flex items-center justify-between z-10 text-xs">
-                <div className="flex items-center gap-2.5">
+              <div className="relative flex items-start sm:items-center justify-between gap-3 z-10 text-xs">
+                <div className="flex items-start sm:items-center gap-2.5 min-w-0 flex-1">
                   <div
-                    className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
+                    className={`mt-0.5 sm:mt-0 w-4 h-4 rounded-full border flex items-center justify-center transition-colors shrink-0 ${
                       isSelected
                         ? 'border-purple-500 bg-purple-500 text-white'
                         : 'border-muted-foreground/40'
@@ -103,11 +103,11 @@ export function HomePostPoll({
                   >
                     {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
                   </div>
-                  <span className="font-semibold text-foreground">{optText}</span>
+                  <span className="font-semibold text-foreground break-words whitespace-normal text-left leading-snug min-w-0 flex-1">{optText}</span>
                 </div>
 
                 {totalVoters > 0 && (
-                  <span className="font-mono text-[11px] text-muted-foreground">
+                  <span className="font-mono text-[11px] text-muted-foreground shrink-0 self-start sm:self-center">
                     {percentage}% ({votes})
                   </span>
                 )}

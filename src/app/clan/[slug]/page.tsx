@@ -37,7 +37,8 @@ import {
   HelpCircle,
   AlertCircle,
 } from 'lucide-react';
-import { getVnTodayString } from '@/lib/activityPoints';
+import { getVnWeekString } from '@/lib/activityPoints';
+import DiscordMarkdown from '@/components/DiscordMarkdown';
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/components/GlobalToast';
 import { UserDisplayName } from '@/components/UserDisplayName';
@@ -124,102 +125,6 @@ function ClanTierBadge({
       )}
     </span>
   );
-}
-
-function parseDiscordMarkdown(text: string): React.ReactNode[] {
-  if (!text) return [];
-
-  const lines = text.split('\n');
-  return lines.map((line, lineIdx) => {
-    const isQuote = line.startsWith('> ');
-    const content = isQuote ? line.slice(2) : line;
-
-    const parts: React.ReactNode[] = [];
-    let keyCounter = 0;
-
-    const regex = /(`[^`]+`|\*\*[^*]+\*\*|__[^_]+__|~~[^~]+~~|\*[^*]+\*|https?:\/\/[^\s]+)/g;
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-
-    while ((match = regex.exec(content)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push(content.substring(lastIndex, match.index));
-      }
-
-      const token = match[0];
-      if (token.startsWith('`') && token.endsWith('`')) {
-        parts.push(
-          <code
-            key={keyCounter++}
-            className="px-1.5 py-0.5 rounded bg-black/40 text-amber-300 font-mono text-xs border border-white/10"
-          >
-            {token.slice(1, -1)}
-          </code>
-        );
-      } else if (token.startsWith('**') && token.endsWith('**')) {
-        parts.push(
-          <strong key={keyCounter++} className="font-extrabold text-white">
-            {token.slice(2, -2)}
-          </strong>
-        );
-      } else if (token.startsWith('__') && token.endsWith('__')) {
-        parts.push(
-          <u key={keyCounter++} className="underline underline-offset-2">
-            {token.slice(2, -2)}
-          </u>
-        );
-      } else if (token.startsWith('~~') && token.endsWith('~~')) {
-        parts.push(
-          <del key={keyCounter++} className="line-through opacity-70">
-            {token.slice(2, -2)}
-          </del>
-        );
-      } else if (token.startsWith('*') && token.endsWith('*')) {
-        parts.push(
-          <em key={keyCounter++} className="italic text-slate-300">
-            {token.slice(1, -1)}
-          </em>
-        );
-      } else if (token.startsWith('http://') || token.startsWith('https://')) {
-        parts.push(
-          <a
-            key={keyCounter++}
-            href={token}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sky-400 hover:underline font-semibold break-all"
-          >
-            {token}
-          </a>
-        );
-      } else {
-        parts.push(token);
-      }
-
-      lastIndex = regex.lastIndex;
-    }
-
-    if (lastIndex < content.length) {
-      parts.push(content.substring(lastIndex));
-    }
-
-    if (isQuote) {
-      return (
-        <blockquote
-          key={lineIdx}
-          className="border-l-4 border-sky-500 pl-3 py-1 my-1 italic bg-sky-500/5 rounded-r-lg text-slate-300"
-        >
-          {parts}
-        </blockquote>
-      );
-    }
-
-    return (
-      <p key={lineIdx} className={line === '' ? 'h-3' : 'min-h-[1.25rem] leading-relaxed'}>
-        {parts}
-      </p>
-    );
-  });
 }
 
 /**
@@ -1319,7 +1224,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
     ...(clan.membersGrouped?.members || []),
   ];
 
-  const todayVn = getVnTodayString();
+  const todayVn = getVnWeekString();
   const getMemberActivityPoints = (m: any) => {
     if (!m?.user) return 0;
     return m.user.activityDate === todayVn ? (m.user.activityPoints || 0) : 0;
@@ -1809,7 +1714,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                       <img src={leaderMember.user.avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center font-bold text-amber-600 dark:text-amber-400 text-xs">
-                        {leaderMember.user.username[0]}
+                        {(leaderMember.user.displayName || leaderMember.user.username)[0]?.toUpperCase()}
                       </div>
                     )}
                   </div>
@@ -1848,7 +1753,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                       <img src={bestPlayer.user.avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center font-bold text-sky-600 dark:text-sky-400 text-xs">
-                        {bestPlayer.user.username[0]}
+                        {(bestPlayer.user.displayName || bestPlayer.user.username)[0]?.toUpperCase()}
                       </div>
                     )}
                   </div>
@@ -1887,7 +1792,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
                       <img src={bestCreator.user.avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center font-bold text-pink-600 dark:text-pink-400 text-xs">
-                        {bestCreator.user.username[0]}
+                        {(bestCreator.user.displayName || bestCreator.user.username)[0]?.toUpperCase()}
                       </div>
                     )}
                   </div>
@@ -1923,7 +1828,7 @@ export default function ClanProfilePage({ params }: { params: Promise<{ slug: st
 
               <div className="text-xs sm:text-sm text-[color:var(--text-body)] space-y-1.5 leading-relaxed break-words font-sans flex-1 overflow-y-auto max-h-56">
                 {clan.description ? (
-                  parseDiscordMarkdown(clan.description)
+                  <DiscordMarkdown content={clan.description} />
                 ) : (
                   <p className="text-xs ui-dim italic py-4">
                     {isEn ? 'No description provided yet.' : 'Chưa có giới thiệu nào cho Clan.'}

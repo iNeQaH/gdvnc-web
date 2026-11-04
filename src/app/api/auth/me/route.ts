@@ -29,6 +29,7 @@ export async function GET() {
       discordTag: true,
       gdUsername: true,
       gdVerified: true,
+      gdIconSet: true,
       classicPp: true,
       platformerPp: true,
       creatorPoints: true,

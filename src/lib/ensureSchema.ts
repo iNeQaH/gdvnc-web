@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
+import { sanitizeToLegalUsername, USERNAME_RE } from './username';
 
 type ColumnRow = { table_name: string; column_name: string };
 
@@ -8,16 +9,17 @@ async function columnSet(db: PrismaClient) {
     FROM information_schema.columns
     WHERE table_schema = 'public'
       AND (
-        (table_name = 'User' AND column_name IN ('tokenVersion', 'hardestClassicLevelId', 'hardestPlatformerLevelId', 'isBanned', 'bannedUntil', 'banReason', 'failedLoginAttempts', 'lockedUntil', 'lastFailedLoginAt', 'lastLoginAt', 'displayName', 'gdStars', 'gdMoons', 'gdDemons', 'gdHasGlobalRank', 'gdStatsUpdatedAt', 'likedUserIds', 'displayedBadgeIds', 'hideAllBadges', 'activityPoints', 'activityDate', 'activityPrevStars', 'activityPrevMoons', 'activityPrevDemons'))
+        (table_name = 'User' AND column_name IN ('tokenVersion', 'hardestClassicLevelId', 'hardestPlatformerLevelId', 'isBanned', 'bannedUntil', 'banReason', 'failedLoginAttempts', 'lockedUntil', 'lastFailedLoginAt', 'lastLoginAt', 'displayName', 'gdStars', 'gdMoons', 'gdDemons', 'gdHasGlobalRank', 'gdStatsUpdatedAt', 'gdIconSet', 'likedUserIds', 'displayedBadgeIds', 'hideAllBadges', 'activityPoints', 'activityDate', 'activityPrevStars', 'activityPrevMoons', 'activityPrevDemons', 'ownedThemes', 'hideSupporterPublic', 'supporterTotalMonths', 'supporterTotalAmount', 'lastSupportedAt', 'nameColor', 'nameGradient', 'nameGlow', 'nameFont', 'hasGlitchTheme', 'easterEggCompleted', 'easterEggPoints', 'easterEggCode', 'easterEggSpins', 'easterEggLastSlot', 'easterEggDailyCount', 'easterEggDailyDate'))
         OR (table_name = 'Otp' AND column_name = 'failedAttempts')
         OR (table_name = 'PageVisit' AND column_name = 'id')
         OR (table_name = 'ListChangeLog' AND column_name = 'id')
         OR (table_name = 'Level' AND column_name = 'classicRank')
-        OR (table_name = 'RedeemCode' AND column_name IN ('id', 'expiresAt', 'rewardType', 'days', 'spAmount'))
+        OR (table_name = 'RedeemCode' AND column_name IN ('id', 'expiresAt', 'rewardType', 'days', 'spAmount', 'rewardTheme'))
         OR (table_name = 'RedeemCodeUse' AND column_name IN ('id', 'rewardType', 'days', 'spAmount'))
         OR (table_name = 'UserSpGrant' AND column_name = 'id')
         OR (table_name = 'User' AND column_name IN ('nameColor', 'nameGradient', 'nameGlow', 'nameFont', 'hasGlitchTheme', 'easterEggCompleted', 'easterEggPoints', 'easterEggCode', 'easterEggSpins', 'easterEggLastSlot', 'easterEggDailyCount', 'easterEggDailyDate'))
-        OR (table_name = 'Clan' AND column_name = 'id')
+        OR (table_name = 'Clan' AND column_name IN ('id', 'socialLinks'))
+        OR (table_name = 'AuditLog' AND column_name = 'id')
         OR (table_name = 'ClanMember' AND column_name = 'id')
         OR (table_name = 'ClanJoinRequest' AND column_name = 'id')
         OR (table_name = 'ClanSpContribution' AND column_name = 'id')
@@ -379,6 +381,21 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
   if (!have.has('HomePost.likedUserIds')) {
     await db.$executeRawUnsafe(`ALTER TABLE "HomePost" ADD COLUMN IF NOT EXISTS "likedUserIds" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]`);
   }
+  if (!have.has('User.gdIconSet')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "gdIconSet" JSONB`);
+  }
+  if (!have.has('AuditLog.id')) {
+    await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "AuditLog" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "userId" TEXT,
+        "action" TEXT NOT NULL,
+        "details" JSONB,
+        "ipAddress" TEXT,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+  }
   if (!have.has('HomePost.id')) {
     await db.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "HomePost" (
@@ -733,13 +750,63 @@ export const REQUIRED_SCHEMA_KEYS = [
   'Clan.socialLinks',
   'HomePost.id',
   'HomePost.likedUserIds',
+  'User.gdIconSet',
+  'AuditLog.id',
 ];
+
+
+async function migrateIllegalUsernames(db: PrismaClient) {
+  try {
+    const users = await db.user.findMany({
+      select: { id: true, username: true, displayName: true, gdUsername: true }
+    });
+    const violating = users.filter((u) => !USERNAME_RE.test(u.username) || u.username.length < 3 || u.username.length > 24);
+    if (violating.length === 0) return;
+
+    console.log(`[migrateIllegalUsernames] Migrating ${violating.length} users with illegal usernames...`);
+    const existing = new Set(users.map((u) => u.username.toLowerCase()));
+
+    for (const u of violating) {
+      const oldUsername = u.username;
+      const originalDisplay = u.displayName || oldUsername;
+      let candidate = sanitizeToLegalUsername(oldUsername, u.gdUsername || undefined);
+
+      let finalUsername = candidate;
+      let counter = 1;
+      while (existing.has(finalUsername.toLowerCase()) && finalUsername.toLowerCase() !== oldUsername.toLowerCase()) {
+        finalUsername = `${candidate.slice(0, 20)}${counter}`;
+        counter++;
+      }
+
+      existing.delete(oldUsername.toLowerCase());
+      existing.add(finalUsername.toLowerCase());
+
+      await db.$executeRawUnsafe(
+        'UPDATE "User" SET "username" = $1, "displayName" = $2 WHERE "id" = $3',
+        finalUsername,
+        originalDisplay,
+        u.id
+      );
+
+      await db.$executeRawUnsafe(
+        'UPDATE "CreatorWork" SET "username" = $1 WHERE "username" = $2',
+        finalUsername,
+        oldUsername
+      );
+      console.log(`[migrateIllegalUsernames] Converted "${oldUsername}" -> "${finalUsername}" (displayName: "${originalDisplay}")`);
+    }
+  } catch (err) {
+    console.warn('[migrateIllegalUsernames] Error during username migration:', err);
+  }
+}
 
 export async function applyPendingSchema(db: PrismaClient): Promise<void> {
   const have = await columnSet(db);
   const complete = REQUIRED_SCHEMA_KEYS.every((key) => have.has(key));
-  if (complete) return;
-  await addMissingColumns(db, have);
-  void addIndexesInBackground(db);
-  void seedSystemBadges(db);
+  if (!complete) {
+    await addMissingColumns(db, have);
+    void addIndexesInBackground(db);
+    void seedSystemBadges(db);
+  }
+  await migrateIllegalUsernames(db);
 }

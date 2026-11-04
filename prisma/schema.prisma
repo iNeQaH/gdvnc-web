@@ -74,6 +74,7 @@ model User {
   gdDemons      Int       @default(0)
   gdHasGlobalRank Boolean @default(true)
   gdStatsUpdatedAt DateTime?
+  gdIconSet     Json?
   activityPoints     Int       @default(0)
   activityDate       String?
   activityPrevStars  Int       @default(0)

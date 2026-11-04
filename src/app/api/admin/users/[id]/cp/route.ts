@@ -21,15 +21,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: 'Không tìm thấy người dùng.' }, { status: 404 });
     }
 
-    if (action === 'reset') {
-      await prisma.creatorWork.updateMany({
-        where: { userId: id, status: RecordStatus.APPROVED },
-        data: { cpGranted: 0 },
-      });
-      const total = await recalculateCreatorPoints(id);
-      return NextResponse.json({ success: true, creatorPoints: total });
-    }
-
     if (action === 'recalc') {
       const total = await recalculateCreatorPoints(id);
       return NextResponse.json({ success: true, creatorPoints: total });

@@ -1,6 +1,6 @@
-const USERNAME_RE = /^[a-zA-Z0-9_-]+$/;
-const MIN_LEN = 3;
-const MAX_LEN = 24;
+export const USERNAME_RE = /^[a-zA-Z0-9]+$/;
+export const MIN_LEN = 3;
+export const MAX_LEN = 24;
 
 const STATIC_RESERVED = [
   'admin',
@@ -43,8 +43,8 @@ export function validateUsername(raw: unknown): { ok: true; value: string } | { 
   if (!USERNAME_RE.test(value)) {
     return {
       ok: false,
-      errorEn: 'Username may only contain letters, numbers, underscore, and hyphen.',
-      errorVi: 'Tên người dùng chỉ được chứa chữ, số, gạch dưới và gạch ngang.',
+      errorEn: 'Username may only contain English letters (a-z, A-Z) and numbers (0-9) with no special characters or spaces.',
+      errorVi: 'Tên người dùng chỉ được chứa chữ cái tiếng Anh (không dấu) và số (0-9), không chứa ký tự đặc biệt hay khoảng trắng.',
     };
   }
   if (reservedUsernames().has(value.toLowerCase())) {
@@ -63,4 +63,42 @@ export function validateUsername(raw: unknown): { ok: true; value: string } | { 
     };
   }
   return { ok: true, value };
+}
+
+/**
+ * Chuẩn hóa một username bất kỳ thành username hợp lệ:
+ * - Bỏ dấu tiếng Việt
+ * - Bỏ tất cả ký tự không phải chữ cái và số
+ * - Nếu < 3 ký tự thì fallback sang fallbackSeed (nếu hợp lệ) hoặc đệm thêm tiền tố User/hậu tố số
+ * - Giới hạn độ dài từ 3 đến 24 ký tự
+ */
+export function sanitizeToLegalUsername(raw: string, fallbackSeed?: string): string {
+  const stripDiacritics = (str: string) =>
+    (str || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D');
+
+  let s = stripDiacritics(raw).replace(/[^a-zA-Z0-9]/g, '');
+
+  if (s.length < MIN_LEN && fallbackSeed) {
+    const fb = stripDiacritics(fallbackSeed).replace(/[^a-zA-Z0-9]/g, '');
+    if (fb.length >= MIN_LEN) {
+      s = fb;
+    }
+  }
+
+  if (s.length < MIN_LEN) {
+    s = `User${s}`.slice(0, MAX_LEN);
+    if (s.length < MIN_LEN) {
+      s = `${s}123`.slice(0, MAX_LEN);
+    }
+  }
+
+  if (s.length > MAX_LEN) {
+    s = s.slice(0, MAX_LEN);
+  }
+
+  return s;
 }

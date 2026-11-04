@@ -5,6 +5,7 @@ const vi: Record<DictKey, string> = {
   'nav.leaderboard': 'Bảng Xếp Hạng',
   'nav.demonlist': 'Danh sách level',
   'nav.clan': 'Clan',
+  'nav.playground': 'random tung',
   'nav.challenges': 'Danh sách Challenge',
   'nav.submit': 'Nộp',
   'nav.roulette': 'Cò quay',

@@ -24,6 +24,7 @@ interface HomePost {
   createdAt: string;
   author: {
     username: string;
+    displayName?: string | null;
     role: string;
     avatarUrl?: string | null;
   };
@@ -44,6 +45,7 @@ interface Announcement {
 interface Supporter {
   id: string;
   username: string;
+  displayName?: string | null;
   avatarUrl?: string | null;
   clan?: {
     tag: string;
@@ -235,7 +237,7 @@ export default function HomePage() {
                       </div>
 
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="font-semibold text-primary">{post.author.username}</span>
+                        <span className="font-semibold text-primary">{post.author.displayName || post.author.username}</span>
                         <span>•</span>
                         <span>{new Date(post.createdAt).toLocaleDateString('vi-VN')}</span>
                         {isAdminOrHigher && (
@@ -385,12 +387,12 @@ export default function HomePage() {
                     {s.avatarUrl ? (
                       <img src={s.avatarUrl} alt={s.username} className="w-full h-full object-cover" />
                     ) : (
-                      s.username.slice(0, 2).toUpperCase()
+                      (s.displayName || s.username).slice(0, 2).toUpperCase()
                     )}
                   </div>
                   <span className="text-xs font-bold text-foreground group-hover:text-pink-400 transition-colors">
                     {s.clan?.tag && <span className="text-muted-foreground mr-1">[{s.clan.tag}]</span>}
-                    {s.username}
+                    {s.displayName || s.username}
                   </span>
                   <span className="text-[11px] text-pink-400 font-bold">
                     ({s.supporterTotalMonths || 1} tháng)
@@ -545,7 +547,7 @@ export default function HomePage() {
                   <div className="min-w-0">
                     <div className="text-xs font-bold text-foreground truncate group-hover:text-amber-400 transition-colors">
                       {s.clan?.tag && <span className="text-muted-foreground mr-1">[{s.clan.tag}]</span>}
-                      {s.username}
+                      {s.displayName || s.username}
                     </div>
                     <div className="text-[10px] font-semibold text-amber-400">
                       {s.supporterTotalMonths || 1} tháng support

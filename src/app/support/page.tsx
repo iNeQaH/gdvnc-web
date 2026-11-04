@@ -235,6 +235,22 @@ export default function SupportPage() {
           </div>
 
         </div>
+
+        {/* Điều khoản ủng hộ tự nguyện phi lợi nhuận (Theo quy định pháp luật Việt Nam) */}
+        <div className="mt-8 pt-6 border-t text-xs ui-dim leading-relaxed space-y-2" style={{ borderColor: 'var(--border-subtle)' }}>
+          <p className="font-bold text-[color:var(--text-title)]">
+            Lưu ý về khoản đóng góp duy trì cộng đồng:
+          </p>
+          <p>
+            • Mọi khoản đóng góp qua trang này là khoản ủng hộ tự nguyện (donation) nhằm mục đích duy trì hạ tầng máy chủ, băng thông và lưu trữ dữ liệu phi thương mại cho cộng đồng Geometry Dash Việt Nam (GDVN).
+          </p>
+          <p>
+            • Danh hiệu Supporter và điểm SP Coin là hình thức tri ân của cộng đồng. Điểm SP Coin là tài nguyên danh dự để phát triển Clan trên hệ thống web, không có giá trị quy đổi thành tiền mặt hay bất kỳ vật phẩm tài chính nào.
+          </p>
+          <p>
+            • Điểm SP Coin sau khi nhận hoàn toàn nằm trong quyền kiểm soát của bạn. Hệ thống cam kết không tự ý trích hoặc trừ SP Coin vào Clan nếu bạn không chủ động xác nhận đóng góp.
+          </p>
+        </div>
       </div>
     </div>
   );

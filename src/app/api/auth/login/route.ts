@@ -39,10 +39,16 @@ export async function POST(req: Request) {
     // Relaxed identifier rate limit: 15 requests per 5 minutes
     const limitedId = rateLimit(`login-id:${lowered}`, 15, 300_000);
     if (!limitedId.ok) return rateLimitResponse(limitedId.retryAfterSec);
+    const isEmail = loginInput.includes('@');
+    const cleanEmail = isEmail ? loginInput.toLowerCase().trim() : '';
+
     const matches = await prisma.$queryRaw<Array<{ id: string }>>`
       SELECT id FROM "User"
       WHERE LOWER("username") = ${lowered}
-         OR ("email" IS NOT NULL AND LOWER("email") = ${lowered})
+         OR ("displayName" IS NOT NULL AND LOWER("displayName") = ${lowered})
+         OR ("email" IS NOT NULL AND LOWER(TRIM("email")) = ${lowered})
+         OR (${isEmail} AND "email" IS NOT NULL AND LOWER(TRIM("email")) = ${cleanEmail})
+      ORDER BY "isBanned" ASC, "lastLoginAt" DESC NULLS LAST
       LIMIT 1
     `;
     const user = matches[0]?.id
