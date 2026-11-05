@@ -11,6 +11,9 @@ import {
   clamp,
   getPlaygroundPhysics,
   getSurfaceAtX,
+  getSurfaceAbove,
+  getRoomObstacles,
+  RoomObstacle,
 } from './playgroundPhysics';
 import prisma from './prisma';
 
@@ -117,12 +120,29 @@ function generateIdleActionForRoom(
   const cycle = Math.floor(now / 1300);
   const cycleSeed = (seed + cycle * 1009 + roomId.length * 97) >>> 0;
 
-  // ~30% chance to NOT move left/right and instead jump/hop right in place!
+  // Stuck Prevention: Check if currently under an obstacle
+  const ceilAbove = getSurfaceAbove(currentX, currentY - PLAYER_RADIUS, roomId);
+  const isUnderLowCeil = ceilAbove > CEILING_SURFACE_Y && (currentY - PLAYER_RADIUS - ceilAbove) < 130;
+
+  // ~30% chance to NOT move left/right and instead jump/hop right in place (ONLY if not under a ceiling!)
   const inPlaceRoll = pseudoRandom(cycleSeed, 7);
   let targetX = currentX;
   let hopCount = 0;
 
-  if (inPlaceRoll < 0.30) {
+  if (isUnderLowCeil) {
+    // Under a low ceiling: NEVER hop in place! Force moving out to an open horizontal area
+    hopCount = 0;
+    const roomObstacles = getRoomObstacles(roomId);
+    const covering = roomObstacles.filter((o: RoomObstacle) => currentX >= o.x - 20 && currentX <= o.x + o.w + 20 && o.y < currentY);
+    if (covering.length > 0) {
+      const cov = covering[0];
+      targetX = currentX < (cov.x + cov.w / 2)
+        ? Math.max(90, cov.x - 110)
+        : Math.min(PLAYGROUND_WIDTH - 90, cov.x + cov.w + 110);
+    } else {
+      targetX = 80 + Math.floor(pseudoRandom(cycleSeed, 1) * (PLAYGROUND_WIDTH - 160));
+    }
+  } else if (inPlaceRoll < 0.30) {
     targetX = currentX;
     hopCount = pseudoRandom(cycleSeed, 8) < 0.65 ? 1 : 2;
   } else {

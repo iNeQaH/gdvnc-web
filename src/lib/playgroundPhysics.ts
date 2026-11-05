@@ -46,61 +46,62 @@ export interface RoomObstacle {
   h: number;
 }
 
-// Room 1 ("public-1") — Stepped Citadel & High Sky Perch (x: 0..2800)
+// Room 1 ("public-1") — Spacious Stepped Terraces & High Skyways (x: 0..2800)
+// Designed with 180px-350px open floor zones and 160px+ vertical clearance so players NEVER get stuck!
 export const ROOM_1_OBSTACLES: RoomObstacle[] = [
-  { id: 'r1-step-w', x: 200, y: 482, w: 110, h: 72 },
-  { id: 'r1-plat-w', x: 310, y: 410, w: 230, h: 34 },
+  // West Cluster (x: 260..700)
+  { id: 'r1-step-w1', x: 260, y: 486, w: 120, h: 68 },
+  { id: 'r1-plat-w1', x: 470, y: 356, w: 230, h: 32 },
 
-  { id: 'r1-step-ml', x: 690, y: 482, w: 95, h: 72 },
-  { id: 'r1-plat-m', x: 785, y: 338, w: 270, h: 34 },
-  { id: 'r1-step-mr', x: 1055, y: 482, w: 95, h: 72 },
+  // Mid-West Cluster (x: 980..1520) - Open floor run 700..980 (280px free)
+  { id: 'r1-step-m1', x: 980, y: 486, w: 120, h: 68 },
+  { id: 'r1-plat-m1', x: 1180, y: 350, w: 240, h: 32 },
+  { id: 'r1-sky-m2', x: 1320, y: 218, w: 200, h: 30 },
 
-  { id: 'r1-step-c', x: 1310, y: 482, w: 120, h: 72 },
-  { id: 'r1-plat-c-mid', x: 1450, y: 410, w: 250, h: 34 },
-  { id: 'r1-plat-c-sky', x: 1505, y: 268, w: 150, h: 32 },
+  // Mid-East Cluster (x: 1780..2320) - Open floor run 1520..1780 (260px free)
+  { id: 'r1-step-e1', x: 1780, y: 486, w: 120, h: 68 },
+  { id: 'r1-plat-e1', x: 1980, y: 350, w: 240, h: 32 },
+  { id: 'r1-sky-e2', x: 2120, y: 218, w: 200, h: 30 },
 
-  { id: 'r1-step-el', x: 1870, y: 482, w: 100, h: 72 },
-  { id: 'r1-plat-e1', x: 1970, y: 410, w: 220, h: 34 },
-  { id: 'r1-plat-e2', x: 2220, y: 338, w: 210, h: 34 },
-  { id: 'r1-step-er', x: 2470, y: 482, w: 120, h: 72 },
+  // East Outpost (x: 2540..2680) - Open floor run 2320..2540 (220px free)
+  { id: 'r1-step-e2', x: 2540, y: 486, w: 140, h: 68 },
 ];
 
-// Room 2 ("public-2") — Twin Valleys, Skyway Overpass & Pyramid Stairs (x: 0..2800)
+// Room 2 ("public-2") — Twin Peaks, Open Skyway & Staggered Pyramid (x: 0..2800)
+// No alcoves or low overhangs under the skyway; completely clear ground corridor!
 export const ROOM_2_OBSTACLES: RoomObstacle[] = [
-  { id: 'r2-pad-l', x: 150, y: 482, w: 130, h: 72 },
-  { id: 'r2-loft-l', x: 140, y: 342, w: 175, h: 34 },
-  { id: 'r2-bridge-l', x: 350, y: 410, w: 270, h: 34 },
+  // West Steps (x: 240..660)
+  { id: 'r2-step-w1', x: 240, y: 486, w: 120, h: 68 },
+  { id: 'r2-plat-w1', x: 440, y: 360, w: 220, h: 32 },
 
-  { id: 'r2-pil-l', x: 760, y: 482, w: 90, h: 72 },
-  { id: 'r2-skyway', x: 865, y: 338, w: 370, h: 34 },
-  { id: 'r2-under', x: 1000, y: 482, w: 100, h: 72 },
-  { id: 'r2-pil-r', x: 1250, y: 482, w: 90, h: 72 },
+  // Center Grand Skyway (x: 940..1360) - completely free floor beneath (y: 336, clearance 184px!)
+  { id: 'r2-skyway', x: 940, y: 336, w: 420, h: 34 },
 
-  { id: 'r2-stair-1', x: 1500, y: 482, w: 110, h: 72 },
-  { id: 'r2-stair-2', x: 1630, y: 410, w: 150, h: 34 },
-  { id: 'r2-stair-3', x: 1800, y: 338, w: 190, h: 34 },
-  { id: 'r2-stair-4', x: 2010, y: 410, w: 150, h: 34 },
-
-  { id: 'r2-east-step', x: 2290, y: 482, w: 110, h: 72 },
-  { id: 'r2-east-deck', x: 2420, y: 410, w: 230, h: 34 },
+  // Staggered Pyramid Parkour Steps (x: 1580..2660) - 100px+ horizontal spacing between tiers
+  { id: 'r2-step-1', x: 1580, y: 486, w: 120, h: 68 },
+  { id: 'r2-tier-2', x: 1780, y: 390, w: 160, h: 32 },
+  { id: 'r2-tier-3', x: 2020, y: 290, w: 190, h: 32 },
+  { id: 'r2-tier-4', x: 2300, y: 390, w: 160, h: 32 },
+  { id: 'r2-step-5', x: 2540, y: 486, w: 120, h: 68 },
 ];
 
-// Clan Room ("clan-*") — Symmetrical Grand Fortress Arena (x: 0..2800)
+// Clan Room ("clan-*") — Grand Open Fortress Arena (x: 0..2800)
+// Perfectly symmetrical and fully unobstructed under-throne corridor
 export const CLAN_ROOM_OBSTACLES: RoomObstacle[] = [
-  { id: 'cl-w-step', x: 180, y: 482, w: 110, h: 72 },
-  { id: 'cl-w-wall', x: 310, y: 410, w: 210, h: 34 },
-  { id: 'cl-w-tower', x: 550, y: 338, w: 165, h: 34 },
-  { id: 'cl-w-inner', x: 745, y: 482, w: 110, h: 72 },
+  // West Wing
+  { id: 'cl-step-w', x: 240, y: 486, w: 120, h: 68 },
+  { id: 'cl-plat-w', x: 440, y: 360, w: 210, h: 32 },
+  { id: 'cl-tower-w', x: 740, y: 250, w: 180, h: 32 },
+  { id: 'cl-inner-w', x: 1000, y: 486, w: 120, h: 68 },
 
-  { id: 'cl-throne-l', x: 970, y: 410, w: 165, h: 34 },
-  { id: 'cl-throne-top', x: 1175, y: 338, w: 450, h: 36 },
-  { id: 'cl-pit-pedestal', x: 1330, y: 482, w: 140, h: 72 },
-  { id: 'cl-throne-r', x: 1665, y: 410, w: 165, h: 34 },
+  // Central Grand Throne (high clearance: y 326, clearance 194px from floor)
+  { id: 'cl-throne-high', x: 1200, y: 326, w: 400, h: 34 },
 
-  { id: 'cl-e-inner', x: 1945, y: 482, w: 110, h: 72 },
-  { id: 'cl-e-tower', x: 2085, y: 338, w: 165, h: 34 },
-  { id: 'cl-e-wall', x: 2280, y: 410, w: 210, h: 34 },
-  { id: 'cl-e-step', x: 2510, y: 482, w: 110, h: 72 },
+  // East Wing (symmetrical mirror)
+  { id: 'cl-inner-e', x: 1680, y: 486, w: 120, h: 68 },
+  { id: 'cl-tower-e', x: 1880, y: 250, w: 180, h: 32 },
+  { id: 'cl-plat-e', x: 2150, y: 360, w: 210, h: 32 },
+  { id: 'cl-step-e', x: 2440, y: 486, w: 120, h: 68 },
 ];
 
 export const ROOM_OBSTACLES = ROOM_1_OBSTACLES;
