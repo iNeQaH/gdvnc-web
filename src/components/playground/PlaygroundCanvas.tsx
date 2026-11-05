@@ -163,7 +163,12 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
     let img = imageCache.current.get(url);
     if (!img) {
       img = new Image();
-      img.crossOrigin = 'anonymous';
+      img.onerror = () => {
+        // Retry failed icon after 1.5s
+        setTimeout(() => {
+          imageCache.current.delete(url);
+        }, 1500);
+      };
       img.src = url;
       imageCache.current.set(url, img);
     }
@@ -636,9 +641,11 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
           const aspect = nw / nh;
           const drawW = Math.round(drawH * aspect);
           ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
-        } else {
+        } else if (currentMode === 'cube') {
           ctx.fillStyle = player.nameColor || '#38bdf8';
-          ctx.fillRect(-20, -20, 40, 40);
+          ctx.beginPath();
+          ctx.roundRect(-16, -16, 32, 32, 6);
+          ctx.fill();
         }
 
         ctx.restore();

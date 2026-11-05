@@ -89,11 +89,27 @@ export default function NhowstraysonPage() {
   }, []);
 
   useEffect(() => {
+    const handleUserUpdate = () => {
+      try {
+        const saved = localStorage.getItem('gdvnc_user');
+        if (saved) setCurrentUser(JSON.parse(saved));
+      } catch {
+        /* ignore */
+      }
+    };
+    window.addEventListener('gdvnc_user_update', handleUserUpdate);
+
     fetch('/api/auth/me', { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && data.user) {
           setCurrentUser(data.user);
+          try {
+            const prev = JSON.parse(localStorage.getItem('gdvnc_user') || '{}');
+            localStorage.setItem('gdvnc_user', JSON.stringify({ ...prev, ...data.user }));
+          } catch {
+            /* ignore */
+          }
         } else {
           const saved = localStorage.getItem('gdvnc_user');
           if (saved) {
@@ -106,6 +122,10 @@ export default function NhowstraysonPage() {
         }
       })
       .catch(() => {});
+
+    return () => {
+      window.removeEventListener('gdvnc_user_update', handleUserUpdate);
+    };
   }, []);
 
   const isSupporter = Boolean(
@@ -901,39 +921,43 @@ export default function NhowstraysonPage() {
       {/* Gamemode Selector (6 modes, icon-only clean buttons) */}
       {effectiveUserId && (
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-          {GAMEMODES.map((gm) => {
-            const isSelected = currentMode === gm.id;
-            const iconSet = currentUser?.gdIconSet || {};
-            const iconId = iconSet[gm.id] ?? 1;
+          {(() => {
+            const myPlayerInRoom = players.find((p) => p.userId === effectiveUserId);
+            const iconSet = currentUser?.gdIconSet || myPlayerInRoom?.iconSet || {};
             const col1 = iconSet.color1 ?? 0;
             const col2 = iconSet.color2 ?? 3;
             const glow = iconSet.glow ?? false;
             const colG = iconSet.colorGlow ?? iconSet.color3 ?? col2;
-            const previewUrl = `/api/gd/icon?form=${gm.id}&icon=${iconId}&col1=${col1}&col2=${col2}${glow ? `&glow=1&colG=${colG}` : ''}&size=64&v=3`;
 
-            return (
-              <button
-                key={gm.id}
-                type="button"
-                onClick={() => handleSelectMode(gm.id)}
-                aria-label={gm.label}
-                className={`flex items-center justify-center p-2.5 rounded-xl border transition-all duration-150 ${
-                  isSelected
-                    ? 'bg-cyan-500/15 border-cyan-500 text-cyan-700 dark:text-cyan-300 shadow-md shadow-cyan-500/10'
-                    : 'bg-white/80 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-700 shadow-xs'
-                }`}
-              >
-                <img
-                  src={previewUrl}
-                  alt={gm.label}
-                  className="w-9 h-9 object-contain drop-shadow"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = `/api/gd/icon?form=${gm.id}&icon=1&col1=${col1}&col2=${col2}&size=64&v=3`;
-                  }}
-                />
-              </button>
-            );
-          })}
+            return GAMEMODES.map((gm) => {
+              const isSelected = currentMode === gm.id;
+              const iconId = iconSet[gm.id] ?? 1;
+              const previewUrl = `/api/gd/icon?form=${gm.id}&icon=${iconId}&col1=${col1}&col2=${col2}${glow ? `&glow=1&colG=${colG}` : ''}&size=64&v=3`;
+
+              return (
+                <button
+                  key={gm.id}
+                  type="button"
+                  onClick={() => handleSelectMode(gm.id)}
+                  aria-label={gm.label}
+                  className={`flex items-center justify-center p-2.5 rounded-xl border transition-all duration-150 ${
+                    isSelected
+                      ? 'bg-cyan-500/15 border-cyan-500 text-cyan-700 dark:text-cyan-300 shadow-md shadow-cyan-500/10'
+                      : 'bg-white/80 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-700 shadow-xs'
+                  }`}
+                >
+                  <img
+                    src={previewUrl}
+                    alt={gm.label}
+                    className="w-9 h-9 object-contain drop-shadow"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = `/api/gd/icon?form=${gm.id}&icon=1&col1=${col1}&col2=${col2}&size=64&v=3`;
+                    }}
+                  />
+                </button>
+              );
+            });
+          })()}
         </div>
       )}
 

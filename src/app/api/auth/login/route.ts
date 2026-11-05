@@ -76,6 +76,7 @@ export async function POST(req: Request) {
             easterEggCompleted: true,
             easterEggPoints: true,
             easterEggCode: true,
+            gdIconSet: true,
             passwordHash: true,
             tokenVersion: true,
             isBanned: true,

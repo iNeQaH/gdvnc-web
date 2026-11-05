@@ -31,6 +31,8 @@ export async function GET(req: NextRequest) {
       headers: {
         'Content-Type': 'image/png',
         'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
       },
     });
   } catch (error: any) {
@@ -49,10 +51,26 @@ export async function GET(req: NextRequest) {
         headers: {
           'Content-Type': 'image/png',
           'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
         },
       });
     } catch {
-      return new NextResponse('Failed to render icon', { status: 500 });
+      return new NextResponse('Failed to render icon', {
+        status: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+      });
     }
   }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }

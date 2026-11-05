@@ -465,6 +465,21 @@ export class PlaygroundManager {
     const existing = this.players.get(userId);
     if (existing) {
       existing.lastActiveAt = Date.now();
+      if (!existing.iconSet) {
+        prisma.user
+          .findUnique({
+            where: { id: userId },
+            select: { gdIconSet: true, nameColor: true, nameGradient: true },
+          })
+          .then((u) => {
+            if (u?.gdIconSet && !existing.iconSet) {
+              existing.iconSet = u.gdIconSet;
+            }
+            if (u?.nameColor) existing.nameColor = u.nameColor;
+            if (u?.nameGradient) existing.nameGradient = u.nameGradient;
+          })
+          .catch(() => {});
+      }
       return existing;
     }
 
@@ -606,6 +621,23 @@ export class PlaygroundManager {
     }
     if (!player) {
       return { success: false, error: 'Không tìm thấy thông tin người dùng.' };
+    }
+
+    // Always ensure fresh iconSet and styling on room entry
+    if (!player.iconSet) {
+      try {
+        const u = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { gdIconSet: true, nameColor: true, nameGradient: true },
+        });
+        if (u?.gdIconSet) {
+          player.iconSet = u.gdIconSet;
+        }
+        if (u?.nameColor) player.nameColor = u.nameColor;
+        if (u?.nameGradient) player.nameGradient = u.nameGradient;
+      } catch {
+        /* ignore */
+      }
     }
 
     if (targetRoomId.startsWith('clan-')) {
@@ -1048,6 +1080,23 @@ export class PlaygroundManager {
       return { success: false, error: 'Không tìm thấy thông tin người dùng.' };
     }
 
+    // Always ensure fresh iconSet and styling on room entry
+    if (!player.iconSet) {
+      try {
+        const u = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { gdIconSet: true, nameColor: true, nameGradient: true },
+        });
+        if (u?.gdIconSet) {
+          player.iconSet = u.gdIconSet;
+        }
+        if (u?.nameColor) player.nameColor = u.nameColor;
+        if (u?.nameGradient) player.nameGradient = u.nameGradient;
+      } catch {
+        /* ignore */
+      }
+    }
+
     const roomIdToUse = targetRoomId || player.activeRoomId || 'public-1';
     if (!isAfk) {
       const stats = this.getRoomStats(roomIdToUse, userId);
@@ -1189,13 +1238,25 @@ export class PlaygroundManager {
     };
   }
 
+  public updatePlayerIconSet(userId: string, iconSet: any) {
+    const player = this.players.get(userId);
+    if (!player) return;
+    player.iconSet = iconSet;
+    const idleRooms = this.getIdleRoomsForPlayer(player);
+    for (const roomId of idleRooms) {
+      this.emitToRoom(roomId, 'update', {
+        player: this.formatPlayerForClient(player, roomId),
+      });
+    }
+  }
+
   private emitToRoom(roomId: string, event: string, data: any) {
     appEventEmitter.emit('playground:event', { roomId, event, data });
   }
 }
 
 // Global singleton with clean HMR migration
-const PLAYGROUND_VERSION = 5;
+const PLAYGROUND_VERSION = 6;
 const globalForPlayground = globalThis as unknown as {
   __gdvnPlayground?: PlaygroundManager & { __version?: number };
 };
