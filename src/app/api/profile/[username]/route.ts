@@ -4,7 +4,7 @@ import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { calculateUserSp, sanitizeUserClan } from '@/lib/clan';
-import { RecordStatus, LevelMode } from '@prisma/client';
+import { RecordStatus, LevelMode, Prisma } from '@prisma/client';
 import { awardedPpForProgress, getWeightedPpBreakdown, UNRANKED_MIN_PP } from '@/lib/ScoringEngine';
 import {
   dedupeRecordsByLevel,
@@ -184,7 +184,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
 
     const viewer = await getSessionUser();
     const isSelf = Boolean(viewer?.userId && viewer.userId === user.id);
-    const shouldSync = !user.isBanned && (isSelf || Boolean(user.gdUsername));
+    const shouldSync = !user.isBanned && Boolean(user.gdVerified) && (isSelf || Boolean(user.gdUsername));
     if (shouldSync) {
       // Lưu lại snapshot cũ TRƯỚC KHI sync để tính Điểm Hoạt Động Clan chính xác
       const prevStars = user.gdStars || 0;
@@ -460,14 +460,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
 
     const userSp = calculateUserSp({ supporterUntil: user.supporterUntil, spGrants: user.spGrants });
 
+    const isActiveSupporter = Boolean(user.supporterUntil && new Date(user.supporterUntil) > new Date());
     let activeSupporterMonths = 0;
-    if (user.supporterUntil) {
-      const remainingMs = new Date(user.supporterUntil).getTime() - Date.now();
+    if (isActiveSupporter) {
+      const remainingMs = new Date(user.supporterUntil!).getTime() - Date.now();
       if (remainingMs > 0) {
         activeSupporterMonths = Math.max(1, Math.ceil(remainingMs / (30 * 24 * 60 * 60 * 1000)));
       }
     }
-    const supporterMonths = Math.max(user.supporterTotalMonths || 0, activeSupporterMonths);
+    const supporterMonths = isActiveSupporter ? Math.max(user.supporterTotalMonths || 0, activeSupporterMonths) : 0;
+    const isGdVerified = Boolean(user.gdVerified);
 
     return NextResponse.json(
       {
@@ -484,13 +486,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         supporterUntil: user.supporterUntil,
         supporterTotalMonths: user.supporterTotalMonths || 0,
         supporterMonths,
-        gdIconSet: (user as any).gdIconSet || null,
+        gdIconSet: isGdVerified ? ((user as any).gdIconSet || null) : null,
         spGrants: user.spGrants || [],
         spPoints: user.spPoints || 0,
-        gdStars: user.gdStars || 0,
-        gdMoons: user.gdMoons || 0,
-        gdDemons: user.gdDemons || 0,
-        gdStatsUpdatedAt: user.gdStatsUpdatedAt,
+        gdStars: isGdVerified ? (user.gdStars || 0) : 0,
+        gdMoons: isGdVerified ? (user.gdMoons || 0) : 0,
+        gdDemons: isGdVerified ? (user.gdDemons || 0) : 0,
+        gdStatsUpdatedAt: isGdVerified ? user.gdStatsUpdatedAt : null,
         activityPoints: user.activityPoints || 0,
         activityDate: user.activityDate,
         activityPrevStars: user.activityPrevStars || 0,
@@ -766,6 +768,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         ...(gdUsernameChanged ? {
           gdStatsUpdatedAt: null,
           gdHasGlobalRank: true,
+          gdStars: 0,
+          gdMoons: 0,
+          gdDemons: 0,
+          gdIconSet: Prisma.DbNull,
           activityPoints: 0,
           activityPrevStars: 0,
           activityPrevMoons: 0,
@@ -805,7 +811,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
     if (nextGdUsername !== undefined) {
       void autoLinkUserCreatedLevels(current.id, nextGdUsername, current.username).catch(() => {});
       void recalculateCreatorPoints(current.id).catch(() => {});
-      void syncUserGdBrowserStats({ id: current.id, gdUsername: nextGdUsername }, { userId: current.id }, true).catch(() => {});
     }
 
     if (staleRefs.length > 0) {

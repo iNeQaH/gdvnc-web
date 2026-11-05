@@ -68,7 +68,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     // Update role and supporter
-    let updatedData: { role?: Role; supporterUntil?: Date | null; tokenVersion?: { increment: number } } = {};
+    let updatedData: { role?: Role; supporterUntil?: Date | null; supporterTotalMonths?: any; tokenVersion?: { increment: number } } = {};
     let supporterMonthsVal: number | null = null;
     let isSupporterChanged = false;
 
@@ -81,9 +81,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       supporterMonthsVal = months;
       if (months === 0) {
         updatedData.supporterUntil = null;
+        updatedData.supporterTotalMonths = 0;
       } else {
         const next = new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000);
         updatedData.supporterUntil = next;
+        updatedData.supporterTotalMonths = months;
       }
     } else if (grantSupporterMonths !== undefined && grantSupporterMonths !== 0 && grantSupporterMonths !== '0') {
       const months = parseInt(String(grantSupporterMonths), 10);
@@ -100,6 +102,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         updatedData.supporterUntil = null;
       } else {
         updatedData.supporterUntil = new Date(nextTime);
+      }
+      if (months > 0) {
+        updatedData.supporterTotalMonths = { increment: months };
+      } else {
+        const nextTotal = Math.max(0, (target.supporterTotalMonths || 0) + months);
+        updatedData.supporterTotalMonths = nextTotal;
       }
     }
 

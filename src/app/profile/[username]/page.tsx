@@ -1420,11 +1420,11 @@ export default function ProfilePage() {
                   )}
 
                   {(() => {
-                    const activeMonths = data.supporterUntil && new Date(data.supporterUntil) > new Date()
-                      ? Math.max(1, Math.ceil((new Date(data.supporterUntil).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)))
-                      : 0;
+                    const isActiveSupporter = Boolean(data.supporterUntil && new Date(data.supporterUntil) > new Date());
+                    if (!isActiveSupporter || data.hideSupporterPublic) return null;
+                    const activeMonths = Math.max(1, Math.ceil((new Date(data.supporterUntil!).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)));
                     const displayMonths = Math.max(data.supporterMonths || 0, activeMonths);
-                    if (displayMonths <= 0 || data.hideSupporterPublic) return null;
+                    if (displayMonths <= 0) return null;
                     return (
                       <span
                         className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black border shadow-xs transition-transform"
@@ -1563,32 +1563,37 @@ export default function ProfilePage() {
                 <span className="ui-title font-semibold truncate max-w-[170px]">{data.country || 'Việt Nam'}</span>
               </div>
 
-              {/* Stars */}
-              <div className="flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-medium" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
-                <div className="flex items-center gap-2">
-                  <Star className="w-4 h-4 text-amber-400 fill-amber-400 shrink-0" />
-                  <span className="ui-dim font-bold text-[11px] uppercase">Stars</span>
-                </div>
-                <span className="ui-title font-semibold font-mono">{Number(data.gdStars || 0).toLocaleString()}</span>
-              </div>
+              {/* Stars, Moons, Demons (Chỉ hiển thị khi tài khoản GD đã được xác minh) */}
+              {Boolean(data.gdVerified) && (
+                <>
+                  {/* Stars */}
+                  <div className="flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-medium" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
+                    <div className="flex items-center gap-2">
+                      <Star className="w-4 h-4 text-amber-400 fill-amber-400 shrink-0" />
+                      <span className="ui-dim font-bold text-[11px] uppercase">Stars</span>
+                    </div>
+                    <span className="ui-title font-semibold font-mono">{Number(data.gdStars || 0).toLocaleString()}</span>
+                  </div>
 
-              {/* Moons */}
-              <div className="flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-medium" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
-                <div className="flex items-center gap-2">
-                  <Moon className="w-4 h-4 text-sky-400 fill-sky-400 shrink-0" />
-                  <span className="ui-dim font-bold text-[11px] uppercase">Moons</span>
-                </div>
-                <span className="ui-title font-semibold font-mono">{Number(data.gdMoons || 0).toLocaleString()}</span>
-              </div>
+                  {/* Moons */}
+                  <div className="flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-medium" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
+                    <div className="flex items-center gap-2">
+                      <Moon className="w-4 h-4 text-sky-400 fill-sky-400 shrink-0" />
+                      <span className="ui-dim font-bold text-[11px] uppercase">Moons</span>
+                    </div>
+                    <span className="ui-title font-semibold font-mono">{Number(data.gdMoons || 0).toLocaleString()}</span>
+                  </div>
 
-              {/* Demons */}
-              <div className="flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-medium" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
-                <div className="flex items-center gap-2">
-                  <Flame className="w-4 h-4 text-rose-500 fill-rose-500 shrink-0" />
-                  <span className="ui-dim font-bold text-[11px] uppercase">Demons</span>
-                </div>
-                <span className="ui-title font-semibold font-mono">{Number(data.gdDemons || 0).toLocaleString()}</span>
-              </div>
+                  {/* Demons */}
+                  <div className="flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-medium" style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }} title={data.gdStatsUpdatedAt ? `Cập nhật: ${new Date(data.gdStatsUpdatedAt).toLocaleString()}` : undefined}>
+                    <div className="flex items-center gap-2">
+                      <Flame className="w-4 h-4 text-rose-500 fill-rose-500 shrink-0" />
+                      <span className="ui-dim font-bold text-[11px] uppercase">Demons</span>
+                    </div>
+                    <span className="ui-title font-semibold font-mono">{Number(data.gdDemons || 0).toLocaleString()}</span>
+                  </div>
+                </>
+              )}
 
               {/* Activity Points (Điểm hoạt động Clan hôm nay) */}
               {data.clanMember && (
@@ -1664,7 +1669,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-{data.gdIconSet && (
+{Boolean(data.gdVerified && data.gdIconSet) && (
         <GdIconSetDisplay iconSet={data.gdIconSet} />
       )}
 
@@ -2550,11 +2555,15 @@ export default function ProfilePage() {
                       </span>
                     ) : (
                       <span className="text-rose-500 font-bold">
-                        Trừ -{supporterAmount} tháng {(() => {
-                          const current = data.supporterUntil && new Date(data.supporterUntil) > new Date() ? new Date(data.supporterUntil).getTime() : Date.now();
-                          const target = current - supporterAmount * 30 * 24 * 60 * 60 * 1000;
-                          return target <= Date.now() ? '(Hết hạn)' : `(~${new Date(target).toLocaleDateString(language === 'en' ? 'en-US' : 'vi-VN')})`;
-                        })()}
+                        {!(data.supporterUntil && new Date(data.supporterUntil) > new Date()) ? (
+                          '(Chưa kích hoạt - Không có tháng để trừ)'
+                        ) : (
+                          <>Trừ -{supporterAmount} tháng {(() => {
+                            const current = new Date(data.supporterUntil).getTime();
+                            const target = current - supporterAmount * 30 * 24 * 60 * 60 * 1000;
+                            return target <= Date.now() ? '(Hết hạn)' : `(~${new Date(target).toLocaleDateString(language === 'en' ? 'en-US' : 'vi-VN')})`;
+                          })()}</>
+                        )}
                       </span>
                     )
                   ) : (

@@ -49,6 +49,7 @@ export async function syncUserGdBrowserStats(
   targetUser: {
     id: string;
     gdUsername?: string | null;
+    gdVerified?: boolean | null;
     gdStatsUpdatedAt?: Date | string | null;
     gdHasGlobalRank?: boolean | null;
     gdStars?: number;
@@ -57,8 +58,13 @@ export async function syncUserGdBrowserStats(
     creatorPoints?: number;
   },
   viewerUser?: { id?: string; userId?: string } | null,
-  force = false
+  force = false,
+  isVerifying = false
 ): Promise<{ stars: number; moons: number; demons: number; cp: number; rank: number; hasGlobalRank: boolean; iconSet?: any } | null> {
+  // Chỉ khi tài khoản GD đã được xác minh (gdVerified === true) hoặc đang trong luồng xác minh của Admin (isVerifying === true)
+  // thì mới được phép trích xuất stats (stars, moons, demons, cp) và gdIconSet!
+  if (!isVerifying && !targetUser.gdVerified) return null;
+
   const viewerId = viewerUser?.id || viewerUser?.userId;
   // Khách (chưa đăng nhập) không được kích hoạt cập nhật (trừ khi force = true)
   if (!viewerId && !force) return null;

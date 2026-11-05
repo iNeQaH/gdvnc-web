@@ -49,7 +49,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     if (gdName) {
       try {
-        const synced = await syncUserGdBrowserStats(target, { id: auth.userId }, true);
+        const synced = await syncUserGdBrowserStats(target, { id: auth.userId }, true, true);
         if (synced) {
           syncedStars = synced.stars;
           syncedMoons = synced.moons;
