@@ -170,22 +170,22 @@ export async function POST(req: Request) {
 
     const { candidates, monthsFromMemo } = parseTransactionMemo(transactionContent);
 
-    // Find target user from candidate usernames (supporting username or gdUsername)
+    // Find target user from candidate usernames with strict priority:
+    // 1. Exact match on username
+    // 2. Exact match on displayName
+    // 3. Fallback to gdUsername (prioritizing verified accounts, then recent activity)
     let targetUser: any = null;
     let matchedCandidate = '';
+    // Phase 1: Match username
     for (const cand of candidates) {
       const cleanCand = cand.replace(/[^A-Z0-9]/gi, '');
       const u = await prisma.user.findFirst({
         where: {
           OR: [
             { username: { equals: cand, mode: 'insensitive' as const } },
-            { displayName: { equals: cand, mode: 'insensitive' as const } },
-            { gdUsername: { equals: cand, mode: 'insensitive' as const } },
-            ...(cleanCand.length >= 3 && cleanCand !== cand ? [
-              { username: { equals: cleanCand, mode: 'insensitive' as const } },
-              { displayName: { equals: cleanCand, mode: 'insensitive' as const } },
-              { gdUsername: { equals: cleanCand, mode: 'insensitive' as const } },
-            ] : []),
+            ...(cleanCand.length >= 3 && cleanCand !== cand
+              ? [{ username: { equals: cleanCand, mode: 'insensitive' as const } }]
+              : []),
           ],
         },
       });
@@ -193,6 +193,55 @@ export async function POST(req: Request) {
         targetUser = u;
         matchedCandidate = cand;
         break;
+      }
+    }
+
+    // Phase 2: Match displayName
+    if (!targetUser) {
+      for (const cand of candidates) {
+        const cleanCand = cand.replace(/[^A-Z0-9]/gi, '');
+        const u = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { displayName: { equals: cand, mode: 'insensitive' as const } },
+              ...(cleanCand.length >= 3 && cleanCand !== cand
+                ? [{ displayName: { equals: cleanCand, mode: 'insensitive' as const } }]
+                : []),
+            ],
+          },
+        });
+        if (u) {
+          targetUser = u;
+          matchedCandidate = cand;
+          break;
+        }
+      }
+    }
+
+    // Phase 3: Match gdUsername (prioritizing verified accounts, then recent activity)
+    if (!targetUser) {
+      for (const cand of candidates) {
+        const cleanCand = cand.replace(/[^A-Z0-9]/gi, '');
+        const users = await prisma.user.findMany({
+          where: {
+            OR: [
+              { gdUsername: { equals: cand, mode: 'insensitive' as const } },
+              ...(cleanCand.length >= 3 && cleanCand !== cand
+                ? [{ gdUsername: { equals: cleanCand, mode: 'insensitive' as const } }]
+                : []),
+            ],
+          },
+          orderBy: [
+            { gdVerified: 'desc' },
+            { lastLoginAt: 'desc' },
+            { createdAt: 'desc' },
+          ],
+        });
+        if (users.length > 0) {
+          targetUser = users[0];
+          matchedCandidate = cand;
+          break;
+        }
       }
     }
 
