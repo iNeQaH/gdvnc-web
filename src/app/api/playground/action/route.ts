@@ -2,8 +2,14 @@ import { NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth';
 import { playgroundManager } from '@/lib/playground';
 import { Gamemode } from '@/lib/playgroundPhysics';
+import { isBrowserSameOriginFetch } from '@/lib/origin';
+import { rateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 export async function POST(request: Request) {
+  if (!isBrowserSameOriginFetch(request)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   try {
     const session = await getSessionUser();
     if (!session || !session.userId) {
@@ -11,6 +17,11 @@ export async function POST(request: Request) {
         { error: 'Vui lòng đăng nhập để thực hiện thao tác.' },
         { status: 401 }
       );
+    }
+
+    const limited = rateLimit(`pg-act:${session.userId}`, 25, 1000);
+    if (!limited.ok) {
+      return rateLimitResponse(limited.retryAfterSec);
     }
 
     const body = await request.json().catch(() => ({}));
@@ -104,8 +115,8 @@ export async function POST(request: Request) {
 
       case 'chat': {
         const { text, roomId } = body;
-        if (typeof text !== 'string') {
-          return NextResponse.json({ error: 'Nội dung chat không hợp lệ.' }, { status: 400 });
+        if (typeof text !== 'string' || text.length > 500) {
+          return NextResponse.json({ error: 'Nội dung chat không hợp lệ (tối đa 500 ký tự).' }, { status: 400 });
         }
         const res = await playgroundManager.handleChat(
           session.userId,
@@ -145,9 +156,11 @@ export async function POST(request: Request) {
         if (!targetUserId || typeof targetUserId !== 'string') {
           return NextResponse.json({ error: 'ID người dùng không hợp lệ.' }, { status: 400 });
         }
+        const rawMin = Number(minutes);
+        const clampedMinutes = Number.isFinite(rawMin) ? Math.min(1440, Math.max(1, Math.floor(rawMin))) : 5;
         const ok = playgroundManager.muteUser(
           targetUserId,
-          Number(minutes),
+          clampedMinutes,
           session.role || 'USER'
         );
         if (!ok) {

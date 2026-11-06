@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ShieldCheck,
+  ShieldAlert,
   Check,
   Sparkles,
   LogOut,
@@ -171,6 +172,12 @@ export default function SettingsPage() {
   const [totpInput, setTotpInput] = useState('');
   const [totpError, setTotpError] = useState('');
   const [settingUp2fa, setSettingUp2fa] = useState(false);
+
+  // 2FA Disable
+  const [showDisable2faModal, setShowDisable2faModal] = useState(false);
+  const [disableTotpInput, setDisableTotpInput] = useState('');
+  const [disableTotpError, setDisableTotpError] = useState('');
+  const [disabling2fa, setDisabling2fa] = useState(false);
 
   // Password reset
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -647,7 +654,39 @@ export default function SettingsPage() {
     }
   };
 
-  const handleDisable2FA = async () => {
+  const handleDisable2FA = () => {
+    setDisableTotpInput('');
+    setDisableTotpError('');
+    setShowDisable2faModal(true);
+  };
+
+  const handleConfirmDisable2FA = async () => {
+    if (disableTotpInput.length < 6) return;
+    setDisabling2fa(true);
+    setDisableTotpError('');
+    try {
+      const res = await fetch('/api/auth/2fa', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: disableTotpInput }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setShowDisable2faModal(false);
+        setDisableTotpInput('');
+        showToast(t('settings.disable_2fa_success'), 'success');
+        setData({ ...data, totpEnabled: false });
+      } else {
+        setDisableTotpError(json.error || 'Mã 2FA không chính xác.');
+      }
+    } catch {
+      setDisableTotpError('Có lỗi xảy ra khi tắt 2FA.');
+    } finally {
+      setDisabling2fa(false);
+    }
+  };
+
+  const _unusedDisable2FA = async () => { return;
     showConfirm(t('settings.disable_2fa_confirm'), async () => {
       try {
         const res = await fetch('/api/auth/2fa', { method: 'DELETE' });
@@ -2586,6 +2625,71 @@ export default function SettingsPage() {
                 className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-600 cursor-pointer disabled:opacity-50 transition-colors"
               >
                 {t('settings.2fa_verify_btn')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDisable2faModal && (
+        <div
+          className="fixed inset-0 z-[999999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setShowDisable2faModal(false)}
+        >
+          <div
+            className="bg-card w-full max-w-sm rounded-3xl p-5 md:p-6 shadow-2xl relative border"
+            style={{ borderColor: 'var(--border-subtle)', backgroundColor: 'var(--bg-card)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold flex items-center gap-2 text-rose-500">
+                <ShieldAlert className="w-5 h-5" /> {t('settings.disable_2fa')}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowDisable2faModal(false)}
+                className="p-1 rounded-xl border ui-dim cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <p className="text-xs ui-dim leading-relaxed">
+                {t('settings.disable_2fa_confirm')}
+              </p>
+              <div className="pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={disableTotpInput}
+                  onChange={(e) => setDisableTotpInput(e.target.value.replace(/\D/g, ''))}
+                  placeholder={t('settings.2fa_input_placeholder')}
+                  className="w-full px-3 py-2.5 rounded-xl text-xs font-mono tracking-widest text-center border focus:outline-none focus:ring-1 focus:ring-rose-500"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
+                  autoFocus
+                />
+              </div>
+              {disableTotpError && (
+                <p className="text-[11px] text-rose-500 font-bold text-center bg-rose-500/10 py-1.5 rounded-lg">
+                  {disableTotpError}
+                </p>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                type="button"
+                onClick={() => setShowDisable2faModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold ui-subtle border border-transparent cursor-pointer hover:border-zinc-500/30"
+              >
+                {t('settings.2fa_close')}
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDisable2FA}
+                disabled={disabling2fa || disableTotpInput.length < 6}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-500 hover:bg-rose-600 cursor-pointer disabled:opacity-50 transition-colors"
+              >
+                {disabling2fa ? 'Đang tắt...' : t('settings.disable_2fa')}
               </button>
             </div>
           </div>

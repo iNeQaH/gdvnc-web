@@ -125,17 +125,19 @@ export async function DELETE(req: Request) {
 
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-    // Optional TOTP verification if provided in request body
-    try {
-      const body = await req.json();
-      if (body?.token && user.totpSecret) {
-        const isValid = authenticator.check(String(body.token).trim(), user.totpSecret);
-        if (!isValid) {
-          return NextResponse.json({ error: 'Invalid 2FA token' }, { status: 400 });
-        }
+    // Bắt buộc xác thực mã TOTP 6 chữ số khi tắt 2FA
+    if (user.totpEnabled) {
+      if (!user.totpSecret) {
+        return NextResponse.json({ error: 'Lỗi cấu hình 2FA trên tài khoản.' }, { status: 500 });
       }
-    } catch {
-      // No JSON body provided
+      let body: any = null;
+      try {
+        body = await req.json();
+      } catch {}
+      const token = body?.token ? String(body.token).trim() : '';
+      if (!token || !authenticator.check(token, user.totpSecret)) {
+        return NextResponse.json({ error: 'Mã xác thực 2FA không chính xác hoặc đã hết hạn.' }, { status: 400 });
+      }
     }
 
     // Xoá Secret, set totpEnabled = false, và tăng tokenVersion để thu hồi các phiên khác

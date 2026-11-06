@@ -27,6 +27,7 @@ async function columnSet(db: PrismaClient) {
         OR (table_name = 'Badge' AND column_name IN ('systemKey', 'color2', 'effect'))
         OR (table_name = 'SiteAnnouncement' AND column_name IN ('expiresAt', 'likedUserIds', 'poll'))
         OR (table_name = 'HomePost' AND column_name IN ('id', 'likedUserIds'))
+        OR (table_name = 'SepayTransaction' AND column_name = 'id')
       )
   `;
   return new Set(rows.map((row) => `${row.table_name}.${row.column_name}`));
@@ -416,6 +417,19 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
       )
     `);
   }
+  if (!have.has('SepayTransaction.id')) {
+    await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "SepayTransaction" (
+        "id" TEXT NOT NULL,
+        "sepayTxId" TEXT NOT NULL,
+        "transferAmount" INTEGER NOT NULL DEFAULT 0,
+        "userId" TEXT,
+        "content" TEXT,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "SepayTransaction_pkey" PRIMARY KEY ("id")
+      )
+    `).catch(() => {});
+  }
 }
 
 /** Indexes/FKs — do not block the request that needed the new columns. */
@@ -428,6 +442,8 @@ async function addIndexesInBackground(db: PrismaClient) {
     `CREATE INDEX IF NOT EXISTS "HomePost_createdAt_idx" ON "HomePost"("createdAt")`,
     `CREATE INDEX IF NOT EXISTS "HomePost_isPinned_idx" ON "HomePost"("isPinned")`,
     `CREATE INDEX IF NOT EXISTS "HomePost_authorId_idx" ON "HomePost"("authorId")`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "SepayTransaction_sepayTxId_key" ON "SepayTransaction"("sepayTxId")`,
+    `CREATE INDEX IF NOT EXISTS "SepayTransaction_userId_idx" ON "SepayTransaction"("userId")`,
     `CREATE INDEX IF NOT EXISTS "Record_reviewerId_idx" ON "Record"("reviewerId")`,
     `CREATE INDEX IF NOT EXISTS "Record_userId_status_idx" ON "Record"("userId", "status")`,
     `CREATE INDEX IF NOT EXISTS "Record_levelId_status_idx" ON "Record"("levelId", "status")`,
@@ -752,6 +768,7 @@ export const REQUIRED_SCHEMA_KEYS = [
   'HomePost.likedUserIds',
   'User.gdIconSet',
   'AuditLog.id',
+  'SepayTransaction.id',
 ];
 
 

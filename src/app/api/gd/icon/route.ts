@@ -7,14 +7,19 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const form = searchParams.get('form') || 'cube';
-    const icon = parseInt(searchParams.get('icon') || '1', 10);
-    const col1 = parseInt(searchParams.get('col1') || '0', 10);
-    const col2 = parseInt(searchParams.get('col2') || '0', 10);
+    const rawIcon = parseInt(searchParams.get('icon') || '1', 10);
+    const icon = Number.isFinite(rawIcon) && rawIcon > 0 ? rawIcon : 1;
+    const rawCol1 = parseInt(searchParams.get('col1') || '0', 10);
+    const col1 = Number.isFinite(rawCol1) && rawCol1 >= 0 ? rawCol1 : 0;
+    const rawCol2 = parseInt(searchParams.get('col2') || '0', 10);
+    const col2 = Number.isFinite(rawCol2) && rawCol2 >= 0 ? rawCol2 : 0;
     const glowParam = searchParams.get('glow');
     const glow = glowParam === '1' || glowParam === 'true';
     const colGParam = searchParams.get('colG');
-    const colG = colGParam !== null ? parseInt(colGParam, 10) : undefined;
-    const size = Math.min(256, Math.max(32, parseInt(searchParams.get('size') || '128', 10)));
+    const rawColG = colGParam !== null ? parseInt(colGParam, 10) : undefined;
+    const colG = rawColG !== undefined && Number.isFinite(rawColG) && rawColG >= 0 ? rawColG : undefined;
+    const rawSize = parseInt(searchParams.get('size') || '128', 10);
+    const size = Number.isFinite(rawSize) ? Math.min(256, Math.max(32, rawSize)) : 128;
 
     const pngBuffer = await renderGdPlayerIcon({
       form,

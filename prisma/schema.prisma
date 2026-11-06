@@ -512,6 +512,18 @@ model AuditLog {
   @@index([createdAt])
 }
 
+model SepayTransaction {
+  id             String   @id @default(uuid())
+  sepayTxId      String   @unique
+  transferAmount Int      @default(0)
+  userId         String?
+  content        String?
+  createdAt      DateTime @default(now())
+
+  @@index([sepayTxId])
+  @@index([userId])
+}
+
 model RedeemCode {
   id          String          @id @default(uuid())
   code        String          @unique

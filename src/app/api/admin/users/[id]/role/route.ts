@@ -74,7 +74,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     if (setSupporterMonths !== undefined) {
       const months = parseInt(String(setSupporterMonths), 10);
-      if (!Number.isFinite(months) || months < 0) {
+      if (!Number.isFinite(months) || months < 0 || months > 1200) {
         return NextResponse.json({ error: 'Số tháng Supporter không hợp lệ.' }, { status: 400 });
       }
       isSupporterChanged = true;
@@ -89,7 +89,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
     } else if (grantSupporterMonths !== undefined && grantSupporterMonths !== 0 && grantSupporterMonths !== '0') {
       const months = parseInt(String(grantSupporterMonths), 10);
-      if (!Number.isFinite(months)) {
+      if (!Number.isFinite(months) || months < -1200 || months > 1200) {
         return NextResponse.json({ error: 'Số tháng Supporter không hợp lệ.' }, { status: 400 });
       }
       isSupporterChanged = true;
@@ -134,7 +134,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         await prisma.clanSpContribution.deleteMany({ where: { userId: id } });
       }
       await prisma.userSpGrant.updateMany({
-        where: { userId: id, amount: { gt: 0 } },
+        where: { userId: id },
         data: { expiresAt: updated.supporterUntil },
       });
     }
@@ -142,7 +142,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     let grantedSpVal = 0;
     if (grantSpCoin !== undefined && grantSpCoin !== null && grantSpCoin !== '') {
       const spParsed = parseInt(String(grantSpCoin), 10);
-      if (Number.isFinite(spParsed) && spParsed !== 0) {
+      if (Number.isFinite(spParsed) && Math.abs(spParsed) <= 10000 && spParsed !== 0) {
         grantedSpVal = spParsed;
         if (spParsed > 0) {
           const grantExpiry = updated.supporterUntil || new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000);
