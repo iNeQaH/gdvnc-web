@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X, Send, Link as LinkIcon, Video, Hash, HelpCircle, Check, Loader2, Sparkles } from 'lucide-react';
 import { useToast } from '@/components/GlobalToast';
+import { handleMarkdownKeyDown, handleMarkdownPaste } from '@/lib/markdownShortcuts';
 
 interface HomePostModalProps {
   isOpen: boolean;
@@ -134,12 +135,17 @@ export default function HomePostModal({ isOpen, onClose, onCreated }: HomePostMo
 
           {/* Body */}
           <div className="space-y-1">
-            <label className="font-bold ui-title">Nội dung chi tiết *</label>
+            <div className="flex items-center justify-between">
+              <label className="font-bold ui-title">Nội dung chi tiết *</label>
+              <span className="text-[10px] ui-dim">Hỗ trợ Discord Markdown</span>
+            </div>
             <textarea
               rows={4}
               required
               value={body}
               onChange={(e) => setBody(e.target.value)}
+              onKeyDown={(e) => handleMarkdownKeyDown(e, body, setBody)}
+              onPaste={(e) => handleMarkdownPaste(e, body, setBody)}
               placeholder="Nhập nội dung chia sẻ, đánh giá màn chơi, hoặc giải thích sự kiện..."
               className="w-full px-3.5 py-2.5 rounded-xl ui-input resize-y font-sans leading-relaxed"
             />

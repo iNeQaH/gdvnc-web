@@ -37,7 +37,7 @@ function parseInlineTokens(text: string, keyPrefix: string): React.ReactNode[] {
   // 6. Italic: *...* or _..._
   // 7. Markdown links: [text](url)
   // 8. Plain URLs: https?://...
-  const tokenRegex = /(?:\|\|([\s\S]+?)\|\||`([^`]+)`|\*\*([\s\S]+?)\*\*|__([\s\S]+?)__|~~([\s\S]+?)~~|\*([^*]+)\*|_([^_]+)_|\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s]+))/g;
+  const tokenRegex = /(?:\|\|([\s\S]+?)\|\||`([^`]+)`|\*\*([\s\S]+?)\*\*|__([\s\S]+?)__|~~([\s\S]+?)~~|\*([^*]+)\*|_([^_]+)_|\[([^\]]+)\]\(((?:https?:\/\/|\/)[^\s)]+)\)|(https?:\/\/[^\s]+))/g;
 
   const nodes: React.ReactNode[] = [];
   let lastIndex = 0;
@@ -102,12 +102,13 @@ function parseInlineTokens(text: string, keyPrefix: string): React.ReactNode[] {
         </em>
       );
     } else if (linkText !== undefined && linkUrl !== undefined) {
+      const isInternal = linkUrl.startsWith('/');
       nodes.push(
         <a
           key={key}
           href={linkUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+          target={isInternal ? undefined : "_blank"}
+          rel={isInternal ? undefined : "noopener noreferrer"}
           className="text-sky-500 dark:text-sky-400 underline underline-offset-2 hover:opacity-80 transition-opacity font-medium break-all"
         >
           {linkText}

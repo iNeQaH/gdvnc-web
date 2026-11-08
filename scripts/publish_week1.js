@@ -129,44 +129,33 @@ async function main() {
   }
 
   const postTitle = '# Tuần đầu tiên đã kết thúc! Chúc mừng top 5 của tuần này!';
-  const postBody = [
-    '**Kết quả tuần đầu tiên:**',
+  const body = [
+    '# **Kết quả tuần đầu tiên:**',
     '> Top 5 người chơi mạnh nhất:',
-    `- **1. [ZSB] [AZS](/profile/Azs) (1)🔥**`,
-    `- 2. [ZSB] [b](/profile/hewochat) (1)🔥`,
-    `- 3. [AC] [steeen](/profile/steeen) (1)🔥`,
-    `- 4. [ZSB] [Heru](/profile/heruhgj) (1)🔥`,
-    `- 5. [UWU] [YukkaXL08](/profile/YukkaXL08) (1)🔥`,
+    `- **1. [ZSB] [AZS](https://geodat.vn/profile/Azs) (1)🔥**`,
+    `- 2. [ZSB] [b](https://geodat.vn/profile/hewochat) (1)🔥`,
+    `- 3. [AC] [steeen](https://geodat.vn/profile/steeen) (1)🔥`,
+    `- 4. [ZSB] [Heru](https://geodat.vn/profile/heruhgj) (1)🔥`,
+    `- 5. [UWU] [YukkaXL08](https://geodat.vn/profile/YukkaXL08) (1)🔥`,
+    '---',
     '> Top 5 Clan mạnh nhất:',
-    `- **1. [ZSB] [Zophisus's Bay](/clan/zsb) (1)🔥**`,
-    `- 2. [UWU] [UWU](/clan/uwu) (1)🔥`,
-    `- 3. [AC] [AetherCrag](/clan/ac) (1)🔥`,
-    `- 4. [EGO] [EGO](/clan/ego) (1)🔥`,
-    `- 5. [BRO] [Phòng Ngủ](/clan/bro) (1)🔥`,
-    '*🔥 là số chuỗi có mặt trên BXH.*',
-    '-# Báo cho tụi mình nếu có sai sót gì nhé! Chúc mọi người vui vẻ và hẹn gặp lại tuần sau!'
+    `- **1. [ZSB] [Zophisus's Bay](https://geodat.vn/clan/zsb) (1)🔥**`,
+    `- 2. [UWU] [UWU](https://geodat.vn/clan/uwu) (1)🔥`,
+    `- 3. [AC] [AetherCrag](https://geodat.vn/clan/ac) (1)🔥`,
+    `- 4. [EGO] [EGO](https://geodat.vn/clan/ego) (1)🔥`,
+    `- 5. [BRO] [Phòng Ngủ](https://geodat.vn/clan/bro) (1)🔥`,
+    '*🔥 là số chuỗi có mặt trên BXH.*'
   ].join('\n');
 
   const notifTitle = postTitle;
   const notifExcerpt = 'Kết quả bảng xếp hạng tuần đầu tiên: Chúc mừng Top 5 người chơi và Top 5 Clan mạnh nhất!';
-  const notifBody = [
-    '**Kết quả tuần đầu tiên:**',
-    '> Top 5 người chơi mạnh nhất:',
-    `- **1. [ZSB] [AZS](/profile/Azs) (1)🔥**`,
-    `- 2. [ZSB] [b](/profile/hewochat) (1)🔥`,
-    `- 3. [AC] [steeen](/profile/steeen) (1)🔥`,
-    `- 4. [ZSB] [Heru](/profile/heruhgj) (1)🔥`,
-    `- 5. [UWU] [YukkaXL08](/profile/YukkaXL08) (1)🔥`,
-    '> Top 5 Clan mạnh nhất:',
-    `- **1. [ZSB] [Zophisus's Bay](/clan/zsb) (1)🔥**`,
-    `- 2. [UWU] [UWU](/clan/uwu) (1)🔥`,
-    `- 3. [AC] [AetherCrag](/clan/ac) (1)🔥`,
-    `- 4. [EGO] [EGO](/clan/ego) (1)🔥`,
-    `- 5. [BRO] [Phòng Ngủ](/clan/bro) (1)🔥`,
-    '🔥 là số chuỗi có mặt trên BXH.'
-  ].join('\n');
+  const notifBody = body;
+  const postBody = body;
 
   const author = await prisma.user.findFirst({
+    where: { username: { equals: 'iNeQaH', mode: 'insensitive' } },
+    select: { id: true },
+  }) || await prisma.user.findFirst({
     where: { role: 'ADMIN' },
     select: { id: true },
   });
@@ -189,6 +178,22 @@ async function main() {
         audience: 'ALL',
         authorId: author ? author.id : null,
       },
+    });
+
+    await tx.timelineEvent.upsert({
+      where: { sourceKey: `weekly-recap:${targetWeek}` },
+      create: {
+        sourceKey: `weekly-recap:${targetWeek}`,
+        title: 'Tuần đầu tiên đã kết thúc!',
+        shortDescription: notifExcerpt,
+        fullDescription: `<h2><strong>Kết quả tuần đầu tiên:</strong></h2><blockquote>Top 5 người chơi mạnh nhất:</blockquote><ul><li><strong>1. [ZSB] <a href="https://geodat.vn/profile/Azs">AZS</a> (1)🔥</strong></li><li>2. [ZSB] <a href="https://geodat.vn/profile/hewochat">b</a> (1)🔥</li><li>3. [AC] <a href="https://geodat.vn/profile/steeen">steeen</a> (1)🔥</li><li>4. [ZSB] <a href="https://geodat.vn/profile/heruhgj">Heru</a> (1)🔥</li><li>5. [UWU] <a href="https://geodat.vn/profile/YukkaXL08">YukkaXL08</a> (1)🔥</li></ul><hr /><blockquote>Top 5 Clan mạnh nhất:</blockquote><ul><li><strong>1. [ZSB] <a href="https://geodat.vn/clan/zsb">Zophisus\'s Bay</a> (1)🔥</strong></li><li>2. [UWU] <a href="https://geodat.vn/clan/uwu">UWU</a> (1)🔥</li><li>3. [AC] <a href="https://geodat.vn/clan/ac">AetherCrag</a> (1)🔥</li><li>4. [EGO] <a href="https://geodat.vn/clan/ego">EGO</a> (1)🔥</li><li>5. [BRO] <a href="https://geodat.vn/clan/bro">Phòng Ngủ</a> (1)🔥</li></ul><p><em>🔥 là số chuỗi có mặt trên BXH.</em></p>`,
+        startAt: new Date(),
+        endAt: new Date(),
+        tier: 'week',
+        nature: 'positive',
+        glowColor: '#f59e0b',
+      },
+      update: {},
     });
 
     const recap = await tx.weeklyActivityRecap.create({

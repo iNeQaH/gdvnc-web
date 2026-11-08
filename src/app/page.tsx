@@ -10,6 +10,7 @@ import {
 import { HomeTopStats } from '@/components/home/HomeTopStats';
 import { HomePostModal } from '@/components/home/HomePostModal';
 import { HomePostPoll } from '@/components/home/HomePostPoll';
+import DiscordMarkdown from '@/components/DiscordMarkdown';
 
 interface HomePost {
   id: string;
@@ -252,8 +253,8 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    <div className="text-sm sm:text-base leading-relaxed text-foreground/90 whitespace-pre-line">
-                      {post.body}
+                    <div className="text-sm sm:text-base leading-relaxed text-foreground/90">
+                      <DiscordMarkdown content={post.body} />
                     </div>
 
                     {/* LEVEL GD BADGE */}

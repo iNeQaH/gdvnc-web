@@ -17,7 +17,7 @@ const URI_ATTRS = new Set(['href', 'src', 'poster']);
 
 const CHRONICLE_TAGS = new Set([
   'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'blockquote',
-  'ul', 'ol', 'li', 'h2', 'h3', 'h4', 'span', 'div', 'a', 'img',
+  'ul', 'ol', 'li', 'h2', 'h3', 'h4', 'span', 'div', 'a', 'img', 'hr',
 ]);
 
 const FAQ_TAGS = new Set([

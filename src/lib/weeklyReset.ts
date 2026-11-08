@@ -46,46 +46,69 @@ export function formatWeeklyRecapPost(
 ) {
   const weekTitle = weekNumber === 1 ? 'Tuần đầu tiên' : `Tuần thứ ${weekNumber}`;
   const title = `# ${weekTitle} đã kết thúc! Chúc mừng top 5 của tuần này!`;
-  const resultHeader = weekNumber === 1 ? '**Kết quả tuần đầu tiên:**' : `**Kết quả của tuần thứ ${weekNumber}:**`;
+  const resultHeader = weekNumber === 1 ? '# **Kết quả tuần đầu tiên:**' : `# **Kết quả của tuần thứ ${weekNumber}:**`;
 
   const playerLines = topPlayers.map((p, idx) => {
     const rankNum = idx + 1;
     const clanPrefix = p.clanTag ? `[${p.clanTag}] ` : '';
-    const itemText = `${clanPrefix}[${p.displayName}](/profile/${encodeURIComponent(p.username)}) (${p.streak})🔥`;
+    const itemText = `${clanPrefix}[${p.displayName}](https://geodat.vn/profile/${encodeURIComponent(p.username)}) (${p.streak})🔥`;
     return rankNum === 1 ? `- **1. ${itemText}**` : `- ${rankNum}. ${itemText}`;
   });
 
   const clanLines = topClans.map((c, idx) => {
     const rankNum = idx + 1;
     const clanPrefix = c.tag ? `[${c.tag}] ` : '';
-    const itemText = `${clanPrefix}[${c.name}](/clan/${encodeURIComponent(c.slug)}) (${c.streak})🔥`;
+    const itemText = `${clanPrefix}[${c.name}](https://geodat.vn/clan/${encodeURIComponent(c.slug)}) (${c.streak})🔥`;
     return rankNum === 1 ? `- **1. ${itemText}**` : `- ${rankNum}. ${itemText}`;
   });
 
-  const postBody = [
+  const body = [
     resultHeader,
     '> Top 5 người chơi mạnh nhất:',
     ...playerLines,
+    '---',
     '> Top 5 Clan mạnh nhất:',
     ...clanLines,
-    '*🔥 là số chuỗi có mặt trên BXH.*',
-    '-# Báo cho tụi mình nếu có sai sót gì nhé! Chúc mọi người vui vẻ và hẹn gặp lại tuần sau!'
+    '*🔥 là số chuỗi có mặt trên BXH.*'
   ].join('\n');
 
   const notifExcerpt = weekNumber === 1
     ? 'Kết quả bảng xếp hạng tuần đầu tiên: Chúc mừng Top 5 người chơi và Top 5 Clan mạnh nhất!'
     : `Kết quả bảng xếp hạng tuần thứ ${weekNumber}: Chúc mừng Top 5 người chơi và Top 5 Clan mạnh nhất tuần!`;
 
-  const notifBody = [
-    resultHeader,
-    '> Top 5 người chơi mạnh nhất:',
-    ...playerLines,
-    '> Top 5 Clan mạnh nhất:',
-    ...clanLines,
-    '🔥 là số chuỗi có mặt trên BXH.'
-  ].join('\n');
+  return { postTitle: title, postBody: body, notifTitle: title, notifExcerpt, notifBody: body };
+}
 
-  return { postTitle: title, postBody, notifTitle: title, notifExcerpt, notifBody };
+export function formatTimelineHtml(
+  weekNumber: number,
+  topPlayers: RecapPlayer[],
+  topClans: RecapClan[]
+): string {
+  const resultHeader = weekNumber === 1 ? 'Kết quả tuần đầu tiên:' : `Kết quả của tuần thứ ${weekNumber}:`;
+
+  const playerLis = topPlayers.map((p, idx) => {
+    const rankNum = idx + 1;
+    const clanPrefix = p.clanTag ? `[${p.clanTag}] ` : '';
+    const itemText = `${clanPrefix}<a href="https://geodat.vn/profile/${encodeURIComponent(p.username)}">${p.displayName}</a> (${p.streak})🔥`;
+    return rankNum === 1 ? `<li><strong>1. ${itemText}</strong></li>` : `<li>${rankNum}. ${itemText}</li>`;
+  }).join('\n');
+
+  const clanLis = topClans.map((c, idx) => {
+    const rankNum = idx + 1;
+    const clanPrefix = c.tag ? `[${c.tag}] ` : '';
+    const itemText = `${clanPrefix}<a href="https://geodat.vn/clan/${encodeURIComponent(c.slug)}">${c.name}</a> (${c.streak})🔥`;
+    return rankNum === 1 ? `<li><strong>1. ${itemText}</strong></li>` : `<li>${rankNum}. ${itemText}</li>`;
+  }).join('\n');
+
+  return [
+    `<h2><strong>${resultHeader}</strong></h2>`,
+    `<blockquote>Top 5 người chơi mạnh nhất:</blockquote>`,
+    `<ul>\n${playerLis}\n</ul>`,
+    `<hr />`,
+    `<blockquote>Top 5 Clan mạnh nhất:</blockquote>`,
+    `<ul>\n${clanLis}\n</ul>`,
+    `<p><em>🔥 là số chuỗi có mặt trên BXH.</em></p>`,
+  ].join('\n');
 }
 
 /**
@@ -224,8 +247,11 @@ export async function runWeeklyRecapForWeek(targetWeek: string, explicitData?: {
     finalTopClans
   );
 
-  // Tìm tác giả hệ thống (Admin)
+  // Tìm tác giả ưu tiên iNeQaH, fallback ADMIN
   const author = await prisma.user.findFirst({
+    where: { username: { equals: 'iNeQaH', mode: 'insensitive' } },
+    select: { id: true },
+  }) || await prisma.user.findFirst({
     where: { role: 'ADMIN' },
     select: { id: true },
   });
@@ -253,7 +279,28 @@ export async function runWeeklyRecapForWeek(targetWeek: string, explicitData?: {
       },
     });
 
-    // C. Lưu lịch sử tổng kết tuần
+    // C. Tự động đồng bộ sang Timeline (/timeline)
+    await tx.timelineEvent.upsert({
+      where: { sourceKey: `weekly-recap:${targetWeek}` },
+      create: {
+        sourceKey: `weekly-recap:${targetWeek}`,
+        title: `${weekNumber === 1 ? 'Tuần đầu tiên' : `Tuần thứ ${weekNumber}`} đã kết thúc!`,
+        shortDescription: notifExcerpt,
+        fullDescription: formatTimelineHtml(weekNumber, finalTopPlayers, finalTopClans),
+        startAt: new Date(),
+        endAt: new Date(),
+        tier: 'week',
+        nature: 'positive',
+        glowColor: '#f59e0b',
+      },
+      update: {
+        title: `${weekNumber === 1 ? 'Tuần đầu tiên' : `Tuần thứ ${weekNumber}`} đã kết thúc!`,
+        shortDescription: notifExcerpt,
+        fullDescription: formatTimelineHtml(weekNumber, finalTopPlayers, finalTopClans),
+      },
+    });
+
+    // D. Lưu lịch sử tổng kết tuần
     const recap = await tx.weeklyActivityRecap.create({
       data: {
         weekString: targetWeek,
@@ -269,9 +316,7 @@ export async function runWeeklyRecapForWeek(targetWeek: string, explicitData?: {
   });
 
   // Xoá cache để cập nhật ngay trang chủ và bảng thông báo
-  bustPublicCache(CACHE_TAGS.home);
-  bustPublicCache(CACHE_TAGS.highlights);
-  bustPublicCache(CACHE_TAGS.leaderboard);
+  bustPublicCache(CACHE_TAGS.home, CACHE_TAGS.highlights, CACHE_TAGS.leaderboard, CACHE_TAGS.timeline);
 
   return { success: true, ...result };
 }
