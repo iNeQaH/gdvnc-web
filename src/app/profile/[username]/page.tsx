@@ -1315,7 +1315,9 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {isOwner && data.gdUsername && !data.gdVerified && <GdUnverifiedNotice />}
+      {isOwner && data.gdUsername && !data.gdVerified && (
+        <GdUnverifiedNotice gdUsername={data.gdUsername} onVerified={fetchProfile} />
+      )}
 
 
       {/* Unified Hero Card */}

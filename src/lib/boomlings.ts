@@ -46,6 +46,9 @@ export interface NormalizedGdProfile {
   twitter?: string;
   twitch?: string;
   discord?: string;
+  instagram?: string;
+  tiktok?: string;
+  customToken?: string;
   demonBreakdown?: number[];
   iconSet?: GdPlayerIconSet;
 }
@@ -480,7 +483,7 @@ export async function fetchGdLevelsBatch(gdLevelIds: number[]): Promise<Map<numb
 // 5. Public API: Profile Fetcher
 // ==========================================
 
-export async function fetchGdProfile(username: string): Promise<NormalizedGdProfile | null> {
+export async function fetchGdProfile(username: string, bypassCache = false): Promise<NormalizedGdProfile | null> {
   const cleanUser = username.trim();
   if (!cleanUser) return null;
   const userKey = cleanUser.toLowerCase();
@@ -490,9 +493,11 @@ export async function fetchGdProfile(username: string): Promise<NormalizedGdProf
     let accountId: number | null = null;
     let fallbackStatsFromSearch: Record<string, string> | null = null;
 
-    const cachedAcc = accountIdCache.get(userKey);
-    if (cachedAcc && cachedAcc.expiresAt > Date.now()) {
-      accountId = cachedAcc.accountId;
+    if (!bypassCache) {
+      const cachedAcc = accountIdCache.get(userKey);
+      if (cachedAcc && cachedAcc.expiresAt > Date.now()) {
+        accountId = cachedAcc.accountId;
+      }
     }
 
     // Nếu chưa có accountID trong cache: gọi getGJUsers20.php để tìm
@@ -560,7 +565,10 @@ export async function fetchGdProfile(username: string): Promise<NormalizedGdProf
               youtube: data['20'] || undefined,
               twitter: data['44'] || undefined,
               twitch: data['45'] || undefined,
-              discord: data['59'] || undefined,
+              discord: data['58'] || undefined,
+              instagram: data['59'] || undefined,
+              tiktok: data['60'] || undefined,
+              customToken: data['61']?.trim() || undefined,
               demonBreakdown: data['55'] ? data['55'].split(',').map(Number) : undefined,
               iconSet,
             };

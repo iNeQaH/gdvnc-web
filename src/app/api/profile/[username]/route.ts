@@ -504,7 +504,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         likesCount: Array.isArray(user.likedUserIds) ? user.likedUserIds.length : 0,
         hasLiked: Boolean(viewer?.userId && Array.isArray(user.likedUserIds) && user.likedUserIds.includes(viewer.userId)),
         profileTheme: user.profileTheme,
-        profileConfig: user.profileConfig,
+        profileConfig: user.profileConfig && typeof user.profileConfig === 'object' && !Array.isArray(user.profileConfig)
+          ? (() => { const { gdVerifySession: _hidden, ...safeCfg } = user.profileConfig as Record<string, any>; return safeCfg; })()
+          : user.profileConfig,
         isBanned: user.isBanned,
         bannedUntil: user.bannedUntil,
         banReason: user.banReason,
@@ -735,6 +737,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
       if (serialized.length > 16_384) {
         return NextResponse.json({ error: 'Dung lượng cấu hình profile quá lớn (tối đa 16KB).' }, { status: 400 });
       }
+      const currentCfgObj = (current.profileConfig as Record<string, any>) || {};
+      const { gdVerifySession: _clientInjected, ...cleanNextCfg } = nextProfileConfig as Record<string, any>;
+      nextProfileConfig = (!gdUsernameChanged && currentCfgObj.gdVerifySession)
+        ? { ...cleanNextCfg, gdVerifySession: currentCfgObj.gdVerifySession }
+        : cleanNextCfg;
+    }
+
+    if (gdUsernameChanged && nextProfileConfig === undefined && current.profileConfig && typeof current.profileConfig === "object" && !Array.isArray(current.profileConfig)) {
+      const { gdVerifySession: _cleared, ...restCfg } = current.profileConfig as Record<string, any>;
+      nextProfileConfig = restCfg;
     }
 
     if (body.profileMode !== undefined) {
@@ -834,6 +846,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
     }
 
     clearLeaderboardCache();
+    if (updated.profileConfig && typeof updated.profileConfig === "object" && !Array.isArray(updated.profileConfig)) {
+      const { gdVerifySession: _hidden, ...safeCfg } = updated.profileConfig as Record<string, any>;
+      (updated as any).profileConfig = safeCfg;
+    }
     return NextResponse.json({ success: true, updated });
   } catch (error: any) {
     if (error?.message === 'UNAUTHORIZED') {

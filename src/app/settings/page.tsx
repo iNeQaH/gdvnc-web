@@ -48,6 +48,7 @@ import ColorPicker from '@/components/ColorPicker';
 import { CircularAnglePicker } from '@/components/CircularAnglePicker';
 import { AnimatedTabs } from '@/components/AnimatedTabs';
 import BadgeIcon from '@/components/BadgeIcon';
+import GdVerifyModal from '@/components/GdVerifyModal';
 import { UserDisplayName, SETTINGS_FONT_PRESETS } from '@/components/UserDisplayName';
 import { calculateUserSp } from '@/lib/clanTypes';
 
@@ -127,6 +128,7 @@ export default function SettingsPage() {
   const [country, setCountry] = useState('');
   const [bio, setBio] = useState('');
   const [savingInfo, setSavingInfo] = useState(false);
+  const [showGdVerifyModal, setShowGdVerifyModal] = useState(false);
 
   // Supporter custom theme colors, angle & border customization
   const [themeColors, setThemeColors] = useState<string[]>(['#0ea5e9']);
@@ -187,6 +189,11 @@ export default function SettingsPage() {
   const [captchaToken, setCaptchaToken] = useState('');
   const [redeemCode, setRedeemCode] = useState('');
   const [redeeming, setRedeeming] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => {
     if (pwCooldown > 0) {
@@ -595,21 +602,44 @@ export default function SettingsPage() {
   };
 
   const handleDeleteAccount = () => {
-    showConfirm(t('settings.delete_confirm'), async () => {
-      try {
-        const res = await fetch(`/api/profile/${currentUser.username}`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reason: 'User requested deletion via Settings' }),
-        });
-        if (res.ok) {
-          showToast(t('settings.account_deleted'), 'success');
-          handleLogout();
-        } else {
-          showToast(t('settings.delete_failed'), 'error');
-        }
-      } catch (e) {}
-    });
+    setDeleteReason('');
+    setDeletePassword('');
+    setDeleteError('');
+    setShowDeleteAccountModal(true);
+  };
+
+  const handleConfirmDeleteAccount = async () => {
+    if (!deleteReason.trim() || deleteReason.trim().length < 3) {
+      setDeleteError('Vui lòng nhập lý do xoá tài khoản (tối thiểu 3 ký tự).');
+      return;
+    }
+    if (!deletePassword.trim()) {
+      setDeleteError('Vui lòng nhập mật khẩu để xác nhận xoá tài khoản.');
+      return;
+    }
+    setDeletingAccount(true);
+    setDeleteError('');
+    try {
+      const res = await fetch(`/api/profile/${currentUser.username}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reason: deleteReason.trim(),
+          password: deletePassword,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        showToast(t('settings.account_deleted'), 'success');
+        handleLogout();
+      } else {
+        setDeleteError(json.error || t('settings.delete_failed'));
+      }
+    } catch {
+      setDeleteError('Lỗi kết nối khi xoá tài khoản.');
+    } finally {
+      setDeletingAccount(false);
+    }
   };
 
   // 2FA Handlers
@@ -1075,8 +1105,7 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold cursor-pointer hover:bg-red-50 hover:text-red-500 hover:border-red-500/30 dark:hover:bg-red-950/30 text-slate-500 transition-colors"
-                  style={{ borderColor: 'var(--border-ui)' }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500/15 hover:bg-red-500/25 text-red-500 rounded-xl text-xs font-bold cursor-pointer transition-colors border border-red-500/30"
                 >
                   <LogOut className="w-4 h-4" /> {t('settings.logout')}
                 </button>
@@ -1168,7 +1197,22 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="text-xs font-bold ui-dim block mb-1.5">{t('settings.gd_username')}</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold ui-dim">{t('settings.gd_username')}</label>
+                  {data?.gdVerified && gdUsername.trim().toLowerCase() === (data?.gdUsername || '').trim().toLowerCase() ? (
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                      <Check className="w-3 h-3" /> Đã xác minh
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowGdVerifyModal(true)}
+                      className="px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider bg-amber-500/15 hover:bg-amber-500/25 text-amber-500 border border-amber-500/30 flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <ShieldCheck className="w-3 h-3" /> Xác minh
+                    </button>
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-sky-500/10 text-sky-500 shrink-0 border border-sky-500/20">
                     <Gamepad2 className="w-4 h-4" />
@@ -2782,6 +2826,108 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
+      {/* Delete Account Modal with Reason & Password */}
+      {showDeleteAccountModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
+          <div
+            className="w-full max-w-md rounded-3xl border shadow-2xl overflow-hidden p-6 space-y-4"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+          >
+            <div className="flex items-center justify-between border-b border-red-500/20 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-500 shrink-0">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-red-500">Xác Nhận Xoá Tài Khoản</h3>
+                  <p className="text-[11px] ui-dim">Hành động này là vĩnh viễn và không thể khôi phục.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDeleteAccountModal(false)}
+                className="p-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 ui-dim cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold ui-title block">
+                  Lý do xoá tài khoản <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={deleteReason}
+                  onChange={(e) => {
+                    setDeleteReason(e.target.value);
+                    if (deleteError) setDeleteError('');
+                  }}
+                  placeholder="Vui lòng nhập lý do bạn muốn xoá tài khoản..."
+                  rows={3}
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium border focus:ring-1 focus:ring-red-500 outline-none resize-y"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold ui-title block">
+                  Mật khẩu xác nhận <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={deletePassword}
+                  onChange={(e) => {
+                    setDeletePassword(e.target.value);
+                    if (deleteError) setDeleteError('');
+                  }}
+                  placeholder="Nhập mật khẩu đăng nhập hiện tại..."
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium border focus:ring-1 focus:ring-red-500 outline-none"
+                  style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+                />
+              </div>
+
+              {deleteError && (
+                <div className="text-red-500 text-xs font-semibold flex items-center gap-1.5 pt-1">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{deleteError}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+              <button
+                type="button"
+                onClick={() => setShowDeleteAccountModal(false)}
+                disabled={deletingAccount}
+                className="px-4 py-2 rounded-xl text-xs font-bold ui-dim hover:text-white cursor-pointer transition-colors"
+              >
+                Huỷ bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteAccount}
+                disabled={deletingAccount || !deleteReason.trim() || !deletePassword.trim()}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-md flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{deletingAccount ? 'Đang xoá...' : 'Xác nhận xoá'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <GdVerifyModal
+        isOpen={showGdVerifyModal}
+        onClose={() => setShowGdVerifyModal(false)}
+        initialGdUsername={gdUsername}
+        onSuccess={({ gdUsername: verifiedName }) => {
+          setGdUsername(verifiedName);
+          setData((prev: any) => ({ ...prev, gdUsername: verifiedName, gdVerified: true }));
+          loadData();
+        }}
+      />
     </div>
   );
 }

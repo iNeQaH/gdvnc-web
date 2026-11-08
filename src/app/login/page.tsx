@@ -479,27 +479,6 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
               </div>
             )}
 
-            {/* Tuân thủ Nghị định 13/2023/NĐ-CP về Bảo vệ dữ liệu cá nhân */}
-            <div className="pt-1.5 pb-0.5">
-              <label className="flex items-start gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  required
-                  className="mt-0.5 rounded text-sky-500 cursor-pointer accent-sky-500 shrink-0"
-                />
-                <span className="text-[11px] ui-dim leading-snug">
-                  {language === 'en' ? (
-                    <>
-                      I agree to the <Link href="/guidelines" className="text-sky-500 hover:underline">Guidelines</Link> and consent to the processing of personal data (Email, GD Account) in accordance with Vietnam Decree 13/2023/NĐ-CP.
-                    </>
-                  ) : (
-                    <>
-                      Tôi đồng ý với <Link href="/guidelines" className="text-sky-500 hover:underline font-semibold">Quy định</Link> và chấp thuận cho phép xử lý dữ liệu cá nhân (Email, GD Account) theo Nghị định 13/2023/NĐ-CP.
-                    </>
-                  )}
-                </span>
-              </label>
-            </div>
 
             <button
               type="submit"
@@ -617,6 +596,7 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
               </div>
             </div>
 
+            
             <button
               type="submit"
               disabled={loading}
@@ -788,6 +768,28 @@ export default function AuthPage({ initialTab = 'login' }: { initialTab?: 'login
                   {showRegConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+            </div>
+
+                        {/* Tuân thủ Nghị định 13/2023/NĐ-CP về Bảo vệ dữ liệu cá nhân */}
+            <div className="pt-1.5 pb-0.5">
+              <label className="flex items-start gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  required
+                  className="mt-0.5 rounded text-sky-500 cursor-pointer accent-sky-500 shrink-0"
+                />
+                <span className="text-[11px] ui-dim leading-snug">
+                  {language === 'en' ? (
+                    <>
+                      I agree to the <Link href="/guidelines" className="text-sky-500 hover:underline">Guidelines</Link> and consent to the processing of personal data (Email, GD Account) in accordance with Vietnam Decree 13/2023/NĐ-CP.
+                    </>
+                  ) : (
+                    <>
+                      Tôi đồng ý với <Link href="/guidelines" className="text-sky-500 hover:underline font-semibold">Quy định</Link> và chấp thuận cho phép xử lý dữ liệu cá nhân (Email, GD Account) theo Nghị định 13/2023/NĐ-CP.
+                    </>
+                  )}
+                </span>
+              </label>
             </div>
 
             <button
