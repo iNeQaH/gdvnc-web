@@ -13,6 +13,7 @@ export async function GET(req: Request) {
     const mode = (searchParams.get('mode') || 'CLASSIC').toUpperCase();
     const deviceParam = searchParams.get('device');
     const device = deviceParam === 'PC' || deviceParam === 'MOBILE' ? deviceParam : 'ALL';
+    const week = searchParams.get('week') === 'prev' ? 'prev' : 'this';
 
     const body = await cachedJson(
       async () => {
@@ -33,7 +34,7 @@ export async function GET(req: Request) {
           return { success: true, leaderboard };
         }
         if (mode === 'ACTIVITY') {
-          const leaderboard = await getActivityLeaderboard();
+          const leaderboard = await getActivityLeaderboard(week);
           return { success: true, leaderboard };
         }
 
@@ -42,7 +43,7 @@ export async function GET(req: Request) {
         const leaderboard = await getPlayerLeaderboard(playerMode, device);
         return { success: true, leaderboard };
       },
-      ['leaderboard-v5', mode, device],
+      ['leaderboard-v5', mode, device, week],
       [CACHE_TAGS.leaderboard],
       300
     );

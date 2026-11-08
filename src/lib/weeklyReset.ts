@@ -44,37 +44,53 @@ export function formatWeeklyRecapPost(
   topPlayers: RecapPlayer[],
   topClans: RecapClan[]
 ) {
+  const activePlayers = (topPlayers || []).filter((p) => p.points > 0);
+  const activeClans = (topClans || []).filter((c) => c.points > 0);
+
+  if (activePlayers.length === 0 && activeClans.length === 0) {
+    return { postTitle: '', postBody: '', notifTitle: '', notifExcerpt: '', notifBody: '', isEmpty: true };
+  }
+
   const weekTitle = weekNumber === 1 ? 'Tuần đầu tiên' : `Tuần thứ ${weekNumber}`;
   const title = `# ${weekTitle} đã kết thúc! Chúc mừng top 5 của tuần này!`;
   const resultHeader = weekNumber === 1 ? '# **Kết quả tuần đầu tiên:**' : `# **Kết quả của tuần thứ ${weekNumber}:**`;
 
-  const playerLines = topPlayers.map((p, idx) => {
+  const playerLines = activePlayers.map((p, idx) => {
     const rankNum = idx + 1;
     const clanPrefix = p.clanTag ? `[${p.clanTag}] ` : '';
     const itemText = `${clanPrefix}[${p.displayName}](https://geodat.vn/profile/${encodeURIComponent(p.username)}) - ${p.points.toLocaleString('en-US')} điểm (${p.streak}🔥)`;
     return rankNum === 1 ? `- **1. ${itemText}**` : `- ${rankNum}. ${itemText}`;
   });
 
-  const clanLines = topClans.map((c, idx) => {
+  const clanLines = activeClans.map((c, idx) => {
     const rankNum = idx + 1;
     const clanPrefix = c.tag ? `[${c.tag}] ` : '';
     const itemText = `${clanPrefix}[${c.name}](https://geodat.vn/clan/${encodeURIComponent(c.slug)}) - ${c.points.toLocaleString('en-US')} điểm (${c.streak}🔥)`;
     return rankNum === 1 ? `- **1. ${itemText}**` : `- ${rankNum}. ${itemText}`;
   });
 
-  const body = [
-    resultHeader,
-    '> Top 5 người chơi mạnh nhất:',
-    ...playerLines,
-    '---',
-    '> Top 5 Clan mạnh nhất:',
-    ...clanLines,
-    '*🔥 là số chuỗi có mặt trên BXH.*'
-  ].join('\n');
+  const bodyParts: string[] = [resultHeader];
 
+  if (playerLines.length > 0) {
+    bodyParts.push('> Top 5 người chơi mạnh nhất:');
+    bodyParts.push(...playerLines);
+  }
+
+  if (playerLines.length > 0 && clanLines.length > 0) {
+    bodyParts.push('---');
+  }
+
+  if (clanLines.length > 0) {
+    bodyParts.push('> Top 5 Clan mạnh nhất:');
+    bodyParts.push(...clanLines);
+  }
+
+  bodyParts.push('*🔥 là số chuỗi có mặt trên BXH.*');
+
+  const body = bodyParts.join('\n');
   const notifExcerpt = '🔥 là số chuỗi có mặt trên BXH.';
 
-  return { postTitle: title, postBody: body, notifTitle: title, notifExcerpt, notifBody: body };
+  return { postTitle: title, postBody: body, notifTitle: title, notifExcerpt, notifBody: body, isEmpty: false };
 }
 
 export function formatTimelineHtml(
@@ -82,31 +98,48 @@ export function formatTimelineHtml(
   topPlayers: RecapPlayer[],
   topClans: RecapClan[]
 ): string {
+  const activePlayers = (topPlayers || []).filter((p) => p.points > 0);
+  const activeClans = (topClans || []).filter((c) => c.points > 0);
+
+  if (activePlayers.length === 0 && activeClans.length === 0) {
+    return '';
+  }
+
   const resultHeader = weekNumber === 1 ? 'Kết quả tuần đầu tiên:' : `Kết quả của tuần thứ ${weekNumber}:`;
 
-  const playerLis = topPlayers.map((p, idx) => {
+  const playerLis = activePlayers.map((p, idx) => {
     const rankNum = idx + 1;
     const clanPrefix = p.clanTag ? `[${p.clanTag}] ` : '';
     const itemText = `${clanPrefix}<a href="https://geodat.vn/profile/${encodeURIComponent(p.username)}">${p.displayName}</a> - ${p.points.toLocaleString('en-US')} điểm (${p.streak}🔥)`;
     return rankNum === 1 ? `<li><strong>1. ${itemText}</strong></li>` : `<li>${rankNum}. ${itemText}</li>`;
   }).join('\n');
 
-  const clanLis = topClans.map((c, idx) => {
+  const clanLis = activeClans.map((c, idx) => {
     const rankNum = idx + 1;
     const clanPrefix = c.tag ? `[${c.tag}] ` : '';
     const itemText = `${clanPrefix}<a href="https://geodat.vn/clan/${encodeURIComponent(c.slug)}">${c.name}</a> - ${c.points.toLocaleString('en-US')} điểm (${c.streak}🔥)`;
     return rankNum === 1 ? `<li><strong>1. ${itemText}</strong></li>` : `<li>${rankNum}. ${itemText}</li>`;
   }).join('\n');
 
-  return [
-    `<h2><strong>${resultHeader}</strong></h2>`,
-    `<blockquote>Top 5 người chơi mạnh nhất:</blockquote>`,
-    `<ul>\n${playerLis}\n</ul>`,
-    `<hr />`,
-    `<blockquote>Top 5 Clan mạnh nhất:</blockquote>`,
-    `<ul>\n${clanLis}\n</ul>`,
-    `<p><em>🔥 là số chuỗi có mặt trên BXH.</em></p>`,
-  ].join('\n');
+  const parts: string[] = [`<h2><strong>${resultHeader}</strong></h2>`];
+
+  if (playerLis) {
+    parts.push(`<blockquote>Top 5 người chơi mạnh nhất:</blockquote>`);
+    parts.push(`<ul>\n${playerLis}\n</ul>`);
+  }
+
+  if (playerLis && clanLis) {
+    parts.push(`<hr />`);
+  }
+
+  if (clanLis) {
+    parts.push(`<blockquote>Top 5 Clan mạnh nhất:</blockquote>`);
+    parts.push(`<ul>\n${clanLis}\n</ul>`);
+  }
+
+  parts.push(`<p><em>🔥 là số chuỗi có mặt trên BXH.</em></p>`);
+
+  return parts.join('\n');
 }
 
 /**
@@ -238,12 +271,88 @@ export async function runWeeklyRecapForWeek(targetWeek: string, explicitData?: {
     finalTopClans = clanScoreList.slice(0, 5);
   }
 
+  // Lọc chỉ giữ lại người chơi và clan có điểm > 0
+  finalTopPlayers = finalTopPlayers.filter((p) => p.points > 0);
+  finalTopClans = finalTopClans.filter((c) => c.points > 0);
+
+  // Thu thập danh sách toàn bộ người chơi có điểm hoạt động trong tuần để lưu allPlayers
+  const allActiveUsers = await prisma.user.findMany({
+    where: {
+      activityDate: targetWeek,
+      activityPoints: { gt: 0 },
+      isBanned: false,
+    },
+    select: {
+      id: true,
+      username: true,
+      displayName: true,
+      activityPoints: true,
+      gdStars: true,
+      gdMoons: true,
+      gdDemons: true,
+      activityPrevStars: true,
+      activityPrevMoons: true,
+      activityPrevDemons: true,
+      clanMember: {
+        select: {
+          clan: {
+            select: {
+              name: true,
+              tag: true,
+              slug: true,
+            }
+          }
+        }
+      }
+    },
+    orderBy: [
+      { activityPoints: 'desc' },
+      { gdStars: 'desc' },
+      { username: 'asc' },
+    ],
+  });
+
+  const finalAllPlayers = allActiveUsers.map((u) => {
+    const starsGained = Math.max(0, (u.gdStars || 0) - (u.activityPrevStars || 0));
+    const moonsGained = Math.max(0, (u.gdMoons || 0) - (u.activityPrevMoons || 0));
+    const demonsGained = Math.max(0, (u.gdDemons || 0) - (u.activityPrevDemons || 0));
+
+    return {
+      userId: u.id,
+      username: u.username,
+      displayName: playerDisplayName(u),
+      clanTag: u.clanMember?.clan?.tag || null,
+      clanName: u.clanMember?.clan?.name || null,
+      clanSlug: u.clanMember?.clan?.slug || null,
+      points: u.activityPoints,
+      starsGained,
+      moonsGained,
+      demonsGained,
+    };
+  });
+
   // 5. Chuẩn bị định dạng bài viết & thông báo
-  const { postTitle, postBody, notifTitle, notifExcerpt, notifBody } = formatWeeklyRecapPost(
+  const { postTitle, postBody, notifTitle, notifExcerpt, notifBody, isEmpty } = formatWeeklyRecapPost(
     weekNumber,
     finalTopPlayers,
     finalTopClans
   );
+
+  // Nếu cả BXH người chơi và clan đều không có ai có điểm > 0: không đăng thông báo hay bài viết
+  if (isEmpty) {
+    const recap = await prisma.weeklyActivityRecap.create({
+      data: {
+        weekString: targetWeek,
+        weekNumber,
+        topPlayers: [],
+        topClans: [],
+        allPlayers: [],
+        homePostId: null,
+        announcementId: null,
+      },
+    });
+    return { success: true, recap, skippedPublish: true };
+  }
 
   // Tìm tác giả ưu tiên iNeQaH, fallback ADMIN
   const author = await prisma.user.findFirst({
@@ -305,6 +414,7 @@ export async function runWeeklyRecapForWeek(targetWeek: string, explicitData?: {
         weekNumber,
         topPlayers: finalTopPlayers as any,
         topClans: finalTopClans as any,
+        allPlayers: finalAllPlayers as any,
         homePostId: post.id,
         announcementId: announcement.id,
       },

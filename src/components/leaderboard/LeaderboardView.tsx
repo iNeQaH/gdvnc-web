@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Star, Moon, Wrench,
-  Flame, Swords, Search, CheckCircle2, User, Trash2, Gamepad2, Crosshair, X, Trophy, Crown, Heart, Monitor, Smartphone } from 'lucide-react';
+  Flame, Swords, Search, History, CheckCircle2, User, Trash2, Gamepad2, Crosshair, X, Trophy, Crown, Heart, Monitor, Smartphone } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { formatCp } from '@/lib/creatorPoints';
 import { levelPath } from '@/lib/levelUrl';
@@ -73,6 +73,9 @@ function LeaderboardPodium({
     }
     if (mode === 'DEMONS') {
       return `${Number(player.statValue ?? player.gdDemons ?? 0).toLocaleString()} Demons`;
+    }
+    if (mode === 'ACTIVITY') {
+      return `${Number(player.activityPoints ?? 0).toLocaleString()} Act`;
     }
     const pts = mode === 'PLATFORMER' ? player.platformerPp : mode === 'CHALLENGE' ? player.challengePp : player.classicPp;
     return `${Number(pts || 0).toFixed(2)} Pt`;
@@ -619,6 +622,7 @@ export default function HomePage({
   const pageSize = 10;
 
   const [deviceFilter, setDeviceFilter] = useState<'ALL' | 'PC' | 'MOBILE'>('ALL');
+  const [activityWeek, setActivityWeek] = useState<'this' | 'prev'>('this');
 
   useEffect(() => {
     setMode(initialMode);
@@ -678,12 +682,12 @@ export default function HomePage({
   };
 
   useEffect(() => {
-    fetchLeaderboard(mode, deviceFilter);
-    setCurrentPage(1); // Reset page on mode or device change
-  }, [mode, deviceFilter]);
+    fetchLeaderboard(mode, deviceFilter, activityWeek);
+    setCurrentPage(1); // Reset page on mode, device or activity week change
+  }, [mode, deviceFilter, activityWeek]);
 
-  const fetchLeaderboard = async (currentMode: string, currentDevice: string = 'ALL') => {
-    const cacheKey = `lb_v5_${currentMode}_${currentDevice}`;
+  const fetchLeaderboard = async (currentMode: string, currentDevice: string = 'ALL', currentWeek: string = 'this') => {
+    const cacheKey = `lb_v5_${currentMode}_${currentDevice}_${currentWeek}`;
     const cached = getCachedPageState<any[]>(cacheKey);
     if (cached) {
       setLeaderboard(cached);
@@ -693,7 +697,7 @@ export default function HomePage({
 
     setLoading(true);
     try {
-      const res = await fetch(`/api/leaderboard?mode=${currentMode}&device=${currentDevice}`);
+      const res = await fetch(`/api/leaderboard?mode=${currentMode}&device=${currentDevice}&week=${currentWeek}`);
       const data = await res.json();
       if (data.success) {
         setLeaderboard(data.leaderboard || []);
@@ -826,7 +830,7 @@ export default function HomePage({
 
         {/* Row 2: Secondary Controls (Device Filter + Search Bar - grouped closely together) */}
         <div className="flex flex-wrap items-center gap-3">
-          {/* Device Filter (Hidden in CREATOR, STARS, MOONS, DEMONS mode) */}
+          {/* Device Filter (Hidden in CREATOR, STARS, MOONS, DEMONS, ACTIVITY mode) */}
           {!['CREATOR', 'STARS', 'MOONS', 'DEMONS', 'ACTIVITY'].includes(mode) && (
             <AnimatedTabs
               active={deviceFilter}
@@ -835,6 +839,18 @@ export default function HomePage({
                 { id: 'ALL', label: 'Tất cả' },
                 { id: 'PC', label: 'PC', icon: <Monitor className="w-3.5 h-3.5" /> },
                 { id: 'MOBILE', label: 'Mobile', icon: <Smartphone className="w-3.5 h-3.5" /> },
+              ]}
+            />
+          )}
+
+          {/* Activity Week Toggle ("Tuần trước", "Tuần này") */}
+          {mode === 'ACTIVITY' && (
+            <AnimatedTabs
+              active={activityWeek}
+              onChange={(val) => setActivityWeek(val as 'this' | 'prev')}
+              options={[
+                { id: 'this', label: isEn ? 'This Week' : 'Tuần này', icon: <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> },
+                { id: 'prev', label: isEn ? 'Previous Week' : 'Tuần trước', icon: <History className="w-3.5 h-3.5 text-sky-400" /> },
               ]}
             />
           )}
@@ -897,7 +913,7 @@ export default function HomePage({
                     <th className="px-5 py-3">{t('leaderboard.player')}</th>
                     {mode === 'ACTIVITY' ? (
                       <>
-                        <th className="px-5 py-3 text-center">{isEn ? 'Weekly Growth' : 'Tăng Trưởng Tuần Này'}</th>
+                        <th className="px-5 py-3 text-center">{isEn ? 'Weekly Growth' : (activityWeek === 'prev' ? 'Tăng trưởng tuần trước' : 'Tăng trưởng tuần này')}</th>
                         <th className="px-5 py-3 text-right">{isEn ? 'Weekly Points' : 'Điểm Hoạt Động'}</th>
                       </>
                     ) : mode === 'CREATOR' ? (
@@ -1084,6 +1100,27 @@ export default function HomePage({
                             </td>
                             <td className="px-5 py-3.5 text-right font-black text-sm" style={{ color: customRow.hasCustomBg ? '#38bdf8' : 'var(--accent)' }}>
                               {formatCp(player.creatorPoints)} <span className={`text-[10px] font-normal ${customRow.hasCustomBg ? 'text-slate-300' : 'ui-dim'}`}>CP</span>
+                            </td>
+                          </>
+                        ) : mode === 'ACTIVITY' ? (
+                          <>
+                            <td className="px-5 py-3.5 text-center">
+                              <div className="inline-flex items-center gap-2 text-xs font-semibold">
+                                <span className="inline-flex items-center gap-1 text-amber-500 font-mono" title="Stars tăng">
+                                  +{player.starsGained ?? 0} <Star className="w-3 h-3 fill-amber-500" />
+                                </span>
+                                <span className="inline-flex items-center gap-1 text-sky-400 font-mono" title="Moons tăng">
+                                  +{player.moonsGained ?? 0} <Moon className="w-3 h-3 fill-sky-400" />
+                                </span>
+                                <span className="inline-flex items-center gap-1 text-red-500 font-mono" title="Demons tăng">
+                                  +{player.demonsGained ?? 0} <img src="/difficulties/EXTREME DEMON.png" alt="Demon" className="w-3 h-3 inline-block object-contain" />
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-5 py-3.5 text-right font-black text-sm" style={{ color: customRow.hasCustomBg ? '#f59e0b' : '#f59e0b' }}>
+                              <span className="inline-flex items-center gap-1 text-amber-500">
+                                {Number(player.activityPoints ?? 0).toLocaleString()} <Flame className="w-3.5 h-3.5 fill-amber-500" />
+                              </span>
                             </td>
                           </>
                         ) : ['STARS', 'MOONS', 'DEMONS'].includes(mode) ? (

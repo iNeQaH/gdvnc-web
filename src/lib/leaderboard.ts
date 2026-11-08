@@ -1,4 +1,4 @@
-import { getVnWeekString } from '@/lib/activityPoints';
+import { getVnWeekString, getVnPreviousWeekString } from '@/lib/activityPoints';
 import prisma from '@/lib/prisma';
 import { LevelMode, RecordStatus } from '@prisma/client';
 import { pickDecoAndLayoutBadges, cpFromVnLevels } from '@/lib/creatorPoints';
@@ -602,7 +602,101 @@ export async function getStatLeaderboard(stat: 'stars' | 'moons' | 'demons') {
 }
 
 
-export async function getActivityLeaderboard() {
+export async function getActivityLeaderboard(week: string = 'this') {
+  if (week === 'prev') {
+    const targetWeek = getVnPreviousWeekString();
+    const recap = await prisma.weeklyActivityRecap.findUnique({
+      where: { weekString: targetWeek },
+    });
+
+    const recapPlayers: any[] = Array.isArray(recap?.allPlayers) && (recap.allPlayers as any[]).length > 0
+      ? (recap.allPlayers as any[])
+      : Array.isArray(recap?.topPlayers) ? (recap.topPlayers as any[]) : [];
+
+    if (recapPlayers.length === 0) return [];
+
+    const userIds = recapPlayers.map((p) => p.userId).filter(Boolean);
+    const userMap = new Map<string, any>();
+    if (userIds.length > 0) {
+      const dbUsers = await prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          gdUsername: true,
+          avatarUrl: true,
+          role: true,
+          country: true,
+          supporterUntil: true,
+          gdVerified: true,
+          nameColor: true,
+          nameGradient: true,
+          nameGlow: true,
+          nameFont: true,
+          displayedBadgeIds: true,
+          hideAllBadges: true,
+          userBadges: {
+            include: { badge: true },
+          },
+          clanMember: {
+            select: {
+              role: true,
+              clan: {
+                select: {
+                  name: true,
+                  tag: true,
+                  slug: true,
+                  color: true,
+                  colorGradient: true,
+                  isSuspended: true,
+                },
+              },
+            },
+          },
+        },
+      });
+      for (const u of dbUsers) userMap.set(u.id, u);
+    }
+
+    return recapPlayers.map((p, idx) => {
+      const u = userMap.get(p.userId);
+      return {
+        id: p.userId || `recap-${idx}`,
+        rank: idx + 1,
+        username: p.username || u?.username || '',
+        displayName: p.displayName || u?.displayName || p.username || u?.username || '',
+        gdUsername: u?.gdUsername || p.username || '',
+        avatarUrl: u?.avatarUrl || null,
+        role: u?.role || 'USER',
+        country: u?.country || 'VN',
+        supporterUntil: u?.supporterUntil || null,
+        isSuperAdmin: u ? isSuperAdminUser(u) : false,
+        gdVerified: u?.gdVerified ?? true,
+        nameColor: u?.nameColor || null,
+        nameGradient: u?.nameGradient || null,
+        nameGlow: u?.nameGlow || null,
+        nameFont: u?.nameFont || null,
+        clan: sanitizeUserClan(u?.clanMember?.clan) || (p.clanTag ? { name: p.clanName || p.clanTag, tag: p.clanTag, slug: p.clanSlug || '' } : null),
+        clanRole: u?.clanMember?.role,
+        activityPoints: p.points || 0,
+        starsGained: p.starsGained || 0,
+        moonsGained: p.moonsGained || 0,
+        demonsGained: p.demonsGained || 0,
+        statValue: p.points || 0,
+        classicPp: p.points || 0,
+        platformerPp: 0,
+        gdStars: 0,
+        gdMoons: 0,
+        gdDemons: 0,
+        isLegacy: false as const,
+        topBadges: u ? [...(u.userBadges || []).map((ub: any) => ub.badge), ...buildLeaderboardRoles(u)]
+          .sort((a, b) => (b.sortOrder ?? 0) - (a.sortOrder ?? 0))
+          .slice(0, 3) : [],
+      };
+    });
+  }
+
   const currentWeekVn = getVnWeekString();
   const players = await prisma.user.findMany({
     where: {

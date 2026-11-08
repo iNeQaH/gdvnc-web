@@ -28,7 +28,7 @@ async function columnSet(db: PrismaClient) {
         OR (table_name = 'SiteAnnouncement' AND column_name IN ('expiresAt', 'likedUserIds', 'poll'))
         OR (table_name = 'HomePost' AND column_name IN ('id', 'likedUserIds'))
         OR (table_name = 'SepayTransaction' AND column_name = 'id')
-        OR (table_name = 'WeeklyActivityRecap' AND column_name = 'id')
+        OR (table_name = 'WeeklyActivityRecap' AND column_name IN ('id', 'allPlayers'))
       )
   `;
   return new Set(rows.map((row) => `${row.table_name}.${row.column_name}`));
@@ -440,12 +440,17 @@ async function addMissingColumns(db: PrismaClient, have: Set<string>) {
         "weekNumber" INTEGER NOT NULL,
         "topPlayers" JSONB NOT NULL,
         "topClans" JSONB NOT NULL,
+        "allPlayers" JSONB,
         "homePostId" TEXT,
         "announcementId" TEXT,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT "WeeklyActivityRecap_pkey" PRIMARY KEY ("id")
       )
     `).catch(() => {});
+  }
+
+  if (!have.has('WeeklyActivityRecap.allPlayers')) {
+    await db.$executeRawUnsafe(`ALTER TABLE "WeeklyActivityRecap" ADD COLUMN IF NOT EXISTS "allPlayers" JSONB`).catch(() => {});
   }
 }
 
@@ -790,6 +795,7 @@ export const REQUIRED_SCHEMA_KEYS = [
   'AuditLog.id',
   'SepayTransaction.id',
   'WeeklyActivityRecap.id',
+  'WeeklyActivityRecap.allPlayers',
 ];
 
 

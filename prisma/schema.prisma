@@ -716,6 +716,7 @@ model WeeklyActivityRecap {
   weekNumber     Int
   topPlayers     Json
   topClans       Json
+  allPlayers     Json?
   homePostId     String?
   announcementId String?
   createdAt      DateTime  @default(now())
