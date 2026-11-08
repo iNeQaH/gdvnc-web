@@ -605,9 +605,19 @@ export async function getStatLeaderboard(stat: 'stars' | 'moons' | 'demons') {
 export async function getActivityLeaderboard(week: string = 'this') {
   if (week === 'prev') {
     const targetWeek = getVnPreviousWeekString();
-    const recap = await prisma.weeklyActivityRecap.findUnique({
+    let recap = await prisma.weeklyActivityRecap.findUnique({
       where: { weekString: targetWeek },
     });
+
+    // Nếu không tìm thấy hoặc bản ghi trống, fallback sang recap gần nhất có dữ liệu
+    if (!recap || (!recap.allPlayers && (!Array.isArray(recap.topPlayers) || recap.topPlayers.length === 0))) {
+      recap = await prisma.weeklyActivityRecap.findFirst({
+        where: {
+          NOT: { topPlayers: { equals: [] } }
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
 
     const recapPlayers: any[] = Array.isArray(recap?.allPlayers) && (recap.allPlayers as any[]).length > 0
       ? (recap.allPlayers as any[])
