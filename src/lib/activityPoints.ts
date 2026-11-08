@@ -13,12 +13,13 @@
  */
 
 /**
- * Trả về chuỗi tuần hiện tại theo múi giờ Việt Nam (UTC+7): "YYYY-Www"
- * Tuần bắt đầu từ Thứ Hai đến Chủ Nhật.
+ * Trả về chuỗi tuần hiện tại theo múi giờ Việt Nam (UTC+7), reset lúc 07:00 sáng Thứ Hai: "YYYY-Www"
+ * Do 07:00:00 Thứ Hai tại Việt Nam (UTC+7) chính xác là 00:00:00 Thứ Hai theo chuẩn UTC,
+ * việc tính toán tuần ISO 8601 trực tiếp trên timestamp UTC (nowMs)
+ * sẽ tự động chốt tuần cũ và mở tuần mới chuẩn xác vào lúc 07:00:00 sáng Thứ Hai VN.
  */
 export function getVnWeekString(nowMs: number = Date.now()): string {
-  const vnMs = nowMs + 7 * 3600_000;
-  const d = new Date(vnMs);
+  const d = new Date(nowMs);
   const dayNum = d.getUTCDay() || 7; // Sunday is 7, Monday is 1
   d.setUTCDate(d.getUTCDate() + 4 - dayNum); // Nearest Thursday
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));

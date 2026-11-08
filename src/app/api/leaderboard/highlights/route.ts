@@ -39,9 +39,7 @@ export async function GET() {
           topPlayerRow,
           topPlatformerPlayerRow,
           topCreatorRow,
-          notifs,
-          redeems,
-          allUsers,
+          topSupporterUser,
           clans,
         ] = await Promise.all([
           prisma.level.findFirst({
@@ -69,28 +67,28 @@ export async function GET() {
             orderBy: { creatorPoints: 'desc' },
             select: userHighlightSelect,
           }),
-          prisma.notification.findMany({
+          prisma.user.findFirst({
             where: {
               OR: [
-                { title: { contains: 'Quyên góp' } },
-                { title: { contains: 'Supporter' } },
-                { message: { contains: 'tháng Supporter' } },
+                { supporterTotalMonths: { gt: 0 } },
+                { supporterUntil: { gt: new Date() } },
               ],
+              hideSupporterPublic: false,
+              isBanned: false,
             },
-            select: { userId: true, message: true },
-          }),
-          prisma.redeemCodeUse.findMany({
-            select: {
-              userId: true,
-              code: { select: { months: true } },
-            },
-          }),
-          prisma.user.findMany({
+            orderBy: [
+              { supporterTotalMonths: 'desc' },
+              { supporterUntil: 'desc' },
+              { lastSupportedAt: 'desc' },
+            ],
             select: {
               id: true,
               username: true,
+              displayName: true,
               gdUsername: true,
               avatarUrl: true,
+              supporterTotalMonths: true,
+              supporterUntil: true,
               role: true,
             },
           }),
@@ -126,39 +124,23 @@ export async function GET() {
           }),
         ]);
 
-        // 1. Tính toán Top Supporter (tổng số tháng donate lịch sử, loại trừ Owner)
-        const userMonthsMap = new Map<string, number>();
-        for (const n of notifs) {
-          if (!n.userId) continue;
-          const match = n.message.match(/(\d+)\s+tháng\s+Supporter/i);
-          if (match) {
-            const m = parseInt(match[1], 10);
-            userMonthsMap.set(n.userId, (userMonthsMap.get(n.userId) || 0) + m);
-          }
-        }
-        for (const r of redeems) {
-          if (!r.userId || !r.code) continue;
-          userMonthsMap.set(r.userId, (userMonthsMap.get(r.userId) || 0) + (r.code.months || 0));
-        }
-
-        const userMap = new Map(allUsers.map((u) => [u.id, u]));
+        // 1. Tính toán Top Supporter (lấy từ supporterTotalMonths / supporterUntil chính xác, loại trừ Owner)
         let topSupporter = null;
-        let maxMonths = 0;
+        if (topSupporterUser && !isSuperAdminUser(topSupporterUser)) {
+          const nowMs = Date.now();
+          const activeMonths = topSupporterUser.supporterUntil && new Date(topSupporterUser.supporterUntil).getTime() > nowMs
+            ? Math.ceil((new Date(topSupporterUser.supporterUntil).getTime() - nowMs) / (30 * 24 * 3600 * 1000))
+            : 0;
+          const totalMonths = Math.max(topSupporterUser.supporterTotalMonths || 0, activeMonths);
 
-        for (const [userId, months] of userMonthsMap.entries()) {
-          const u = userMap.get(userId);
-          if (!u || isSuperAdminUser(u)) continue;
-          if (months > maxMonths) {
-            maxMonths = months;
-            topSupporter = {
-              id: u.id,
-              username: u.username,
-              gdUsername: u.gdUsername,
-              displayName: playerDisplayName(u),
-              avatarUrl: u.avatarUrl,
-              totalMonths: months,
-            };
-          }
+          topSupporter = {
+            id: topSupporterUser.id,
+            username: topSupporterUser.username,
+            gdUsername: topSupporterUser.gdUsername,
+            displayName: playerDisplayName(topSupporterUser),
+            avatarUrl: topSupporterUser.avatarUrl,
+            totalMonths,
+          };
         }
 
         // 2. Tính toán Clan Stats cho từng hạng mục

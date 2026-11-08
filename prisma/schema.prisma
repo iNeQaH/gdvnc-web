@@ -708,3 +708,18 @@ model HomePost {
   @@index([isPinned])
   @@index([authorId])
 }
+
+
+model WeeklyActivityRecap {
+  id             String    @id @default(uuid())
+  weekString     String    @unique
+  weekNumber     Int
+  topPlayers     Json
+  topClans       Json
+  homePostId     String?
+  announcementId String?
+  createdAt      DateTime  @default(now())
+
+  @@index([weekNumber])
+  @@index([createdAt])
+}

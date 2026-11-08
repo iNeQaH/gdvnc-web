@@ -65,12 +65,14 @@ export async function GET(req: Request) {
       }
 
       const currentWeekVn = getVnWeekString();
-      let activityPoints = 0;
+      const memberActList: number[] = [];
       for (const m of c.members) {
         if (m.user && m.user.activityDate === currentWeekVn) {
-          activityPoints += (m.user.activityPoints || 0);
+          memberActList.push(m.user.activityPoints || 0);
         }
       }
+      memberActList.sort((a, b) => b - a);
+      const activityPoints = memberActList.slice(0, 5).reduce((sum, v) => sum + v, 0);
 
       const tierInfo = getClanTier(totalSp);
       const isSuspended = c.isSuspended || (totalSp < 3 && c.gracePeriodUntil && new Date(c.gracePeriodUntil) < now);

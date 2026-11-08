@@ -6,6 +6,7 @@ import { playerDisplayName } from '@/lib/leaderboard';
 import { LevelMode } from '@prisma/client';
 import { calculateUserSp, getClanTier } from '@/lib/clanTypes';
 import { getVnWeekString } from '@/lib/activityPoints';
+import { checkAndTriggerWeeklyReset } from '@/lib/weeklyReset';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,7 @@ const userHighlightSelect = {
 
 export async function GET() {
   try {
+    checkAndTriggerWeeklyReset().catch(() => {});
     const now = new Date();
     const [cachedData, freshPosts] = await Promise.all([
       cachedJson(
@@ -275,12 +277,14 @@ export async function GET() {
           }
           const tierInfo = getClanTier(totalSp);
 
-          let totalActivityPoints = 0;
+          const memberPoints: number[] = [];
           for (const m of c.members) {
             if (m.user.activityDate === currentWeekVn) {
-              totalActivityPoints += m.user.activityPoints || 0;
+              memberPoints.push(m.user.activityPoints || 0);
             }
           }
+          memberPoints.sort((a, b) => b - a);
+          const totalActivityPoints = memberPoints.slice(0, 5).reduce((sum, v) => sum + v, 0);
 
           return {
             id: c.id,
