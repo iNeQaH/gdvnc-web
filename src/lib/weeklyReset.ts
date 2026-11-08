@@ -51,14 +51,14 @@ export function formatWeeklyRecapPost(
   const playerLines = topPlayers.map((p, idx) => {
     const rankNum = idx + 1;
     const clanPrefix = p.clanTag ? `[${p.clanTag}] ` : '';
-    const itemText = `${clanPrefix}[${p.displayName}](https://geodat.vn/profile/${encodeURIComponent(p.username)}) (${p.streak})🔥`;
+    const itemText = `${clanPrefix}[${p.displayName}](https://geodat.vn/profile/${encodeURIComponent(p.username)}) - ${p.points.toLocaleString('en-US')} điểm (${p.streak}🔥)`;
     return rankNum === 1 ? `- **1. ${itemText}**` : `- ${rankNum}. ${itemText}`;
   });
 
   const clanLines = topClans.map((c, idx) => {
     const rankNum = idx + 1;
     const clanPrefix = c.tag ? `[${c.tag}] ` : '';
-    const itemText = `${clanPrefix}[${c.name}](https://geodat.vn/clan/${encodeURIComponent(c.slug)}) (${c.streak})🔥`;
+    const itemText = `${clanPrefix}[${c.name}](https://geodat.vn/clan/${encodeURIComponent(c.slug)}) - ${c.points.toLocaleString('en-US')} điểm (${c.streak}🔥)`;
     return rankNum === 1 ? `- **1. ${itemText}**` : `- ${rankNum}. ${itemText}`;
   });
 
@@ -87,14 +87,14 @@ export function formatTimelineHtml(
   const playerLis = topPlayers.map((p, idx) => {
     const rankNum = idx + 1;
     const clanPrefix = p.clanTag ? `[${p.clanTag}] ` : '';
-    const itemText = `${clanPrefix}<a href="https://geodat.vn/profile/${encodeURIComponent(p.username)}">${p.displayName}</a> (${p.streak})🔥`;
+    const itemText = `${clanPrefix}<a href="https://geodat.vn/profile/${encodeURIComponent(p.username)}">${p.displayName}</a> - ${p.points.toLocaleString('en-US')} điểm (${p.streak}🔥)`;
     return rankNum === 1 ? `<li><strong>1. ${itemText}</strong></li>` : `<li>${rankNum}. ${itemText}</li>`;
   }).join('\n');
 
   const clanLis = topClans.map((c, idx) => {
     const rankNum = idx + 1;
     const clanPrefix = c.tag ? `[${c.tag}] ` : '';
-    const itemText = `${clanPrefix}<a href="https://geodat.vn/clan/${encodeURIComponent(c.slug)}">${c.name}</a> (${c.streak})🔥`;
+    const itemText = `${clanPrefix}<a href="https://geodat.vn/clan/${encodeURIComponent(c.slug)}">${c.name}</a> - ${c.points.toLocaleString('en-US')} điểm (${c.streak}🔥)`;
     return rankNum === 1 ? `<li><strong>1. ${itemText}</strong></li>` : `<li>${rankNum}. ${itemText}</li>`;
   }).join('\n');
 
