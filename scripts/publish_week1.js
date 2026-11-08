@@ -148,7 +148,7 @@ async function main() {
   ].join('\n');
 
   const notifTitle = postTitle;
-  const notifExcerpt = 'Kết quả bảng xếp hạng tuần đầu tiên: Chúc mừng Top 5 người chơi và Top 5 Clan mạnh nhất!';
+  const notifExcerpt = '🔥 là số chuỗi có mặt trên BXH.';
   const notifBody = body;
   const postBody = body;
 

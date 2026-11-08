@@ -72,9 +72,7 @@ export function formatWeeklyRecapPost(
     '*🔥 là số chuỗi có mặt trên BXH.*'
   ].join('\n');
 
-  const notifExcerpt = weekNumber === 1
-    ? 'Kết quả bảng xếp hạng tuần đầu tiên: Chúc mừng Top 5 người chơi và Top 5 Clan mạnh nhất!'
-    : `Kết quả bảng xếp hạng tuần thứ ${weekNumber}: Chúc mừng Top 5 người chơi và Top 5 Clan mạnh nhất tuần!`;
+  const notifExcerpt = '🔥 là số chuỗi có mặt trên BXH.';
 
   return { postTitle: title, postBody: body, notifTitle: title, notifExcerpt, notifBody: body };
 }
