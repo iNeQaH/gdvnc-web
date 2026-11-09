@@ -66,7 +66,18 @@ interface PlaygroundCanvasProps {
   isStaff?: boolean;
   onMove?: (toX: number, toY: number) => void;
   onDeleteChat?: (messageId: string) => void;
+  onEatFood?: (foodId: string) => void;
+  lastEatenFood?: { id: string; userId: string; value: number; x: number; y: number; timestamp: number } | null;
   clockOffset?: number;
+}
+
+interface ScorePopup {
+  id: string;
+  x: number;
+  y: number;
+  text: string;
+  color: string;
+  createdAt: number;
 }
 
 interface ClickRipple {
@@ -121,6 +132,8 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
   isStaff,
   onMove,
   onDeleteChat,
+  onEatFood,
+  lastEatenFood,
   clockOffset = 0,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -129,7 +142,41 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
   const waveTrailsRef = useRef<Map<string, Array<{ x: number; y: number; t: number }>>>(new Map());
   const visualContinuityRef = useRef<Map<string, VisualContinuityState>>(new Map());
   const deleteBtnBoundsRef = useRef<Map<string, { x: number; y: number; w: number; h: number }>>(new Map());
+  const scorePopupsRef = useRef<ScorePopup[]>([]);
+  const locallyEatenFoodsRef = useRef<Set<string>>(new Set());
   const lastShakeTimeRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (!lastEatenFood) return;
+    const val = lastEatenFood.value;
+    const text = val > 0 ? `+${val}` : `${val}`;
+    const color =
+      val === 1
+        ? '#ffffff'
+        : val === 3
+        ? '#facc15'
+        : val === 10
+        ? '#c084fc'
+        : '#ef4444';
+    scorePopupsRef.current.push({
+      id: `${lastEatenFood.id}-${lastEatenFood.timestamp}`,
+      x: lastEatenFood.x,
+      y: lastEatenFood.y,
+      text,
+      color,
+      createdAt: Date.now(),
+    });
+  }, [lastEatenFood]);
+
+  // Clean up locally eaten set against current foods list
+  useEffect(() => {
+    const validIds = new Set(foods.map((f) => f.id));
+    for (const id of locallyEatenFoodsRef.current) {
+      if (!validIds.has(id)) {
+        locallyEatenFoodsRef.current.delete(id);
+      }
+    }
+  }, [foods]);
 
   // Responsive Viewport Width:
   // Desktop: 1600px | Tablet: 1160px | Mobile: 820px (~2x zoom so characters are large and readable on phones!)
@@ -171,6 +218,7 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
     currentUserId,
     isStaff,
     onDeleteChat,
+    onEatFood,
     clockOffset,
   });
   latestPropsRef.current = {
@@ -182,6 +230,7 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
     currentUserId,
     isStaff,
     onDeleteChat,
+    onEatFood,
     clockOffset,
   };
 
@@ -734,10 +783,45 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
         ctx.restore();
       }
 
-      // 6. Food Items in World Coordinates
+      // 6. Food Items in World Coordinates & Client-Side Instant Pickup
+      if (curUserId && latestPropsRef.current.onEatFood) {
+        const myPlayer = evaluatedPlayers.find((ep) => ep.player.userId === curUserId);
+        if (myPlayer) {
+          for (const food of curFoods) {
+            if (locallyEatenFoodsRef.current.has(food.id)) continue;
+            const ft = getPlaygroundFoodTransform(food, now);
+            const dist = Math.hypot(myPlayer.drawX - ft.x, myPlayer.drawY - ft.y);
+            const hitDistance = PLAYER_RADIUS + food.radius + 12;
+            if (dist <= hitDistance) {
+              locallyEatenFoodsRef.current.add(food.id);
+              latestPropsRef.current.onEatFood(food.id);
+              const val = food.value;
+              const text = val > 0 ? `+${val}` : `${val}`;
+              const color =
+                val === 1
+                  ? '#ffffff'
+                  : val === 3
+                  ? '#facc15'
+                  : val === 10
+                  ? '#c084fc'
+                  : '#ef4444';
+              scorePopupsRef.current.push({
+                id: `local-${food.id}-${now}`,
+                x: ft.x,
+                y: ft.y,
+                text,
+                color,
+                createdAt: now,
+              });
+            }
+          }
+        }
+      }
+
       for (const food of curFoods) {
+        if (locallyEatenFoodsRef.current.has(food.id)) continue;
         const ft = getPlaygroundFoodTransform(food, now);
-        if (ft.x < cameraX - 50 || ft.x > cameraX + currentVw + 50) {
+        if (ft.x < cameraX - 60 || ft.x > cameraX + currentVw + 60) {
           continue;
         }
 
@@ -746,66 +830,90 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
         ctx.rotate(ft.rotation);
 
         if (food.type === 'circle') {
-          // Circle: +1 pt (Neon Cyan)
-          ctx.shadowColor = '#06b6d4';
-          ctx.shadowBlur = 12;
-          ctx.fillStyle = '#06b6d4';
-          ctx.beginPath();
-          ctx.arc(0, 0, 11, 0, Math.PI * 2);
-          ctx.fill();
-
+          // Tròn: thuần màu trắng, hơi mờ chút, không có chấm trắng bên trong (+1 điểm)
+          ctx.save();
+          ctx.globalAlpha = 0.82;
+          ctx.shadowColor = '#ffffff';
+          ctx.shadowBlur = 10;
           ctx.fillStyle = '#ffffff';
           ctx.beginPath();
-          ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+          ctx.arc(0, 0, 14, 0, Math.PI * 2);
           ctx.fill();
+          ctx.restore();
         } else if (food.type === 'square') {
-          // Square: +3 pts (Neon Green / Emerald)
-          ctx.shadowColor = '#22c55e';
-          ctx.shadowBlur = 14;
-          ctx.fillStyle = '#22c55e';
+          // Vuông: thuần màu vàng, to hơn chút, hơi mờ chút, không có chấm trắng bên trong (+3 điểm)
+          ctx.save();
+          ctx.globalAlpha = 0.82;
+          ctx.shadowColor = '#facc15';
+          ctx.shadowBlur = 12;
+          ctx.fillStyle = '#facc15';
           ctx.beginPath();
-          ctx.roundRect(-10, -10, 20, 20, 3.5);
+          ctx.roundRect(-13, -13, 26, 26, 4.5);
           ctx.fill();
-
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.roundRect(-4, -4, 8, 8, 1.5);
-          ctx.fill();
+          ctx.restore();
         } else if (food.type === 'triangle') {
-          // Triangle Red with Glow: -5 pts (Always 3 on map, pulsing danger hazard!)
-          const pulse = 1.0 + Math.sin(now / 160) * 0.15;
+          // Quả bom thay cho tam giác: thân đen than viền neon đỏ nguy hiểm, có ngòi nổ phát tia lửa, -5 điểm
+          const pulse = 1.0 + Math.sin(now / 150) * 0.08;
           ctx.scale(pulse, pulse);
-          ctx.shadowColor = '#ef4444';
-          ctx.shadowBlur = 18;
-          ctx.fillStyle = '#ef4444';
-          ctx.strokeStyle = '#fca5a5';
-          ctx.lineWidth = 2;
+          ctx.save();
+          ctx.globalAlpha = 0.85;
 
+          // Thân cầu quả bom đen xám viền đỏ neon
+          ctx.shadowColor = '#ef4444';
+          ctx.shadowBlur = 16;
+          ctx.fillStyle = '#1c1917';
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 2.5;
           ctx.beginPath();
-          ctx.moveTo(0, -14);
-          ctx.lineTo(12, 10);
-          ctx.lineTo(-12, 10);
-          ctx.closePath();
+          ctx.arc(0, 3, 15, 0, Math.PI * 2);
           ctx.fill();
           ctx.stroke();
 
-          ctx.fillStyle = '#ffffff';
+          // Cổ/núm bom
+          ctx.fillStyle = '#475569';
           ctx.beginPath();
-          ctx.arc(0, 3, 2.5, 0, Math.PI * 2);
+          ctx.roundRect(-4, -15, 8, 5, 2);
           ctx.fill();
-        } else if (food.type === 'hexagon') {
-          // Hexagon: +10 pts (Neon Purple / Pink)
-          ctx.shadowColor = '#c084fc';
-          ctx.shadowBlur = 16;
-          ctx.fillStyle = '#a855f7';
-          ctx.strokeStyle = '#f5d0fe';
-          ctx.lineWidth = 2;
 
+          // Ngòi nổ cong
+          ctx.beginPath();
+          ctx.moveTo(0, -15);
+          ctx.quadraticCurveTo(4, -22, 10, -21);
+          ctx.strokeStyle = '#d97706';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Tia lửa nhấp nháy ở ngòi nổ
+          const spark = Math.sin(now / 60) > 0;
+          ctx.fillStyle = spark ? '#fbbf24' : '#ef4444';
+          ctx.shadowColor = '#fbbf24';
+          ctx.shadowBlur = 12;
+          ctx.beginPath();
+          ctx.arc(10, -21, spark ? 3.5 : 2.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Nhãn -5 ở giữa quả bom
+          ctx.shadowBlur = 0;
+          ctx.font = '800 12px monospace';
+          ctx.fillStyle = '#ef4444';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('-5', 0, 4);
+          ctx.restore();
+        } else if (food.type === 'hexagon') {
+          // Lục giác: to hơn gấp 3 lần hình tròn (R=38), thuần màu tím neon, hơi mờ chút, không có chấm trắng bên trong, nhãn +10
+          ctx.save();
+          ctx.globalAlpha = 0.82;
+          ctx.shadowColor = '#c084fc';
+          ctx.shadowBlur = 18;
+          ctx.fillStyle = '#a855f7';
+          ctx.strokeStyle = '#e9d5ff';
+          ctx.lineWidth = 2.5;
           ctx.beginPath();
           for (let i = 0; i < 6; i++) {
             const angle = (i * Math.PI) / 3;
-            const hx = 13 * Math.cos(angle);
-            const hy = 13 * Math.sin(angle);
+            const hx = 38 * Math.cos(angle);
+            const hy = 38 * Math.sin(angle);
             if (i === 0) ctx.moveTo(hx, hy);
             else ctx.lineTo(hx, hy);
           }
@@ -813,14 +921,46 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
           ctx.fill();
           ctx.stroke();
 
+          // Nhãn +10 to rõ ở giữa
+          ctx.font = '800 15px monospace';
           ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.arc(0, 0, 4, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('+10', 0, 0);
+          ctx.restore();
         }
 
         ctx.restore();
       }
+
+      // Floating Score Popups in World Coordinates (+1, +3, +10, -5 bay nổi lên)
+      const validPopups: ScorePopup[] = [];
+      for (const popup of scorePopupsRef.current) {
+        const age = clientNow - popup.createdAt;
+        if (age >= 0 && age < 850) {
+          validPopups.push(popup);
+          const p = age / 850;
+          const currentY = popup.y - p * 34;
+          const alpha = 1 - p * p;
+
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, alpha);
+          ctx.font = '800 18px monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.shadowColor = popup.color;
+          ctx.shadowBlur = 12;
+
+          ctx.strokeStyle = '#020617';
+          ctx.lineWidth = 3;
+          ctx.strokeText(popup.text, popup.x, currentY);
+
+          ctx.fillStyle = popup.color;
+          ctx.fillText(popup.text, popup.x, currentY);
+          ctx.restore();
+        }
+      }
+      scorePopupsRef.current = validPopups;
 
       // 7. Speech Bubbles in World Coordinates
       deleteBtnBoundsRef.current.clear();
@@ -904,15 +1044,18 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
 
       ctx.restore(); // End world-space camera translation
 
-      // 8. Top 5 Leaderboard Overlay (in Viewport Coordinates, top-right corner)
+      // 8. Leaderboard Overlay (in Viewport Coordinates, top-right corner)
+      // Chỉ hiện "{tên} - {điểm}", không hiện title hay gì khác, font to rõ ràng
+      const entries = curLeaderboard.slice(0, 5);
+      const rowHeight = 24;
       const lbBoxW = 210;
-      const lbBoxH = 26 + Math.max(1, curLeaderboard.length) * 19 + 24;
+      const lbBoxH = Math.max(1, entries.length) * rowHeight + 16;
       const lbBoxX = currentVw - lbBoxW - 14;
-      const lbBoxY = 12;
+      const lbBoxY = 14;
 
       ctx.save();
       // Glass card background
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.86)';
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
       ctx.strokeStyle = 'rgba(148, 163, 184, 0.28)';
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -920,61 +1063,32 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
       ctx.fill();
       ctx.stroke();
 
-      // Header: TOP 5 & Legend
-      ctx.font = '700 11px system-ui, sans-serif';
-      ctx.fillStyle = '#38bdf8';
-      ctx.textAlign = 'left';
-      ctx.fillText('🏆 TOP 5 PHÒNG', lbBoxX + 10, lbBoxY + 16);
-
-      // Compact Legend: ●+1 ■+3 ⬡+10 ▲-5
-      ctx.font = '600 9.5px monospace';
-      ctx.textAlign = 'right';
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillText('●1 ■3 ⬡10 ▲-5', lbBoxX + lbBoxW - 8, lbBoxY + 16);
-
-      // Separator line
-      ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
-      ctx.beginPath();
-      ctx.moveTo(lbBoxX + 8, lbBoxY + 23);
-      ctx.lineTo(lbBoxX + lbBoxW - 8, lbBoxY + 23);
-      ctx.stroke();
-
-      // Leaderboard entries
-      if (curLeaderboard.length === 0) {
-        ctx.font = '500 10.5px system-ui, sans-serif';
-        ctx.fillStyle = '#64748b';
+      if (entries.length === 0) {
+        ctx.font = '600 13px system-ui, sans-serif';
+        ctx.fillStyle = '#94a3b8';
         ctx.textAlign = 'center';
-        ctx.fillText('Chưa có ai ghi điểm', lbBoxX + lbBoxW / 2, lbBoxY + 44);
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Chưa có điểm', lbBoxX + lbBoxW / 2, lbBoxY + lbBoxH / 2);
       } else {
-        curLeaderboard.forEach((entry, idx) => {
-          const rowY = lbBoxY + 38 + idx * 19;
-          const rankColor =
-            idx === 0 ? '#fbbf24' : idx === 1 ? '#cbd5e1' : idx === 2 ? '#d97706' : '#94a3b8';
+        entries.forEach((entry, idx) => {
+          const rowY = lbBoxY + 12 + idx * rowHeight + 10;
+          const name = entry.displayName || entry.username;
+          const text = `${name} - ${entry.score}`;
 
-          // Rank #
-          ctx.font = '700 10px monospace';
-          ctx.fillStyle = rankColor;
+          ctx.font = '700 14px system-ui, sans-serif';
           ctx.textAlign = 'left';
-          ctx.fillText(`#${idx + 1}`, lbBoxX + 10, rowY);
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = entry.userId === curUserId ? '#38bdf8' : '#f8fafc';
 
-          // Name
-          ctx.font = '600 11px system-ui, sans-serif';
-          ctx.fillStyle = entry.userId === curUserId ? '#38bdf8' : '#e2e8f0';
-          const maxNameW = lbBoxW - 82;
-          let name = entry.displayName || entry.username;
-          if (ctx.measureText(name).width > maxNameW) {
-            while (name.length > 3 && ctx.measureText(name + '..').width > maxNameW) {
-              name = name.slice(0, -1);
+          const maxW = lbBoxW - 20;
+          let renderedText = text;
+          if (ctx.measureText(renderedText).width > maxW) {
+            while (renderedText.length > 4 && ctx.measureText(renderedText + '..').width > maxW) {
+              renderedText = renderedText.slice(0, -1);
             }
-            name += '..';
+            renderedText += '..';
           }
-          ctx.fillText(name, lbBoxX + 30, rowY);
-
-          // Score
-          ctx.font = '700 11px monospace';
-          ctx.fillStyle = '#f8fafc';
-          ctx.textAlign = 'right';
-          ctx.fillText(`${entry.score} pts`, lbBoxX + lbBoxW - 10, rowY);
+          ctx.fillText(renderedText, lbBoxX + 10, rowY);
         });
       }
       ctx.restore();

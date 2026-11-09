@@ -246,14 +246,14 @@ export class PlaygroundManager {
     if (this.tickInterval) return;
     this.tickInterval = setInterval(() => {
       this.tickCounter++;
-      // Food check & collision running at 160ms ticks for responsive pickup
+      // Food check & collision running at 80ms ticks for instant, lag-free pickup
       this.handleFoodCollisions();
-      // Idle AI & cleanup every 320ms (every 2 ticks)
-      if (this.tickCounter % 2 === 0) {
+      // Idle AI & cleanup every 320ms (every 4 ticks)
+      if (this.tickCounter % 4 === 0) {
         this.handleIdleTick();
         this.cleanupExpiredMessages();
       }
-    }, 160);
+    }, 80);
   }
 
   private cleanupExpiredMessages() {
@@ -1266,22 +1266,23 @@ export class PlaygroundManager {
       let scoreChanged = false;
       let eatenAny = false;
 
-      // Người chơi active (ở trong phòng và không AFK) có thể va chạm ăn thức ăn
-      const activePlayers = Array.from(this.players.values()).filter(
-        (p) => p.activeRoomId === roomId && !p.isAfk
+      // Tất cả người chơi trong phòng (kể cả AFK) đều có thể thu thập thức ăn
+      const roomPlayers = Array.from(this.players.values()).filter((p) =>
+        this.isPlayerInRoom(p, roomId)
       );
 
-      if (activePlayers.length > 0) {
+      if (roomPlayers.length > 0) {
         const remainingFoods: PlaygroundFoodItem[] = [];
 
         for (const food of foods) {
           const ft = getPlaygroundFoodTransform(food, now);
           let wasEaten = false;
 
-          for (const player of activePlayers) {
-            const phys = getPlaygroundPhysics(player.segment, now);
+          for (const player of roomPlayers) {
+            const seg = this.getSegmentForRoom(player, roomId);
+            const phys = getPlaygroundPhysics(seg, now);
             const dist = Math.hypot(phys.x - ft.x, phys.y - ft.y);
-            const hitDistance = PLAYER_RADIUS + food.radius + 2;
+            const hitDistance = PLAYER_RADIUS + food.radius + 12;
 
             if (dist <= hitDistance) {
               wasEaten = true;
@@ -1306,7 +1307,7 @@ export class PlaygroundManager {
                 y: ft.y,
               });
 
-              // Nếu tam giác đỏ bị ăn, spawn ngay 1 tam giác đỏ khác ở vị trí ngẫu nhiên
+              // Nếu quả bom (triangle) bị ăn, spawn ngay 1 quả bom khác ở vị trí ngẫu nhiên
               if (food.type === 'triangle') {
                 remainingFoods.push(this.createRandomFood('triangle', roomId));
               }
@@ -1334,6 +1335,46 @@ export class PlaygroundManager {
         });
       }
     }
+  }
+
+  public handleEatFood(userId: string, foodId: string, roomId: string): boolean {
+    const player = this.players.get(userId);
+    if (!player || !this.isPlayerInRoom(player, roomId)) return false;
+    const foods = this.roomFoods.get(roomId);
+    if (!foods) return false;
+    const idx = foods.findIndex((f) => f.id === foodId);
+    if (idx === -1) return false;
+    const [food] = foods.splice(idx, 1);
+    const now = Date.now();
+    const ft = getPlaygroundFoodTransform(food, now);
+
+    let scores = this.roomScores.get(roomId);
+    if (!scores) {
+      scores = new Map<string, number>();
+      this.roomScores.set(roomId, scores);
+    }
+    const currentScore = scores.get(userId) || 0;
+    const nextScore = Math.max(0, currentScore + food.value);
+    scores.set(userId, nextScore);
+
+    this.emitToRoom(roomId, 'food-eat', {
+      foodId: food.id,
+      userId: player.userId,
+      username: player.displayName || player.username,
+      value: food.value,
+      x: ft.x,
+      y: ft.y,
+    });
+
+    if (food.type === 'triangle') {
+      foods.push(this.createRandomFood('triangle', roomId));
+    }
+
+    this.emitToRoom(roomId, 'food-update', { foods });
+    this.emitToRoom(roomId, 'leaderboard', {
+      leaderboard: this.getRoomLeaderboard(roomId),
+    });
+    return true;
   }
 
   public getRoomSnapshot(roomId: string) {

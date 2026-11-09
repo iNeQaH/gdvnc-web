@@ -387,6 +387,7 @@ function simulateTrajectory(segment: PlaygroundSegment): { points: TrajectoryPoi
   // Track vertical ascent when target is significantly higher than start
   const isTargetHigher = targetY < segment.fromY - 8;
   let hasReachedTargetAltitude = !isTargetHigher;
+  let flightCancelled = false;
 
   // Record exact initial frame (zero position jump at t=0)
   points.push({
@@ -414,7 +415,8 @@ function simulateTrajectory(segment: PlaygroundSegment): { points: TrajectoryPoi
         hasReachedTargetAltitude = true;
       }
     }
-    const isFlightActive = !reachedTargetX || (isTargetHigher && !hasReachedTargetAltitude);
+    const isFlightActive =
+      (!reachedTargetX || (isTargetHigher && !hasReachedTargetAltitude)) && !flightCancelled;
 
     // 1. HORIZONTAL VELOCITY
     let vx = 0;
@@ -626,12 +628,26 @@ function simulateTrajectory(segment: PlaygroundSegment): { points: TrajectoryPoi
       if (bodyBot > obs.y + 2.5 && bodyTop < obsBottom - 2.5) {
         if (vx > 0 && prevX + SUPPORT_HALF_W <= obs.x + 0.5 && x + SUPPORT_HALF_W > obs.x) {
           x = obs.x - SUPPORT_HALF_W;
+          if (vy > 0 && isTargetHigher) {
+            hasReachedTargetAltitude = true;
+            flightCancelled = true;
+            hopBoostTimer = 0;
+            hopsRemaining = 0;
+            vy = -60;
+          }
         } else if (
           vx < 0 &&
           prevX - SUPPORT_HALF_W >= obsRight - 0.5 &&
           x - SUPPORT_HALF_W < obsRight
         ) {
           x = obsRight + SUPPORT_HALF_W;
+          if (vy > 0 && isTargetHigher) {
+            hasReachedTargetAltitude = true;
+            flightCancelled = true;
+            hopBoostTimer = 0;
+            hopsRemaining = 0;
+            vy = -60;
+          }
         }
       }
     }
@@ -647,7 +663,7 @@ function simulateTrajectory(segment: PlaygroundSegment): { points: TrajectoryPoi
 
     let groundedOnThisStep = false;
 
-    // Ceiling collision
+    // Ceiling collision: bỏ bay lên trên khi chạm trần
     if (headY <= CEILING_SURFACE_Y) {
       headY = CEILING_SURFACE_Y;
       y = headY + PLAYER_RADIUS;
@@ -657,11 +673,15 @@ function simulateTrajectory(segment: PlaygroundSegment): { points: TrajectoryPoi
         isOnGround = true;
         groundedOnThisStep = true;
       } else if (vy > 0) {
-        vy = 0;
+        hasReachedTargetAltitude = true;
+        flightCancelled = true;
+        hopBoostTimer = 0;
+        hopsRemaining = 0;
+        vy = -60;
       }
     }
 
-    // Platform top & underside collision
+    // Platform top & underside collision: bỏ bay lên trên khi chạm đáy vật cản
     for (const obs of obstacles) {
       const obsRight = obs.x + obs.w;
       const obsBottom = obs.y + obs.h;
@@ -687,11 +707,16 @@ function simulateTrajectory(segment: PlaygroundSegment): { points: TrajectoryPoi
           break;
         }
 
-        if (gravityDir === 1 && vy > 0 && prevHeadY >= obsBottom - 2.5 && headY < obsBottom) {
+        // Chạm vào gầm vật cản khi đang bay lên -> ngắt ngay lực bay để rơi xuống, không bị kẹt
+        if (gravityDir === 1 && vy > 0 && prevHeadY >= obsBottom - 18 && headY <= obsBottom) {
           headY = obsBottom;
           y = headY + PLAYER_RADIUS;
           feetY = y + PLAYER_RADIUS;
-          vy = 0;
+          hasReachedTargetAltitude = true;
+          flightCancelled = true;
+          hopBoostTimer = 0;
+          hopsRemaining = 0;
+          vy = -60;
         }
 
         if (gravityDir === -1 && vy < 0 && prevFeetY <= obs.y + 2.5 && feetY > obs.y) {
@@ -995,11 +1020,11 @@ export function getFoodRadius(type: PlaygroundFoodType): number {
     case 'circle':
       return 14;
     case 'square':
-      return 13;
+      return 18; // vuông to hơn chút
     case 'triangle':
-      return 15;
+      return 22; // quả bom tròn có ngòi nổ
     case 'hexagon':
-      return 16;
+      return 38; // to hơn gấp ~3 lần hình tròn
   }
 }
 

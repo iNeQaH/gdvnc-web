@@ -151,6 +151,15 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, serverTime: Date.now() });
       }
 
+      case 'eatFood': {
+        const { foodId, roomId } = body;
+        if (!foodId || typeof foodId !== 'string' || !roomId || typeof roomId !== 'string') {
+          return NextResponse.json({ error: 'Dữ liệu không hợp lệ.' }, { status: 400 });
+        }
+        const ok = playgroundManager.handleEatFood(session.userId, foodId, roomId);
+        return NextResponse.json({ success: ok, serverTime: Date.now() });
+      }
+
       case 'mute': {
         const { targetUserId, minutes = 5 } = body;
         if (!targetUserId || typeof targetUserId !== 'string') {

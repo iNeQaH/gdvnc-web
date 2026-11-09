@@ -12,7 +12,9 @@ import {
   Moon,
   Plug,
   Unplug,
+  Trophy,
 } from 'lucide-react';
+import { UserDisplayName } from '@/components/UserDisplayName';
 import {
   ClientPlayer,
   ClientChat,
@@ -52,6 +54,14 @@ export default function NhowstraysonPage() {
   const [allRoomsStats, setAllRoomsStats] = useState<Record<string, RoomStats>>({});
   const [foods, setFoods] = useState<PlaygroundFoodItem[]>([]);
   const [leaderboard, setLeaderboard] = useState<PlaygroundLeaderboardEntry[]>([]);
+  const [lastEatenFood, setLastEatenFood] = useState<{
+    id: string;
+    userId: string;
+    value: number;
+    x: number;
+    y: number;
+    timestamp: number;
+  } | null>(null);
   const [clockOffset, setClockOffset] = useState<number>(0);
   const [connected, setConnected] = useState<boolean>(false);
   const [isManualDisconnected, setIsManualDisconnected] = useState<boolean>(false);
@@ -404,6 +414,24 @@ export default function NhowstraysonPage() {
         const data = JSON.parse(e.data);
         if (data.foods && Array.isArray(data.foods)) {
           setFoods(data.foods);
+        }
+      } catch {
+        /* ignore */
+      }
+    });
+
+    es.addEventListener('food-eat', (e: MessageEvent) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.foodId) {
+          setLastEatenFood({
+            id: data.foodId,
+            userId: data.userId,
+            value: data.value,
+            x: data.x,
+            y: data.y,
+            timestamp: Date.now(),
+          });
         }
       } catch {
         /* ignore */
@@ -810,6 +838,38 @@ export default function NhowstraysonPage() {
     }).catch(() => {});
   };
 
+  const handleEatFood = useCallback(
+    (foodId: string) => {
+      fetch('/api/playground/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'eatFood',
+          foodId,
+          roomId: selectedRoom,
+        }),
+      }).catch(() => {});
+    },
+    [selectedRoom]
+  );
+
+  const roomPlayersList = React.useMemo(() => {
+    const scoreMap = new Map<string, number>();
+    leaderboard.forEach((entry) => {
+      scoreMap.set(entry.userId, entry.score);
+    });
+
+    return [...players].sort((a, b) => {
+      const scoreA = scoreMap.get(a.userId) || 0;
+      const scoreB = scoreMap.get(b.userId) || 0;
+      if (scoreB !== scoreA) return scoreB - scoreA;
+      const activeA = a.isActiveInRoom && !a.isAfk ? 1 : 0;
+      const activeB = b.isActiveInRoom && !b.isAfk ? 1 : 0;
+      if (activeB !== activeA) return activeB - activeA;
+      return a.displayName.localeCompare(b.displayName);
+    });
+  }, [players, leaderboard]);
+
   const rooms: Array<{ id: string; label: string; isClan?: boolean }> = [
     { id: 'public-1', label: 'Phòng 1' },
     { id: 'public-2', label: 'Phòng 2' },
@@ -988,6 +1048,8 @@ export default function NhowstraysonPage() {
         isStaff={isStaff}
         onMove={handleMove}
         onDeleteChat={handleDeleteChat}
+        onEatFood={handleEatFood}
+        lastEatenFood={lastEatenFood}
         clockOffset={clockOffset}
       />
 
@@ -1114,6 +1176,146 @@ export default function NhowstraysonPage() {
               <LogIn className="w-3.5 h-3.5" />
               <span>Login</span>
             </Link>
+          </div>
+        )}
+      </div>
+
+      {/* Room Users Leaderboard (Hiển thị như trang Bảng Xếp Hạng) */}
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/80 shadow-md overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between bg-slate-50/70 dark:bg-slate-950/50">
+          <div className="flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-amber-500" />
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+              Người chơi trong phòng
+            </h3>
+            <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-cyan-100 dark:bg-cyan-950/70 text-cyan-700 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-800/60 font-semibold">
+              {roomPlayersList.length}
+            </span>
+          </div>
+        </div>
+
+        {roomPlayersList.length === 0 ? (
+          <div className="p-8 text-center text-xs font-medium text-slate-500 dark:text-slate-400">
+            Chưa có người chơi nào trong phòng này
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr className="border-b text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400 bg-slate-100/50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800">
+                  <th className="px-4 py-3 w-14 text-center">Hạng</th>
+                  <th className="px-4 py-3">Người chơi</th>
+                  <th className="px-4 py-3 text-center">Trạng thái</th>
+                  <th className="px-4 py-3 text-right">Điểm số</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                {roomPlayersList.map((p, idx) => {
+                  const rank = idx + 1;
+                  const score = leaderboard.find((l) => l.userId === p.userId)?.score ?? 0;
+                  const profileHref = p.username ? `/profile/${p.username}` : null;
+                  const iconSet = p.iconSet || {};
+                  const col1 = iconSet.color1 ?? 0;
+                  const col2 = iconSet.color2 ?? 3;
+                  const glow = iconSet.glow ?? false;
+                  const colG = iconSet.colorGlow ?? iconSet.color3 ?? col2;
+                  const iconUrl = `/api/gd/icon?form=${p.currentMode}&icon=${iconSet[p.currentMode] ?? 1}&col1=${col1}&col2=${col2}${glow ? `&glow=1&colG=${colG}` : ''}&size=48&v=3`;
+
+                  const isRank1 = rank === 1;
+                  const isRank2 = rank === 2;
+                  const isRank3 = rank === 3;
+                  const rankColor = isRank1
+                    ? 'text-amber-500 font-black'
+                    : isRank2
+                    ? 'text-slate-400 dark:text-slate-300 font-black'
+                    : isRank3
+                    ? 'text-amber-700 dark:text-amber-600 font-black'
+                    : 'text-slate-500 dark:text-slate-400 font-semibold';
+
+                  return (
+                    <tr
+                      key={p.userId}
+                      className={`transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/40 ${
+                        p.userId === effectiveUserId ? 'bg-cyan-50/50 dark:bg-cyan-950/20' : ''
+                      }`}
+                    >
+                      <td className="px-4 py-3 text-center">
+                        <span className={`text-xs ${rankColor}`}>#{rank}</span>
+                      </td>
+
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          {profileHref ? (
+                            <Link href={profileHref} className="shrink-0 transition-transform hover:scale-110">
+                              <img
+                                src={iconUrl}
+                                alt={p.displayName}
+                                className="w-8 h-8 object-contain drop-shadow"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = `/api/gd/icon?form=${p.currentMode}&icon=1&col1=${col1}&col2=${col2}&size=48&v=3`;
+                                }}
+                              />
+                            </Link>
+                          ) : (
+                            <img
+                              src={iconUrl}
+                              alt={p.displayName}
+                              className="w-8 h-8 object-contain drop-shadow shrink-0"
+                            />
+                          )}
+
+                          <div className="min-w-0">
+                            <div className="font-bold flex items-center gap-1.5 flex-wrap">
+                              {profileHref ? (
+                                <Link
+                                  href={profileHref}
+                                  className="hover:underline flex items-center gap-1"
+                                >
+                                  <UserDisplayName user={p} fallbackName={p.displayName} linkClan />
+                                </Link>
+                              ) : (
+                                <UserDisplayName user={p} fallbackName={p.displayName} linkClan />
+                              )}
+                              {p.userId === effectiveUserId && (
+                                <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-100 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-400 font-bold border border-cyan-300 dark:border-cyan-800">
+                                  Bạn
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-slate-400 dark:text-slate-500 capitalize">
+                              {p.currentMode}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-3 text-center">
+                        {p.isAfk ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shadow-xs">
+                            💤 Idle
+                          </span>
+                        ) : !p.isActiveInRoom ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700 shadow-xs">
+                            Trang khác
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Đang chơi
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        <span className="font-mono font-black text-sm text-cyan-600 dark:text-cyan-400">
+                          {score} điểm
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
