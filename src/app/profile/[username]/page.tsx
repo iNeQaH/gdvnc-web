@@ -1597,12 +1597,12 @@ export default function ProfilePage() {
                 </>
               )}
 
-              {/* Activity Points (Điểm hoạt động Clan hôm nay) */}
-              {data.clanMember && (
+              {/* Activity Points (Điểm hoạt động tuần) */}
+              {(Boolean(data.clanMember) || Boolean(data.gdVerified) || Number(data.activityPoints || 0) > 0) && (
                 <div
                   className="flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-medium"
                   style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)' }}
-                  title={isEn ? 'Clan activity points earned this week' : 'Điểm hoạt động Clan kiếm được trong tuần này'}
+                  title={isEn ? 'Clan/Personal activity points earned this week' : 'Điểm hoạt động kiếm được trong tuần này'}
                 >
                   <div className="flex items-center gap-2">
                     <Flame className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />

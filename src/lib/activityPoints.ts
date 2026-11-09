@@ -108,35 +108,67 @@ export function computeActivityPoints(
   } else if (userState.activityDate === currentWeekVn) {
     // Trường hợp 2: Đang trong tuần hiện tại:
     // Giữ nguyên baseline đã lưu từ đầu tuần để tích lũy điểm tăng trưởng trong suốt cả tuần.
-    const prevS = (userState.activityPrevStars && userState.activityPrevStars > 0)
-      ? userState.activityPrevStars
-      : ((userState.gdStars && userState.gdStars > 0) ? userState.gdStars : currentStats.stars);
-    const prevM = (userState.activityPrevMoons && userState.activityPrevMoons > 0)
-      ? userState.activityPrevMoons
-      : ((userState.gdMoons && userState.gdMoons > 0) ? userState.gdMoons : currentStats.moons);
-    const prevD = (userState.activityPrevDemons && userState.activityPrevDemons > 0)
-      ? userState.activityPrevDemons
-      : ((userState.gdDemons && userState.gdDemons > 0) ? userState.gdDemons : currentStats.demons);
+    const prevS =
+      typeof userState.activityPrevStars === 'number' && userState.activityPrevStars >= 0
+        ? userState.activityPrevStars
+        : typeof userState.gdStars === 'number' && userState.gdStars >= 0
+        ? userState.gdStars
+        : currentStats.stars;
+    const prevM =
+      typeof userState.activityPrevMoons === 'number' && userState.activityPrevMoons >= 0
+        ? userState.activityPrevMoons
+        : typeof userState.gdMoons === 'number' && userState.gdMoons >= 0
+        ? userState.gdMoons
+        : currentStats.moons;
+    const prevD =
+      typeof userState.activityPrevDemons === 'number' && userState.activityPrevDemons >= 0
+        ? userState.activityPrevDemons
+        : typeof userState.gdDemons === 'number' && userState.gdDemons >= 0
+        ? userState.gdDemons
+        : currentStats.demons;
 
     baselineStars = prevS;
     baselineMoons = prevM;
     baselineDemons = prevD;
   } else if (userState.activityDate === prevWeekVn) {
     // Trường hợp 3: Tuần mới liền kề (tuần trước có hoạt động):
-    // Chỉ số chốt sổ cuối tuần trước chính là baseline cho tuần mới.
-    const prevS = (userState.gdStars && userState.gdStars > 0) ? userState.gdStars : currentStats.stars;
-    const prevM = (userState.gdMoons && userState.gdMoons > 0) ? userState.gdMoons : currentStats.moons;
-    const prevD = (userState.gdDemons && userState.gdDemons > 0) ? userState.gdDemons : currentStats.demons;
+    // Chỉ số chốt sổ cuối tuần trước (gdStars cũ trong DB) chính là baseline cho tuần mới.
+    const prevS =
+      typeof userState.gdStars === 'number' && userState.gdStars >= 0
+        ? userState.gdStars
+        : currentStats.stars;
+    const prevM =
+      typeof userState.gdMoons === 'number' && userState.gdMoons >= 0
+        ? userState.gdMoons
+        : currentStats.moons;
+    const prevD =
+      typeof userState.gdDemons === 'number' && userState.gdDemons >= 0
+        ? userState.gdDemons
+        : currentStats.demons;
 
     baselineStars = prevS;
     baselineMoons = prevM;
     baselineDemons = prevD;
   } else {
-    // Trường hợp 4: Lần đầu vào hoặc bỏ lỡ tuần trước (hoặc chuyển đổi từ định dạng ngày YYYY-MM-DD cũ sang tuần):
-    // Thiết lập baseline bằng chỉ số hiện tại để điểm tuần bắt đầu tính từ bây giờ.
-    baselineStars = currentStats.stars;
-    baselineMoons = currentStats.moons;
-    baselineDemons = currentStats.demons;
+    // Trường hợp 4: Tuần mới sau thời gian vắng mặt (hoặc chuyển đổi format):
+    // Ưu tiên lấy chỉ số cuối cùng đã lưu trong DB (gdStars) làm baseline,
+    // để bất kỳ stars/demons nào người chơi cày thêm từ lần sync trước đều được tính điểm tuần!
+    const prevS =
+      typeof userState.gdStars === 'number' && userState.gdStars >= 0
+        ? userState.gdStars
+        : currentStats.stars;
+    const prevM =
+      typeof userState.gdMoons === 'number' && userState.gdMoons >= 0
+        ? userState.gdMoons
+        : currentStats.moons;
+    const prevD =
+      typeof userState.gdDemons === 'number' && userState.gdDemons >= 0
+        ? userState.gdDemons
+        : currentStats.demons;
+
+    baselineStars = prevS;
+    baselineMoons = prevM;
+    baselineDemons = prevD;
   }
 
   let deltaStars = Math.max(0, currentStats.stars - baselineStars);

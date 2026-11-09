@@ -252,6 +252,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
       user.activityPrevStars = actResult.activityPrevStars;
       user.activityPrevMoons = actResult.activityPrevMoons;
       user.activityPrevDemons = actResult.activityPrevDemons;
+
+      if (actResult.activityPoints !== prevActivityPoints) {
+        clearLeaderboardCache();
+      }
       // 2. Tự động liên kết các level đã có trong database của người đó vào creatorId
       await autoLinkUserCreatedLevels(user.id, user.gdUsername, user.username);
       // 3. Tự động xét Role Creator theo phẩm chất level cao nhất mà user sở hữu (không ghi đè creatorPoints)

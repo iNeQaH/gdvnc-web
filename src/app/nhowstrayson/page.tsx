@@ -26,6 +26,8 @@ import {
   PLAYER_RADIUS,
   getPlaygroundPhysics,
   createPlaygroundSegment,
+  PlaygroundFoodItem,
+  PlaygroundLeaderboardEntry,
 } from '@/lib/playgroundPhysics';
 import { isStaffRole } from '@/lib/roles';
 
@@ -47,6 +49,9 @@ export default function NhowstraysonPage() {
   const [chats, setChats] = useState<ClientChat[]>([]);
   const [recentChatLog, setRecentChatLog] = useState<ClientChat[]>([]);
   const [roomStats, setRoomStats] = useState<RoomStats | null>(null);
+  const [allRoomsStats, setAllRoomsStats] = useState<Record<string, RoomStats>>({});
+  const [foods, setFoods] = useState<PlaygroundFoodItem[]>([]);
+  const [leaderboard, setLeaderboard] = useState<PlaygroundLeaderboardEntry[]>([]);
   const [clockOffset, setClockOffset] = useState<number>(0);
   const [connected, setConnected] = useState<boolean>(false);
   const [isManualDisconnected, setIsManualDisconnected] = useState<boolean>(false);
@@ -184,6 +189,18 @@ export default function NhowstraysonPage() {
 
         if (data.stats) {
           setRoomStats(data.stats);
+        }
+
+        if (data.allRoomsStats) {
+          setAllRoomsStats(data.allRoomsStats);
+        }
+
+        if (data.foods && Array.isArray(data.foods)) {
+          setFoods(data.foods);
+        }
+
+        if (data.leaderboard && Array.isArray(data.leaderboard)) {
+          setLeaderboard(data.leaderboard);
         }
 
         if (data.players && Array.isArray(data.players)) {
@@ -366,6 +383,46 @@ export default function NhowstraysonPage() {
       } catch {
         /* ignore */
       }
+    });
+
+    es.addEventListener('all-rooms-stats', (e: MessageEvent) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data && typeof data === 'object') {
+          setAllRoomsStats(data);
+          if (data[selectedRoom]) {
+            setRoomStats(data[selectedRoom]);
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+    });
+
+    es.addEventListener('food-update', (e: MessageEvent) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.foods && Array.isArray(data.foods)) {
+          setFoods(data.foods);
+        }
+      } catch {
+        /* ignore */
+      }
+    });
+
+    es.addEventListener('leaderboard', (e: MessageEvent) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.leaderboard && Array.isArray(data.leaderboard)) {
+          setLeaderboard(data.leaderboard);
+        }
+      } catch {
+        /* ignore */
+      }
+    });
+
+    es.addEventListener('score-reset', () => {
+      setLeaderboard([]);
     });
 
     es.addEventListener('error', () => {
@@ -863,6 +920,16 @@ export default function NhowstraysonPage() {
       <div className="flex flex-wrap items-center gap-2">
         {rooms.map((r) => {
           const isActive = selectedRoom === r.id;
+          const stats = r.id === selectedRoom && roomStats ? roomStats : allRoomsStats[r.id];
+          const totalActive = stats?.totalActive ?? 0;
+          const idleCount = stats?.idleCount ?? 0;
+          const maxCount = stats
+            ? isSupporter
+              ? stats.maxSupporter
+              : stats.maxRegular
+            : isSupporter
+            ? 50
+            : 10;
           return (
             <button
               key={r.id}
@@ -880,12 +947,16 @@ export default function NhowstraysonPage() {
                 <Gamepad2 className="w-3.5 h-3.5" />
               )}
               <span>{r.label}</span>
-              {isActive && roomStats && (
-                <span className="ml-1 text-[11px] font-mono px-2 py-0.5 rounded-md bg-cyan-100 dark:bg-cyan-950 text-cyan-800 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-800/40">
-                  {roomStats.totalActive}/
-                  {isSupporter ? roomStats.maxSupporter : roomStats.maxRegular}
-                </span>
-              )}
+              <span
+                className={`ml-1 text-[11px] font-mono px-2 py-0.5 rounded-md border ${
+                  isActive
+                    ? 'bg-cyan-100 dark:bg-cyan-950 text-cyan-800 dark:text-cyan-400 border-cyan-300 dark:border-cyan-800/40'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                }`}
+                title="Đang chơi / Idle / Tối đa"
+              >
+                {totalActive}/{idleCount}/{maxCount}
+              </span>
             </button>
           );
         })}
@@ -911,6 +982,8 @@ export default function NhowstraysonPage() {
         roomId={selectedRoom}
         players={players}
         chats={chats}
+        foods={foods}
+        leaderboard={leaderboard}
         currentUserId={effectiveUserId}
         isStaff={isStaff}
         onMove={handleMove}

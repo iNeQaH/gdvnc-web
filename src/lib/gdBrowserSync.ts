@@ -75,8 +75,15 @@ export async function syncUserGdBrowserStats(
   if (!force && targetUser.gdStatsUpdatedAt) {
     const lastUpdate = new Date(targetUser.gdStatsUpdatedAt).getTime();
     // Nếu đã fetch 1 lần mà không thấy có global rank thì 72 giờ tiếp theo không cần fetch nữa
-    // Nếu có global rank bình thường: cooldown 5 phút
-    const cooldownMs = targetUser.gdHasGlobalRank === false ? 72 * 60 * 60 * 1000 : 5 * 60 * 1000;
+    // Nếu chính chủ xem profile của mình: cooldown 2 phút để nhanh chóng ghi nhận stars/demons mới cày
+    // Nếu người khác xem: cooldown 5 phút
+    const isSelfViewer = Boolean(viewerId && viewerId === targetUser.id);
+    const cooldownMs =
+      targetUser.gdHasGlobalRank === false
+        ? 72 * 60 * 60 * 1000
+        : isSelfViewer
+        ? 2 * 60 * 1000
+        : 5 * 60 * 1000;
     if (now - lastUpdate < cooldownMs) {
       // Đang trong thời gian cooldown
       return null;

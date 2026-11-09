@@ -14,10 +14,16 @@ import {
   getSurfaceAbove,
   getRoomObstacles,
   RoomObstacle,
+  PlaygroundFoodItem,
+  PlaygroundFoodType,
+  PlaygroundLeaderboardEntry,
+  getFoodPoints,
+  getFoodRadius,
+  getPlaygroundFoodTransform,
 } from './playgroundPhysics';
 import prisma from './prisma';
 
-export type { Gamemode };
+export type { Gamemode, PlaygroundFoodItem, PlaygroundLeaderboardEntry };
 
 export interface PlaygroundPlayer {
   userId: string;
@@ -64,6 +70,7 @@ export interface RoomStats {
   totalActive: number;
   regularActive: number;
   supporterActive: number;
+  idleCount: number;
   maxRegular: number;
   maxSupporter: number;
 }
@@ -196,6 +203,10 @@ export class PlaygroundManager {
   private streamCounts = new Map<string, number>();
   private streamLeaveTimers = new Map<string, NodeJS.Timeout>();
   private tickInterval: NodeJS.Timeout | null = null;
+  private roomFoods = new Map<string, PlaygroundFoodItem[]>();
+  private roomScores = new Map<string, Map<string, number>>();
+  private lastDailyResetDate = '';
+  private tickCounter = 0;
 
   constructor(initialPlayers?: Iterable<PlaygroundPlayer>) {
     if (initialPlayers) {
@@ -234,9 +245,15 @@ export class PlaygroundManager {
   private startTick() {
     if (this.tickInterval) return;
     this.tickInterval = setInterval(() => {
-      this.handleIdleTick();
-      this.cleanupExpiredMessages();
-    }, 320);
+      this.tickCounter++;
+      // Food check & collision running at 160ms ticks for responsive pickup
+      this.handleFoodCollisions();
+      // Idle AI & cleanup every 320ms (every 2 ticks)
+      if (this.tickCounter % 2 === 0) {
+        this.handleIdleTick();
+        this.cleanupExpiredMessages();
+      }
+    }, 160);
   }
 
   private cleanupExpiredMessages() {
@@ -431,9 +448,8 @@ export class PlaygroundManager {
   }
 
   public getIdleRoomsForPlayer(player: PlaygroundPlayer): string[] {
-    const hash = player.userId.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    const publicRoom = hash % 2 === 0 ? 'public-1' : 'public-2';
-    const rooms = [publicRoom];
+    // Mặc định kết nối mọi người vào phòng 1 (public-1)
+    const rooms = ['public-1'];
     if (player.clan?.slug) {
       rooms.push(`clan-${player.clan.slug}`);
     }
@@ -454,14 +470,19 @@ export class PlaygroundManager {
   public getRoomStats(roomId: string, excludeUserId?: string): RoomStats {
     let regularActive = 0;
     let supporterActive = 0;
+    let idleCount = 0;
 
     for (const player of this.players.values()) {
       if (excludeUserId && player.userId === excludeUserId) continue;
-      if (player.activeRoomId === roomId && !player.isAfk) {
-        if (player.isSupporter) {
-          supporterActive++;
+      if (this.isPlayerInRoom(player, roomId)) {
+        if (player.activeRoomId === roomId && !player.isAfk) {
+          if (player.isSupporter) {
+            supporterActive++;
+          } else {
+            regularActive++;
+          }
         } else {
-          regularActive++;
+          idleCount++;
         }
       }
     }
@@ -471,9 +492,30 @@ export class PlaygroundManager {
       totalActive: regularActive + supporterActive,
       regularActive,
       supporterActive,
+      idleCount,
       maxRegular: 10,
       maxSupporter: 50,
     };
+  }
+
+  public getAllRoomStats(): Record<string, RoomStats> {
+    const stats: Record<string, RoomStats> = {
+      'public-1': this.getRoomStats('public-1'),
+      'public-2': this.getRoomStats('public-2'),
+    };
+    for (const player of this.players.values()) {
+      if (player.clan?.slug) {
+        const clanRoomId = `clan-${player.clan.slug}`;
+        if (!stats[clanRoomId]) {
+          stats[clanRoomId] = this.getRoomStats(clanRoomId);
+        }
+      }
+    }
+    return stats;
+  }
+
+  public broadcastAllRoomsStats() {
+    this.emitToRoom('all', 'all-rooms-stats', this.getAllRoomStats());
   }
 
   public async registerSiteOnline(userId: string) {
@@ -591,6 +633,7 @@ export class PlaygroundManager {
           player: this.formatPlayerForClient(newPlayer, roomId),
         });
       }
+      this.broadcastAllRoomsStats();
 
       return newPlayer;
     } catch (e) {
@@ -616,10 +659,20 @@ export class PlaygroundManager {
 
       this.players.delete(userId);
 
+      // Nếu người chơi thoát khỏi web thì điểm của họ trong /nhowstrayson cũng sẽ mất theo
+      for (const [rId, scoreMap] of this.roomScores.entries()) {
+        if (scoreMap.delete(userId)) {
+          this.emitToRoom(rId, 'leaderboard', {
+            leaderboard: this.getRoomLeaderboard(rId),
+          });
+        }
+      }
+
       for (const roomId of rooms) {
         this.emitToRoom(roomId, 'despawn', { userId });
         this.emitToRoom(roomId, 'room-stats', this.getRoomStats(roomId));
       }
+      this.broadcastAllRoomsStats();
     }, 4000);
 
     this.disconnectDebounce.set(userId, timer);
@@ -744,6 +797,7 @@ export class PlaygroundManager {
     }
 
     this.emitToRoom(targetRoomId, 'room-stats', this.getRoomStats(targetRoomId));
+    this.broadcastAllRoomsStats();
     return { success: true };
   }
 
@@ -775,6 +829,7 @@ export class PlaygroundManager {
 
     this.emitToRoom(oldRoomId, 'despawn', { userId });
     this.emitToRoom(oldRoomId, 'room-stats', this.getRoomStats(oldRoomId));
+    this.broadcastAllRoomsStats();
 
     if (!player.idleSegments) player.idleSegments = {};
     const idleRooms = this.getIdleRoomsForPlayer(player);
@@ -1065,6 +1120,222 @@ export class PlaygroundManager {
     return true;
   }
 
+  // ---------------------------------------------------------
+  // Food & Leaderboard System
+  // ---------------------------------------------------------
+  private createRandomFood(type: PlaygroundFoodType, roomId: string): PlaygroundFoodItem {
+    const marginX = 140;
+    const baseX = Math.round(marginX + Math.random() * (PLAYGROUND_WIDTH - marginX * 2));
+    const baseY = Math.round(
+      CEILING_SURFACE_Y + 70 + Math.random() * (FLOOR_SURFACE_Y - CEILING_SURFACE_Y - 140)
+    );
+    const amplitudeX = Math.round(14 + Math.random() * 26);
+    const amplitudeY = Math.round(12 + Math.random() * 22);
+    const driftSpeedX = Number((0.65 + Math.random() * 0.75).toFixed(2));
+    const driftSpeedY = Number((0.75 + Math.random() * 0.85).toFixed(2));
+    const rotSpeed = Number(
+      ((Math.random() < 0.5 ? -1 : 1) * (0.35 + Math.random() * 0.75)).toFixed(2)
+    );
+    const now = Date.now();
+
+    return {
+      id: `food-${type}-${now}-${Math.random().toString(36).slice(2, 7)}`,
+      type,
+      baseX,
+      baseY,
+      amplitudeX,
+      amplitudeY,
+      driftSpeedX,
+      driftSpeedY,
+      phaseX: Number((Math.random() * Math.PI * 2).toFixed(2)),
+      phaseY: Number((Math.random() * Math.PI * 2).toFixed(2)),
+      rotSpeed,
+      rotPhase: Number((Math.random() * Math.PI * 2).toFixed(2)),
+      spawnedAt: now,
+      value: getFoodPoints(type),
+      radius: getFoodRadius(type),
+    };
+  }
+
+  private ensureRoomFoods(roomId: string): boolean {
+    let list = this.roomFoods.get(roomId);
+    if (!list) {
+      list = [];
+      this.roomFoods.set(roomId, list);
+    }
+
+    let changed = false;
+
+    // 1. Luôn luôn chỉ có đúng 3 tam giác đỏ (triangle -5pts glow) tại mọi thời điểm
+    const redTriangles = list.filter((f) => f.type === 'triangle');
+    const neededTriangles = 3 - redTriangles.length;
+    for (let i = 0; i < neededTriangles; i++) {
+      list.push(this.createRandomFood('triangle', roomId));
+      changed = true;
+    }
+
+    // 2. Thức ăn cộng điểm (circle +1, square +3, hexagon +10) tương ứng với số người trong phòng
+    const peopleInRoom = Array.from(this.players.values()).filter((p) =>
+      this.isPlayerInRoom(p, roomId)
+    ).length;
+    const targetPositives = clamp(Math.max(3, Math.ceil(peopleInRoom * 1.5)), 3, 14);
+
+    const positives = list.filter((f) => f.type !== 'triangle');
+    if (positives.length < targetPositives) {
+      const need = targetPositives - positives.length;
+      for (let i = 0; i < need; i++) {
+        const roll = Math.random();
+        let foodType: PlaygroundFoodType = 'circle';
+        if (roll < 0.55) {
+          foodType = 'circle';
+        } else if (roll < 0.87) {
+          foodType = 'square';
+        } else {
+          foodType = 'hexagon';
+        }
+        list.push(this.createRandomFood(foodType, roomId));
+        changed = true;
+      }
+    } else if (positives.length > targetPositives + 2) {
+      const toRemove = positives.length - targetPositives;
+      let removedCount = 0;
+      this.roomFoods.set(
+        roomId,
+        list.filter((f) => {
+          if (f.type !== 'triangle' && removedCount < toRemove) {
+            removedCount++;
+            return false;
+          }
+          return true;
+        })
+      );
+      changed = true;
+    }
+
+    return changed;
+  }
+
+  public getRoomFoods(roomId: string): PlaygroundFoodItem[] {
+    this.ensureRoomFoods(roomId);
+    return this.roomFoods.get(roomId) || [];
+  }
+
+  public getRoomLeaderboard(roomId: string): PlaygroundLeaderboardEntry[] {
+    const scores = this.roomScores.get(roomId);
+    if (!scores || scores.size === 0) return [];
+    const list: PlaygroundLeaderboardEntry[] = [];
+    for (const [uid, score] of scores.entries()) {
+      const player = this.players.get(uid);
+      if (player && (this.isPlayerInRoom(player, roomId) || player.activeRoomId === roomId)) {
+        list.push({
+          userId: uid,
+          username: player.username,
+          displayName: player.displayName,
+          score,
+        });
+      }
+    }
+    list.sort((a, b) => b.score - a.score);
+    return list.slice(0, 5);
+  }
+
+  private checkDailyScoreReset() {
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+    if (this.lastDailyResetDate && this.lastDailyResetDate !== today) {
+      this.roomScores.clear();
+      this.emitToRoom('all', 'score-reset', { date: today });
+      this.broadcastAllRoomsStats();
+    }
+    this.lastDailyResetDate = today;
+  }
+
+  private handleFoodCollisions() {
+    this.checkDailyScoreReset();
+    const now = Date.now();
+    const activeRooms = new Set<string>(['public-1', 'public-2']);
+    for (const p of this.players.values()) {
+      if (p.activeRoomId) activeRooms.add(p.activeRoomId);
+      if (p.clan?.slug) activeRooms.add(`clan-${p.clan.slug}`);
+    }
+
+    for (const roomId of activeRooms) {
+      const foodChanged = this.ensureRoomFoods(roomId);
+      const foods = this.roomFoods.get(roomId) || [];
+      if (foods.length === 0) continue;
+
+      let scoreChanged = false;
+      let eatenAny = false;
+
+      // Người chơi active (ở trong phòng và không AFK) có thể va chạm ăn thức ăn
+      const activePlayers = Array.from(this.players.values()).filter(
+        (p) => p.activeRoomId === roomId && !p.isAfk
+      );
+
+      if (activePlayers.length > 0) {
+        const remainingFoods: PlaygroundFoodItem[] = [];
+
+        for (const food of foods) {
+          const ft = getPlaygroundFoodTransform(food, now);
+          let wasEaten = false;
+
+          for (const player of activePlayers) {
+            const phys = getPlaygroundPhysics(player.segment, now);
+            const dist = Math.hypot(phys.x - ft.x, phys.y - ft.y);
+            const hitDistance = PLAYER_RADIUS + food.radius + 2;
+
+            if (dist <= hitDistance) {
+              wasEaten = true;
+              eatenAny = true;
+              scoreChanged = true;
+
+              let scores = this.roomScores.get(roomId);
+              if (!scores) {
+                scores = new Map<string, number>();
+                this.roomScores.set(roomId, scores);
+              }
+              const currentScore = scores.get(player.userId) || 0;
+              const nextScore = Math.max(0, currentScore + food.value);
+              scores.set(player.userId, nextScore);
+
+              this.emitToRoom(roomId, 'food-eat', {
+                foodId: food.id,
+                userId: player.userId,
+                username: player.displayName || player.username,
+                value: food.value,
+                x: ft.x,
+                y: ft.y,
+              });
+
+              // Nếu tam giác đỏ bị ăn, spawn ngay 1 tam giác đỏ khác ở vị trí ngẫu nhiên
+              if (food.type === 'triangle') {
+                remainingFoods.push(this.createRandomFood('triangle', roomId));
+              }
+              break;
+            }
+          }
+
+          if (!wasEaten) {
+            remainingFoods.push(food);
+          }
+        }
+
+        this.roomFoods.set(roomId, remainingFoods);
+      }
+
+      if (foodChanged || eatenAny) {
+        this.emitToRoom(roomId, 'food-update', {
+          foods: this.roomFoods.get(roomId) || [],
+        });
+      }
+
+      if (scoreChanged) {
+        this.emitToRoom(roomId, 'leaderboard', {
+          leaderboard: this.getRoomLeaderboard(roomId),
+        });
+      }
+    }
+  }
+
   public getRoomSnapshot(roomId: string) {
     const now = Date.now();
     const playersInRoom: Array<ReturnType<typeof this.formatPlayerForClient>> = [];
@@ -1082,6 +1353,9 @@ export class PlaygroundManager {
     return {
       serverTime: now,
       stats: this.getRoomStats(roomId),
+      allRoomsStats: this.getAllRoomStats(),
+      foods: this.getRoomFoods(roomId),
+      leaderboard: this.getRoomLeaderboard(roomId),
       players: playersInRoom,
       chats: activeChats,
     };
@@ -1151,6 +1425,7 @@ export class PlaygroundManager {
       });
       this.emitToRoom(roomId, 'room-stats', this.getRoomStats(roomId));
     }
+    this.broadcastAllRoomsStats();
 
     if (isAfk) {
       player.nextIdleModeSwitchAt = now + randomIdleModeIntervalMs();
@@ -1276,7 +1551,7 @@ export class PlaygroundManager {
 }
 
 // Global singleton with clean HMR migration
-const PLAYGROUND_VERSION = 6;
+const PLAYGROUND_VERSION = 7;
 const globalForPlayground = globalThis as unknown as {
   __gdvnPlayground?: PlaygroundManager & { __version?: number };
 };

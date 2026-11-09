@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Gamemode,
   normalizeGamemode,
@@ -19,6 +19,9 @@ import {
   CEILING_SURFACE_Y,
   PLAYER_RADIUS,
   PhysicsResult,
+  PlaygroundFoodItem,
+  PlaygroundLeaderboardEntry,
+  getPlaygroundFoodTransform,
 } from '@/lib/playgroundPhysics';
 
 export interface ClientPlayer {
@@ -57,6 +60,8 @@ interface PlaygroundCanvasProps {
   roomId: string;
   players: ClientPlayer[];
   chats: ClientChat[];
+  foods?: PlaygroundFoodItem[];
+  leaderboard?: PlaygroundLeaderboardEntry[];
   currentUserId?: string | null;
   isStaff?: boolean;
   onMove?: (toX: number, toY: number) => void;
@@ -110,6 +115,8 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
   roomId,
   players,
   chats,
+  foods = [],
+  leaderboard = [],
   currentUserId,
   isStaff,
   onMove,
@@ -124,6 +131,31 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
   const deleteBtnBoundsRef = useRef<Map<string, { x: number; y: number; w: number; h: number }>>(new Map());
   const lastShakeTimeRef = useRef<number>(0);
 
+  // Responsive Viewport Width:
+  // Desktop: 1600px | Tablet: 1160px | Mobile: 820px (~2x zoom so characters are large and readable on phones!)
+  const [viewportWidth, setViewportWidth] = useState<number>(1600);
+  const viewportWidthRef = useRef<number>(1600);
+  viewportWidthRef.current = viewportWidth;
+
+  useEffect(() => {
+    const updateViewport = () => {
+      const w = window.innerWidth;
+      let nextW = 1600;
+      if (w < 640) {
+        nextW = 820; // Mobile: 2x zoom into playground map
+      } else if (w < 1024) {
+        nextW = 1160; // Tablet
+      } else {
+        nextW = 1600; // Desktop
+      }
+      setViewportWidth(nextW);
+      viewportWidthRef.current = nextW;
+    };
+    updateViewport();
+    window.addEventListener('resize', updateViewport);
+    return () => window.removeEventListener('resize', updateViewport);
+  }, []);
+
   // Camera state (world X offset of left viewport edge)
   const cameraXRef = useRef<number>(0);
   const targetCameraXRef = useRef<number>(0);
@@ -134,6 +166,8 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
     roomId,
     players,
     chats,
+    foods,
+    leaderboard,
     currentUserId,
     isStaff,
     onDeleteChat,
@@ -143,6 +177,8 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
     roomId,
     players,
     chats,
+    foods,
+    leaderboard,
     currentUserId,
     isStaff,
     onDeleteChat,
@@ -180,8 +216,9 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const currentVw = viewportWidthRef.current;
     const rect = canvas.getBoundingClientRect();
-    const scaleX = VIEWPORT_WIDTH / rect.width;
+    const scaleX = currentVw / rect.width;
     const scaleY = VIEWPORT_HEIGHT / rect.height;
     const viewX = (e.clientX - rect.left) * scaleX;
     const worldClickX = clamp(viewX + cameraXRef.current, 45, PLAYGROUND_WIDTH - 45);
@@ -221,12 +258,15 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
         roomId: curRoomId,
         players: curPlayers,
         chats: curChats,
+        foods: curFoods = [],
+        leaderboard: curLeaderboard = [],
         currentUserId: curUserId,
         isStaff: curIsStaff,
         onDeleteChat: curOnDeleteChat,
         clockOffset: curClockOffset,
       } = latestPropsRef.current;
 
+      const currentVw = viewportWidthRef.current;
       const clientNow = Date.now();
       const now = clientNow + curClockOffset;
       const camDtMs = clamp(clientNow - lastCamFrameAtRef.current, 1, 100);
@@ -235,7 +275,7 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
       const layoutKey = getRoomLayoutKey(curRoomId);
       const roomObstacles = getRoomObstacles(curRoomId);
       const roomTheme = ROOM_THEMES[layoutKey];
-      const maxCameraX = Math.max(0, PLAYGROUND_WIDTH - VIEWPORT_WIDTH);
+      const maxCameraX = Math.max(0, PLAYGROUND_WIDTH - currentVw);
 
       // Clean stale visual continuity entries
       const activeIds = new Set(curPlayers.map((p) => p.userId));
@@ -333,18 +373,18 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
       if (myPos) {
         if (cameraRoomRef.current !== curRoomId) {
           cameraRoomRef.current = curRoomId;
-          const centered = clamp(myPos.x - VIEWPORT_WIDTH * 0.5, 0, maxCameraX);
+          const centered = clamp(myPos.x - currentVw * 0.5, 0, maxCameraX);
           targetCameraXRef.current = centered;
           cameraXRef.current = centered;
         } else {
           let targetCam = targetCameraXRef.current;
-          const rightTriggerX = targetCam + VIEWPORT_WIDTH * CAMERA_RIGHT_PUSH_RATIO;
-          const leftTriggerX = targetCam + VIEWPORT_WIDTH * CAMERA_LEFT_PUSH_RATIO;
+          const rightTriggerX = targetCam + currentVw * CAMERA_RIGHT_PUSH_RATIO;
+          const leftTriggerX = targetCam + currentVw * CAMERA_LEFT_PUSH_RATIO;
 
           if (myPos.x > rightTriggerX) {
-            targetCam = myPos.x - VIEWPORT_WIDTH * CAMERA_RIGHT_PUSH_RATIO;
+            targetCam = myPos.x - currentVw * CAMERA_RIGHT_PUSH_RATIO;
           } else if (myPos.x < leftTriggerX) {
-            targetCam = myPos.x - VIEWPORT_WIDTH * CAMERA_LEFT_PUSH_RATIO;
+            targetCam = myPos.x - currentVw * CAMERA_LEFT_PUSH_RATIO;
           }
 
           targetCam = clamp(targetCam, 0, maxCameraX);
@@ -376,19 +416,19 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
       ctx.translate(shakeX, shakeY);
 
       // 1. Viewport Background + Parallax Deep Grid
-      ctx.clearRect(-10, -10, VIEWPORT_WIDTH + 20, VIEWPORT_HEIGHT + 20);
+      ctx.clearRect(-10, -10, currentVw + 20, VIEWPORT_HEIGHT + 20);
 
       const bgGrad = ctx.createLinearGradient(0, 0, 0, VIEWPORT_HEIGHT);
       bgGrad.addColorStop(0, '#0a0d1a');
       bgGrad.addColorStop(0.5, '#070a14');
       bgGrad.addColorStop(1, '#05070f');
       ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
+      ctx.fillRect(0, 0, currentVw, VIEWPORT_HEIGHT);
 
       // Subtle slow-scrolling parallax pillars (0.35x camera speed)
       const parallaxOffset = -(cameraX * 0.35) % 220;
       ctx.fillStyle = 'rgba(148, 163, 184, 0.018)';
-      for (let px = parallaxOffset - 220; px < VIEWPORT_WIDTH + 220; px += 220) {
+      for (let px = parallaxOffset - 220; px < currentVw + 220; px += 220) {
         ctx.fillRect(px, CEILING_SURFACE_Y, 54, FLOOR_SURFACE_Y - CEILING_SURFACE_Y);
       }
 
@@ -398,7 +438,7 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
 
       // World 1x GD Grid lines (only draw visible slice for max 60fps efficiency)
       const startGridX = Math.floor(cameraX / 60) * 60;
-      const endGridX = Math.min(PLAYGROUND_WIDTH, cameraX + VIEWPORT_WIDTH + 60);
+      const endGridX = Math.min(PLAYGROUND_WIDTH, cameraX + currentVw + 60);
       ctx.strokeStyle = 'rgba(56, 189, 248, 0.055)';
       ctx.lineWidth = 1;
       for (let gx = startGridX; gx <= endGridX; gx += 60) {
@@ -410,7 +450,7 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
       for (let gy = 0; gy < PLAYGROUND_HEIGHT; gy += 60) {
         ctx.beginPath();
         ctx.moveTo(cameraX, gy);
-        ctx.lineTo(cameraX + VIEWPORT_WIDTH, gy);
+        ctx.lineTo(cameraX + currentVw, gy);
         ctx.stroke();
       }
 
@@ -439,7 +479,7 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
 
       // Checkered floor across world
       const startFloorX = Math.floor(cameraX / 40) * 40;
-      const endFloorX = Math.min(PLAYGROUND_WIDTH, cameraX + VIEWPORT_WIDTH + 40);
+      const endFloorX = Math.min(PLAYGROUND_WIDTH, cameraX + currentVw + 40);
       ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
       for (let fx = startFloorX; fx < endFloorX; fx += 40) {
         if (Math.floor(fx / 40) % 2 === 0) {
@@ -457,7 +497,7 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
 
       // 3. Room-Specific Obstacles & Platforms
       for (const obs of roomObstacles) {
-        if (obs.x + obs.w < cameraX - 40 || obs.x > cameraX + VIEWPORT_WIDTH + 40) {
+        if (obs.x + obs.w < cameraX - 40 || obs.x > cameraX + currentVw + 40) {
           continue;
         }
 
@@ -539,7 +579,7 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
         }
 
         // Cull off-screen icons cleanly (keep trails updated above)
-        if (drawX < cameraX - 120 || drawX > cameraX + VIEWPORT_WIDTH + 120) {
+        if (drawX < cameraX - 120 || drawX > cameraX + currentVw + 120) {
           continue;
         }
 
@@ -676,12 +716,14 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
 
         const badgeY = physics.flipY ? nameY + 14 : nameY - 14;
         if (player.isAfk) {
+          // AFK trong phòng: chữ Idle màu vàng
           ctx.font = '700 10px system-ui, sans-serif';
-          ctx.fillStyle = '#f59e0b';
+          ctx.fillStyle = '#facc15';
           ctx.fillText('💤 Idle', drawX, badgeY);
         } else if (!player.isActiveInRoom) {
-          ctx.font = '500 10px system-ui, sans-serif';
-          ctx.fillStyle = '#94a3b8';
+          // Đang ở trang khác trên web: chữ Idle màu trắng
+          ctx.font = '600 10px system-ui, sans-serif';
+          ctx.fillStyle = '#ffffff';
           ctx.fillText('Idle', drawX, badgeY);
         } else if (player.userId === curUserId) {
           ctx.font = '700 10px system-ui, sans-serif';
@@ -692,7 +734,95 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
         ctx.restore();
       }
 
-      // 6. Speech Bubbles in World Coordinates
+      // 6. Food Items in World Coordinates
+      for (const food of curFoods) {
+        const ft = getPlaygroundFoodTransform(food, now);
+        if (ft.x < cameraX - 50 || ft.x > cameraX + currentVw + 50) {
+          continue;
+        }
+
+        ctx.save();
+        ctx.translate(ft.x, ft.y);
+        ctx.rotate(ft.rotation);
+
+        if (food.type === 'circle') {
+          // Circle: +1 pt (Neon Cyan)
+          ctx.shadowColor = '#06b6d4';
+          ctx.shadowBlur = 12;
+          ctx.fillStyle = '#06b6d4';
+          ctx.beginPath();
+          ctx.arc(0, 0, 11, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (food.type === 'square') {
+          // Square: +3 pts (Neon Green / Emerald)
+          ctx.shadowColor = '#22c55e';
+          ctx.shadowBlur = 14;
+          ctx.fillStyle = '#22c55e';
+          ctx.beginPath();
+          ctx.roundRect(-10, -10, 20, 20, 3.5);
+          ctx.fill();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.roundRect(-4, -4, 8, 8, 1.5);
+          ctx.fill();
+        } else if (food.type === 'triangle') {
+          // Triangle Red with Glow: -5 pts (Always 3 on map, pulsing danger hazard!)
+          const pulse = 1.0 + Math.sin(now / 160) * 0.15;
+          ctx.scale(pulse, pulse);
+          ctx.shadowColor = '#ef4444';
+          ctx.shadowBlur = 18;
+          ctx.fillStyle = '#ef4444';
+          ctx.strokeStyle = '#fca5a5';
+          ctx.lineWidth = 2;
+
+          ctx.beginPath();
+          ctx.moveTo(0, -14);
+          ctx.lineTo(12, 10);
+          ctx.lineTo(-12, 10);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(0, 3, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (food.type === 'hexagon') {
+          // Hexagon: +10 pts (Neon Purple / Pink)
+          ctx.shadowColor = '#c084fc';
+          ctx.shadowBlur = 16;
+          ctx.fillStyle = '#a855f7';
+          ctx.strokeStyle = '#f5d0fe';
+          ctx.lineWidth = 2;
+
+          ctx.beginPath();
+          for (let i = 0; i < 6; i++) {
+            const angle = (i * Math.PI) / 3;
+            const hx = 13 * Math.cos(angle);
+            const hy = 13 * Math.sin(angle);
+            if (i === 0) ctx.moveTo(hx, hy);
+            else ctx.lineTo(hx, hy);
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(0, 0, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+
+      // 7. Speech Bubbles in World Coordinates
       deleteBtnBoundsRef.current.clear();
 
       const activeChats = curChats
@@ -774,13 +904,88 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
 
       ctx.restore(); // End world-space camera translation
 
-      // 7. Minimalist Viewport Scroll Position Bar (zero text, subtle 3px neon track at bottom)
+      // 8. Top 5 Leaderboard Overlay (in Viewport Coordinates, top-right corner)
+      const lbBoxW = 210;
+      const lbBoxH = 26 + Math.max(1, curLeaderboard.length) * 19 + 24;
+      const lbBoxX = currentVw - lbBoxW - 14;
+      const lbBoxY = 12;
+
+      ctx.save();
+      // Glass card background
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.86)';
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.28)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(lbBoxX, lbBoxY, lbBoxW, lbBoxH, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      // Header: TOP 5 & Legend
+      ctx.font = '700 11px system-ui, sans-serif';
+      ctx.fillStyle = '#38bdf8';
+      ctx.textAlign = 'left';
+      ctx.fillText('🏆 TOP 5 PHÒNG', lbBoxX + 10, lbBoxY + 16);
+
+      // Compact Legend: ●+1 ■+3 ⬡+10 ▲-5
+      ctx.font = '600 9.5px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('●1 ■3 ⬡10 ▲-5', lbBoxX + lbBoxW - 8, lbBoxY + 16);
+
+      // Separator line
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
+      ctx.beginPath();
+      ctx.moveTo(lbBoxX + 8, lbBoxY + 23);
+      ctx.lineTo(lbBoxX + lbBoxW - 8, lbBoxY + 23);
+      ctx.stroke();
+
+      // Leaderboard entries
+      if (curLeaderboard.length === 0) {
+        ctx.font = '500 10.5px system-ui, sans-serif';
+        ctx.fillStyle = '#64748b';
+        ctx.textAlign = 'center';
+        ctx.fillText('Chưa có ai ghi điểm', lbBoxX + lbBoxW / 2, lbBoxY + 44);
+      } else {
+        curLeaderboard.forEach((entry, idx) => {
+          const rowY = lbBoxY + 38 + idx * 19;
+          const rankColor =
+            idx === 0 ? '#fbbf24' : idx === 1 ? '#cbd5e1' : idx === 2 ? '#d97706' : '#94a3b8';
+
+          // Rank #
+          ctx.font = '700 10px monospace';
+          ctx.fillStyle = rankColor;
+          ctx.textAlign = 'left';
+          ctx.fillText(`#${idx + 1}`, lbBoxX + 10, rowY);
+
+          // Name
+          ctx.font = '600 11px system-ui, sans-serif';
+          ctx.fillStyle = entry.userId === curUserId ? '#38bdf8' : '#e2e8f0';
+          const maxNameW = lbBoxW - 82;
+          let name = entry.displayName || entry.username;
+          if (ctx.measureText(name).width > maxNameW) {
+            while (name.length > 3 && ctx.measureText(name + '..').width > maxNameW) {
+              name = name.slice(0, -1);
+            }
+            name += '..';
+          }
+          ctx.fillText(name, lbBoxX + 30, rowY);
+
+          // Score
+          ctx.font = '700 11px monospace';
+          ctx.fillStyle = '#f8fafc';
+          ctx.textAlign = 'right';
+          ctx.fillText(`${entry.score} pts`, lbBoxX + lbBoxW - 10, rowY);
+        });
+      }
+      ctx.restore();
+
+      // 9. Minimalist Viewport Scroll Position Bar (zero text, subtle 3px neon track at bottom)
       if (maxCameraX > 0) {
         const trackW = 180;
         const trackH = 3;
-        const trackX = (VIEWPORT_WIDTH - trackW) / 2;
+        const trackX = (currentVw - trackW) / 2;
         const trackY = VIEWPORT_HEIGHT - 10;
-        const thumbW = Math.round(trackW * (VIEWPORT_WIDTH / PLAYGROUND_WIDTH));
+        const thumbW = Math.round(trackW * (currentVw / PLAYGROUND_WIDTH));
         const thumbX =
           trackX + Math.round((cameraX / maxCameraX) * (trackW - thumbW));
 
@@ -808,11 +1013,11 @@ export const PlaygroundCanvas: React.FC<PlaygroundCanvasProps> = ({
     <div className="relative w-full rounded-2xl overflow-hidden border border-slate-700/60 shadow-2xl bg-slate-950 select-none">
       <canvas
         ref={canvasRef}
-        width={VIEWPORT_WIDTH}
+        width={viewportWidth}
         height={VIEWPORT_HEIGHT}
         onClick={handleCanvasClick}
         className="w-full h-auto block cursor-crosshair touch-none"
-        style={{ aspectRatio: `${VIEWPORT_WIDTH} / ${VIEWPORT_HEIGHT}` }}
+        style={{ aspectRatio: `${viewportWidth} / ${VIEWPORT_HEIGHT}` }}
       />
     </div>
   );

@@ -384,6 +384,10 @@ function simulateTrajectory(segment: PlaygroundSegment): { points: TrajectoryPoi
   let waveHoldTimer = 0;
   let waveIsHolding = Math.floor(Math.abs(segment.seed)) % 2 === 0;
 
+  // Track vertical ascent when target is significantly higher than start
+  const isTargetHigher = targetY < segment.fromY - 8;
+  let hasReachedTargetAltitude = !isTargetHigher;
+
   // Record exact initial frame (zero position jump at t=0)
   points.push({
     t: 0,
@@ -403,6 +407,14 @@ function simulateTrajectory(segment: PlaygroundSegment): { points: TrajectoryPoi
 
     const distRemaining = Math.abs(targetX - x);
     const reachedTargetX = distRemaining < 2.5;
+
+    // Check if vertical target altitude reached for climbing flights
+    if (isTargetHigher && !hasReachedTargetAltitude) {
+      if (y <= targetY + 6 || headY <= CEILING_SURFACE_Y + 1) {
+        hasReachedTargetAltitude = true;
+      }
+    }
+    const isFlightActive = !reachedTargetX || (isTargetHigher && !hasReachedTargetAltitude);
 
     // 1. HORIZONTAL VELOCITY
     let vx = 0;
@@ -452,11 +464,11 @@ function simulateTrajectory(segment: PlaygroundSegment): { points: TrajectoryPoi
           isOnGround = false;
         }
 
-        if (!reachedTargetX || hopBoostTimer > 0) {
+        if (isFlightActive || hopBoostTimer > 0) {
           const needsThrust =
             hopBoostTimer > 0 ||
             (obstacleAhead && y + PLAYER_RADIUS > obstacleAhead.y - 14) ||
-            (!reachedTargetX && y > targetY + 6);
+            y > targetY + 4;
 
           if (needsThrust) {
             isOnGround = false;
@@ -476,16 +488,16 @@ function simulateTrajectory(segment: PlaygroundSegment): { points: TrajectoryPoi
 
       case 'ufo': {
         ufoCooldown -= dt;
-        if (!reachedTargetX || hopsRemaining > 0) {
+        if (isFlightActive || hopsRemaining > 0) {
           const needsFlap =
             hopsRemaining > 0 ||
             (obstacleAhead && y + PLAYER_RADIUS > obstacleAhead.y - 10) ||
-            (!reachedTargetX && y > targetY + 12);
+            y > targetY + 8;
           if (needsFlap && ufoCooldown <= 0) {
             if (reachedTargetX && hopsRemaining > 0) hopsRemaining--;
             isOnGround = false;
-            vy = 530;
-            ufoCooldown = 0.26;
+            vy = 560;
+            ufoCooldown = 0.24;
           }
           vy -= GD_GRAVITY_CUBE * 0.6 * dt;
           if (vy < -GD_TERMINAL_VELOCITY * 0.6) vy = -GD_TERMINAL_VELOCITY * 0.6;
@@ -505,8 +517,8 @@ function simulateTrajectory(segment: PlaygroundSegment): { points: TrajectoryPoi
           isOnGround = false;
         }
 
-        if (!reachedTargetX || hopBoostTimer > 0) {
-          if (hopBoostTimer > 0) {
+        if (isFlightActive || hopBoostTimer > 0) {
+          if (hopBoostTimer > 0 || (isTargetHigher && !hasReachedTargetAltitude)) {
             waveIsHolding = true;
           } else {
             waveHoldTimer -= dt;
@@ -519,10 +531,11 @@ function simulateTrajectory(segment: PlaygroundSegment): { points: TrajectoryPoi
 
           if (
             (obstacleAhead && y + PLAYER_RADIUS > obstacleAhead.y - 8) ||
-            y > FLOOR_SURFACE_Y - PLAYER_RADIUS - 10
+            y > FLOOR_SURFACE_Y - PLAYER_RADIUS - 10 ||
+            (!hasReachedTargetAltitude && y > targetY + 6)
           ) {
             waveIsHolding = true;
-          } else if (y < CEILING_SURFACE_Y + PLAYER_RADIUS + 10) {
+          } else if (y < CEILING_SURFACE_Y + PLAYER_RADIUS + 10 || (isTargetHigher && y <= targetY)) {
             waveIsHolding = false;
           }
 
@@ -577,12 +590,14 @@ function simulateTrajectory(segment: PlaygroundSegment): { points: TrajectoryPoi
           isOnGround = false;
         }
 
-        if (!reachedTargetX || hopBoostTimer > 0) {
+        if (isFlightActive || hopBoostTimer > 0) {
           isOnGround = false;
           if (hopBoostTimer > 0) {
             vy = 390;
           } else if (obstacleAhead && y + PLAYER_RADIUS > obstacleAhead.y - 12) {
             vy = 360;
+          } else if (isTargetHigher && !hasReachedTargetAltitude) {
+            vy = 380;
           } else {
             const centerBias = clamp((y - targetY) * 2.2, -240, 240);
             const swingPhase = Math.sin(t * Math.PI * 3 + segment.seed);
@@ -745,9 +760,10 @@ function simulateTrajectory(segment: PlaygroundSegment): { points: TrajectoryPoi
       });
     }
 
-    // Termination: reached target X, completed any in-place hops, and resting stably on surface
+    // Termination: reached target X & target altitude (if climbing), completed any in-place hops, and resting stably on surface
     if (
       reachedTargetX &&
+      hasReachedTargetAltitude &&
       hopsRemaining <= 0 &&
       hopBoostTimer <= 0 &&
       isOnGround &&
@@ -877,10 +893,11 @@ export function createPlaygroundSegment(
   );
   const boundedToX = clamp(toX, 45, PLAYGROUND_WIDTH - 45);
 
-  // Detect natural click-above-head in place (lets players jump/hop in place without teleporting!)
+  // Detect natural click-above-head in place (ONLY for ground modes like cube/ball to hop)
   let hopCount = momentum?.hopCount ?? 0;
   if (
     momentum?.hopCount === undefined &&
+    (normMode === 'cube' || normMode === 'ball') &&
     Math.abs(boundedToX - boundedFromX) < 26 &&
     toY < boundedFromY - 38
   ) {
@@ -927,4 +944,72 @@ export function createPlaygroundSegment(
   segment.duration = Math.max(50, Math.ceil(totalDuration));
 
   return segment;
+}
+
+// ---------------------------------------------------------
+// Playground Food Items & Scoring System
+// ---------------------------------------------------------
+export type PlaygroundFoodType = 'circle' | 'square' | 'triangle' | 'hexagon';
+
+export interface PlaygroundFoodItem {
+  id: string;
+  type: PlaygroundFoodType;
+  baseX: number;
+  baseY: number;
+  amplitudeX: number;
+  amplitudeY: number;
+  driftSpeedX: number;
+  driftSpeedY: number;
+  phaseX: number;
+  phaseY: number;
+  rotSpeed: number; // radians per second
+  rotPhase: number;
+  spawnedAt: number;
+  value: number; // circle: 1, square: 3, triangle: -5, hexagon: 10
+  radius: number;
+}
+
+export interface PlaygroundLeaderboardEntry {
+  userId: string;
+  username: string;
+  displayName?: string | null;
+  score: number;
+  avatarUrl?: string | null;
+}
+
+export function getFoodPoints(type: PlaygroundFoodType): number {
+  switch (type) {
+    case 'circle':
+      return 1;
+    case 'square':
+      return 3;
+    case 'triangle':
+      return -5;
+    case 'hexagon':
+      return 10;
+  }
+}
+
+export function getFoodRadius(type: PlaygroundFoodType): number {
+  switch (type) {
+    case 'circle':
+      return 14;
+    case 'square':
+      return 13;
+    case 'triangle':
+      return 15;
+    case 'hexagon':
+      return 16;
+  }
+}
+
+export function getPlaygroundFoodTransform(
+  food: PlaygroundFoodItem,
+  now: number
+): { x: number; y: number; rotation: number } {
+  const dt = Math.max(0, (now - food.spawnedAt) / 1000);
+  const x = food.baseX + food.amplitudeX * Math.sin(dt * food.driftSpeedX + food.phaseX);
+  const y = food.baseY + food.amplitudeY * Math.cos(dt * food.driftSpeedY + food.phaseY);
+  const rotation = food.rotPhase + dt * food.rotSpeed;
+  return { x, y, rotation };
 }
