@@ -170,16 +170,6 @@ async function main() {
       },
     });
 
-    const announcement = await tx.siteAnnouncement.create({
-      data: {
-        title: notifTitle,
-        excerpt: notifExcerpt,
-        body: notifBody,
-        audience: 'ALL',
-        authorId: author ? author.id : null,
-      },
-    });
-
     await tx.timelineEvent.upsert({
       where: { sourceKey: `weekly-recap:${targetWeek}` },
       create: {
@@ -203,11 +193,11 @@ async function main() {
         topPlayers,
         topClans,
         homePostId: post.id,
-        announcementId: announcement.id,
+        announcementId: null,
       },
     });
 
-    return { post, announcement, recap };
+    return { post, recap };
   });
 
   console.log('Published Week 1 recap successfully:', result.recap.id);

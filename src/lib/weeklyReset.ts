@@ -363,9 +363,9 @@ export async function runWeeklyRecapForWeek(targetWeek: string, explicitData?: {
     select: { id: true },
   });
 
-  // 6. Ghi nguyên tử vào Database: HomePost + SiteAnnouncement + WeeklyActivityRecap
+  // 6. Ghi nguyên tử vào Database: HomePost (báo mới) + TimelineEvent + WeeklyActivityRecap (không đăng vào SiteAnnouncement)
   const result = await prisma.$transaction(async (tx) => {
-    // A. Tạo bài đăng HomePost (được ghim lên đầu)
+    // A. Tạo bài đăng HomePost (báo mới nổi bật, được ghim lên đầu)
     const post = await tx.homePost.create({
       data: {
         title: postTitle,
@@ -375,18 +375,7 @@ export async function runWeeklyRecapForWeek(targetWeek: string, explicitData?: {
       },
     });
 
-    // B. Tạo thông báo SiteAnnouncement gửi toàn bộ người dùng
-    const announcement = await tx.siteAnnouncement.create({
-      data: {
-        title: notifTitle,
-        excerpt: notifExcerpt,
-        body: notifBody,
-        audience: 'ALL',
-        authorId: author?.id || null,
-      },
-    });
-
-    // C. Tự động đồng bộ sang Timeline (/timeline)
+    // B. Tự động đồng bộ sang Timeline (/timeline)
     await tx.timelineEvent.upsert({
       where: { sourceKey: `weekly-recap:${targetWeek}` },
       create: {
@@ -407,7 +396,7 @@ export async function runWeeklyRecapForWeek(targetWeek: string, explicitData?: {
       },
     });
 
-    // D. Lưu lịch sử tổng kết tuần
+    // C. Lưu lịch sử tổng kết tuần (announcementId = null do không đăng thông báo)
     const recap = await tx.weeklyActivityRecap.create({
       data: {
         weekString: targetWeek,
@@ -416,14 +405,14 @@ export async function runWeeklyRecapForWeek(targetWeek: string, explicitData?: {
         topClans: finalTopClans as any,
         allPlayers: finalAllPlayers as any,
         homePostId: post.id,
-        announcementId: announcement.id,
+        announcementId: null,
       },
     });
 
-    return { post, announcement, recap };
+    return { post, recap };
   });
 
-  // Xoá cache để cập nhật ngay trang chủ và bảng thông báo
+  // Xoá cache để cập nhật ngay trang chủ, timeline và bảng thông báo
   bustPublicCache(CACHE_TAGS.home, CACHE_TAGS.highlights, CACHE_TAGS.leaderboard, CACHE_TAGS.timeline);
 
   return { success: true, ...result };
