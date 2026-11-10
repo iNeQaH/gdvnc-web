@@ -45,6 +45,7 @@ function getRatingInfo(level?: {
   placement?: number | null;
   classicRank?: number | null;
   vnPlacement?: number | null;
+  isVN?: boolean | null;
 } | null): { label: string; className: string } {
   let raw = String(level?.ratingType || '').trim().toUpperCase();
 
@@ -141,6 +142,7 @@ export default function RecordsTab({
   const [recordSort, setRecordSort] = useState<'newest' | 'oldest'>('newest');
   const [recordRole, setRecordRole] = useState('ALL');
   const [recordSource, setRecordSource] = useState<'ALL' | 'REVIEWED' | 'IMPORTED'>('ALL');
+  const [recordTag, setRecordTag] = useState<'ALL' | 'VN' | 'NON_VN'>('ALL');
   const [recordCounts, setRecordCounts] = useState<QueueCounts>({ pending: 0, approved: 0, rejected: 0 });
   const [loadingRecords, setLoadingRecords] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -152,7 +154,7 @@ export default function RecordsTab({
   const fetchPendingRecords = async (status: QueueStatus = recordFilter, page = 1) => {
     setLoadingRecords(true);
     try {
-      const res = await fetch(`/api/admin/records/pending?status=${status}&page=${page}&q=${encodeURIComponent(recordQuery)}&sort=${recordSort}&role=${recordRole}&source=${recordSource}`);
+      const res = await fetch(`/api/admin/records/pending?status=${status}&page=${page}&q=${encodeURIComponent(recordQuery)}&sort=${recordSort}&role=${recordRole}&source=${recordSource}&tag=${recordTag}`);
       const data = await res.json();
       if (data.success) {
         setPendingRecords(data.records || []);
@@ -178,7 +180,7 @@ export default function RecordsTab({
       fetchPendingRecords(recordFilter, 1);
     }, 500);
     return () => clearTimeout(timer);
-  }, [recordQuery, recordSort, recordRole]);
+  }, [recordQuery, recordSort, recordRole, recordSource, recordTag]);
 
   const handleReview = async (recordId: string, action: 'APPROVE' | 'REJECT') => {
     setActionLoading(recordId);
@@ -303,6 +305,17 @@ export default function RecordsTab({
             <option value="REVIEWED">Có người duyệt (Lọc bỏ import)</option>
             <option value="IMPORTED">Record import / Không người duyệt</option>
           </select>
+          <select
+            value={recordTag}
+            onChange={(e) => setRecordTag(e.target.value as any)}
+            className="px-2.5 py-2 rounded-xl border text-[11px] font-bold"
+            style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+            title="Lọc theo tag"
+          >
+            <option value="ALL">Tất cả tag</option>
+            <option value="VN">🇻🇳 Có tag VN</option>
+            <option value="NON_VN">Không có tag VN</option>
+          </select>
         </div>
       </div>
 
@@ -363,6 +376,11 @@ export default function RecordsTab({
                     </div>
                     <div className="text-[11px] ui-dim flex items-center gap-1.5 flex-wrap">
                       <span>{t('admin.level_label', { name: rec.level.name, placement: rec.level.placement || '-', mode: rec.level.mode })}</span>
+                      {rec.level?.isVN && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black bg-red-500/10 text-red-500 border border-red-500/20 shrink-0">
+                          🇻🇳 VN{rec.level.vnPlacement ? ` #${rec.level.vnPlacement}` : ''}
+                        </span>
+                      )}
                       <span>·</span>
                       <span className="font-semibold ui-title">{diffLabel}</span>
                       <span>·</span>
@@ -370,7 +388,7 @@ export default function RecordsTab({
                         {ratingInfo.label}
                       </span>
                       <span className="ml-1 font-bold px-1.5 py-0.5 rounded text-[10px]" style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}>
-                        {rec.level.classicRank === null && rec.level.placement === null
+                        {rec.level.classicRank === null && rec.level.placement === null && rec.level.vnPlacement === null
                           ? 'Level chưa được xếp hạng'
                           : `Hiện có ${rec.level._count?.records || 0} record`}
                       </span>

@@ -23,15 +23,25 @@ export async function GET(req: Request) {
     const sort = searchParams.get('sort') || 'newest';
     const role = searchParams.get('role') || 'ALL';
     const source = searchParams.get('source') || 'ALL';
+    const tag = searchParams.get('tag') || 'ALL';
 
     const whereClause: any = status ? { status } : {};
     
     if (q) {
-      whereClause.OR = [
-        { level: { name: { contains: q, mode: 'insensitive' } } },
-        { user: { username: { contains: q, mode: 'insensitive' } } },
-        { user: { gdUsername: { contains: q, mode: 'insensitive' } } }
+      const trimmedQ = q.trim();
+      const orConditions: any[] = [
+        { level: { name: { contains: trimmedQ, mode: 'insensitive' } } },
+        { user: { username: { contains: trimmedQ, mode: 'insensitive' } } },
+        { user: { gdUsername: { contains: trimmedQ, mode: 'insensitive' } } },
       ];
+      if (/^(vn|vietnam|việt nam)$/i.test(trimmedQ)) {
+        orConditions.push({ level: { isVN: true } });
+      }
+      const numQ = parseInt(trimmedQ, 10);
+      if (Number.isFinite(numQ) && numQ > 0) {
+        orConditions.push({ level: { gdLevelId: numQ } });
+      }
+      whereClause.OR = orConditions;
     }
     
     if (role === 'ADMIN' || role === 'MODERATOR' || role === 'USER') {
@@ -46,6 +56,12 @@ export async function GET(req: Request) {
     } else if (source === 'IMPORTED') {
       // Lấy record import / chưa có người duyệt
       whereClause.reviewedAt = null;
+    }
+
+    if (tag === 'VN') {
+      whereClause.level = { ...whereClause.level, isVN: true };
+    } else if (tag === 'NON_VN') {
+      whereClause.level = { ...whereClause.level, isVN: false };
     }
 
     const [records, grouped] = await Promise.all([
