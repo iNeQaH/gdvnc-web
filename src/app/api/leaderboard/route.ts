@@ -15,6 +15,23 @@ export async function GET(req: Request) {
     const device = deviceParam === 'PC' || deviceParam === 'MOBILE' ? deviceParam : 'ALL';
     const week = searchParams.get('week') === 'prev' ? 'prev' : 'this';
 
+    // Đối với mode ACTIVITY tuần hiện tại ('this'):
+    // Điểm số tăng liên tục theo thời gian thực khi người chơi cày stars/moons/demons.
+    // Trả về trực tiếp không qua cachedJson và set no-store để không bị Cloudflare / Browser giữ cache cũ!
+    if (mode === 'ACTIVITY' && week === 'this') {
+      const leaderboard = await getActivityLeaderboard('this');
+      return NextResponse.json(
+        { success: true, leaderboard },
+        {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+            'CDN-Cache-Control': 'no-store',
+            'Surrogate-Control': 'no-store',
+          },
+        }
+      );
+    }
+
     const body = await cachedJson(
       async () => {
         if (mode === 'CREATOR') {
@@ -45,7 +62,7 @@ export async function GET(req: Request) {
       },
       ['leaderboard-v5', mode, device, week],
       [CACHE_TAGS.leaderboard],
-      300
+      week === 'prev' ? 300 : 60
     );
 
     return NextResponse.json(body, { headers: PUBLIC_CACHE_HEADERS });

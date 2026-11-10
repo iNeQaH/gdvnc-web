@@ -16,7 +16,7 @@ import { getUserListRowStyle } from '@/lib/userListRowStyle';
 
 import FloatingNav from '@/components/FloatingNav';
 import { AnimatedTabs } from '@/components/AnimatedTabs';
-import { getCachedPageState, setCachedPageState } from '@/lib/pageCache';
+import { getCachedPageState, setCachedPageState, clearCachedPageState } from '@/lib/pageCache';
 
 function LeaderboardPodium({
   players,
@@ -632,7 +632,7 @@ export default function HomePage({
     const handlePopState = () => {
       const parts = window.location.pathname.split('/');
       const last = parts[parts.length - 1]?.toUpperCase();
-      if (['CLASSIC', 'PLATFORMER', 'CHALLENGE', 'CREATOR', 'STARS', 'MOONS', 'DEMONS'].includes(last)) {
+      if (['CLASSIC', 'PLATFORMER', 'CHALLENGE', 'CREATOR', 'STARS', 'MOONS', 'DEMONS', 'ACTIVITY'].includes(last)) {
         setMode(last as any);
       }
     };
@@ -687,21 +687,32 @@ export default function HomePage({
   }, [mode, deviceFilter, activityWeek]);
 
   const fetchLeaderboard = async (currentMode: string, currentDevice: string = 'ALL', currentWeek: string = 'this') => {
+    const isActivityLive = currentMode === 'ACTIVITY' && currentWeek === 'this';
     const cacheKey = `lb_v5_${currentMode}_${currentDevice}_${currentWeek}`;
-    const cached = getCachedPageState<any[]>(cacheKey);
+    const cached = isActivityLive ? null : getCachedPageState<any[]>(cacheKey);
+
     if (cached) {
       setLeaderboard(cached);
       setLoading(false);
-      return;
+    } else {
+      setLoading(true);
     }
 
-    setLoading(true);
     try {
-      const res = await fetch(`/api/leaderboard?mode=${currentMode}&device=${currentDevice}&week=${currentWeek}`);
+      const res = await fetch(
+        `/api/leaderboard?mode=${currentMode}&device=${currentDevice}&week=${currentWeek}${isActivityLive ? `&_t=${Date.now()}` : ''}`,
+        {
+          cache: isActivityLive ? 'no-store' : 'default',
+        }
+      );
       const data = await res.json();
       if (data.success) {
         setLeaderboard(data.leaderboard || []);
-        setCachedPageState(cacheKey, data.leaderboard || []);
+        if (!isActivityLive) {
+          setCachedPageState(cacheKey, data.leaderboard || []);
+        } else {
+          clearCachedPageState(cacheKey);
+        }
       }
     } catch (e) {
       console.error(e);
