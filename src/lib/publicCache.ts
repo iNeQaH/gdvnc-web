@@ -1,4 +1,5 @@
 import { revalidateTag, unstable_cache } from 'next/cache';
+import { invalidateLeaderboardMemoryCache } from './leaderboardMemoryCache';
 
 export const CACHE_TAGS = {
   leaderboard: 'public-leaderboard',
@@ -22,6 +23,11 @@ export const SHORT_CACHE_HEADERS = {
 } as const;
 
 export function bustPublicCache(...tags: string[]) {
+  if (tags.includes(CACHE_TAGS.leaderboard) || tags.includes(CACHE_TAGS.highlights)) {
+    try {
+      invalidateLeaderboardMemoryCache();
+    } catch {}
+  }
   for (const tag of tags) {
     try {
       revalidateTag(tag, 'max');

@@ -651,9 +651,8 @@ export default function HomePage({
     const cached = getCachedPageState<any>('lb_highlights');
     if (cached) {
       setHighlights(cached);
-      return;
     }
-    fetch('/api/leaderboard/highlights')
+    fetch('/api/leaderboard/highlights', { cache: 'no-cache' })
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -687,9 +686,8 @@ export default function HomePage({
   }, [mode, deviceFilter, activityWeek]);
 
   const fetchLeaderboard = async (currentMode: string, currentDevice: string = 'ALL', currentWeek: string = 'this') => {
-    const isActivityLive = currentMode === 'ACTIVITY' && currentWeek === 'this';
     const cacheKey = `lb_v5_${currentMode}_${currentDevice}_${currentWeek}`;
-    const cached = isActivityLive ? null : getCachedPageState<any[]>(cacheKey);
+    const cached = getCachedPageState<any[]>(cacheKey);
 
     if (cached) {
       setLeaderboard(cached);
@@ -700,19 +698,15 @@ export default function HomePage({
 
     try {
       const res = await fetch(
-        `/api/leaderboard?mode=${currentMode}&device=${currentDevice}&week=${currentWeek}${isActivityLive ? `&_t=${Date.now()}` : ''}`,
+        `/api/leaderboard?mode=${currentMode}&device=${currentDevice}&week=${currentWeek}`,
         {
-          cache: isActivityLive ? 'no-store' : 'default',
+          cache: 'no-cache',
         }
       );
       const data = await res.json();
       if (data.success) {
         setLeaderboard(data.leaderboard || []);
-        if (!isActivityLive) {
-          setCachedPageState(cacheKey, data.leaderboard || []);
-        } else {
-          clearCachedPageState(cacheKey);
-        }
+        setCachedPageState(cacheKey, data.leaderboard || []);
       }
     } catch (e) {
       console.error(e);
@@ -831,10 +825,10 @@ export default function HomePage({
               { id: 'PLATFORMER', label: t('leaderboard.platformer'), icon: <Gamepad2 className="w-3.5 h-3.5" /> },
               { id: 'CHALLENGE', label: t('tags.challenge'), icon: <Crosshair className="w-3.5 h-3.5" /> },
               { id: 'CREATOR', label: t('leaderboard.creator'), icon: <Wrench className="w-3.5 h-3.5" /> },
+              { id: 'ACTIVITY', label: isEn ? 'Weekly' : 'Tuần', icon: <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> },
               { id: 'STARS', label: 'Stars', icon: <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" /> },
               { id: 'MOONS', label: 'Moons', icon: <Moon className="w-3.5 h-3.5 text-sky-400 fill-sky-400" /> },
               { id: 'DEMONS', label: 'Demons', icon: <img src="/difficulties/EXTREME DEMON.png" alt="Demons" className="w-3.5 h-3.5 object-contain shrink-0 inline-block" /> },
-              { id: 'ACTIVITY', label: isEn ? 'Weekly' : 'Tuần', icon: <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> },
             ]}
           />
         </div>

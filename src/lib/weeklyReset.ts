@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { getVnWeekString, getVnPreviousWeekString } from './activityPoints';
-import { playerDisplayName } from './leaderboard';
+import { playerDisplayName, clearLeaderboardCache } from './leaderboard';
 import { bustPublicCache, CACHE_TAGS } from './publicCache';
 
 export interface RecapPlayer {
@@ -413,6 +413,7 @@ export async function runWeeklyRecapForWeek(targetWeek: string, explicitData?: {
   });
 
   // Xoá cache để cập nhật ngay trang chủ, timeline và bảng thông báo
+  clearLeaderboardCache();
   bustPublicCache(CACHE_TAGS.home, CACHE_TAGS.highlights, CACHE_TAGS.leaderboard, CACHE_TAGS.timeline);
 
   return { success: true, ...result };

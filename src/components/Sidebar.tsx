@@ -349,9 +349,9 @@ export const Sidebar = () => {
   const leaderboardSubLinks = [
     { href: '/leaderboard/classic', label: t('leaderboard.classic') || 'Classic', match: (p: string) => p === '/leaderboard' || p === '/leaderboard/classic' },
     { href: '/leaderboard/platformer', label: t('leaderboard.platformer') || 'Platformer', match: (p: string) => p === '/leaderboard/platformer' },
-    { href: '/leaderboard/activity', label: 'Daily', match: (p: string) => p === '/leaderboard/activity' },
     { href: '/leaderboard/challenge', label: t('tags.challenge') || 'Challenge', match: (p: string) => p === '/leaderboard/challenge' },
     { href: '/leaderboard/creator', label: t('leaderboard.creator') || 'Creator', match: (p: string) => p === '/leaderboard/creator' },
+    { href: '/leaderboard/activity', label: language === 'en' ? 'Weekly' : 'Tuần', match: (p: string) => p === '/leaderboard/activity' },
     { href: '/leaderboard/stars', label: 'Stars', match: (p: string) => p === '/leaderboard/stars' },
     { href: '/leaderboard/moons', label: 'Moons', match: (p: string) => p === '/leaderboard/moons' },
     { href: '/leaderboard/demons', label: 'Demons', match: (p: string) => p === '/leaderboard/demons' },

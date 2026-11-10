@@ -3,9 +3,14 @@ import prisma from '@/lib/prisma';
 import { LevelMode } from '@prisma/client';
 import { playerDisplayName } from '@/lib/leaderboard';
 import { publicApiError } from '@/lib/apiError';
-import { cachedJson, CACHE_TAGS, PUBLIC_CACHE_HEADERS } from '@/lib/publicCache';
 import { isSuperAdminUser } from '@/lib/roles';
 import { calculateUserSp, getClanTier } from '@/lib/clanTypes';
+import {
+  getLeaderboardMemoryCache,
+  setLeaderboardMemoryCache,
+  getLeaderboardVersion,
+  coalesceLeaderboardQuery,
+} from '@/lib/leaderboardMemoryCache';
 
 const highlightSelect = {
   id: true,
@@ -29,10 +34,27 @@ const userHighlightSelect = {
   role: true,
 } as const;
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const payload = await cachedJson(
-      async () => {
+    const version = getLeaderboardVersion();
+    const etag = `W/"lb-highlights-${version}"`;
+    const clientEtag = req.headers.get('if-none-match');
+    if (clientEtag && clientEtag === etag) {
+      return new NextResponse(null, {
+        status: 304,
+        headers: {
+          ETag: etag,
+          'Cache-Control': 'public, max-age=0, must-revalidate',
+          'CDN-Cache-Control': 'no-cache',
+        },
+      });
+    }
+
+    const cacheKey = 'lb:highlights';
+    let payload = getLeaderboardMemoryCache(cacheKey);
+
+    if (!payload) {
+      payload = await coalesceLeaderboardQuery(cacheKey, async () => {
         const [
           dbClassic,
           dbPlatformer,
@@ -232,13 +254,19 @@ export async function GET() {
             },
           },
         };
-      },
-      ['leaderboard-highlights'],
-      [CACHE_TAGS.highlights, CACHE_TAGS.leaderboard],
-      120
-    );
+      });
 
-    return NextResponse.json(payload, { headers: PUBLIC_CACHE_HEADERS });
+      setLeaderboardMemoryCache(cacheKey, payload);
+    }
+
+    return NextResponse.json(payload, {
+      headers: {
+        ETag: etag,
+        'Cache-Control': 'public, max-age=0, must-revalidate',
+        'CDN-Cache-Control': 'no-cache',
+        'Surrogate-Control': 'no-store',
+      },
+    });
   } catch (error) {
     return publicApiError(error, 'Lỗi tải Top 1.');
   }

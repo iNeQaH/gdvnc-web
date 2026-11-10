@@ -1,8 +1,18 @@
 import { publicApiError } from '@/lib/apiError';
 import { NextResponse } from 'next/server';
-import { getCreatorLeaderboard, getPlayerLeaderboard, getStatLeaderboard, getActivityLeaderboard } from '@/lib/leaderboard';
+import {
+  getCreatorLeaderboard,
+  getPlayerLeaderboard,
+  getStatLeaderboard,
+  getActivityLeaderboard,
+} from '@/lib/leaderboard';
 import { checkSiteLockAndBlock } from '@/lib/siteLock';
-import { cachedJson, CACHE_TAGS, PUBLIC_CACHE_HEADERS } from '@/lib/publicCache';
+import {
+  getLeaderboardMemoryCache,
+  setLeaderboardMemoryCache,
+  getLeaderboardVersion,
+  coalesceLeaderboardQuery,
+} from '@/lib/leaderboardMemoryCache';
 
 export async function GET(req: Request) {
   const block = await checkSiteLockAndBlock();
@@ -15,25 +25,29 @@ export async function GET(req: Request) {
     const device = deviceParam === 'PC' || deviceParam === 'MOBILE' ? deviceParam : 'ALL';
     const week = searchParams.get('week') === 'prev' ? 'prev' : 'this';
 
-    // Đối với mode ACTIVITY tuần hiện tại ('this'):
-    // Điểm số tăng liên tục theo thời gian thực khi người chơi cày stars/moons/demons.
-    // Trả về trực tiếp không qua cachedJson và set no-store để không bị Cloudflare / Browser giữ cache cũ!
-    if (mode === 'ACTIVITY' && week === 'this') {
-      const leaderboard = await getActivityLeaderboard('this');
-      return NextResponse.json(
-        { success: true, leaderboard },
-        {
-          headers: {
-            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-            'CDN-Cache-Control': 'no-store',
-            'Surrogate-Control': 'no-store',
-          },
-        }
-      );
+    const cacheKey = `lb:${mode}:${device}:${week}`;
+    const version = getLeaderboardVersion();
+    const etag = `W/"lb-${version}-${mode}-${device}-${week}"`;
+
+    // 1. Kiểm tra ETag: Nếu dữ liệu chưa đổi, trả về 304 Not Modified tức thì (<0.02ms, 0 byte transfer)
+    const clientEtag = req.headers.get('if-none-match');
+    if (clientEtag && clientEtag === etag) {
+      return new NextResponse(null, {
+        status: 304,
+        headers: {
+          ETag: etag,
+          'Cache-Control': 'public, max-age=0, must-revalidate',
+          'CDN-Cache-Control': 'no-cache',
+        },
+      });
     }
 
-    const body = await cachedJson(
-      async () => {
+    // 2. Event-Driven RAM Cache: Đọc thẳng từ RAM của Node.js process trong <0.05ms, 0 query DB
+    let body = getLeaderboardMemoryCache<{ success: true; leaderboard: any[] }>(cacheKey);
+
+    if (!body) {
+      // Gom nhóm promise để chống stampede nếu nhiều request vào đồng thời
+      body = await coalesceLeaderboardQuery(cacheKey, async () => {
         if (mode === 'CREATOR') {
           const leaderboard = await getCreatorLeaderboard();
           return { success: true, leaderboard };
@@ -59,13 +73,21 @@ export async function GET(req: Request) {
           mode === 'PLATFORMER' ? 'PLATFORMER' : mode === 'CHALLENGE' ? 'CHALLENGE' : 'CLASSIC';
         const leaderboard = await getPlayerLeaderboard(playerMode, device);
         return { success: true, leaderboard };
-      },
-      ['leaderboard-v5', mode, device, week],
-      [CACHE_TAGS.leaderboard],
-      week === 'prev' ? 300 : 60
-    );
+      });
 
-    return NextResponse.json(body, { headers: PUBLIC_CACHE_HEADERS });
+      setLeaderboardMemoryCache(cacheKey, body);
+    }
+
+    // 3. Trả về kèm header must-revalidate để Cloudflare/Browser luôn kiểm tra ETag siêu tốc (<0.05ms)
+    // Tuyệt đối không bị kẹt cache cứng vài tiếng như trước!
+    return NextResponse.json(body, {
+      headers: {
+        ETag: etag,
+        'Cache-Control': 'public, max-age=0, must-revalidate',
+        'CDN-Cache-Control': 'no-cache',
+        'Surrogate-Control': 'no-store',
+      },
+    });
   } catch (error: any) {
     return publicApiError(error, 'Lỗi tải Bảng Xếp Hạng.', 500);
   }

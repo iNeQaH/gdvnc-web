@@ -4,6 +4,7 @@ import { LevelMode, RecordStatus } from '@prisma/client';
 import { pickDecoAndLayoutBadges, cpFromVnLevels } from '@/lib/creatorPoints';
 import { calculateModePp, pickHardestLevel, type HardestLevel } from '@/lib/recordUtils';
 import { bustPublicCache, CACHE_TAGS } from '@/lib/publicCache';
+import { invalidateLeaderboardMemoryCache } from '@/lib/leaderboardMemoryCache';
 import { isSuperAdminUser } from '@/lib/roles';
 import { sanitizeUserClan } from '@/lib/clan';
 
@@ -807,5 +808,6 @@ export async function getActivityLeaderboard(week: string = 'this') {
 }
 
 export function clearLeaderboardCache() {
+  invalidateLeaderboardMemoryCache();
   bustPublicCache(CACHE_TAGS.leaderboard, CACHE_TAGS.highlights);
 }
