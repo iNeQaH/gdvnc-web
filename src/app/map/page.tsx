@@ -26,6 +26,7 @@ import { VIETNAM_PROVINCES_GEO } from '@/lib/vietnamGeoData';
 import { extractProvinceFromLocation } from '@/lib/location';
 import { formatCp } from '@/lib/creatorPoints';
 import { useLanguage } from '@/components/LanguageContext';
+import { refreshSessionUser } from '@/lib/sessionClient';
 
 const MODES = [
   'CLASSIC',
@@ -66,12 +67,20 @@ export default function VietnamMapPage() {
 
   // Load current user
   useEffect(() => {
-    const userStr = localStorage.getItem('gdvnc_user');
-    if (userStr) {
-      try {
-        setCurrentUser(JSON.parse(userStr));
-      } catch {}
-    }
+    const loadUser = () => {
+      const userStr = localStorage.getItem('gdvnc_user');
+      if (userStr) {
+        try {
+          setCurrentUser(JSON.parse(userStr));
+        } catch {}
+      }
+    };
+    loadUser();
+    refreshSessionUser().then((u) => {
+      if (u) setCurrentUser(u);
+    });
+    window.addEventListener('gdvnc_user_update', loadUser);
+    return () => window.removeEventListener('gdvnc_user_update', loadUser);
   }, []);
 
   // Fetch map data when mode changes

@@ -17,6 +17,7 @@ export async function GET() {
       username: true,
       displayName: true,
       role: true,
+      country: true,
       isBanned: true,
       bannedUntil: true,
       banReason: true,

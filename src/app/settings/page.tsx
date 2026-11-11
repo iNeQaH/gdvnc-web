@@ -575,21 +575,22 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ displayName, gdUsername, discordTag, country, bio, hideAllBadges, displayedBadgeIds }),
       });
+      const resData = await res.json().catch(() => null);
       if (res.ok) {
         showToast(t('settings.save_info_success'), 'success');
         try {
           const raw = localStorage.getItem('gdvnc_user');
           if (raw) {
             const u = JSON.parse(raw);
-            const nextU = { ...u, displayName, hideAllBadges, displayedBadgeIds };
+            const savedCountry = resData?.updated?.country !== undefined ? resData.updated.country : (country ? country.trim() : null);
+            const nextU = { ...u, displayName, country: savedCountry, hideAllBadges, displayedBadgeIds };
             localStorage.setItem('gdvnc_user', JSON.stringify(nextU));
             setCurrentUser(nextU);
             window.dispatchEvent(new Event('gdvnc_user_update'));
           }
         } catch {}
       } else {
-        const errData = await res.json().catch(() => null);
-        showToast(errData?.error || t('settings.save_info_error'), 'error');
+        showToast(resData?.error || t('settings.save_info_error'), 'error');
       }
     } catch (e) {
       showToast(t('settings.save_info_error'), 'error');
@@ -1249,7 +1250,7 @@ export default function SettingsPage() {
               <div className="sm:col-span-2">
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs font-bold ui-dim">{t('settings.country') || 'Vị trí (Tỉnh/Thành phố, Quốc gia)'}</label>
-                  <span className="text-[11px] ui-dim opacity-70">Không bắt buộc</span>
+                  
                 </div>
                 <LocationPicker
                   value={country}

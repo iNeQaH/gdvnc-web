@@ -3014,7 +3014,7 @@ export default function ProfilePage() {
               </button>
             </div>
             <p className="text-xs ui-dim leading-relaxed">
-              {isEn ? 'Select or enter your province/city or country. Not required.' : 'Chọn hoặc nhập Tỉnh/Thành phố hoặc Quốc gia của bạn. Không bắt buộc.'}
+              {isEn ? 'Select or enter your province/city or country.' : 'Chọn hoặc nhập Tỉnh/Thành phố hoặc Quốc gia của bạn.'}
             </p>
             <LocationPicker
               value={locationDraft}

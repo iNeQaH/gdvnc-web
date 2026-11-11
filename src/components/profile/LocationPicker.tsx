@@ -85,7 +85,7 @@ export function LocationPicker({ value, onChange, disabled }: LocationPickerProp
                 type="button"
                 onClick={handleClear}
                 className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                title="Xóa vị trí (không bắt buộc)"
+                title="Xóa vị trí"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
