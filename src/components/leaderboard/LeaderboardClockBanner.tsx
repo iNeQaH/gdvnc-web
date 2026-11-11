@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Clock, MapPin, Users } from 'lucide-react';
 import { WORLD_COASTLINES } from '@/lib/worldGeoData';
+import { VIETNAM_PROVINCES_GEO } from '@/lib/vietnamGeoData';
 import { useLanguage } from '@/components/LanguageContext';
 import { useTheme } from '@/components/ThemeProvider';
 
@@ -267,6 +268,34 @@ export function LeaderboardClockBanner({
         ctx.stroke();
       }
 
+      // 4. Đường nét chi tiết Việt Nam (Dải đất hình chữ S, 63 tỉnh thành & hải đảo Hoàng Sa, Trường Sa)
+      ctx.save();
+      ctx.strokeStyle = themeAccent;
+      ctx.lineWidth = 1.6;
+      for (const prov of VIETNAM_PROVINCES_GEO) {
+        for (const poly of prov.polygons) {
+          ctx.beginPath();
+          let started = false;
+          for (const [lon, lat] of poly) {
+            const pt = project3D(lon, lat, centerLon, centerLat, baseRadius, centerX, centerY);
+            if (pt) {
+              if (!started) {
+                ctx.moveTo(pt.x, pt.y);
+                started = true;
+              } else {
+                ctx.lineTo(pt.x, pt.y);
+              }
+            } else {
+              started = false;
+            }
+          }
+          if (started) {
+            ctx.stroke();
+          }
+        }
+      }
+      ctx.restore();
+
       animId = requestAnimationFrame(render);
     };
 
@@ -412,6 +441,34 @@ export function LeaderboardClockBanner({
         }
         ctx.stroke();
       }
+
+      // 4. Đường nét chi tiết Việt Nam (Dải đất chữ S, 63 tỉnh thành & hải đảo Hoàng Sa, Trường Sa)
+      ctx.save();
+      ctx.strokeStyle = themeAccent;
+      ctx.lineWidth = 1.4 + ease * 1.0;
+      for (const prov of VIETNAM_PROVINCES_GEO) {
+        for (const poly of prov.polygons) {
+          ctx.beginPath();
+          let started = false;
+          for (const [lon, lat] of poly) {
+            const pt = project3D(lon, lat, centerLon, centerLat, baseRadius, centerX, centerY);
+            if (pt) {
+              if (!started) {
+                ctx.moveTo(pt.x, pt.y);
+                started = true;
+              } else {
+                ctx.lineTo(pt.x, pt.y);
+              }
+            } else {
+              started = false;
+            }
+          }
+          if (started) {
+            ctx.stroke();
+          }
+        }
+      }
+      ctx.restore();
 
       ctx.restore();
       animId = requestAnimationFrame(renderTransition);

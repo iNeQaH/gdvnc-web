@@ -88,6 +88,24 @@ function getUserThemeColor(player: any): string {
   return '#38bdf8';
 }
 
+// Lấy màu border line viền chữ theo đúng cài đặt profile sáng/tối của từng user (thay vì tất cả cùng sáng hoặc tối)
+function getUserBorderColor(player: any, defaultIsDark: boolean): string {
+  const profileMode = player?.profileConfig?.profileMode;
+  if (profileMode === 'light') return 'rgba(255, 255, 255, 0.95)';
+  if (profileMode === 'dark') return 'rgba(0, 0, 0, 0.85)';
+
+  const themeHex = getUserThemeColor(player);
+  if (themeHex && themeHex.startsWith('#') && themeHex.length >= 7) {
+    const r = parseInt(themeHex.slice(1, 3), 16) || 0;
+    const g = parseInt(themeHex.slice(3, 5), 16) || 0;
+    const b = parseInt(themeHex.slice(5, 7), 16) || 0;
+    const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return lum > 0.55 ? 'rgba(0, 0, 0, 0.85)' : 'rgba(255, 255, 255, 0.95)';
+  }
+
+  return defaultIsDark ? 'rgba(0, 0, 0, 0.85)' : 'rgba(255, 255, 255, 0.95)';
+}
+
 // Phân bố toạ độ người chơi mở rộng theo diện tích thực tế của tỉnh (không bị co cụm ở các tỉnh rộng)
 function getProvincePlayerOffset(
   province: { center: [number, number]; bounds: [number, number, number, number] },
@@ -1344,8 +1362,10 @@ function VietnamMapCanvasComponent({
             ctx.save();
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'left';
-            ctx.lineWidth = isDarkTheme ? 2.5 : 3.0;
-            ctx.strokeStyle = isDarkTheme ? 'rgba(0, 0, 0, 0.85)' : 'rgba(255, 255, 255, 0.95)';
+            const userBorderColor = getUserBorderColor(b.player, isDarkTheme);
+            const isWhiteStroke = userBorderColor.includes('255, 255, 255');
+            ctx.lineWidth = isWhiteStroke ? 3.0 : 2.5;
+            ctx.strokeStyle = userBorderColor;
             ctx.lineJoin = 'round';
 
             let curTextX = textStartX;
@@ -1374,7 +1394,7 @@ function VietnamMapCanvasComponent({
             const fontInfo = getCanvasFont(b.player.nameFont, baseFontSize);
             ctx.font = fontInfo.font;
             const nameW = ctx.measureText(displayName).width;
-            const defaultNameCol = isMe ? '#fef08a' : (isDarkTheme ? '#ffffff' : '#0f172a');
+            const defaultNameCol = isMe ? '#fef08a' : (isWhiteStroke ? '#0f172a' : '#ffffff');
 
             ctx.fillStyle = getCanvasGradientOrColor(
               ctx,
