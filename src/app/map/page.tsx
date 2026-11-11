@@ -82,6 +82,20 @@ export default function VietnamMapPage() {
     yaw: 0,
     pitch: 0,
   });
+  const [hudReady, setHudReady] = useState<boolean>(false);
+
+  useEffect(() => {
+    let hasHandoff = false;
+    try {
+      hasHandoff = !!sessionStorage.getItem('gdvn_map_handoff');
+    } catch {}
+    if (hasHandoff) {
+      const timer = setTimeout(() => setHudReady(true), 250);
+      return () => clearTimeout(timer);
+    } else {
+      setHudReady(true);
+    }
+  }, []);
 
   // Clock state
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
@@ -378,7 +392,9 @@ export default function VietnamMapPage() {
         <button
           type="button"
           onClick={handleCycleMode}
-          className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl border backdrop-blur-xl shadow-xl transition-all active:scale-95 cursor-pointer group"
+          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-2xl border backdrop-blur-xl shadow-xl transition-all duration-700 ease-out active:scale-95 cursor-pointer group ${
+            hudReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'
+          }`}
           style={{
             backgroundColor: 'var(--bg-card)',
             borderColor: 'var(--border-ui)',
@@ -409,9 +425,9 @@ export default function VietnamMapPage() {
 
       {/* 3. Top-Right Controls: Sắp xếp theo chiều dọc (3D, La bàn, Reset Map, Zoom In +, Zoom Out -) */}
       <div
-        className={`absolute top-4 z-30 flex flex-col items-center gap-2 pointer-events-auto transition-all duration-300 ${
+        className={`absolute top-4 z-30 flex flex-col items-center gap-2 pointer-events-auto transition-all duration-700 ease-out ${
           selectedProvinceId ? 'right-[23.5rem]' : 'right-4'
-        }`}
+        } ${hudReady ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3 pointer-events-none'}`}
       >
         {/* "2D" / "3D" Toggle Button (Không có icon) */}
         <button
@@ -501,7 +517,11 @@ export default function VietnamMapPage() {
       </div>
 
       {/* 4. Bottom-Left HUD Card: Thông tin tỉnh theo tâm crosshair & Chỉ số camera (phóng to 1.5x) */}
-      <div className="absolute bottom-4 left-4 z-30 flex flex-col gap-2 pointer-events-auto select-none">
+      <div
+        className={`absolute bottom-4 left-4 z-30 flex flex-col gap-2 pointer-events-auto select-none transition-all duration-700 ease-out ${
+          hudReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+        }`}
+      >
         <div
           className="rounded-3xl border p-4 sm:p-5 backdrop-blur-xl shadow-2xl flex flex-col gap-2.5 min-w-[280px] sm:min-w-[340px] max-w-sm sm:max-w-md transition-all"
           style={{

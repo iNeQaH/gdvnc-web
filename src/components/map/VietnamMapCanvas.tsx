@@ -103,29 +103,36 @@ function getProvincePlayerOffset(
   const spanLon = Math.max(0.35, maxLon - minLon);
   const spanLat = Math.max(0.35, maxLat - minLat);
 
-  // Bán kính phân tán tối đa theo kích thước địa lý của tỉnh (ôm theo hình dạng tỉnh, không văng ra ngoài)
-  const maxReachX = spanLon * 0.38;
-  const maxReachY = spanLat * 0.38;
+  // Bán kính phân tán tối đa theo kích thước địa lý của tỉnh
+  // Cho phép trải rộng tới 44% span để phủ khắp các vùng/huyện của các tỉnh diện tích lớn
+  const maxReachX = spanLon * 0.44;
+  const maxReachY = spanLat * 0.44;
 
-  // Góc vàng (Golden Angle ~137.508°): Phân bố toả đều tự nhiên không bao giờ trùng hướng hay thẳng hàng
-  const goldenAngle = 2.399963;
-  const angle = playerIndex * goldenAngle;
+  // Với số lượng user ít (2-6 người), phân bố toả đều các hướng địa lý (Đông, Tây, Nam, Bắc...)
+  // Với số lượng user đông (>6 người), dùng Golden Angle (~137.5°) để xoay toả đều tự nhiên
+  let angle = 0;
+  if (totalPlayers <= 6) {
+    angle = ((2 * Math.PI) / Math.max(1, totalPlayers)) * playerIndex;
+  } else {
+    angle = playerIndex * 2.399963;
+  }
 
-  // Tỷ lệ phân tán trải đều theo số lượng người chơi và độ rộng của tỉnh
-  const count = Math.max(3, totalPlayers);
-  const progress = Math.sqrt(playerIndex / count);
+  // Tỷ lệ phân tán trải đều rộng khắp tỉnh, không co cụm vào tâm
+  const count = Math.max(2, totalPlayers);
+  const progress = Math.min(1.0, (playerIndex + 0.6) / count);
+  const spreadFactor = 0.45 + 0.55 * Math.sqrt(progress);
 
-  // Khoảng cách theo zoom để các badge không đè lên nhau khi zoom
-  const minSpacingX = Math.max(0.045, 85 / (75 * zoom));
-  const minSpacingY = Math.max(0.035, 30 / (75 * zoom));
+  const rx = maxReachX * spreadFactor;
+  const ry = maxReachY * spreadFactor;
 
-  const rx = Math.min(maxReachX, Math.max(minSpacingX * Math.sqrt(playerIndex) * 0.8, maxReachX * progress * 0.9));
-  const ry = Math.min(maxReachY, Math.max(minSpacingY * Math.sqrt(playerIndex) * 0.8, maxReachY * progress * 0.9));
+  const rawLon = province.center[0] + Math.cos(angle) * rx;
+  const rawLat = province.center[1] + Math.sin(angle) * ry;
 
-  const pLon = province.center[0] + Math.cos(angle) * rx;
-  const pLat = province.center[1] + Math.sin(angle) * ry;
+  // Giữ tọa độ an toàn tuyệt đối bên trong ranh giới bao quanh tỉnh (tránh lọt ra biển / ra ngoài)
+  const safeLon = Math.max(minLon + 0.04, Math.min(maxLon - 0.04, rawLon));
+  const safeLat = Math.max(minLat + 0.04, Math.min(maxLat - 0.04, rawLat));
 
-  return [pLon, pLat];
+  return [safeLon, safeLat];
 }
 
 function getCanvasGradientOrColor(
@@ -377,6 +384,8 @@ function VietnamMapCanvasComponent({
     provinceDefaultFill: 'rgba(21,29,47,0.85)',
   });
 
+  const handoffStartTimeRef = useRef<number>(0);
+
   // Dragging state
   const isDraggingRef = useRef(false);
   const dragButtonRef = useRef<number>(0); // 0 = left, 2 = right
@@ -406,6 +415,7 @@ function VietnamMapCanvasComponent({
           cameraRef.current.targetLon = parsed.lon || 107.5;
           cameraRef.current.targetLat = parsed.lat || 16.0;
           cameraRef.current.targetZoom = parsed.zoom || 1.1;
+          handoffStartTimeRef.current = performance.now();
         }
       }
     } catch {}
@@ -419,7 +429,7 @@ function VietnamMapCanvasComponent({
   // Zoom in / out buttons trigger (hỗ trợ zoom sâu vào từng góc phố / cụm người chơi)
   useEffect(() => {
     if (zoomInTrigger > 0) {
-      cameraRef.current.targetZoom = Math.min(28.0, cameraRef.current.targetZoom * 1.35);
+      cameraRef.current.targetZoom = Math.min(50.0, cameraRef.current.targetZoom * 1.35);
     }
   }, [zoomInTrigger]);
 
@@ -918,8 +928,26 @@ function VietnamMapCanvasComponent({
         return true;
       };
 
+      // Handoff entrance animation: provinces, borders and details smoothly fade in
+      let mapFadeAlpha = 1.0;
+      let detailsFadeAlpha = 1.0;
+
+      if (handoffStartTimeRef.current > 0) {
+        const elapsed = performance.now() - handoffStartTimeRef.current;
+        const totalDuration = 700;
+        if (elapsed < totalDuration) {
+          const p = elapsed / totalDuration;
+          const ease = 1 - Math.pow(1 - p, 2.5);
+          mapFadeAlpha = Math.min(1, ease * 1.25);
+          detailsFadeAlpha = Math.max(0, (ease - 0.25) / 0.75);
+        } else {
+          handoffStartTimeRef.current = 0;
+        }
+      }
+
       // 4. Vẽ Các Quốc Gia Lân Cận (Frustum culled + fast projected)
       ctx.save();
+      ctx.globalAlpha = mapFadeAlpha;
       ctx.strokeStyle = neighborStroke;
       ctx.fillStyle = neighborFill;
       ctx.lineWidth = 1;
@@ -966,6 +994,8 @@ function VietnamMapCanvasComponent({
       const hoveredProv = hoveredProvinceIdRef.current;
 
       // 5. Vẽ 63 Tỉnh Thành Việt Nam + Hoàng Sa & Trường Sa (Frustum culled)
+      ctx.save();
+      ctx.globalAlpha = mapFadeAlpha;
       for (const province of VIETNAM_PROVINCES_GEO) {
         if (
           province.region !== 'Islands' &&
@@ -1064,6 +1094,7 @@ function VietnamMapCanvasComponent({
           }
         }
       }
+      ctx.restore();
 
       // 5b. ĐẶC BIỆT NỔI BẬT: Quần đảo Hoàng Sa & Quần đảo Trường Sa (Chủ Quyền Việt Nam)
       const islandsList = VIETNAM_PROVINCES_GEO.filter((p) => p.region === 'Islands');
@@ -1075,6 +1106,7 @@ function VietnamMapCanvasComponent({
         if (!pt) return;
 
         ctx.save();
+        ctx.globalAlpha = mapFadeAlpha;
         // Vòng tròn định vị hải phận phát sáng tỏa lan (Beacon Pulse)
         const pulse = 0.5 + 0.5 * Math.sin(pulsePhase * 2.0);
         const beaconRadius = (16 + pulse * 10) * pt.scale;
@@ -1205,6 +1237,9 @@ function VietnamMapCanvasComponent({
 
         // Bắt đầu từ zoom 6x trở lên mới bắt đầu phóng to tên và avatar người dùng (dưới 6x giữ kích thước gốc 1.0)
         const zoomScale = cam.zoom < 6.0 ? 1.0 : Math.min(3.0, 1.0 + Math.pow((cam.zoom - 6.0) / 7.0, 0.65));
+
+        ctx.save();
+        ctx.globalAlpha = detailsFadeAlpha;
 
         buildingsToRender.forEach((b) => {
           const isMe = b.isCurrentUser;
@@ -1379,11 +1414,12 @@ function VietnamMapCanvasComponent({
 
           ctx.restore();
         });
+        ctx.restore();
       }
 
       // 7. SỐ PHẦN TRĂM (%) TRÊN TỪNG TỈNH:
       if (cam.pitch <= 15) {
-        const percentAlpha = cam.zoom < 1.6 ? 0.95 : Math.max(0.42, 0.95 - (cam.zoom - 1.6) * 0.14);
+        const percentAlpha = (cam.zoom < 1.6 ? 0.95 : Math.max(0.42, 0.95 - (cam.zoom - 1.6) * 0.14)) * detailsFadeAlpha;
 
         for (const province of VIETNAM_PROVINCES_GEO) {
           if (!isBoxVisible(province.bounds[0], province.bounds[1], province.bounds[2], province.bounds[3])) {
@@ -1460,6 +1496,35 @@ function VietnamMapCanvasComponent({
           show2DName = true;
         }
 
+        ctx.save();
+        ctx.globalAlpha = detailsFadeAlpha;
+
+        // Thu thập toàn bộ badge người chơi hiển thị trên màn hình để giải quyết va chạm (Anti-Overlap)
+        interface Badge2DItem {
+          player: any;
+          provinceId: string;
+          isMe: boolean;
+          userTheme: string;
+          originalPt: { x: number; y: number };
+          x: number;
+          y: number;
+          badgeW: number;
+          badgeH: number;
+          avSize: number;
+          padX: number;
+          clanW: number;
+          clanText: string;
+          nameW: number;
+          scoreW: number;
+          scoreText: string;
+          displayName: string;
+          fontInfo: any;
+          show2DName: boolean;
+          zoomScale2D: number;
+        }
+
+        const badges2D: Badge2DItem[] = [];
+
         for (const province of VIETNAM_PROVINCES_GEO) {
           if (!isBoxVisible(province.bounds[0], province.bounds[1], province.bounds[2], province.bounds[3])) {
             continue;
@@ -1471,11 +1536,12 @@ function VietnamMapCanvasComponent({
           const playersCount = Math.min(pData.players.length, max2DPlayers);
           for (let i = 0; i < playersCount; i++) {
             const player = pData.players[i];
-            const isMe =
+            const isMe = !!(
               currentUser &&
               (player.id === currentUser.id ||
                 player.username === currentUser.username ||
-                player.gdUsername === currentUser.gdUsername);
+                player.gdUsername === currentUser.gdUsername)
+            );
 
             const [pLon, pLat] = getProvincePlayerOffset(province, i, playersCount, cam.zoom);
             const pt = fastProjectGround(pLon, pLat);
@@ -1483,48 +1549,33 @@ function VietnamMapCanvasComponent({
 
             const displayName = player.displayName || player.gdUsername || player.username || '?';
             const zoomScale2D = cam.zoom < 6.0 ? 1.0 : Math.min(3.0, 1.0 + Math.pow((cam.zoom - 6.0) / 7.0, 0.65));
+            const userTheme = isMe ? '#facc15' : getUserThemeColor(player);
 
-            // MỨC 1 (1.3 <= zoom < 2.0): Chỉ hiển thị Avatar (no shadowBlur)
             if (!show2DName) {
               const avSize = Math.round(22 * zoomScale2D);
-              const avX = pt.x - avSize / 2;
-              const avY = pt.y - avSize / 2;
-
-              ctx.save();
-              if (player.avatarUrl) {
-                const img = getAvatarImg(player.avatarUrl);
-                if (img) {
-                  ctx.beginPath();
-                  ctx.roundRect(avX, avY, avSize, avSize, Math.max(4, 5 * zoomScale2D));
-                  ctx.clip();
-                  ctx.drawImage(img, avX, avY, avSize, avSize);
-                } else {
-                  ctx.fillStyle = isMe ? '#f59e0b' : themeAccent;
-                  ctx.beginPath();
-                  ctx.roundRect(avX, avY, avSize, avSize, Math.max(4, 5 * zoomScale2D));
-                  ctx.fill();
-                }
-              } else {
-                ctx.fillStyle = isMe ? '#f59e0b' : themeAccent;
-                ctx.beginPath();
-                ctx.roundRect(avX, avY, avSize, avSize, Math.max(4, 5 * zoomScale2D));
-                ctx.fill();
-                ctx.fillStyle = '#ffffff';
-                ctx.font = `bold ${Math.round(10 * zoomScale2D)}px sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(displayName.charAt(0).toUpperCase(), pt.x, pt.y);
-              }
-              ctx.restore();
-
-              // Viền mỏng
-              ctx.strokeStyle = isMe ? '#facc15' : 'rgba(255, 255, 255, 0.55)';
-              ctx.lineWidth = isMe ? 2 : 1;
-              ctx.beginPath();
-              ctx.roundRect(avX, avY, avSize, avSize, Math.max(4, 5 * zoomScale2D));
-              ctx.stroke();
+              badges2D.push({
+                player,
+                provinceId: province.id,
+                isMe,
+                userTheme,
+                originalPt: { x: pt.x, y: pt.y },
+                x: pt.x,
+                y: pt.y,
+                badgeW: avSize,
+                badgeH: avSize,
+                avSize,
+                padX: 0,
+                clanW: 0,
+                clanText: '',
+                nameW: 0,
+                scoreW: 0,
+                scoreText: '',
+                displayName,
+                fontInfo: null,
+                show2DName: false,
+                zoomScale2D,
+              });
             } else {
-              // MỨC 2, 3, 4 (zoom >= 2.0): Badge tinh gọn
               const avSize = Math.round(18 * zoomScale2D);
               const clanTag = player.clanTag || player.clan?.tag;
               const clanText = clanTag ? `[${clanTag}] ` : '';
@@ -1556,97 +1607,250 @@ function VietnamMapCanvasComponent({
                 ctx.font = `bold ${Math.round(9 * zoomScale2D)}px sans-serif`;
                 scoreW = ctx.measureText(scoreText).width;
               }
+              ctx.restore();
 
               const padX = Math.round(5 * zoomScale2D);
               const badgeW = avSize + padX * 2 + clanW + nameW + scoreW + 4;
               const badgeH = Math.round(22 * zoomScale2D);
-              const badgeX = pt.x - badgeW / 2;
-              const badgeY = pt.y - badgeH / 2;
 
-              ctx.fillStyle = isDarkTheme ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.94)';
-              const userTheme = isMe ? '#facc15' : getUserThemeColor(player);
-              ctx.strokeStyle = isMe ? '#facc15' : 'rgba(255, 255, 255, 0.25)';
-              ctx.lineWidth = isMe ? 1.8 : 1;
-              ctx.beginPath();
-              ctx.roundRect(badgeX, badgeY, badgeW, badgeH, Math.max(4, 6 * zoomScale2D));
-              ctx.fill();
-              ctx.stroke();
+              badges2D.push({
+                player,
+                provinceId: province.id,
+                isMe,
+                userTheme,
+                originalPt: { x: pt.x, y: pt.y },
+                x: pt.x,
+                y: pt.y,
+                badgeW,
+                badgeH,
+                avSize,
+                padX,
+                clanW,
+                clanText,
+                nameW,
+                scoreW,
+                scoreText,
+                displayName,
+                fontInfo,
+                show2DName: true,
+                zoomScale2D,
+              });
+            }
+          }
+        }
 
-              // Vẽ Avatar bên trái badge
-              const avX = badgeX + padX;
-              const avY = badgeY + (badgeH - avSize) / 2;
-              if (player.avatarUrl) {
-                const img = getAvatarImg(player.avatarUrl);
-                if (img) {
-                  ctx.save();
-                  ctx.beginPath();
-                  ctx.roundRect(avX, avY, avSize, avSize, Math.max(3, 4 * zoomScale2D));
-                  ctx.clip();
-                  ctx.drawImage(img, avX, avY, avSize, avSize);
-                  ctx.restore();
-                } else {
-                  ctx.fillStyle = userTheme;
-                  ctx.beginPath();
-                  ctx.roundRect(avX, avY, avSize, avSize, Math.max(3, 4 * zoomScale2D));
-                  ctx.fill();
+        // GIẢI QUYẾT VA CHẠM (Anti-Overlap Collision Resolution):
+        // Nhóm các badge theo tỉnh, nếu các badge nằm đè lên nhau sẽ tự động tách theo trục Y và so le
+        const badgesByProvince: Record<string, Badge2DItem[]> = {};
+        for (const b of badges2D) {
+          if (!badgesByProvince[b.provinceId]) {
+            badgesByProvince[b.provinceId] = [];
+          }
+          badgesByProvince[b.provinceId].push(b);
+        }
+
+        for (const provId in badgesByProvince) {
+          const list = badgesByProvince[provId];
+          if (list.length <= 1) continue;
+
+          // Sắp xếp các badge trong tỉnh theo toạ độ Y gốc
+          list.sort((a, b) => a.originalPt.y - b.originalPt.y);
+
+          for (let i = 1; i < list.length; i++) {
+            const cur = list[i];
+            for (let j = 0; j < i; j++) {
+              const prev = list[j];
+              const dx = cur.x - prev.x;
+              const dy = cur.y - prev.y;
+              const minGapX = (cur.badgeW + prev.badgeW) / 2 + 6;
+              const minGapY = (cur.badgeH + prev.badgeH) / 2 + 5;
+
+              if (Math.abs(dx) < minGapX && Math.abs(dy) < minGapY) {
+                // Đè nhau: Đẩy badge hiện tại xuống phía dưới để lộ trọn vẹn avatar, tên & clan
+                cur.y = prev.y + minGapY;
+                // Nếu trục X trùng nhau hoặc quá sát (< 16px), lệch nhẹ so le 12px
+                if (Math.abs(dx) < 16) {
+                  cur.x += (i % 2 === 1 ? 12 : -12);
                 }
+              }
+            }
+          }
+        }
+
+        // VẼ CÁC BADGE ĐÃ ĐƯỢC GIẢI QUYẾT VA CHẠM HOÀN HẢO
+        ctx.save();
+        ctx.globalAlpha = detailsFadeAlpha;
+
+        for (const b of badges2D) {
+          const {
+            player,
+            isMe,
+            userTheme,
+            originalPt,
+            x,
+            y,
+            badgeW,
+            badgeH,
+            avSize,
+            padX,
+            clanW,
+            clanText,
+            nameW,
+            scoreText,
+            displayName,
+            fontInfo,
+            show2DName: itemShowName,
+            zoomScale2D,
+          } = b;
+
+          const badgeX = x - badgeW / 2;
+          const badgeY = y - badgeH / 2;
+
+          // Nếu badge bị dịch chuyển khỏi vị trí địa lý gốc để tránh đè chữ:
+          // Vẽ chân định vị nhỏ tại originalPt kèm đường line mảnh nối tới mép badge
+          const distFromOrigin = Math.hypot(x - originalPt.x, y - originalPt.y);
+          if (distFromOrigin > 7) {
+            ctx.save();
+            ctx.fillStyle = userTheme;
+            ctx.beginPath();
+            ctx.arc(originalPt.x, originalPt.y, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = userTheme;
+            ctx.globalAlpha = detailsFadeAlpha * 0.45;
+            ctx.lineWidth = 1;
+            ctx.setLineDash([2, 2]);
+            ctx.beginPath();
+            ctx.moveTo(originalPt.x, originalPt.y);
+            ctx.lineTo(badgeX + (x >= originalPt.x ? 0 : badgeW), badgeY + badgeH / 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          if (!itemShowName) {
+            // MỨC 1 (Chỉ hiển thị Avatar)
+            const avX = badgeX;
+            const avY = badgeY;
+
+            ctx.save();
+            if (player.avatarUrl) {
+              const img = getAvatarImg(player.avatarUrl);
+              if (img) {
+                ctx.beginPath();
+                ctx.roundRect(avX, avY, avSize, avSize, Math.max(4, 5 * zoomScale2D));
+                ctx.clip();
+                ctx.drawImage(img, avX, avY, avSize, avSize);
+              } else {
+                ctx.fillStyle = isMe ? '#f59e0b' : themeAccent;
+                ctx.beginPath();
+                ctx.roundRect(avX, avY, avSize, avSize, Math.max(4, 5 * zoomScale2D));
+                ctx.fill();
+              }
+            } else {
+              ctx.fillStyle = isMe ? '#f59e0b' : themeAccent;
+              ctx.beginPath();
+              ctx.roundRect(avX, avY, avSize, avSize, Math.max(4, 5 * zoomScale2D));
+              ctx.fill();
+              ctx.fillStyle = '#ffffff';
+              ctx.font = `bold ${Math.round(10 * zoomScale2D)}px sans-serif`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(displayName.charAt(0).toUpperCase(), x, y);
+            }
+            ctx.restore();
+
+            // Viền mỏng
+            ctx.strokeStyle = isMe ? '#facc15' : 'rgba(255, 255, 255, 0.55)';
+            ctx.lineWidth = isMe ? 2 : 1;
+            ctx.beginPath();
+            ctx.roundRect(avX, avY, avSize, avSize, Math.max(4, 5 * zoomScale2D));
+            ctx.stroke();
+          } else {
+            // MỨC 2, 3, 4: Khung Badge đầy đủ
+            ctx.fillStyle = isDarkTheme ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.94)';
+            ctx.strokeStyle = isMe ? '#facc15' : 'rgba(255, 255, 255, 0.25)';
+            ctx.lineWidth = isMe ? 1.8 : 1;
+            ctx.beginPath();
+            ctx.roundRect(badgeX, badgeY, badgeW, badgeH, Math.max(4, 6 * zoomScale2D));
+            ctx.fill();
+            ctx.stroke();
+
+            // Vẽ Avatar bên trái badge
+            const avX = badgeX + padX;
+            const avY = badgeY + (badgeH - avSize) / 2;
+            if (player.avatarUrl) {
+              const img = getAvatarImg(player.avatarUrl);
+              if (img) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.roundRect(avX, avY, avSize, avSize, Math.max(3, 4 * zoomScale2D));
+                ctx.clip();
+                ctx.drawImage(img, avX, avY, avSize, avSize);
+                ctx.restore();
               } else {
                 ctx.fillStyle = userTheme;
                 ctx.beginPath();
                 ctx.roundRect(avX, avY, avSize, avSize, Math.max(3, 4 * zoomScale2D));
                 ctx.fill();
-                ctx.fillStyle = '#ffffff';
-                ctx.font = `bold ${Math.round(9 * zoomScale2D)}px sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(displayName.charAt(0).toUpperCase(), avX + avSize / 2, avY + avSize / 2);
               }
-
-              // Text: Clan Tag -> Tên theo font profile -> Điểm
-              let curTextX = avX + avSize + 4;
-              const textY = badgeY + badgeH / 2;
-              ctx.textAlign = 'left';
+            } else {
+              ctx.fillStyle = userTheme;
+              ctx.beginPath();
+              ctx.roundRect(avX, avY, avSize, avSize, Math.max(3, 4 * zoomScale2D));
+              ctx.fill();
+              ctx.fillStyle = '#ffffff';
+              ctx.font = `bold ${Math.round(9 * zoomScale2D)}px sans-serif`;
+              ctx.textAlign = 'center';
               ctx.textBaseline = 'middle';
+              ctx.fillText(displayName.charAt(0).toUpperCase(), avX + avSize / 2, avY + avSize / 2);
+            }
 
-              if (clanText) {
-                ctx.font = `bold ${Math.round(9 * zoomScale2D)}px monospace`;
-                ctx.fillStyle = getCanvasGradientOrColor(
-                  ctx,
-                  player.clanGradient || player.clan?.colorGradient,
-                  player.clanColor || player.clan?.color,
-                  curTextX,
-                  textY,
-                  clanW,
-                  '#38bdf8'
-                );
-                ctx.fillText(clanText, curTextX, textY);
-                curTextX += clanW;
-              }
+            // Text: Clan Tag -> Tên theo font profile -> Điểm
+            let curTextX = avX + avSize + 4;
+            const textY = badgeY + badgeH / 2;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
 
-              ctx.font = fontInfo.font;
-              const defaultNameCol = isMe ? '#fef08a' : (isDarkTheme ? '#ffffff' : '#0f172a');
+            if (clanText) {
+              ctx.font = `bold ${Math.round(9 * zoomScale2D)}px monospace`;
               ctx.fillStyle = getCanvasGradientOrColor(
                 ctx,
-                player.nameGradient,
-                player.nameColor,
+                player.clanGradient || player.clan?.colorGradient,
+                player.clanColor || player.clan?.color,
                 curTextX,
                 textY,
-                nameW,
-                defaultNameCol
+                clanW,
+                '#38bdf8'
               );
-              ctx.fillText(displayName, curTextX, textY);
-              curTextX += nameW;
+              ctx.fillText(clanText, curTextX, textY);
+              curTextX += clanW;
+            }
 
-              if (scoreText) {
-                ctx.fillStyle = isMe ? '#facc15' : themeAccent;
-                ctx.font = `bold ${Math.round(9 * zoomScale2D)}px sans-serif`;
-                ctx.fillText(scoreText, curTextX, textY);
-              }
+            if (fontInfo) {
+              ctx.font = fontInfo.font;
+            }
+            const defaultNameCol = isMe ? '#fef08a' : (isDarkTheme ? '#ffffff' : '#0f172a');
+            ctx.fillStyle = getCanvasGradientOrColor(
+              ctx,
+              player.nameGradient,
+              player.nameColor,
+              curTextX,
+              textY,
+              nameW,
+              defaultNameCol
+            );
+            ctx.fillText(displayName, curTextX, textY);
+            curTextX += nameW;
 
-              ctx.restore();
+            if (scoreText) {
+              ctx.fillStyle = isMe ? '#facc15' : themeAccent;
+              ctx.font = `bold ${Math.round(9 * zoomScale2D)}px sans-serif`;
+              ctx.fillText(scoreText, curTextX, textY);
             }
           }
         }
+        ctx.restore();
+        ctx.restore();
       }
 
       // Cập nhật hoạt ảnh alpha của các hiệu ứng tương tác (mượt mà fade out khi ngừng kéo)
@@ -1664,7 +1868,7 @@ function VietnamMapCanvasComponent({
 
       // 8a. Dấu cộng trung tâm màn hình (luôn hiển thị rõ nét với outline tương phản)
       ctx.save();
-      const crosshairAlpha = Math.max(0.45, leftDragAlphaRef.current);
+      const crosshairAlpha = Math.max(0.45, leftDragAlphaRef.current) * detailsFadeAlpha;
       ctx.globalAlpha = crosshairAlpha;
 
       // Viền đen tương phản cao (crisp outline thay cho shadowBlur)
@@ -1960,12 +2164,12 @@ function VietnamMapCanvasComponent({
     isDraggingRef.current = false;
   };
 
-  // Cuộn chuột zoom theo tâm crosshair (thay vì theo con trỏ chuột, giới hạn phóng to cực đại 28.0)
+  // Cuộn chuột zoom theo tâm crosshair (thay vì theo con trỏ chuột, giới hạn phóng to cực đại 50.0)
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
     const oldZoom = cameraRef.current.targetZoom;
-    const newZoom = Math.max(0.5, Math.min(28.0, oldZoom * zoomFactor));
+    const newZoom = Math.max(0.5, Math.min(50.0, oldZoom * zoomFactor));
     cameraRef.current.targetZoom = newZoom;
   };
 
