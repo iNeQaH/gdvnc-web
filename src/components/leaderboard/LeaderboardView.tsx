@@ -17,6 +17,7 @@ import { getUserListRowStyle } from '@/lib/userListRowStyle';
 import FloatingNav from '@/components/FloatingNav';
 import { AnimatedTabs } from '@/components/AnimatedTabs';
 import { getCachedPageState, setCachedPageState, clearCachedPageState } from '@/lib/pageCache';
+import { LeaderboardClockBanner } from '@/components/leaderboard/LeaderboardClockBanner';
 
 function LeaderboardPodium({
   players,
@@ -623,6 +624,7 @@ export default function HomePage({
 
   const [deviceFilter, setDeviceFilter] = useState<'ALL' | 'PC' | 'MOBILE'>('ALL');
   const [activityWeek, setActivityWeek] = useState<'this' | 'prev'>('this');
+  const [isTransitioningToMap, setIsTransitioningToMap] = useState(false);
 
   useEffect(() => {
     setMode(initialMode);
@@ -745,14 +747,8 @@ export default function HomePage({
 
   const isSearching = debouncedSearch.trim().length > 0;
 
-  const podiumPlayers = useMemo(() => {
-    return rankedLeaderboard.slice(0, 5);
-  }, [rankedLeaderboard]);
-
   const filtered = useMemo(() => {
-    // When searching: search across all players (including top 5)
-    // When not searching: skip top 5 as they are featured on the podium box
-    const sourceList = isSearching ? rankedLeaderboard : rankedLeaderboard.slice(5);
+    const sourceList = rankedLeaderboard;
     const q = debouncedSearch.toLowerCase().trim();
     if (!q) return sourceList;
 
@@ -801,20 +797,21 @@ export default function HomePage({
 
   return (
     <div className="space-y-6 pb-24">
-      {/* Header Banner - Concise & Direct */}
-      <section className="ui-card p-6 sm:p-8 space-y-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight ui-title">
-            {t('leaderboard.title')}
-          </h1>
-        </div>
+      {/* Clock Banner with 3D rotating Earth leading to /map */}
+      <LeaderboardClockBanner
+        currentUser={currentUser}
+        onStartTransition={() => setIsTransitioningToMap(true)}
+      />
 
-        {/* Quick Stats Cards with staggered 10s slide-up animation and Tsumiki 3D block style for iNeQaH theme */}
-        <QuickStatsGrid highlights={highlights} isLavender={isLavender} isDark={isDark} t={t} />
-      </section>
-
-      {/* Navigation Controls: Split into Mode Tabs (Row 1) and Secondary Filter/Search (Row 2) */}
-      <div className="space-y-3">
+      <div
+        className={`space-y-6 transition-all duration-500 ease-out ${
+          isTransitioningToMap
+            ? 'opacity-0 scale-95 pointer-events-none translate-y-4'
+            : 'opacity-100 scale-100'
+        }`}
+      >
+        {/* Navigation Controls: Split into Mode Tabs (Row 1) and Secondary Filter/Search (Row 2) */}
+        <div className="space-y-3">
         {/* Row 1: Main Mode Tabs */}
         <div className="flex items-center justify-between gap-3 overflow-x-auto pb-1 scrollbar-none">
           <AnimatedTabs
@@ -894,14 +891,8 @@ export default function HomePage({
         </div>
       </div>
 
-      {/* Top 5 Podium (Hidden when searching) */}
-      {!isSearching && !loading && podiumPlayers.length > 0 && (
-        <LeaderboardPodium players={podiumPlayers} mode={mode} />
-      )}
-
-      {/* Leaderboard Table Card */}
-      {(!isSearching && rankedLeaderboard.length <= 5 && !loading) ? null : (
-        <div className="ui-card overflow-hidden">
+      {/* Leaderboard Table Card (Hiển thị toàn bộ thứ hạng) */}
+      <div className="ui-card overflow-hidden">
           {loading ? (
             <div className="p-12 text-center ui-dim text-xs font-medium">{t('leaderboard.loading')}</div>
           ) : filtered.length === 0 ? (
@@ -1176,7 +1167,6 @@ export default function HomePage({
             </div>
           )}
         </div>
-      )}
 
       {filtered.length > pageSize && (
         <FloatingNav 
@@ -1185,6 +1175,7 @@ export default function HomePage({
           onPageChange={setCurrentPage}
         />
       )}
+      </div>
     </div>
   );
 }

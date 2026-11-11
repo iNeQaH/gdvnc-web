@@ -24,6 +24,7 @@ import { deleteUserAccount } from '@/lib/deleteUser';
 import { isSuperAdminUser, isStaffRole } from '@/lib/roles';
 import { clearLeaderboardCache } from '@/lib/leaderboard';
 import { validateBioContent } from '@/lib/contentFilter';
+import { validateLocation } from '@/lib/location';
 import { getSessionUser } from '@/lib/auth';
 import { syncUserGdBrowserStats } from '@/lib/gdBrowserSync';
 import { recalculateCreatorPoints } from '@/lib/recalculateCreatorPoints';
@@ -771,6 +772,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
       }
     }
 
+    let nextCountry: string | null | undefined = undefined;
+    if (body.country !== undefined) {
+      if (body.country === null || !String(body.country).trim()) {
+        nextCountry = null;
+      } else {
+        const locCheck = validateLocation(String(body.country));
+        if (!locCheck.ok) {
+          return NextResponse.json({ error: locCheck.error || 'Vị trí không hợp lệ' }, { status: 400 });
+        }
+        nextCountry = locCheck.normalized;
+      }
+    }
+
     const updated = await prisma.user.update({
       where: { id: current.id },
       data: {
@@ -778,7 +792,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
         bio: body.bio !== undefined ? clipText(body.bio, 2000) : undefined,
         avatarUrl: nextAvatar,
         coverUrl: nextCover,
-        country: body.country !== undefined ? clipText(body.country, 80) : undefined,
+        country: nextCountry !== undefined ? nextCountry : undefined,
         gdUsername: nextGdUsername,
         gdVerified: nextGdVerified,
         ...(gdUsernameChanged ? {

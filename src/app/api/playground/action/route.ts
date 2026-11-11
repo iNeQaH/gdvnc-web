@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth';
+import { isSuperAdminUser } from '@/lib/roles';
 import { playgroundManager } from '@/lib/playground';
 import { Gamemode } from '@/lib/playgroundPhysics';
 import { isBrowserSameOriginFetch } from '@/lib/origin';
@@ -12,10 +13,10 @@ export async function POST(request: Request) {
 
   try {
     const session = await getSessionUser();
-    if (!session || !session.userId) {
+    if (!session || !session.userId || !isSuperAdminUser(session)) {
       return NextResponse.json(
-        { error: 'Vui lòng đăng nhập để thực hiện thao tác.' },
-        { status: 401 }
+        { error: 'Chỉ có owner mới có quyền thực hiện thao tác này.' },
+        { status: 403 }
       );
     }
 

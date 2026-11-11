@@ -1,4 +1,5 @@
 import { getSessionUser } from '@/lib/auth';
+import { isSuperAdminUser } from '@/lib/roles';
 import { appEventEmitter } from '@/lib/eventEmitter';
 import { playgroundManager } from '@/lib/playground';
 import { getClientIp } from '@/lib/requestIp';
@@ -21,7 +22,13 @@ export async function GET(request: Request) {
   const roomId = searchParams.get('room') || 'public-1';
 
   const authUser = await getSessionUser().catch(() => null);
-  const authUserId = authUser?.userId || null;
+  if (!authUser || !isSuperAdminUser(authUser)) {
+    return new Response(JSON.stringify({ error: 'Chỉ có owner mới có quyền truy cập.' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+  const authUserId = authUser.userId;
 
   let joinError: string | null = null;
   if (authUserId) {

@@ -377,7 +377,7 @@ export const Sidebar = () => {
     { href: '/support', label: t('nav.supporter'), icon: Heart, highlight: false, isPink: true },
     { href: '/helps', label: t('nav.helps'), icon: Send},
     ...(isStaffRole(currentUser?.role) ? [{ href: '/admin/records', label: t('nav.admin'), icon: ShieldCheck }] : []),
-    { href: '/nhowstrayson', label: t('nav.playground') || 'random tung', icon: Gamepad2 },
+    ...((currentUser?.isSuperAdmin || isSuperAdminUser(currentUser)) ? [{ href: '/nhowstrayson', label: t('nav.playground') || 'random tung', icon: Gamepad2 }] : []),
   ];
 
   if (pathname === '/easter-egg') {

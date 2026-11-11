@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Gamepad2,
   Users,
@@ -31,7 +32,7 @@ import {
   PlaygroundFoodItem,
   PlaygroundLeaderboardEntry,
 } from '@/lib/playgroundPhysics';
-import { isStaffRole } from '@/lib/roles';
+import { isStaffRole, isSuperAdminUser } from '@/lib/roles';
 
 const GAMEMODES: Array<{ id: Gamemode; label: string }> = [
   { id: 'cube', label: 'Cube' },
@@ -43,10 +44,12 @@ const GAMEMODES: Array<{ id: Gamemode; label: string }> = [
 ];
 
 export default function NhowstraysonPage() {
+  const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [authChecked, setAuthChecked] = useState<boolean>(false);
   const [selfUserId, setSelfUserId] = useState<string | null>(null);
   const [currentMode, setCurrentMode] = useState<Gamemode>('cube');
-  const [selectedRoom, setSelectedRoom] = useState<string>('public-1');
+  const selectedRoom = 'public-1';
   const [players, setPlayers] = useState<ClientPlayer[]>([]);
   const [chats, setChats] = useState<ClientChat[]>([]);
   const [recentChatLog, setRecentChatLog] = useState<ClientChat[]>([]);
@@ -125,18 +128,31 @@ export default function NhowstraysonPage() {
           } catch {
             /* ignore */
           }
+          if (!isSuperAdminUser(data.user) && !data.user.isSuperAdmin) {
+            router.replace('/');
+          }
         } else {
           const saved = localStorage.getItem('gdvnc_user');
           if (saved) {
             try {
-              setCurrentUser(JSON.parse(saved));
+              const parsed = JSON.parse(saved);
+              setCurrentUser(parsed);
+              if (!isSuperAdminUser(parsed) && !parsed.isSuperAdmin) {
+                router.replace('/');
+              }
             } catch {
-              /* ignore */
+              router.replace('/');
             }
+          } else {
+            router.replace('/');
           }
         }
+        setAuthChecked(true);
       })
-      .catch(() => {});
+      .catch(() => {
+        setAuthChecked(true);
+        router.replace('/');
+      });
 
     return () => {
       window.removeEventListener('gdvnc_user_update', handleUserUpdate);
@@ -233,9 +249,8 @@ export default function NhowstraysonPage() {
               const normMode = normalizeGamemode(me.currentMode);
               setCurrentMode(normMode);
               currentModeRef.current = normMode;
-              if (me.isAfk !== undefined) {
-                setIsAfk(Boolean(me.isAfk));
-              }
+              setIsAfk(true);
+              handleSetAfk(true, true);
             }
           }
         }
@@ -546,34 +561,12 @@ export default function NhowstraysonPage() {
     [selectedRoom, isManualDisconnected, calibrateClock]
   );
 
-  // Auto-Idle after 1 minute of inactivity
+  // User is permanently AFK on this page (no manual movement or activity un-AFK)
   useEffect(() => {
-    if (!effectiveUserId || isManualDisconnected) return;
-
-    const resetActivity = () => {
-      lastActivityTimeRef.current = Date.now();
-      if (isAfk && !isManualAfkRef.current) {
-        handleSetAfk(false, false);
-      }
-    };
-
-    window.addEventListener('mousemove', resetActivity);
-    window.addEventListener('keydown', resetActivity);
-    window.addEventListener('touchstart', resetActivity);
-
-    const afkCheckInterval = setInterval(() => {
-      if (!isAfk && Date.now() - lastActivityTimeRef.current >= 60000) {
-        handleSetAfk(true, false);
-      }
-    }, 5000);
-
-    return () => {
-      window.removeEventListener('mousemove', resetActivity);
-      window.removeEventListener('keydown', resetActivity);
-      window.removeEventListener('touchstart', resetActivity);
-      clearInterval(afkCheckInterval);
-    };
-  }, [effectiveUserId, isManualDisconnected, isAfk, handleSetAfk]);
+    if (!effectiveUserId) return;
+    setIsAfk(true);
+    handleSetAfk(true, true);
+  }, [effectiveUserId, handleSetAfk]);
 
   // Power plug Online / Offline toggle with vanish animation & 3s cooldown
   const handleToggleOnline = (e: React.MouseEvent) => {
@@ -870,21 +863,18 @@ export default function NhowstraysonPage() {
     });
   }, [players, leaderboard]);
 
-  const rooms: Array<{ id: string; label: string; isClan?: boolean }> = [
-    { id: 'public-1', label: 'Phòng 1' },
-    { id: 'public-2', label: 'Phòng 2' },
-  ];
-  if (myClan) {
-    rooms.push({
-      id: `clan-${myClan.slug}`,
-      label: `Clan [${myClan.tag}]`,
-      isClan: true,
-    });
-  }
-
   const activeInRoomCount = players.filter((p) => p.isActiveInRoom && !p.isAfk).length;
   const idleInRoomCount = players.filter((p) => !p.isActiveInRoom || p.isAfk).length;
-  const isOnlineConnected = connected && !isManualDisconnected;
+  const isOnlineConnected = connected;
+  const isOwner = Boolean(currentUser && (currentUser.isSuperAdmin || isSuperAdminUser(currentUser)));
+
+  if (!authChecked || !isOwner) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-cyan-500 border-t-transparent animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-16 px-4 md:px-8 max-w-7xl mx-auto space-y-4">
@@ -899,30 +889,8 @@ export default function NhowstraysonPage() {
           </h1>
         </div>
 
-        {/* Controls: Power Plug connection button, compact count badge, and Idle switch */}
+        {/* Controls: Compact online count badge, and static AFK badge (no disconnect button) */}
         <div className="flex items-center gap-2.5 text-xs">
-          <button
-            type="button"
-            onClick={handleToggleOnline}
-            disabled={disconnectCooldown > 0}
-            aria-label={isOnlineConnected ? 'Disconnect' : 'Connect'}
-            className={`p-2 rounded-xl border transition-all duration-200 select-none ${
-              disconnectCooldown > 0
-                ? 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-400 cursor-not-allowed opacity-60'
-                : isOnlineConnected
-                ? 'bg-emerald-500 hover:bg-emerald-600 border-emerald-400 text-white cursor-pointer shadow-md shadow-emerald-500/30'
-                : 'bg-rose-500/15 hover:bg-rose-500/25 border-rose-500/40 text-rose-600 dark:text-rose-400 cursor-pointer shadow-xs'
-            }`}
-          >
-            {disconnectCooldown > 0 ? (
-              <span className="font-mono text-xs font-bold px-0.5">{disconnectCooldown}s</span>
-            ) : isOnlineConnected ? (
-              <Plug className="w-4 h-4 transition-transform active:scale-90" />
-            ) : (
-              <Unplug className="w-4 h-4 transition-transform active:scale-90" />
-            )}
-          </button>
-
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 shadow-xs">
             <span
               className={`w-2 h-2 rounded-full ${
@@ -941,85 +909,25 @@ export default function NhowstraysonPage() {
             </span>
           </div>
 
-          {effectiveUserId && (
-            <div
-              onClick={() => handleSetAfk(!isAfk, !isAfk)}
-              role="button"
-              tabIndex={0}
-              className={`group flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border cursor-pointer select-none transition-all duration-200 ${
-                isAfk
-                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-700 dark:text-amber-300 shadow-xs'
-                  : 'bg-white/90 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 shadow-xs'
-              }`}
-            >
-              <Moon
-                className={`w-3.5 h-3.5 transition-colors ${
-                  isAfk
-                    ? 'text-amber-500 fill-amber-500/30'
-                    : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'
-                }`}
-              />
-              <span className="font-bold tracking-wide">Idle</span>
-              <div
-                className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out ${
-                  isAfk ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-700'
-                }`}
-              >
-                <span
-                  className={`inline-block h-3 w-3 transform rounded-full bg-white dark:bg-slate-950 shadow-md transition-transform duration-200 ease-in-out ${
-                    isAfk ? 'translate-x-3.5' : 'translate-x-0.5'
-                  }`}
-                />
-              </div>
-            </div>
-          )}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border bg-amber-500/15 border-amber-500/40 text-amber-700 dark:text-amber-300 shadow-xs select-none">
+            <Moon className="w-3.5 h-3.5 text-amber-500 fill-amber-500/30" />
+            <span className="font-bold tracking-wide">AFK</span>
+          </div>
         </div>
       </div>
 
-      {/* Room Tabs */}
-      <div className="flex flex-wrap items-center gap-2">
-        {rooms.map((r) => {
-          const isActive = selectedRoom === r.id;
-          const stats = r.id === selectedRoom && roomStats ? roomStats : allRoomsStats[r.id];
-          const totalActive = stats?.totalActive ?? 0;
-          const idleCount = stats?.idleCount ?? 0;
-          const maxCount = stats
-            ? isSupporter
-              ? stats.maxSupporter
-              : stats.maxRegular
-            : isSupporter
-            ? 50
-            : 10;
-          return (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => setSelectedRoom(r.id)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all duration-150 border ${
-                isActive
-                  ? 'bg-cyan-500/15 border-cyan-500/50 text-cyan-700 dark:text-cyan-300 font-bold shadow-xs'
-                  : 'bg-white/80 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 shadow-xs'
-              }`}
-            >
-              {r.isClan ? (
-                <Users className="w-3.5 h-3.5 text-amber-500" />
-              ) : (
-                <Gamepad2 className="w-3.5 h-3.5" />
-              )}
-              <span>{r.label}</span>
-              <span
-                className={`ml-1 text-[11px] font-mono px-2 py-0.5 rounded-md border ${
-                  isActive
-                    ? 'bg-cyan-100 dark:bg-cyan-950 text-cyan-800 dark:text-cyan-400 border-cyan-300 dark:border-cyan-800/40'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                }`}
-                title="Đang chơi / Idle / Tối đa"
-              >
-                {totalActive}/{idleCount}/{maxCount}
-              </span>
-            </button>
-          );
-        })}
+      {/* Single Common Room Badge (Chỉ duy nhất 1 phòng chung) */}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-cyan-500/15 border border-cyan-500/50 text-cyan-700 dark:text-cyan-300 shadow-xs">
+          <Gamepad2 className="w-3.5 h-3.5" />
+          <span>Phòng chung</span>
+          <span
+            className="ml-1 text-[11px] font-mono px-2 py-0.5 rounded-md border bg-cyan-100 dark:bg-cyan-950 text-cyan-800 dark:text-cyan-400 border-cyan-300 dark:border-cyan-800/40"
+            title="Đang chơi / Idle / Tối đa"
+          >
+            {activeInRoomCount}/{idleInRoomCount}/{roomStats?.maxRegular || 50}
+          </span>
+        </div>
       </div>
 
       {/* Error alert */}
@@ -1037,148 +945,20 @@ export default function NhowstraysonPage() {
         </div>
       )}
 
-      {/* Canvas Area */}
+      {/* Canvas Area (Không thể chủ động click di chuyển, chỉ AFK) */}
       <PlaygroundCanvas
         roomId={selectedRoom}
         players={players}
-        chats={chats}
+        chats={[]}
         foods={foods}
         leaderboard={leaderboard}
         currentUserId={effectiveUserId}
         isStaff={isStaff}
-        onMove={handleMove}
         onDeleteChat={handleDeleteChat}
         onEatFood={handleEatFood}
         lastEatenFood={lastEatenFood}
         clockOffset={clockOffset}
       />
-
-      {/* Gamemode Selector (6 modes, icon-only clean buttons) */}
-      {effectiveUserId && (
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-          {(() => {
-            const myPlayerInRoom = players.find((p) => p.userId === effectiveUserId);
-            const iconSet = currentUser?.gdIconSet || myPlayerInRoom?.iconSet || {};
-            const col1 = iconSet.color1 ?? 0;
-            const col2 = iconSet.color2 ?? 3;
-            const glow = iconSet.glow ?? false;
-            const colG = iconSet.colorGlow ?? iconSet.color3 ?? col2;
-
-            return GAMEMODES.map((gm) => {
-              const isSelected = currentMode === gm.id;
-              const iconId = iconSet[gm.id] ?? 1;
-              const previewUrl = `/api/gd/icon?form=${gm.id}&icon=${iconId}&col1=${col1}&col2=${col2}${glow ? `&glow=1&colG=${colG}` : ''}&size=64&v=3`;
-
-              return (
-                <button
-                  key={gm.id}
-                  type="button"
-                  onClick={() => handleSelectMode(gm.id)}
-                  aria-label={gm.label}
-                  className={`flex items-center justify-center p-2.5 rounded-xl border transition-all duration-150 ${
-                    isSelected
-                      ? 'bg-cyan-500/15 border-cyan-500 text-cyan-700 dark:text-cyan-300 shadow-md shadow-cyan-500/10'
-                      : 'bg-white/80 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-700 shadow-xs'
-                  }`}
-                >
-                  <img
-                    src={previewUrl}
-                    alt={gm.label}
-                    className="w-9 h-9 object-contain drop-shadow"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = `/api/gd/icon?form=${gm.id}&icon=1&col1=${col1}&col2=${col2}&size=64&v=3`;
-                    }}
-                  />
-                </button>
-              );
-            });
-          })()}
-        </div>
-      )}
-
-      {/* Clean Minimalist Chat Box (no labels, no placeholders, no counters) */}
-      <div className="p-3 rounded-2xl bg-white/90 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800/80 space-y-2.5 shadow-xs">
-        {recentChatLog.length > 0 && (
-          <div
-            ref={chatScrollContainerRef}
-            className="max-h-32 overflow-y-auto space-y-1.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 px-3 py-2 scrollbar-thin"
-          >
-            {recentChatLog.map((msg) => {
-              const timeStr = new Date(msg.createdAt).toLocaleTimeString('vi-VN', {
-                hour: '2-digit',
-                minute: '2-digit',
-              });
-              return (
-                <div
-                  key={msg.id}
-                  className="flex items-baseline gap-2 text-xs leading-relaxed"
-                >
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono shrink-0">
-                    {timeStr}
-                  </span>
-                  <span className="font-bold shrink-0">
-                    {msg.clanTag && (
-                      <span className="text-amber-600 dark:text-amber-400 mr-1">
-                        [{msg.clanTag}]
-                      </span>
-                    )}
-                    <span
-                      style={{ color: msg.nameColor || undefined }}
-                      className={!msg.nameColor ? 'text-slate-800 dark:text-slate-200' : ''}
-                    >
-                      {msg.displayName || msg.username}:
-                    </span>
-                  </span>
-                  <span className="text-slate-800 dark:text-slate-200 break-words flex-1">
-                    {msg.text}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {effectiveUserId ? (
-          <form onSubmit={handleSendChat} className="flex gap-2">
-            <input
-              type="text"
-              value={chatText}
-              onChange={(e) => setChatText(e.target.value)}
-              maxLength={120}
-              placeholder=""
-              aria-label="Chat"
-              className="flex-1 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors shadow-xs"
-            />
-            <button
-              type="submit"
-              disabled={
-                !chatText.trim() || chatCooldown > 0 || isSubmittingChat || !isOnlineConnected
-              }
-              aria-label="Send"
-              className="flex items-center justify-center px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-cyan-600/20"
-            >
-              {chatCooldown > 0 ? (
-                <span className="inline-flex items-center gap-1 font-mono text-xs">
-                  <Clock className="w-3.5 h-3.5 animate-spin text-cyan-200" />
-                  {chatCooldown}s
-                </span>
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
-            </button>
-          </form>
-        ) : (
-          <div className="flex justify-center py-1">
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition-all shadow-xs"
-            >
-              <LogIn className="w-3.5 h-3.5" />
-              <span>Login</span>
-            </Link>
-          </div>
-        )}
-      </div>
 
       {/* Room Users Leaderboard (Hiển thị như trang Bảng Xếp Hạng) */}
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/80 shadow-md overflow-hidden">

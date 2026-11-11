@@ -22,6 +22,8 @@ import { calculateUserSp } from '@/lib/clanTypes';
 import DeviceBadge from '@/components/DeviceBadge';
 import GdIconSetDisplay from '@/components/GdIconSetDisplay';
 import DiscordMarkdown from '@/components/DiscordMarkdown';
+import { LocationPicker } from '@/components/profile/LocationPicker';
+import { validateLocation } from '@/lib/location';
 
 const RECORD_PAGE_SIZE = 10;
 
@@ -247,6 +249,9 @@ export default function ProfilePage() {
   const [showCreatorRank, setShowCreatorRank] = useState(false);
   const [hardestInput, setHardestInput] = useState('');
   const [showBadgePicker, setShowBadgePicker] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [locationDraft, setLocationDraft] = useState('');
+  const [savingLocation, setSavingLocation] = useState(false);
   const [editingField, setEditingField] = useState<null | 'country' | 'gdUsername' | 'discordTag'>(null);
   const [fieldDraft, setFieldDraft] = useState('');
 
@@ -1562,7 +1567,22 @@ export default function ProfilePage() {
                   <MapPin className="w-4 h-4 text-rose-500 shrink-0" />
                   <span className="ui-dim font-bold text-[11px] uppercase">{isEn ? 'Location' : 'Vị trí'}</span>
                 </div>
-                <span className="ui-title font-semibold truncate max-w-[170px]">{data.country || 'Việt Nam'}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="ui-title font-semibold truncate max-w-[150px]">{data.country || (isEn ? 'Not set' : 'Chưa đặt')}</span>
+                  {canEditInfo && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLocationDraft(data.country || '');
+                        setShowLocationModal(true);
+                      }}
+                      className="p-1 rounded-lg hover:bg-slate-500/10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                      title={isEn ? 'Edit location' : 'Chỉnh sửa vị trí'}
+                    >
+                      <Edit className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Stars, Moons, Demons (Chỉ hiển thị khi tài khoản GD đã được xác minh) */}
@@ -2979,6 +2999,70 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+
+      {/* Location Edit Modal */}
+      {showLocationModal && (
+        <div className="fixed inset-0 z-[999999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150" onClick={() => setShowLocationModal(false)}>
+          <div className="w-full max-w-md rounded-2xl border p-5 space-y-4 shadow-2xl relative" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }} onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-rose-500" />
+                <h3 className="font-bold text-sm ui-title">{isEn ? 'Edit Location' : 'Chỉnh sửa vị trí'}</h3>
+              </div>
+              <button type="button" onClick={() => setShowLocationModal(false)} className="p-1 rounded-xl border ui-dim cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs ui-dim leading-relaxed">
+              {isEn ? 'Select or enter your province/city or country. Not required.' : 'Chọn hoặc nhập Tỉnh/Thành phố hoặc Quốc gia của bạn. Không bắt buộc.'}
+            </p>
+            <LocationPicker
+              value={locationDraft}
+              onChange={(val) => setLocationDraft(val)}
+              disabled={savingLocation}
+            />
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowLocationModal(false)}
+                disabled={savingLocation}
+                className="px-3 py-1.5 text-xs font-bold border rounded-xl hover:opacity-80 transition-all cursor-pointer"
+                style={{ borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                disabled={savingLocation}
+                onClick={async () => {
+                  const locCheck = validateLocation(locationDraft);
+                  if (!locCheck.ok) {
+                    showToast(locCheck.error || 'Vị trí không hợp lệ', 'error');
+                    return;
+                  }
+                  setSavingLocation(true);
+                  try {
+                    await updateProfileField({ country: locCheck.normalized || '' });
+                    setData((prev: any) => ({ ...prev, country: locCheck.normalized }));
+                    setShowLocationModal(false);
+                    showToast(isEn ? 'Location updated successfully!' : 'Cập nhật vị trí thành công!', 'success');
+                    fetchProfile({ silent: true });
+                  } catch {
+                    showToast(isEn ? 'Failed to update location' : 'Không thể cập nhật vị trí', 'error');
+                  } finally {
+                    setSavingLocation(false);
+                  }
+                }}
+                className="px-4 py-1.5 text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
+                style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-fg)' }}
+              >
+                {savingLocation ? '...' : t('common.save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
     </>
   );

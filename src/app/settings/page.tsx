@@ -1,6 +1,7 @@
 'use client';
 
 import AppearanceTab from '@/components/settings/AppearanceTab';
+import { LocationPicker } from '@/components/profile/LocationPicker';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -1246,20 +1247,14 @@ export default function SettingsPage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="text-xs font-bold ui-dim block mb-1.5">{t('settings.country')}</label>
-                <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-rose-500/10 text-rose-500 shrink-0 border border-rose-500/20">
-                    <MapPin className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="text"
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    placeholder="VD: Hà Nội, Việt Nam"
-                    className="flex-1 px-3 py-2 rounded-xl text-xs font-semibold border focus:ring-1 focus:ring-sky-500 outline-none"
-                    style={{ backgroundColor: 'var(--bg-subtle)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                  />
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold ui-dim">{t('settings.country') || 'Vị trí (Tỉnh/Thành phố, Quốc gia)'}</label>
+                  <span className="text-[11px] ui-dim opacity-70">Không bắt buộc</span>
                 </div>
+                <LocationPicker
+                  value={country}
+                  onChange={(val) => setCountry(val)}
+                />
               </div>
 
               <div className="sm:col-span-2">
