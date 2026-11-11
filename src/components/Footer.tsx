@@ -2,10 +2,14 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { SITE_LINKS } from '@/lib/siteLinks';
 import BrandMark from '@/components/BrandMark';
 
 export function Footer() {
+  const pathname = usePathname();
+  if (pathname === '/map' || pathname === '/timeline') return null;
+
   return (
     <footer
       className="border-t mt-auto text-xs transition-colors backdrop-blur-2xl shadow-[0_-8px_32px_rgba(0,0,0,0.2)] bg-card/85 border-border/60"

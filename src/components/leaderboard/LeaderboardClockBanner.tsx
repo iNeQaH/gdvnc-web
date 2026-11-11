@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Clock, MapPin, Users, Sparkles } from 'lucide-react';
+import { Clock, MapPin, Users } from 'lucide-react';
 import { WORLD_COASTLINES, VIETNAM_COORDINATES } from '@/lib/worldGeoData';
 import { useLanguage } from '@/components/LanguageContext';
 import { useTheme } from '@/components/ThemeProvider';
@@ -26,6 +26,7 @@ export function LeaderboardClockBanner({
   const [onlineCount, setOnlineCount] = useState<number>(1);
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rotationRef = useRef<number>(106.0); // Bắt đầu ở kinh độ Việt Nam
   const isTransitioningRef = useRef<boolean>(false);
@@ -110,17 +111,27 @@ export function LeaderboardClockBanner({
     isTransitioningRef.current = true;
     transitionStartRef.current = performance.now();
 
+    // Lưu trạng thái handoff sang sessionStorage để /map khớp tọa độ đích liền mạch
+    try {
+      sessionStorage.setItem('gdvn_map_handoff', JSON.stringify({
+        lon: 107.5,
+        lat: 16.0,
+        zoom: 1.1,
+        timestamp: Date.now()
+      }));
+    } catch {}
+
     if (onStartTransition) {
       onStartTransition();
     }
 
-    // Sau khi quả địa cầu xoay và zoom vào Việt Nam (900ms), chuyển trang
+    // Sau khi quả địa cầu xoay và zoom khớp chuẩn (850ms), chuyển trang
     setTimeout(() => {
       router.push('/map');
-    }, 950);
+    }, 850);
   };
 
-  // Vòng lặp render Canvas Quả Địa Cầu 3D (Orthographic Projection)
+  // Vòng lặp render Canvas Quả Địa Cầu 3D
   useEffect(() => {
     let animId: number;
     const canvas = canvasRef.current;
@@ -134,76 +145,73 @@ export function LeaderboardClockBanner({
       const height = canvas.height;
       ctx.clearRect(0, 0, width, height);
 
-      // Tham số quả địa cầu
-      let baseRadius = Math.min(width, height) * 0.42;
+      // Đọc màu theme từ DOM
+      let themeAccent = '#38bdf8';
+      let themeBorder = 'rgba(56, 189, 248, 0.4)';
+      let themeTitle = '#f8fafc';
+      try {
+        const computed = getComputedStyle(document.documentElement);
+        const a = computed.getPropertyValue('--accent').trim();
+        const b = computed.getPropertyValue('--border-ui').trim();
+        const t = computed.getPropertyValue('--text-title').trim();
+        if (a) themeAccent = a;
+        if (b) themeBorder = b;
+        if (t) themeTitle = t;
+      } catch {}
+
+      // Tâm quả cầu to hẳn ra: đặt tâm ở sát cạnh đáy của box để chỉ hiện nửa trên to rõ
       let centerX = width * 0.72;
-      let centerY = height * 0.52;
-      let centerLat = 15; // Hơi nhìn từ trên xuống để thấy nửa bán cầu bắc
+      let centerY = height * 0.95; // Tâm nằm ở đáy box
+      let baseRadius = height * 0.85; // Bán kính lớn
       let centerLon = rotationRef.current;
+      let centerLat = 15.0; // Vĩ độ nghiêng nhẹ
 
-      // Xử lý hoạt ảnh chuyển cảnh sang /map
+      // Xử lý hiệu ứng transition khi user click
       if (isTransitioningRef.current) {
-        const elapsed = Math.min(now - transitionStartRef.current, 950);
-        const progress = elapsed / 950;
-        // Ease-in-out cubic
-        const ease =
-          progress < 0.5
-            ? 4 * progress * progress * progress
-            : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+        const elapsed = now - transitionStartRef.current;
+        const duration = 850; // ms
+        const progress = Math.min(1, elapsed / duration);
+        // Easing cubic out
+        const ease = 1 - Math.pow(1 - progress, 3);
 
-        // Dịch tâm về giữa màn hình
+        // Dịch tâm quả cầu ra chính giữa viewport
         centerX = centerX + (width * 0.5 - centerX) * ease;
         centerY = centerY + (height * 0.5 - centerY) * ease;
-        // Phóng to quả cầu
-        baseRadius = baseRadius + (Math.min(width, height) * 1.5 - baseRadius) * ease;
-        // Xoay tâm quả cầu chính xác tới toạ độ Việt Nam [106°E, 16°N]
-        const targetLon = VIETNAM_COORDINATES[0];
-        const targetLat = VIETNAM_COORDINATES[1];
+
+        // Phóng to quả cầu khớp đúng tỷ lệ 1:1 với kích thước nước VN trên trang /map
+        // Trên /map: scale = 75 * 1.1 px/độ = 82.5 px/độ
+        // Kích thước tương ứng trên quả địa cầu: R_target = 82.5 * 180 / Math.PI ≈ 4727px
+        const targetRadius = Math.min(width, height) * 5.2;
+        baseRadius = baseRadius + (targetRadius - baseRadius) * ease;
+
+        // Xoay tâm quả cầu chính xác tới toạ độ Việt Nam [107.5°E, 16.0°N]
+        const targetLon = 107.5;
+        const targetLat = 16.0;
         centerLon = centerLon + (targetLon - centerLon) * ease;
         centerLat = centerLat + (targetLat - centerLat) * ease;
       } else {
-        // Trạng thái bình thường: Xoay đều sang trái (~0.25 độ mỗi frame)
-        rotationRef.current -= 0.22;
+        // Trạng thái bình thường: Xoay đều sang trái (~0.18 độ mỗi frame)
+        rotationRef.current -= 0.18;
         if (rotationRef.current < -180) rotationRef.current += 360;
         centerLon = rotationRef.current;
       }
 
-      // Màu sắc theo theme
-      const strokeColor = isDark ? '#38bdf8' : '#0284c7';
-      const glowColor = isDark ? 'rgba(56, 189, 248, 0.35)' : 'rgba(2, 132, 199, 0.25)';
-      const vnBeaconColor = '#ef4444';
-
-      // 1. Vẽ quầng sáng sau quả địa cầu
-      const grad = ctx.createRadialGradient(
-        centerX,
-        centerY,
-        baseRadius * 0.3,
-        centerX,
-        centerY,
-        baseRadius * 1.15
-      );
-      grad.addColorStop(0, glowColor);
-      grad.addColorStop(0.85, 'rgba(0, 0, 0, 0.05)');
-      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, baseRadius * 1.15, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 2. Vẽ viền khối cầu ngoài
-      ctx.strokeStyle = isDark ? 'rgba(56, 189, 248, 0.4)' : 'rgba(2, 132, 199, 0.35)';
-      ctx.lineWidth = 1.5;
+      // 1. Viền khối cầu ngoài (Màu theo theme)
+      ctx.strokeStyle = themeBorder;
+      ctx.lineWidth = isTransitioningRef.current ? 3 : 2;
       ctx.beginPath();
       ctx.arc(centerX, centerY, baseRadius, 0, Math.PI * 2);
       ctx.stroke();
 
-      // 3. Vẽ kinh tuyến và vĩ tuyến mờ
-      ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)';
+      // 2. Hệ thống lưới kinh tuyến (meridians) và vĩ tuyến (parallels) mỗi 15 độ
+      ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)';
       ctx.lineWidth = 1;
-      for (let lat = -60; lat <= 60; lat += 30) {
+
+      // Vĩ tuyến: từ -75 độ tới +75 độ, bước 15 độ
+      for (let lat = -75; lat <= 75; lat += 15) {
         ctx.beginPath();
         let started = false;
-        for (let lon = -180; lon <= 180; lon += 5) {
+        for (let lon = -180; lon <= 180; lon += 4) {
           const pt = project3D(lon, lat, centerLon, centerLat, baseRadius, centerX, centerY);
           if (pt) {
             if (!started) {
@@ -219,11 +227,29 @@ export function LeaderboardClockBanner({
         ctx.stroke();
       }
 
-      // 4. Vẽ đường biên giới các lục địa/quốc gia
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = isTransitioningRef.current ? 2.5 : 1.4;
-      ctx.shadowColor = strokeColor;
-      ctx.shadowBlur = 4;
+      // Kinh tuyến: từ -180 độ tới 180 độ, bước 15 độ
+      for (let lon = -180; lon <= 180; lon += 15) {
+        ctx.beginPath();
+        let started = false;
+        for (let lat = -85; lat <= 85; lat += 4) {
+          const pt = project3D(lon, lat, centerLon, centerLat, baseRadius, centerX, centerY);
+          if (pt) {
+            if (!started) {
+              ctx.moveTo(pt.x, pt.y);
+              started = true;
+            } else {
+              ctx.lineTo(pt.x, pt.y);
+            }
+          } else {
+            started = false;
+          }
+        }
+        ctx.stroke();
+      }
+
+      // 3. Vẽ đường biên giới các lục địa/quốc gia theo màu theme
+      ctx.strokeStyle = themeAccent;
+      ctx.lineWidth = isTransitioningRef.current ? 2.8 : 1.8;
 
       for (const line of WORLD_COASTLINES) {
         ctx.beginPath();
@@ -243,42 +269,13 @@ export function LeaderboardClockBanner({
         }
         ctx.stroke();
       }
-      ctx.shadowBlur = 0;
-
-      // 5. Điểm sáng định vị Việt Nam [106°E, 16°N]
-      const vnPt = project3D(
-        VIETNAM_COORDINATES[0],
-        VIETNAM_COORDINATES[1],
-        centerLon,
-        centerLat,
-        baseRadius,
-        centerX,
-        centerY
-      );
-      if (vnPt) {
-        const pulse = 1 + Math.sin(now * 0.005) * 0.35;
-        ctx.fillStyle = vnBeaconColor;
-        ctx.shadowColor = vnBeaconColor;
-        ctx.shadowBlur = 8;
-        ctx.beginPath();
-        ctx.arc(vnPt.x, vnPt.y, 4 * pulse, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Vòng sóng phát xung
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.arc(vnPt.x, vnPt.y, 8 * pulse, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-      }
 
       animId = requestAnimationFrame(render);
     };
 
     animId = requestAnimationFrame(render);
     return () => cancelAnimationFrame(animId);
-  }, [isDark]);
+  }, [isDark, theme]);
 
   // Phép chiếu hình cầu trực giao 3D (3D Orthographic Projection)
   function project3D(
@@ -313,9 +310,10 @@ export function LeaderboardClockBanner({
 
   return (
     <div
+      ref={containerRef}
       onClick={handleClickBanner}
-      className={`group relative w-full overflow-hidden rounded-3xl border p-5 sm:p-7 transition-all duration-500 cursor-pointer select-none shadow-xl ${
-        isTransitioning ? 'scale-[1.03] shadow-2xl z-50' : 'hover:shadow-2xl hover:border-sky-500/50'
+      className={`group relative w-full overflow-hidden rounded-3xl border p-5 sm:p-7 transition-all duration-500 cursor-pointer select-none shadow-xl min-h-[170px] ${
+        isTransitioning ? 'scale-[1.02] shadow-2xl z-50' : 'hover:shadow-2xl hover:border-accent/60'
       }`}
       style={{
         backgroundColor: 'var(--bg-card)',
@@ -323,61 +321,84 @@ export function LeaderboardClockBanner({
       }}
       title="Bấm để khám phá Bản Đồ Việt Nam 3D"
     >
-      {/* Background canvas chứa quả địa cầu 3D */}
+      {/* Background canvas chứa quả địa cầu 3D to hẳn, chỉ lộ nửa trên */}
       <div
         className={`absolute inset-0 pointer-events-none transition-opacity duration-500 ${
-          isTransitioning ? 'opacity-100' : 'opacity-85 sm:opacity-95'
+          isTransitioning ? 'opacity-100' : 'opacity-90 sm:opacity-95'
         }`}
       >
         <canvas
           ref={canvasRef}
-          width={800}
-          height={320}
+          width={900}
+          height={380}
           className="w-full h-full object-cover sm:object-contain object-right"
         />
       </div>
 
       {/* Lớp nội dung thông tin bên trái */}
       <div
-        className={`relative z-10 max-w-xl space-y-3.5 transition-all duration-300 ${
+        className={`relative z-10 max-w-xl space-y-3 transition-all duration-300 ${
           isTransitioning ? 'opacity-0 -translate-x-6' : 'opacity-100 translate-x-0'
         }`}
       >
-        {/* Hàng 1: Đồng hồ số to rõ + Thứ ngày tháng */}
+        {/* Hàng 1: Đồng hồ số to rõ theo màu theme + Thứ ngày tháng */}
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-slate-100 drop-shadow-xs">
+            <span
+              className="font-mono text-3xl sm:text-4xl md:text-5xl font-black tracking-tight drop-shadow-xs"
+              style={{ color: 'var(--text-title)' }}
+            >
               {timeString}
             </span>
-            <span className="animate-pulse flex h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-xs shadow-emerald-500" />
           </div>
-          <p className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 capitalize">
+          <p className="text-xs sm:text-sm font-semibold capitalize ui-dim">
             {dateString}
           </p>
         </div>
 
-        {/* Hàng 2: Câu chào đổi theo khung giờ trong ngày */}
-        <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-sky-600 dark:text-sky-400">
-          <Sparkles className="w-4 h-4 shrink-0 animate-spin-slow text-amber-500" />
-          <span className="leading-snug">{greeting}</span>
+        {/* Hàng 2: Câu chào cùng màu với đồng hồ (theo màu theme) - Không icon ngôi sao */}
+        <div
+          className="text-xs sm:text-sm font-bold leading-snug tracking-wide"
+          style={{ color: 'var(--text-title)' }}
+        >
+          {greeting}
         </div>
 
         {/* Hàng 3: Vị trí người dùng & Số người đang Online */}
         <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] sm:text-xs">
           {/* Badge Vị trí */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 font-medium shadow-xs">
+          <div
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-medium shadow-xs"
+            style={{
+              backgroundColor: 'var(--bg-subtle)',
+              borderColor: 'var(--border-ui)',
+              color: 'var(--text-body)'
+            }}
+          >
             <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
             <span className="ui-dim">{isEn ? 'Location:' : 'Vị trí:'}</span>
-            <span className="font-bold text-slate-900 dark:text-slate-100 max-w-[140px] sm:max-w-[180px] truncate">
+            <span
+              className="font-bold max-w-[140px] sm:max-w-[180px] truncate"
+              style={{ color: 'var(--text-title)' }}
+            >
               {userLocation}
             </span>
           </div>
 
           {/* Badge Số người Online */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-semibold shadow-xs">
-            <Users className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span className="font-mono font-bold">{onlineCount}</span>
-            <span className="text-[10px] opacity-80">{isEn ? 'online' : 'đang online'}</span>
+          <div
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-semibold shadow-xs"
+            style={{
+              backgroundColor: 'var(--bg-subtle)',
+              borderColor: 'var(--border-ui)',
+              color: 'var(--text-body)'
+            }}
+          >
+            <Users className="w-3.5 h-3.5 text-emerald-500" />
+            <span className="font-mono font-bold" style={{ color: 'var(--text-title)' }}>
+              {onlineCount}
+            </span>
+            <span className="text-[10px] ui-dim">{isEn ? 'online' : 'đang online'}</span>
           </div>
         </div>
       </div>
