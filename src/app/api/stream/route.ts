@@ -2,7 +2,6 @@ import { appEventEmitter } from '@/lib/eventEmitter';
 import { getSessionUser } from '@/lib/auth';
 import { getClientIp } from '@/lib/requestIp';
 import { acquireSseConnection, releaseSseConnection } from '@/lib/sseLimit';
-import { playgroundManager } from '@/lib/playground';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,7 +46,6 @@ export async function GET(request: Request) {
           onLevelUpdate = null;
         }
         releaseSlot();
-        if (authUser?.userId) playgroundManager.unregisterSiteOnline(authUser.userId);
         try {
           controller.close();
         } catch {
@@ -79,7 +77,6 @@ export async function GET(request: Request) {
       appEventEmitter.on('level-update', onLevelUpdate);
 
       sendEvent('ping', { connected: true, at: Date.now() });
-      if (authUser?.userId) playgroundManager.registerSiteOnline(authUser.userId).catch(() => {});
 
       interval = setInterval(() => {
         sendEvent('ping', { at: Date.now() });
@@ -101,7 +98,6 @@ export async function GET(request: Request) {
         onLevelUpdate = null;
       }
       releaseSlot();
-      if (authUser?.userId) playgroundManager.unregisterSiteOnline(authUser.userId);
     },
   });
 

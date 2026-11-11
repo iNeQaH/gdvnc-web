@@ -4,7 +4,6 @@ const en = {
   'nav.leaderboard': 'Leaderboard',
   'nav.demonlist': 'Levels',
   'nav.clan': 'Clan',
-  'nav.playground': 'random tung',
   'nav.challenges': 'Challenge List',
   'nav.submit': 'Submit',
   'nav.roulette': 'Roulette',

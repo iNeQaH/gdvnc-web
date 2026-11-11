@@ -1,6 +1,5 @@
 import prisma from '@/lib/prisma';
 import { fetchGdProfile } from '@/lib/boomlings';
-import { playgroundManager } from '@/lib/playground';
 
 export async function checkAndAwardGrinderBadges(
   userId: string,
@@ -115,13 +114,6 @@ export async function syncUserGdBrowserStats(
       },
     });
 
-    if (data.iconSet) {
-      try {
-        playgroundManager.updatePlayerIconSet(targetUser.id, data.iconSet);
-      } catch {
-        /* ignore */
-      }
-    }
 
     if (hasGlobalRank) {
       await checkAndAwardGrinderBadges(targetUser.id, stars, moons, demons);

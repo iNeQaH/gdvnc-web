@@ -13,7 +13,6 @@ import { autoLinkUserCreatedLevels } from '@/lib/creatorLevelsSync';
 import { recalculateCreatorPoints } from '@/lib/recalculateCreatorPoints';
 import { clearLeaderboardCache } from '@/lib/leaderboard';
 import { jwtSecretBytes } from '@/lib/secrets';
-import { playgroundManager } from '@/lib/playground';
 
 const TOKEN_REGEX = /^GDVN-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/;
 const GD_USERNAME_REGEX = /^[a-zA-Z0-9 _-]{1,32}$/;
@@ -301,13 +300,6 @@ export async function POST(req: Request) {
         },
       });
 
-      if (gdProfile.iconSet) {
-        try {
-          playgroundManager.updatePlayerIconSet(user.id, gdProfile.iconSet);
-        } catch {
-          /* ignore */
-        }
-      }
 
       if (gdProfile.hasGlobalRank) {
         await checkAndAwardGrinderBadges(user.id, syncedStars, syncedMoons, syncedDemons).catch(() => {});
