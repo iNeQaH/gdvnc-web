@@ -508,7 +508,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ username
         userSp,
         likesCount: Array.isArray(user.likedUserIds) ? user.likedUserIds.length : 0,
         hasLiked: Boolean(viewer?.userId && Array.isArray(user.likedUserIds) && user.likedUserIds.includes(viewer.userId)),
-        profileTheme: user.profileTheme,
+        profileTheme: ['futurism', 'floral-cat', 'miku-teto', 'cute-cat', 'owo'].includes(user.profileTheme || '') ? 'sky' : user.profileTheme,
         profileConfig: user.profileConfig && typeof user.profileConfig === 'object' && !Array.isArray(user.profileConfig)
           ? (() => { const { gdVerifySession: _hidden, ...safeCfg } = user.profileConfig as Record<string, any>; return safeCfg; })()
           : user.profileConfig,
@@ -600,7 +600,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ userna
       isSuperAdminUser(auth) ||
       Boolean(current.supporterUntil && new Date(current.supporterUntil) > new Date());
 
-    const SPECIAL_THEME_IDS = ['glitch', 'futurism', 'floral-cat', 'miku-teto', 'cute-cat', 'owo'];
+    const DEPRECATED_THEMES = ['futurism', 'floral-cat', 'miku-teto', 'cute-cat', 'owo'];
+    if (body.profileTheme !== undefined && DEPRECATED_THEMES.includes(body.profileTheme)) {
+      return NextResponse.json(
+        { error: 'Giao diện này không còn khả dụng.' },
+        { status: 400 }
+      );
+    }
+
+    const SPECIAL_THEME_IDS = ['glitch'];
     if (body.profileTheme !== undefined && SPECIAL_THEME_IDS.includes(body.profileTheme)) {
       const ownsTheme =
         (current.ownedThemes || []).includes(body.profileTheme) ||

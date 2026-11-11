@@ -114,6 +114,19 @@ export async function GET() {
     }
   }
 
+  const DEPRECATED_THEMES = ['futurism', 'floral-cat', 'miku-teto', 'cute-cat', 'owo'];
+  const safeProfileTheme = DEPRECATED_THEMES.includes(user.profileTheme || '') ? 'sky' : user.profileTheme;
+  const safeOwnedThemes = Array.isArray(user.ownedThemes)
+    ? (user.ownedThemes as string[]).filter((t: string) => !DEPRECATED_THEMES.includes(t))
+    : [];
+
+  if (DEPRECATED_THEMES.includes(user.profileTheme || '')) {
+    prisma.user.update({
+      where: { id: user.id },
+      data: { profileTheme: 'sky' },
+    }).catch(() => {});
+  }
+
   const { tokenVersion: _tokenVersion, ...publicUser } = user;
   const sanitizedClan = sanitizeUserClan(user.clanMember?.clan);
   const clanMember = user.clanMember
@@ -127,6 +140,8 @@ export async function GET() {
     success: true,
     user: {
       ...publicUser,
+      profileTheme: safeProfileTheme,
+      ownedThemes: safeOwnedThemes,
       easterEggCode: easterEggCode || null,
       clanMember,
       isSuperAdmin: isSuperAdminUser(user),

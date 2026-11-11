@@ -1443,18 +1443,11 @@ export default function SettingsPage() {
                 ...(data?.hasGlitchTheme || currentUser?.hasGlitchTheme
                   ? [{ id: 'glitch', label: '??? (Glitch)', color: 'gdvn-swatch-glitch', supporterOnly: false }]
                   : []),
-                ...((() => {
-                  const o = Array.isArray(data?.ownedThemes) ? data.ownedThemes : (Array.isArray(currentUser?.ownedThemes) ? currentUser.ownedThemes : []);
-                  return [
-                    ...(o.includes('futurism') || isSuperAdmin ? [{ id: 'futurism', label: 'Futurism', color: 'bg-cyan-500', supporterOnly: false }] : []),
-                    ...(o.includes('floral-cat') || isSuperAdmin ? [{ id: 'floral-cat', label: 'Floral Cozy Cat', color: 'bg-emerald-500', supporterOnly: false }] : []),
-                    ...(o.includes('miku-teto') || isSuperAdmin ? [{ id: 'miku-teto', label: 'Miku Teto Akita', color: 'bg-teal-400', supporterOnly: false }] : []),
-                    ...(o.includes('cute-cat') || isSuperAdmin ? [{ id: 'cute-cat', label: 'Cute Cat', color: 'bg-pink-400', supporterOnly: false }] : []),
-                    ...(o.includes('owo') || isSuperAdmin ? [{ id: 'owo', label: 'OwO Theme', color: 'bg-purple-400', supporterOnly: false }] : []),
-                  ];
-                })()),
               ].map((th) => {
-                const isSelected = (data.profileTheme || 'sky') === th.id;
+                const effectiveTheme = ['futurism', 'floral-cat', 'miku-teto', 'cute-cat', 'owo'].includes(data.profileTheme || '')
+                  ? 'sky'
+                  : (data.profileTheme || 'sky');
+                const isSelected = effectiveTheme === th.id;
                 const isLocked = Boolean(th.supporterOnly && !canAccessSupporter);
                 return (
                   <button

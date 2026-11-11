@@ -82,7 +82,10 @@ export async function POST(req: Request) {
     const isTheme = redeemCode.rewardType === 'THEME';
 
     if (isTheme) {
-      const targetTheme = redeemCode.rewardTheme || 'futurism';
+      const targetTheme = redeemCode.rewardTheme || 'glitch';
+      if (['futurism', 'floral-cat', 'miku-teto', 'cute-cat', 'owo'].includes(targetTheme)) {
+        return NextResponse.json({ error: 'Giao diện này không còn khả dụng.' }, { status: 400 });
+      }
       const alreadyHasTheme = (user.ownedThemes || []).includes(targetTheme) || (targetTheme === 'glitch' && user.hasGlitchTheme);
       if (alreadyHasTheme) {
         return NextResponse.json({ error: 'Bạn đã sở hữu giao diện này rồi.' }, { status: 400 });
