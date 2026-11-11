@@ -660,13 +660,20 @@ function VietnamMapCanvasComponent({
       if (tc.frameCount++ % 60 === 0) {
         try {
           const computed = getComputedStyle(document.documentElement);
-          const bg = computed.getPropertyValue('--bg-page').trim();
+          const isDarkClass = document.documentElement.classList.contains('dark');
+          const bg = computed.getPropertyValue('--bg-main').trim() || computed.getPropertyValue('--bg-page').trim();
           const card = computed.getPropertyValue('--bg-card').trim();
           const acc = computed.getPropertyValue('--accent').trim();
           const bor = computed.getPropertyValue('--border-ui').trim();
           const tit = computed.getPropertyValue('--text-title').trim();
+
+          tc.isDarkTheme = isDarkClass;
           if (bg) tc.themeBg = bg;
+          else tc.themeBg = isDarkClass ? '#0b0f19' : '#f8fafc';
+
           if (card) tc.themeCard = card;
+          else tc.themeCard = isDarkClass ? '#151d2f' : '#ffffff';
+
           if (acc) tc.themeAccent = acc;
           if (bor) tc.themeBorder = bor;
           if (tit) tc.themeTitle = tit;
@@ -676,17 +683,16 @@ function VietnamMapCanvasComponent({
           tc.rgbAccent = parseCssColor(tc.themeAccent);
           tc.rgbBorder = parseCssColor(tc.themeBorder);
 
-          tc.isDarkTheme = !(
-            tc.themeBg.startsWith('#f') ||
-            tc.themeBg.startsWith('#e') ||
-            tc.themeBg.startsWith('rgb(255') ||
-            tc.themeBg.startsWith('rgb(24') ||
-            tc.themeBg === '#ffffff'
-          );
-
-          tc.neighborFill = mixRgb(tc.rgbCard, tc.rgbBg, 0.45);
-          tc.neighborStroke = tc.isDarkTheme ? rgbaStr(tc.rgbBorder, 0.4) : rgbaStr(tc.rgbBorder, 0.65);
-          tc.provinceDefaultFill = rgbaStr(tc.rgbCard, 0.85);
+          if (tc.isDarkTheme) {
+            tc.neighborFill = mixRgb(tc.rgbCard, tc.rgbBg, 0.45);
+            tc.neighborStroke = rgbaStr(tc.rgbBorder, 0.4);
+            tc.provinceDefaultFill = rgbaStr(tc.rgbCard, 0.85);
+          } else {
+            // Nền 2D sáng: các nước lân cận màu xám sáng dịu mắt, ranh giới đậm rõ
+            tc.neighborFill = '#e2e8f0';
+            tc.neighborStroke = rgbaStr(tc.rgbBorder, 0.65);
+            tc.provinceDefaultFill = 'rgba(255, 255, 255, 0.85)';
+          }
         } catch {}
       }
 

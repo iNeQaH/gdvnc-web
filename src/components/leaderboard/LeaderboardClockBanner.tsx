@@ -71,24 +71,43 @@ export function LeaderboardClockBanner({
     return () => clearInterval(interval);
   }, []);
 
-  // 5 mốc câu chào theo khung giờ trong ngày
+  // Các mốc câu chào theo khung giờ trong ngày
   const greeting = useMemo(() => {
     if (!currentTime) return '';
     const hour = currentTime.getHours();
-    if (hour >= 5 && hour < 11) {
+    const minute = currentTime.getMinutes();
+
+    // 1h00 - 1h14 sáng
+    if (hour === 1 && minute < 15) {
+      return isEn ? 'Miss trayson so much' : 'Nho trayson nhieu lam';
+    }
+    // 1h15 - 1h29 sáng
+    if (hour === 1 && minute >= 15 && minute < 30) {
+      return isEn ? 'love trayson' : 'iu trayson';
+    }
+    // 1h30 - trước 6h sáng
+    if ((hour === 1 && minute >= 30) || (hour >= 2 && hour < 6)) {
+      return isEn ? "Don't stay up late..." : 'Đừng thức khuya nữa...';
+    }
+    // 6h00 - trước 11h sáng
+    if (hour >= 6 && hour < 11) {
       return isEn ? 'Have a wonderful morning!' : 'Sáng vui vẻ nhaaaa!!!';
     }
+    // 11h00 - trước 14h chiều
     if (hour >= 11 && hour < 14) {
       return isEn
         ? 'Tired yet? Want some rest? (˶o𐃷˂˶)'
         : 'Mệt hongg? Cho gối đù-... À hong có j (˶o𐃷˂˶)';
     }
+    // 14h00 - trước 18h chiều
     if (hour >= 14 && hour < 18) {
       return isEn ? 'Have a pleasant afternoon ♡' : 'Chiều vv nha chủ nhân ♡';
     }
+    // 18h00 - trước 22h tối
     if (hour >= 18 && hour < 22) {
       return isEn ? 'Anything fun to watch tonight?' : 'Tối nay có j xem hong taaa';
     }
+    // 22h00 - 0h59 đêm
     return isEn ? 'Remember to sleep early!' : 'Nhớ ngủ sớm nhaaa!';
   }, [currentTime, isEn]);
 
