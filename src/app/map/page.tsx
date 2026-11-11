@@ -4,7 +4,6 @@ import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  ChevronLeft,
   Compass,
   Box,
   Layers,
@@ -25,6 +24,9 @@ import {
   MapPin,
   Clock,
   Shield,
+  ChevronDown,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { VietnamMapCanvas } from '@/components/map/VietnamMapCanvas';
 import { VIETNAM_PROVINCES_GEO } from '@/lib/vietnamGeoData';
@@ -83,6 +85,20 @@ export default function VietnamMapPage() {
     pitch: 0,
   });
   const [hudReady, setHudReady] = useState<boolean>(false);
+  const [isModeDropdownOpen, setIsModeDropdownOpen] = useState<boolean>(false);
+  const [isUiHidden, setIsUiHidden] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isModeDropdownOpen) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('#mode-selector-container')) {
+        setIsModeDropdownOpen(false);
+      }
+    };
+    window.addEventListener('mousedown', handleOutsideClick);
+    return () => window.removeEventListener('mousedown', handleOutsideClick);
+  }, [isModeDropdownOpen]);
 
   useEffect(() => {
     let hasHandoff = false;
@@ -316,8 +332,12 @@ export default function VietnamMapPage() {
         zoomOutTrigger={zoomOutTrigger}
       />
 
-      {/* 2. Top-Left HUD: Back Button, Clock Info & Leaderboard Cycle Button */}
-      <div className="absolute top-4 left-4 z-30 flex flex-col gap-2 max-w-sm pointer-events-auto">
+      {/* 2. Top-Left HUD: Clock Info & Leaderboard Dropdown Selector */}
+      <div
+        className={`absolute top-4 left-4 z-30 flex flex-col gap-2 max-w-sm pointer-events-auto transition-all duration-500 ${
+          isUiHidden ? 'opacity-0 -translate-y-4 pointer-events-none' : 'opacity-100'
+        }`}
+      >
         {/* Clock Info Card */}
         <div
           className="rounded-2xl border p-3.5 backdrop-blur-xl shadow-2xl flex flex-col gap-1.5 transition-all"
@@ -326,20 +346,7 @@ export default function VietnamMapPage() {
             borderColor: 'var(--border-ui)',
           }}
         >
-          <div className="flex items-center justify-between gap-3">
-            <Link
-              href="/leaderboard"
-              className="flex items-center justify-center w-8 h-8 rounded-xl border transition-all active:scale-95 cursor-pointer"
-              style={{
-                backgroundColor: 'var(--bg-subtle)',
-                borderColor: 'var(--border-ui)',
-                color: 'var(--text-title)',
-              }}
-              title={isEn ? 'Back to Leaderboard' : 'Trở về Bảng xếp hạng'}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Link>
-
+          <div className="flex items-center gap-3">
             <span
               className="font-mono text-xl sm:text-2xl font-black tracking-tight"
               style={{ color: 'var(--text-title)' }}
@@ -388,24 +395,21 @@ export default function VietnamMapPage() {
           </div>
         </div>
 
-        {/* Nút Cycle Mode ở góc trên bên trái: Bấm vào để đổi chế độ, chỉ hiện icon và tên chế độ (bỏ icon xoay xanh) */}
-        <button
-          type="button"
-          onClick={handleCycleMode}
-          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-2xl border backdrop-blur-xl shadow-xl transition-all duration-700 ease-out active:scale-95 cursor-pointer group ${
-            hudReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'
-          }`}
-          style={{
-            backgroundColor: 'var(--bg-card)',
-            borderColor: 'var(--border-ui)',
-          }}
-          title={isEn ? 'Click to switch mode' : 'Bấm để đổi chế độ'}
-        >
-          <div className="flex items-center gap-2 min-w-0">
-            <span
-              className="flex items-center gap-2 text-xs font-black truncate"
-              style={{ color: 'var(--accent)' }}
-            >
+        {/* Nút Dropdown Selector Leaderboard Mode ở góc trên bên trái: Click thả xuống tất cả 9 mode */}
+        <div id="mode-selector-container" className="relative">
+          <button
+            type="button"
+            onClick={() => setIsModeDropdownOpen((v) => !v)}
+            className={`flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl border backdrop-blur-xl shadow-xl transition-all duration-700 ease-out active:scale-95 cursor-pointer group min-w-[200px] ${
+              hudReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'
+            }`}
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              borderColor: 'var(--border-ui)',
+            }}
+            title={isEn ? 'Select leaderboard mode' : 'Chọn bảng xếp hạng'}
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
               {ModeIcon ? (
                 <ModeIcon className="w-4 h-4 text-amber-400 shrink-0" />
               ) : (
@@ -415,111 +419,213 @@ export default function VietnamMapPage() {
                   className="w-4 h-4 object-contain inline-block shrink-0"
                 />
               )}
-              <span className="truncate">
+              <span className="truncate text-xs font-black" style={{ color: 'var(--accent)' }}>
                 {isEn ? MODE_LABELS[mode].nameEn : MODE_LABELS[mode].nameVi}
               </span>
-            </span>
-          </div>
-        </button>
+            </div>
+            <ChevronDown
+              className={`w-4 h-4 shrink-0 transition-transform duration-200 ${
+                isModeDropdownOpen ? 'rotate-180 text-sky-400' : 'ui-dim'
+              }`}
+            />
+          </button>
+
+          {/* Menu thả xuống tất cả các Leaderboard */}
+          {isModeDropdownOpen && (
+            <div
+              className="absolute top-full left-0 mt-2 z-40 flex flex-col gap-1 p-1.5 rounded-2xl border backdrop-blur-2xl shadow-2xl min-w-[230px] animate-in fade-in zoom-in-95 duration-150"
+              style={{
+                backgroundColor: 'var(--bg-card)',
+                borderColor: 'var(--border-ui)',
+              }}
+            >
+              {MODES.map((m) => {
+                const info = MODE_LABELS[m];
+                const Icon = info.icon;
+                const isSelected = mode === m;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => {
+                      setMode(m);
+                      setIsModeDropdownOpen(false);
+                    }}
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                      isSelected
+                        ? 'bg-sky-500/15 text-sky-400 font-black'
+                        : 'hover:bg-white/5 ui-dim hover:text-white'
+                    }`}
+                  >
+                    {Icon ? (
+                      <Icon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-amber-400' : 'ui-dim'}`} />
+                    ) : (
+                      <img
+                        src="/difficulties/EXTREME DEMON.png"
+                        alt="Demons"
+                        className="w-4 h-4 object-contain inline-block shrink-0"
+                      />
+                    )}
+                    <span className="truncate">
+                      {isEn ? info.nameEn : info.nameVi}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* 3. Top-Right Controls: Sắp xếp theo chiều dọc (3D, La bàn, Reset Map, Zoom In +, Zoom Out -) */}
+      {/* 3. Top-Right Controls: Sắp xếp theo chiều dọc (3D, La bàn, Reset Map, Tên Tỉnh "A", Zoom +, Zoom -, Toggle Ẩn UI) */}
       <div
         className={`absolute top-4 z-30 flex flex-col items-center gap-2 pointer-events-auto transition-all duration-700 ease-out ${
           selectedProvinceId ? 'right-[23.5rem]' : 'right-4'
         } ${hudReady ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3 pointer-events-none'}`}
       >
-        {/* "2D" / "3D" Toggle Button (Không có icon) */}
-        <button
-          type="button"
-          onClick={() => setIs3D((prev) => !prev)}
-          className={`flex items-center justify-center w-10 h-10 rounded-xl border backdrop-blur-xl shadow-xl text-xs font-black tracking-wider transition-all active:scale-95 cursor-pointer ${
-            is3D
-              ? 'bg-sky-500/90 border-sky-400 text-white shadow-sky-500/30'
-              : ''
-          }`}
-          style={
-            !is3D
-              ? {
-                  backgroundColor: 'var(--bg-card)',
-                  borderColor: 'var(--border-ui)',
-                  color: 'var(--text-title)',
-                }
-              : undefined
-          }
-          title={is3D ? 'Chuyển về góc 2D' : 'Chuyển sang góc 3D'}
-        >
-          <span className="text-xs font-black tracking-wider">{is3D ? '2D' : '3D'}</span>
-        </button>
+        {/* Khi UI bị ẩn: CHỈ DUY NHẤT nút này hiển thị với icon mắt gạch chéo (EyeOff) & hơi tối */}
+        {isUiHidden ? (
+          <button
+            type="button"
+            onClick={() => setIsUiHidden(false)}
+            className="flex items-center justify-center w-10 h-10 rounded-xl border backdrop-blur-md shadow-2xl transition-all active:scale-95 cursor-pointer bg-black/60 hover:bg-black/85 text-white/80 hover:text-white border-white/25"
+            title={isEn ? 'Show UI' : 'Hiện lại giao diện'}
+          >
+            <EyeOff className="w-5 h-5 text-amber-300" />
+          </button>
+        ) : (
+          <>
+            {/* "2D" / "3D" Toggle Button (Không có icon) */}
+            <button
+              type="button"
+              onClick={() => setIs3D((prev) => !prev)}
+              className={`flex items-center justify-center w-10 h-10 rounded-xl border backdrop-blur-xl shadow-xl text-xs font-black tracking-wider transition-all active:scale-95 cursor-pointer ${
+                is3D
+                  ? 'bg-sky-500/90 border-sky-400 text-white shadow-sky-500/30'
+                  : ''
+              }`}
+              style={
+                !is3D
+                  ? {
+                      backgroundColor: 'var(--bg-card)',
+                      borderColor: 'var(--border-ui)',
+                      color: 'var(--text-title)',
+                    }
+                  : undefined
+              }
+              title={is3D ? 'Chuyển về góc 2D' : 'Chuyển sang góc 3D'}
+            >
+              <span className="text-xs font-black tracking-wider">{is3D ? '2D' : '3D'}</span>
+            </button>
 
-        {/* Về vị trí tỉnh của bạn (Icon La bàn màu đỏ, nút giữ màu theme) */}
-        <button
-          type="button"
-          onClick={handleResetClick}
-          className="flex items-center justify-center w-10 h-10 rounded-xl border backdrop-blur-xl shadow-xl transition-all active:scale-95 cursor-pointer group"
-          style={{
-            backgroundColor: 'var(--bg-card)',
-            borderColor: 'var(--border-ui)',
-          }}
-          title={
-            currentUser?.country
-              ? `Về tỉnh của bạn: ${extractProvinceFromLocation(currentUser.country) || 'Toàn quốc'}`
-              : 'Về vị trí tỉnh của bạn'
-          }
-        >
-          <Compass className="w-5 h-5 text-rose-500 group-hover:rotate-45 transition-transform duration-300" />
-        </button>
+            {/* Về vị trí tỉnh của bạn (Icon La bàn màu đỏ, nút giữ màu theme) */}
+            <button
+              type="button"
+              onClick={handleResetClick}
+              className="flex items-center justify-center w-10 h-10 rounded-xl border backdrop-blur-xl shadow-xl transition-all active:scale-95 cursor-pointer group"
+              style={{
+                backgroundColor: 'var(--bg-card)',
+                borderColor: 'var(--border-ui)',
+              }}
+              title={
+                currentUser?.country
+                  ? `Về tỉnh của bạn: ${extractProvinceFromLocation(currentUser.country) || 'Toàn quốc'}`
+                  : 'Về vị trí tỉnh của bạn'
+              }
+            >
+              <Compass className="w-5 h-5 text-rose-500 group-hover:rotate-45 transition-transform duration-300" />
+            </button>
 
-        {/* Nút Reset Map: Thu map lại thành 2D và zoom ra ngoài sao cho cả Việt Nam trong khung hình */}
-        <button
-          type="button"
-          onClick={handleFullResetMap}
-          className="flex items-center justify-center w-10 h-10 rounded-xl border backdrop-blur-xl shadow-xl transition-all active:scale-95 cursor-pointer group"
-          style={{
-            backgroundColor: 'var(--bg-card)',
-            borderColor: 'var(--border-ui)',
-            color: 'var(--text-title)',
-          }}
-          title={isEn ? 'Reset view to entire Vietnam (2D)' : 'Thu bản đồ về 2D nhìn trọn vẹn Việt Nam'}
-        >
-          <RotateCcw className="w-4 h-4 group-hover:-rotate-90 transition-transform duration-300" />
-        </button>
+            {/* Nút Reset Map: Thu map lại thành 2D và zoom ra ngoài sao cho cả Việt Nam trong khung hình */}
+            <button
+              type="button"
+              onClick={handleFullResetMap}
+              className="flex items-center justify-center w-10 h-10 rounded-xl border backdrop-blur-xl shadow-xl transition-all active:scale-95 cursor-pointer group"
+              style={{
+                backgroundColor: 'var(--bg-card)',
+                borderColor: 'var(--border-ui)',
+                color: 'var(--text-title)',
+              }}
+              title={isEn ? 'Reset view to entire Vietnam (2D)' : 'Thu bản đồ về 2D nhìn trọn vẹn Việt Nam'}
+            >
+              <RotateCcw className="w-4 h-4 group-hover:-rotate-90 transition-transform duration-300" />
+            </button>
 
-        {/* Nút Zoom In (+) */}
-        <button
-          type="button"
-          onClick={() => setZoomInTrigger((c) => c + 1)}
-          className="flex items-center justify-center w-10 h-10 rounded-xl border backdrop-blur-md shadow-xl transition-all active:scale-95 cursor-pointer"
-          style={{
-            backgroundColor: 'var(--bg-card)',
-            borderColor: 'var(--border-ui)',
-            color: 'var(--text-title)',
-          }}
-          title={isEn ? 'Zoom in' : 'Phóng to'}
-        >
-          <Plus className="w-4 h-4" />
-        </button>
+            {/* NÚT MỚI: Hiện Tên Tỉnh Thành (Icon chữ A) */}
+            <button
+              type="button"
+              onClick={() => setShowProvinceNames((p) => !p)}
+              className={`flex items-center justify-center w-10 h-10 rounded-xl border backdrop-blur-xl shadow-xl transition-all active:scale-95 cursor-pointer group ${
+                showProvinceNames
+                  ? 'bg-sky-500/90 border-sky-400 text-white shadow-sky-500/30'
+                  : ''
+              }`}
+              style={
+                !showProvinceNames
+                  ? {
+                      backgroundColor: 'var(--bg-card)',
+                      borderColor: 'var(--border-ui)',
+                      color: 'var(--text-title)',
+                    }
+                  : undefined
+              }
+              title={showProvinceNames ? (isEn ? 'Hide province names' : 'Ẩn tên tỉnh thành') : (isEn ? 'Show province names' : 'Hiện tên tỉnh thành')}
+            >
+              <span className="font-serif font-black text-sm select-none">A</span>
+            </button>
 
-        {/* Nút Zoom Out (-) */}
-        <button
-          type="button"
-          onClick={() => setZoomOutTrigger((c) => c + 1)}
-          className="flex items-center justify-center w-10 h-10 rounded-xl border backdrop-blur-md shadow-xl transition-all active:scale-95 cursor-pointer"
-          style={{
-            backgroundColor: 'var(--bg-card)',
-            borderColor: 'var(--border-ui)',
-            color: 'var(--text-title)',
-          }}
-          title={isEn ? 'Zoom out' : 'Thu nhỏ'}
-        >
-          <Minus className="w-4 h-4" />
-        </button>
+            {/* Nút Zoom In (+) */}
+            <button
+              type="button"
+              onClick={() => setZoomInTrigger((c) => c + 1)}
+              className="flex items-center justify-center w-10 h-10 rounded-xl border backdrop-blur-md shadow-xl transition-all active:scale-95 cursor-pointer"
+              style={{
+                backgroundColor: 'var(--bg-card)',
+                borderColor: 'var(--border-ui)',
+                color: 'var(--text-title)',
+              }}
+              title={isEn ? 'Zoom in' : 'Phóng to'}
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+
+            {/* Nút Zoom Out (-) */}
+            <button
+              type="button"
+              onClick={() => setZoomOutTrigger((c) => c + 1)}
+              className="flex items-center justify-center w-10 h-10 rounded-xl border backdrop-blur-md shadow-xl transition-all active:scale-95 cursor-pointer"
+              style={{
+                backgroundColor: 'var(--bg-card)',
+                borderColor: 'var(--border-ui)',
+                color: 'var(--text-title)',
+              }}
+              title={isEn ? 'Zoom out' : 'Thu nhỏ'}
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+
+            {/* NÚT MỚI: Toggle Ẩn Toàn Bộ UI (Icon Mắt) */}
+            <button
+              type="button"
+              onClick={() => setIsUiHidden(true)}
+              className="flex items-center justify-center w-10 h-10 rounded-xl border backdrop-blur-xl shadow-xl transition-all active:scale-95 cursor-pointer group"
+              style={{
+                backgroundColor: 'var(--bg-card)',
+                borderColor: 'var(--border-ui)',
+                color: 'var(--text-title)',
+              }}
+              title={isEn ? 'Hide UI' : 'Ẩn giao diện'}
+            >
+              <Eye className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            </button>
+          </>
+        )}
       </div>
 
       {/* 4. Bottom-Left HUD Card: Thông tin tỉnh theo tâm crosshair & Chỉ số camera (phóng to 1.5x) */}
       <div
         className={`absolute bottom-4 left-4 z-30 flex flex-col gap-2 pointer-events-auto select-none transition-all duration-700 ease-out ${
-          hudReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+          hudReady && !isUiHidden ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6 pointer-events-none'
         }`}
       >
         <div

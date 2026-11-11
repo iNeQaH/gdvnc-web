@@ -658,10 +658,6 @@ function VietnamMapCanvasComponent({
           tc.rgbAccent = parseCssColor(tc.themeAccent);
           tc.rgbBorder = parseCssColor(tc.themeBorder);
 
-          tc.neighborFill = mixRgb(tc.rgbCard, tc.rgbBg, 0.45);
-          tc.neighborStroke = rgbaStr(tc.rgbBorder, 0.35);
-          tc.provinceDefaultFill = rgbaStr(tc.rgbCard, 0.85);
-
           tc.isDarkTheme = !(
             tc.themeBg.startsWith('#f') ||
             tc.themeBg.startsWith('#e') ||
@@ -669,6 +665,10 @@ function VietnamMapCanvasComponent({
             tc.themeBg.startsWith('rgb(24') ||
             tc.themeBg === '#ffffff'
           );
+
+          tc.neighborFill = mixRgb(tc.rgbCard, tc.rgbBg, 0.45);
+          tc.neighborStroke = tc.isDarkTheme ? rgbaStr(tc.rgbBorder, 0.4) : rgbaStr(tc.rgbBorder, 0.65);
+          tc.provinceDefaultFill = rgbaStr(tc.rgbCard, 0.85);
         } catch {}
       }
 
@@ -950,7 +950,7 @@ function VietnamMapCanvasComponent({
       ctx.globalAlpha = mapFadeAlpha;
       ctx.strokeStyle = neighborStroke;
       ctx.fillStyle = neighborFill;
-      ctx.lineWidth = 1;
+      ctx.lineWidth = isDarkTheme ? 1.2 : 1.6;
 
       for (const country of NEIGHBOR_COUNTRIES_WITH_BOUNDS) {
         if (!isBoxVisible(country.bounds[0], country.bounds[1], country.bounds[2], country.bounds[3])) {
@@ -1084,12 +1084,12 @@ function VietnamMapCanvasComponent({
             ctx.lineWidth = 2.4;
             ctx.stroke();
           } else if (isSelected || isHovered) {
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 2.2;
+            ctx.strokeStyle = isDarkTheme ? '#ffffff' : themeAccent;
+            ctx.lineWidth = 2.6;
             ctx.stroke();
           } else {
-            ctx.strokeStyle = themeBorder;
-            ctx.lineWidth = 1.2;
+            ctx.strokeStyle = isDarkTheme ? themeBorder : rgbaStr(rgbAccent, 0.75);
+            ctx.lineWidth = isDarkTheme ? 1.5 : 2.0;
             ctx.stroke();
           }
         }
@@ -1344,8 +1344,8 @@ function VietnamMapCanvasComponent({
             ctx.save();
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'left';
-            ctx.lineWidth = 2.5;
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+            ctx.lineWidth = isDarkTheme ? 2.5 : 3.0;
+            ctx.strokeStyle = isDarkTheme ? 'rgba(0, 0, 0, 0.85)' : 'rgba(255, 255, 255, 0.95)';
             ctx.lineJoin = 'round';
 
             let curTextX = textStartX;
@@ -1437,7 +1437,7 @@ function VietnamMapCanvasComponent({
 
           ctx.save();
           ctx.globalAlpha = percentAlpha;
-          ctx.fillStyle = mixRgb(rgbAccent, { r: 255, g: 255, b: 255 }, 0.55);
+          ctx.fillStyle = isDarkTheme ? mixRgb(rgbAccent, { r: 255, g: 255, b: 255 }, 0.65) : '#0f172a';
           ctx.font = `600 ${fontSize}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
@@ -1866,34 +1866,11 @@ function VietnamMapCanvasComponent({
       const cx = width / 2;
       const cy = height / 2;
 
-      // 8a. Dấu cộng trung tâm màn hình (luôn hiển thị rõ nét với outline tương phản)
-      ctx.save();
-      const crosshairAlpha = Math.max(0.45, leftDragAlphaRef.current) * detailsFadeAlpha;
-      ctx.globalAlpha = crosshairAlpha;
-
-      // Viền đen tương phản cao (crisp outline thay cho shadowBlur)
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(cx - 15, cy);
-      ctx.lineTo(cx + 15, cy);
-      ctx.moveTo(cx, cy - 15);
-      ctx.lineTo(cx, cy + 15);
-      ctx.stroke();
-
-      // Nét trắng ở giữa
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(cx - 15, cy);
-      ctx.lineTo(cx + 15, cy);
-      ctx.moveTo(cx, cy - 15);
-      ctx.lineTo(cx, cy + 15);
-      ctx.stroke();
-
-      // Khi nhấn giữ chuột trái di chuyển: Hiển thị thêm 2 đường chữ thập mỏng xuyên suốt màn hình
+      // 8a. Hiệu ứng Chuột Trái Di Chuyển (Pan): Tự động ẩn hoàn toàn khi không kéo chuột
       if (leftDragAlphaRef.current > 0.005) {
-        ctx.globalAlpha = leftDragAlphaRef.current * 0.65;
+        ctx.save();
+        // Hai đường chữ thập mỏng xuyên suốt màn hình
+        ctx.globalAlpha = leftDragAlphaRef.current * 0.4;
         ctx.strokeStyle = themeAccent;
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -1902,8 +1879,21 @@ function VietnamMapCanvasComponent({
         ctx.moveTo(0, cy);
         ctx.lineTo(width, cy);
         ctx.stroke();
+
+        // Dấu cộng ngắn gọn gàng ở trung tâm: Rút ngắn gọn, màu theme sáng hơn vạch mờ dài
+        const crossLen = 8;
+        ctx.globalAlpha = leftDragAlphaRef.current * 0.95;
+        ctx.strokeStyle = mixRgb(rgbAccent, { r: 255, g: 255, b: 255 }, isDarkTheme ? 0.45 : 0.2);
+        ctx.lineWidth = 2.2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(cx - crossLen, cy);
+        ctx.lineTo(cx + crossLen, cy);
+        ctx.moveTo(cx, cy - crossLen);
+        ctx.lineTo(cx, cy + crossLen);
+        ctx.stroke();
+        ctx.restore();
       }
-      ctx.restore();
 
       // 8b. Hiệu ứng Chuột Phải Nghiêng 3D & Xoay Dial: Mũi tên 2 đầu ↕ DÀI HƠN ở giữa, viền thanh dọc đồng hồ ở ngoài
       if (rightDragAlphaRef.current > 0.005) {

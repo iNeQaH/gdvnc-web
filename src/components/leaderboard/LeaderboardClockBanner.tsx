@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { Clock, MapPin, Users, ChevronLeft } from 'lucide-react';
+import { Clock, MapPin, Users } from 'lucide-react';
 import { WORLD_COASTLINES } from '@/lib/worldGeoData';
 import { useLanguage } from '@/components/LanguageContext';
 import { useTheme } from '@/components/ThemeProvider';
@@ -555,7 +555,7 @@ export function LeaderboardClockBanner({
               ? (typeof window !== 'undefined' && window.innerWidth >= 768 ? '100vh' : 'calc(100vh - 3.5rem)')
               : `${startRect?.height ?? 170}px`,
             borderRadius: expanded ? '0px' : '1.5rem',
-            backgroundColor: expanded ? '#020617' : 'var(--bg-card)',
+            backgroundColor: expanded ? 'var(--bg-main, var(--bg-page, #0b0f19))' : 'var(--bg-card)',
             borderColor: expanded ? 'transparent' : 'var(--border-ui)',
             borderWidth: expanded ? '0px' : '1px',
           }}
@@ -587,23 +587,7 @@ export function LeaderboardClockBanner({
                 borderColor: expanded ? 'var(--border-ui)' : 'transparent',
               }}
             >
-              <div className="flex items-center justify-between gap-3">
-                {/* Nút quay lại ChevronLeft xuất hiện mượt mà ở góc trên card */}
-                <div
-                  className={`flex items-center justify-center rounded-xl border transition-all duration-500 ${
-                    expanded
-                      ? 'w-8 h-8 opacity-100 scale-100'
-                      : 'w-0 h-0 opacity-0 scale-75 overflow-hidden'
-                  }`}
-                  style={{
-                    backgroundColor: 'var(--bg-subtle)',
-                    borderColor: 'var(--border-ui)',
-                    color: 'var(--text-title)',
-                  }}
-                >
-                  <ChevronLeft className="w-4 h-4 shrink-0" />
-                </div>
-
+              <div className="flex items-center gap-3">
                 <span
                   className={`font-mono font-black tracking-tight transition-all duration-500 ${
                     expanded ? 'text-xl sm:text-2xl' : 'text-3xl sm:text-4xl md:text-5xl'
