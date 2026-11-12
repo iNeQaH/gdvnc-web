@@ -1,69 +1,81 @@
-// Danh sách chuẩn 63 tỉnh / thành phố trực thuộc Trung ương của Việt Nam
+// Danh sách chuẩn 34 tỉnh / thành phố sau sáp nhập + 2 Quần đảo (Nghị quyết Trung ương / Quốc hội)
 export const VN_PROVINCES = [
+  // 6 Thành phố trực thuộc Trung ương
   'Hà Nội',
   'TP. Hồ Chí Minh',
   'Đà Nẵng',
   'Hải Phòng',
   'Cần Thơ',
+  'Huế',
+
+  // 28 Tỉnh
   'An Giang',
-  'Bà Rịa - Vũng Tàu',
-  'Bắc Giang',
-  'Bắc Kạn',
-  'Bạc Liêu',
   'Bắc Ninh',
-  'Bến Tre',
-  'Bình Định',
-  'Bình Dương',
-  'Bình Phước',
-  'Bình Thuận',
   'Cà Mau',
   'Cao Bằng',
   'Đắk Lắk',
-  'Đắk Nông',
   'Điện Biên',
   'Đồng Nai',
   'Đồng Tháp',
   'Gia Lai',
-  'Hà Giang',
-  'Hà Nam',
   'Hà Tĩnh',
-  'Hải Dương',
-  'Hậu Giang',
-  'Hòa Bình',
   'Hưng Yên',
   'Khánh Hòa',
-  'Kiên Giang',
-  'Kon Tum',
   'Lai Châu',
   'Lâm Đồng',
   'Lạng Sơn',
   'Lào Cai',
-  'Long An',
-  'Nam Định',
   'Nghệ An',
   'Ninh Bình',
-  'Ninh Thuận',
   'Phú Thọ',
-  'Phú Yên',
-  'Quảng Bình',
-  'Quảng Nam',
   'Quảng Ngãi',
   'Quảng Ninh',
   'Quảng Trị',
-  'Sóc Trăng',
   'Sơn La',
   'Tây Ninh',
-  'Thái Bình',
   'Thái Nguyên',
   'Thanh Hóa',
-  'Thừa Thiên Huế',
-  'Tiền Giang',
-  'Trà Vinh',
   'Tuyên Quang',
   'Vĩnh Long',
-  'Vĩnh Phúc',
-  'Yên Bái',
+
+  // 2 Quần đảo đặc quyền chủ quyền
+  'Quần đảo Hoàng Sa',
+  'Quần đảo Trường Sa',
 ] as const;
+
+// Bản đồ tương thích ngược từ 63 tỉnh/thành cũ sang 34 tỉnh/thành mới
+export const LEGACY_PROVINCE_MERGE_MAP: Record<string, string> = {
+  'Hà Giang': 'Tuyên Quang',
+  'Yên Bái': 'Lào Cai',
+  'Bắc Kạn': 'Thái Nguyên',
+  'Vĩnh Phúc': 'Phú Thọ',
+  'Hòa Bình': 'Phú Thọ',
+  'Bắc Giang': 'Bắc Ninh',
+  'Thái Bình': 'Hưng Yên',
+  'Hải Dương': 'Hải Phòng',
+  'Hà Nam': 'Ninh Bình',
+  'Nam Định': 'Ninh Bình',
+  'Quảng Bình': 'Quảng Trị',
+  'Quảng Nam': 'Đà Nẵng',
+  'Kon Tum': 'Quảng Ngãi',
+  'Bình Định': 'Gia Lai',
+  'Ninh Thuận': 'Khánh Hòa',
+  'Đắk Nông': 'Lâm Đồng',
+  'Bình Thuận': 'Lâm Đồng',
+  'Phú Yên': 'Đắk Lắk',
+  'Bình Dương': 'TP. Hồ Chí Minh',
+  'Bà Rịa - Vũng Tàu': 'TP. Hồ Chí Minh',
+  'Bình Phước': 'Đồng Nai',
+  'Long An': 'Tây Ninh',
+  'Sóc Trăng': 'Cần Thơ',
+  'Hậu Giang': 'Cần Thơ',
+  'Bến Tre': 'Vĩnh Long',
+  'Trà Vinh': 'Vĩnh Long',
+  'Tiền Giang': 'Đồng Tháp',
+  'Bạc Liêu': 'Cà Mau',
+  'Kiên Giang': 'An Giang',
+  'Thừa Thiên Huế': 'Huế',
+};
 
 // Danh sách một số quốc gia phổ biến quốc tế
 export const MAJOR_COUNTRIES = [
@@ -90,7 +102,9 @@ export const MAJOR_COUNTRIES = [
 
 // Danh sách gợi ý sẵn cho ô chọn (Tỉnh/Thành phố, Việt Nam)
 export const LOCATION_OPTIONS: string[] = [
-  ...VN_PROVINCES.map((p) => `${p}, Việt Nam`),
+  ...VN_PROVINCES.filter((p) => p !== 'Quần đảo Hoàng Sa' && p !== 'Quần đảo Trường Sa').map((p) => `${p}, Việt Nam`),
+  'Khánh Hòa (Quần đảo Trường Sa), Việt Nam',
+  'Đà Nẵng (Quần đảo Hoàng Sa), Việt Nam',
   ...MAJOR_COUNTRIES.filter((c) => c !== 'Việt Nam'),
 ];
 
@@ -187,8 +201,21 @@ export function validateLocation(input?: string | null): {
     };
   }
 
-  // 2. Tìm kiếm khớp với danh sách 63 tỉnh thành Việt Nam
-  // Tách xem người dùng có gõ "Tỉnh...", "TP.", "Thành phố...", hoặc kèm ", Việt Nam" hay không
+  // 2. Kiểm tra các lựa chọn đặc biệt cho 2 Quần đảo
+  if (stripped.includes('truong sa')) {
+    return {
+      ok: true,
+      normalized: 'Khánh Hòa (Quần đảo Trường Sa), Việt Nam',
+    };
+  }
+  if (stripped.includes('hoang sa')) {
+    return {
+      ok: true,
+      normalized: 'Đà Nẵng (Quần đảo Hoàng Sa), Việt Nam',
+    };
+  }
+
+  // 3. Tìm kiếm khớp với danh sách 34 tỉnh thành Việt Nam (kèm hỗ trợ tên cũ sáp nhập)
   let cleanProvince = raw
     .replace(/,\s*việt nam/i, '')
     .replace(/,\s*vietnam/i, '')
@@ -198,8 +225,9 @@ export function validateLocation(input?: string | null): {
 
   const strippedClean = stripVietnameseDiacritics(cleanProvince);
 
-  // So khớp với VN_PROVINCES
+  // So khớp với VN_PROVINCES (34 tỉnh/thành mới)
   for (const province of VN_PROVINCES) {
+    if (province === 'Quần đảo Hoàng Sa' || province === 'Quần đảo Trường Sa') continue;
     const pClean = province.replace(/^(tp\.?)\s+/i, '');
     const pStripped = stripVietnameseDiacritics(pClean);
     const pFullStripped = stripVietnameseDiacritics(province);
@@ -218,7 +246,27 @@ export function validateLocation(input?: string | null): {
     }
   }
 
-  // 3. So khớp với danh sách quốc gia quốc tế
+  // So khớp với danh sách tỉnh cũ trước sáp nhập -> tự động chuẩn hóa sang tỉnh mới
+  for (const [oldProv, newProv] of Object.entries(LEGACY_PROVINCE_MERGE_MAP)) {
+    const oldClean = oldProv.replace(/^(tp\.?)\s+/i, '');
+    const oldStripped = stripVietnameseDiacritics(oldClean);
+    const oldFullStripped = stripVietnameseDiacritics(oldProv);
+
+    if (
+      strippedClean === oldStripped ||
+      strippedClean === oldFullStripped ||
+      stripped === oldFullStripped ||
+      stripped === stripVietnameseDiacritics(`${oldProv}, việt nam`) ||
+      stripped === stripVietnameseDiacritics(`${oldProv}, vietnam`)
+    ) {
+      return {
+        ok: true,
+        normalized: `${newProv}, Việt Nam`,
+      };
+    }
+  }
+
+  // 4. So khớp với danh sách quốc gia quốc tế
   for (const country of MAJOR_COUNTRIES) {
     const cStripped = stripVietnameseDiacritics(country);
     // Bỏ phần trong ngoặc đơn nếu có
@@ -275,16 +323,37 @@ export function extractProvinceFromLocation(location?: string | null): string | 
   const raw = location.trim();
   const stripped = stripVietnameseDiacritics(raw);
 
-  // Xử lý các alias đặc biệt
+  // 1. Quần đảo Trường Sa & Hoàng Sa (phải kiểm tra trước Khánh Hòa và Đà Nẵng)
+  if (stripped.includes('truong sa')) {
+    return 'Quần đảo Trường Sa';
+  }
+  if (stripped.includes('hoang sa')) {
+    return 'Quần đảo Hoàng Sa';
+  }
+
+  // 2. Xử lý các alias đặc biệt
   if (stripped.includes('hcm') || stripped.includes('ho chi minh') || stripped.includes('sai gon')) {
     return 'TP. Hồ Chí Minh';
   }
   if (stripped.includes('ha noi') || stripped.includes('hanoi') || stripped.includes('thang long')) {
     return 'Hà Nội';
   }
+  if (stripped.includes('hai phong') || stripped.includes('haiphong')) {
+    return 'Hải Phòng';
+  }
+  if (stripped.includes('can tho') || stripped.includes('cantho')) {
+    return 'Cần Thơ';
+  }
+  if (stripped.includes('da nang') || stripped.includes('danang')) {
+    return 'Đà Nẵng';
+  }
+  if (stripped.includes('thua thien hue') || stripped.includes('hue')) {
+    return 'Huế';
+  }
 
-  // Quét qua 63 tỉnh
+  // 3. Quét qua VN_PROVINCES (34 tỉnh thành)
   for (const province of VN_PROVINCES) {
+    if (province === 'Quần đảo Hoàng Sa' || province === 'Quần đảo Trường Sa') continue;
     const pClean = province.replace(/^(tp\.?)\s+/i, '');
     const pStripped = stripVietnameseDiacritics(pClean);
     const pFullStripped = stripVietnameseDiacritics(province);
@@ -293,6 +362,18 @@ export function extractProvinceFromLocation(location?: string | null): string | 
     const regex = new RegExp(`(^|[^a-z0-9])${pStripped}([^a-z0-9]|$)`, 'i');
     if (regex.test(stripped) || stripped.includes(pFullStripped)) {
       return province;
+    }
+  }
+
+  // 4. Quét qua các tỉnh cũ trước sáp nhập -> trả về tỉnh mới tương ứng
+  for (const [oldProv, newProv] of Object.entries(LEGACY_PROVINCE_MERGE_MAP)) {
+    const oldClean = oldProv.replace(/^(tp\.?)\s+/i, '');
+    const oldStripped = stripVietnameseDiacritics(oldClean);
+    const oldFullStripped = stripVietnameseDiacritics(oldProv);
+
+    const regex = new RegExp(`(^|[^a-z0-9])${oldStripped}([^a-z0-9]|$)`, 'i');
+    if (regex.test(stripped) || stripped.includes(oldFullStripped)) {
+      return newProv;
     }
   }
 

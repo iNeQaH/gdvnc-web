@@ -106,28 +106,60 @@ function getUserBorderColor(player: any, defaultIsDark: boolean): string {
   return defaultIsDark ? 'rgba(0, 0, 0, 0.85)' : 'rgba(255, 255, 255, 0.95)';
 }
 
-// Phân bố toạ độ người chơi mở rộng theo diện tích thực tế của tỉnh (không bị co cụm ở các tỉnh rộng)
+function isPointInProvince(pt: [number, number], province: ProvinceGeoFeature): boolean {
+  for (const poly of province.polygons) {
+    if (isPointInPolygon(pt, poly)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function getPolygonCentroid(polygon: number[][]): [number, number] {
+  let cx = 0;
+  let cy = 0;
+  for (const pt of polygon) {
+    cx += pt[0];
+    cy += pt[1];
+  }
+  return [cx / polygon.length, cy / polygon.length];
+}
+
+const playerOffsetCache = new Map<string, [number, number]>();
+
+// Phân bố toạ độ người chơi đảm bảo 100% nằm trọn bên trong ranh giới địa lý của tỉnh
 function getProvincePlayerOffset(
-  province: { center: [number, number]; bounds: [number, number, number, number] },
+  province: ProvinceGeoFeature,
   playerIndex: number,
   totalPlayers: number,
-  zoom: number
+  _zoom?: number
 ): [number, number] {
+  const cacheKey = `${province.id}:${playerIndex}:${totalPlayers}`;
+  const cached = playerOffsetCache.get(cacheKey);
+  if (cached) return cached;
+
+  // Trường hợp quần đảo (Hoàng Sa, Trường Sa): Đặt người chơi lần lượt trên các đảo/rạn san hô
+  if (province.region === 'Islands' && province.polygons.length > 0) {
+    const poly = province.polygons[playerIndex % province.polygons.length];
+    const centroid = getPolygonCentroid(poly);
+    const res: [number, number] = isPointInPolygon(centroid, poly) ? centroid : [province.center[0], province.center[1]];
+    playerOffsetCache.set(cacheKey, res);
+    return res;
+  }
+
+  // Người chơi đầu tiên (Top 1) đặt tại tâm cực địa lý của tỉnh
   if (playerIndex === 0) {
-    return [province.center[0], province.center[1]];
+    playerOffsetCache.set(cacheKey, province.center);
+    return province.center;
   }
 
   const [minLon, minLat, maxLon, maxLat] = province.bounds;
   const spanLon = Math.max(0.35, maxLon - minLon);
   const spanLat = Math.max(0.35, maxLat - minLat);
 
-  // Bán kính phân tán tối đa theo kích thước địa lý của tỉnh
-  // Cho phép trải rộng tới 44% span để phủ khắp các vùng/huyện của các tỉnh diện tích lớn
-  const maxReachX = spanLon * 0.44;
-  const maxReachY = spanLat * 0.44;
+  const maxReachX = spanLon * 0.38;
+  const maxReachY = spanLat * 0.38;
 
-  // Với số lượng user ít (2-6 người), phân bố toả đều các hướng địa lý (Đông, Tây, Nam, Bắc...)
-  // Với số lượng user đông (>6 người), dùng Golden Angle (~137.5°) để xoay toả đều tự nhiên
   let angle = 0;
   if (totalPlayers <= 6) {
     angle = ((2 * Math.PI) / Math.max(1, totalPlayers)) * playerIndex;
@@ -135,22 +167,29 @@ function getProvincePlayerOffset(
     angle = playerIndex * 2.399963;
   }
 
-  // Tỷ lệ phân tán trải đều rộng khắp tỉnh, không co cụm vào tâm
   const count = Math.max(2, totalPlayers);
   const progress = Math.min(1.0, (playerIndex + 0.6) / count);
-  const spreadFactor = 0.45 + 0.55 * Math.sqrt(progress);
+  const spreadFactor = 0.35 + 0.65 * Math.sqrt(progress);
 
-  const rx = maxReachX * spreadFactor;
-  const ry = maxReachY * spreadFactor;
+  const dx = Math.cos(angle) * maxReachX * spreadFactor;
+  const dy = Math.sin(angle) * maxReachY * spreadFactor;
 
-  const rawLon = province.center[0] + Math.cos(angle) * rx;
-  const rawLat = province.center[1] + Math.sin(angle) * ry;
+  // Lùi dần vector về tâm tỉnh để đảm bảo toạ độ chắc chắn nằm trong đa giác tỉnh
+  let bestPt: [number, number] = [province.center[0], province.center[1]];
+  for (let step = 0; step < 25; step++) {
+    const t = 1.0 - step * 0.04;
+    const cand: [number, number] = [
+      province.center[0] + dx * t,
+      province.center[1] + dy * t,
+    ];
+    if (isPointInProvince(cand, province)) {
+      bestPt = cand;
+      break;
+    }
+  }
 
-  // Giữ tọa độ an toàn tuyệt đối bên trong ranh giới bao quanh tỉnh (tránh lọt ra biển / ra ngoài)
-  const safeLon = Math.max(minLon + 0.04, Math.min(maxLon - 0.04, rawLon));
-  const safeLat = Math.max(minLat + 0.04, Math.min(maxLat - 0.04, rawLat));
-
-  return [safeLon, safeLat];
+  playerOffsetCache.set(cacheKey, bestPt);
+  return bestPt;
 }
 
 function getCanvasGradientOrColor(
@@ -215,14 +254,17 @@ function getCanvasFont(presetKey: string | null | undefined, basePx: number): { 
 function getProvinceAtCoords(lon: number, lat: number): string | null {
   for (const province of VIETNAM_PROVINCES_GEO) {
     if (province.region === 'Islands') {
-      const [minLon, minLat, maxLon, maxLat] = province.bounds;
-      if (lon >= minLon - 0.45 && lon <= maxLon + 0.45 && lat >= minLat - 0.45 && lat <= maxLat + 0.45) {
-        return province.id;
+      for (const poly of province.polygons) {
+        if (isPointInPolygon([lon, lat], poly)) return province.id;
+        const centroid = getPolygonCentroid(poly);
+        const dist = Math.hypot(lon - centroid[0], lat - centroid[1]);
+        if (dist < 0.25) return province.id;
       }
+      continue;
     }
 
     const [minLon, minLat, maxLon, maxLat] = province.bounds;
-    if (lon < minLon - 0.1 || lon > maxLon + 0.1 || lat < minLat - 0.1 || lat > maxLat + 0.1) {
+    if (lon < minLon - 0.05 || lon > maxLon + 0.05 || lat < minLat - 0.05 || lat > maxLat + 0.05) {
       continue;
     }
 
@@ -1163,65 +1205,6 @@ function VietnamMapCanvasComponent({
         }
       }
       ctx.restore();
-
-      // 5b. ĐẶC BIỆT NỔI BẬT: Quần đảo Hoàng Sa & Quần đảo Trường Sa (Chủ Quyền Việt Nam)
-      const islandsList = VIETNAM_PROVINCES_GEO.filter((p) => p.region === 'Islands');
-      islandsList.forEach((island) => {
-        const isHovered = hoveredProv === island.id;
-        const isSelected = selectedProvinceId === island.id;
-        const isUserProvince = userProvinceId === island.id;
-        const pt = fastProjectGround(island.center[0], island.center[1]);
-        if (!pt) return;
-
-        ctx.save();
-        ctx.globalAlpha = mapFadeAlpha;
-        // Vòng tròn định vị hải phận phát sáng tỏa lan (Beacon Pulse)
-        const pulse = 0.5 + 0.5 * Math.sin(pulsePhase * 2.0);
-        const beaconRadius = (16 + pulse * 10) * pt.scale;
-
-        // Vòng sóng radar tỏa ra
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, beaconRadius, 0, Math.PI * 2);
-        ctx.strokeStyle = isUserProvince
-          ? 'rgba(250, 204, 21, 0.7)'
-          : rgbaStr(rgbAccent, 0.55);
-        ctx.lineWidth = 1.8;
-        ctx.stroke();
-
-        // Điểm tâm đảo rực sáng sắc nét (crisp stroke thay vì shadowBlur nặng)
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, Math.max(5, 7 * pt.scale), 0, Math.PI * 2);
-        ctx.fillStyle = isSelected || isHovered ? '#ffffff' : themeAccent;
-        ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
-        // Bảng tên chủ quyền Hoàng Sa / Trường Sa luôn rõ ràng, nổi bật
-        const labelText = island.id.includes('Hoàng Sa')
-          ? 'Quần đảo Hoàng Sa'
-          : 'Quần đảo Trường Sa';
-
-        ctx.font = 'bold 11px sans-serif';
-        const tm = ctx.measureText(labelText);
-        const pillW = tm.width + 20;
-        const pillH = 22;
-        const pillY = pt.y + 18 * pt.scale;
-
-        ctx.fillStyle = isDarkTheme ? 'rgba(15, 23, 42, 0.94)' : 'rgba(255, 255, 255, 0.96)';
-        ctx.strokeStyle = isSelected || isHovered ? '#ffffff' : themeAccent;
-        ctx.lineWidth = isSelected || isHovered ? 2 : 1.4;
-        ctx.beginPath();
-        ctx.roundRect(pt.x - pillW / 2, pillY - pillH / 2, pillW, pillH, 8);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.fillStyle = isDarkTheme ? '#f8fafc' : '#0f172a';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(labelText, pt.x, pillY);
-        ctx.restore();
-      });
 
       // 6. 3D Skyscraper City Mode (khi pitch > 12 độ) & Cột Thẳng Đứng 90 độ (topX = baseX)
       if (cam.pitch > 12 && !showProvinceNamesOverlay) {
