@@ -305,16 +305,16 @@ function VietnamMapCanvasComponent({
   // Avatar image cache
   const avatarCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
-  // Starry sky generator
-  const starsRef = useRef<Array<{ x: number; y: number; r: number; phase: number; speed: number }>>([]);
+  // Starry sky generator (cố định trên thiên cầu, không bị nén dãn khi đổi pitch)
+  const starsRef = useRef<Array<{ azimuth: number; altitudeOffset: number; r: number; phase: number; speed: number }>>([]);
   if (starsRef.current.length === 0) {
-    for (let i = 0; i < 90; i++) {
+    for (let i = 0; i < 95; i++) {
       starsRef.current.push({
-        x: Math.random(),
-        y: Math.random(),
-        r: 0.6 + Math.random() * 0.9,
+        azimuth: Math.random(),
+        altitudeOffset: 12 + Math.pow(Math.random(), 1.15) * 480,
+        r: 0.55 + Math.random() * 0.85,
         phase: Math.random() * Math.PI * 2,
-        speed: 1.2 + Math.random() * 2.8,
+        speed: 0.2 + Math.random() * 0.45,
       });
     }
   }
@@ -410,16 +410,42 @@ function VietnamMapCanvasComponent({
   const dragStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const hasDraggedFarRef = useRef(false);
 
+  // Mobile Touch tracking
+  const touchStateRef = useRef<{
+    mode: 'none' | 'pan' | 'pinch_pitch';
+    count: number;
+    startX: number;
+    startY: number;
+    lastX: number;
+    lastY: number;
+    prevDist: number;
+    prevAngle: number;
+    prevMidX: number;
+    prevMidY: number;
+    totalMoved: number;
+  }>({
+    mode: 'none',
+    count: 0,
+    startX: 0,
+    startY: 0,
+    lastX: 0,
+    lastY: 0,
+    prevDist: 0,
+    prevAngle: 0,
+    prevMidX: 0,
+    prevMidY: 0,
+    totalMoved: 0,
+  });
+
   // Initial handoff from sessionStorage (if transitioning seamlessly from /leaderboard)
   useEffect(() => {
-    const handleGlobalMouseUp = () => {
+    const handleGlobalEnd = () => {
       isDraggingRef.current = false;
     };
-    const handleGlobalBlur = () => {
-      isDraggingRef.current = false;
-    };
-    window.addEventListener('mouseup', handleGlobalMouseUp);
-    window.addEventListener('blur', handleGlobalBlur);
+    window.addEventListener('mouseup', handleGlobalEnd);
+    window.addEventListener('touchend', handleGlobalEnd);
+    window.addEventListener('touchcancel', handleGlobalEnd);
+    window.addEventListener('blur', handleGlobalEnd);
 
     try {
       const raw = sessionStorage.getItem('gdvn_map_handoff');
@@ -439,8 +465,10 @@ function VietnamMapCanvasComponent({
     } catch {}
 
     return () => {
-      window.removeEventListener('mouseup', handleGlobalMouseUp);
-      window.removeEventListener('blur', handleGlobalBlur);
+      window.removeEventListener('mouseup', handleGlobalEnd);
+      window.removeEventListener('touchend', handleGlobalEnd);
+      window.removeEventListener('touchcancel', handleGlobalEnd);
+      window.removeEventListener('blur', handleGlobalEnd);
     };
   }, []);
 
@@ -736,17 +764,33 @@ function VietnamMapCanvasComponent({
           ctx.fillStyle = skyGrad;
           ctx.fillRect(0, 0, width, clampedHorizonY);
 
-          // 1b. Ngôi sao lấp lánh thật bé trên bầu trời (xoay vòm trời theo góc yaw của map)
+          // 1b. Ngôi sao lấp lánh trên bầu trời (cố định trên thiên cầu, không bị nén dãn khi đổi pitch)
           if (clampedHorizonY > 15) {
             ctx.save();
+            // Tổng thể độ mờ bầu trời khi hạ thấp xuống 2D (mượt mà biến mất khi tiến về 2D phẳng)
+            const skyAlpha = Math.min(1, Math.max(0, (clampedHorizonY - 12) / 45));
+
             for (const star of starsRef.current) {
-              const sx = (((star.x + cam.yaw / 360) % 1 + 1) % 1) * width;
-              const sy = star.y * (clampedHorizonY * 0.95);
-              const twinkle = 0.25 + 0.75 * Math.abs(Math.sin(pulsePhase * star.speed + star.phase));
-              ctx.fillStyle = `rgba(255, 255, 255, ${twinkle * 0.85})`;
-              ctx.beginPath();
-              ctx.arc(sx, sy, star.r, 0, Math.PI * 2);
-              ctx.fill();
+              const sx = (((star.azimuth + cam.yaw / 360) % 1 + 1) % 1) * width;
+              const sy = clampedHorizonY - star.altitudeOffset;
+
+              // Chỉ vẽ các ngôi sao nằm trong vùng nhìn thấy trên bầu trời (phía trên đường chân trời)
+              if (sy < -15 || sy > clampedHorizonY - 4) continue;
+
+              // Làm mờ nhẹ khi ngôi sao sát đường chân trời để hòa vào ánh mờ đường chân trời
+              const distToHorizon = clampedHorizonY - sy;
+              const horizonFade = Math.min(1, Math.max(0, (distToHorizon - 4) / 22));
+
+              // Nhấp nháy chậm rãi, êm dịu, chu kỳ 4 - 8 giây
+              const twinkle = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(pulsePhase * star.speed + star.phase));
+              const starAlpha = twinkle * 0.88 * horizonFade * skyAlpha;
+
+              if (starAlpha > 0.02) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${starAlpha})`;
+                ctx.beginPath();
+                ctx.arc(sx, sy, star.r, 0, Math.PI * 2);
+                ctx.fill();
+              }
             }
             ctx.restore();
           }
@@ -2189,47 +2233,198 @@ function VietnamMapCanvasComponent({
     cameraRef.current.targetZoom = newZoom;
   };
 
-  // Touch Handlers for Mobile
+  // Touch Handlers for Mobile (1 ngón: Di chuyển 2D & Hiện Crosshair | 2 ngón: Zoom, Xoay & Chỉnh 2D/3D Pitch & Hiện 3D HUD)
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (e.touches.length === 1) {
+    e.preventDefault();
+    const count = e.touches.length;
+
+    if (count === 1) {
       const t = e.touches[0];
-      dragStartPosRef.current = { x: t.clientX, y: t.clientY };
+      touchStateRef.current = {
+        mode: 'pan',
+        count: 1,
+        startX: t.clientX,
+        startY: t.clientY,
+        lastX: t.clientX,
+        lastY: t.clientY,
+        prevDist: 0,
+        prevAngle: 0,
+        prevMidX: t.clientX,
+        prevMidY: t.clientY,
+        totalMoved: 0,
+      };
+      isDraggingRef.current = true;
+      dragButtonRef.current = 0; // Kích hoạt UI chữ thập (crosshair) như chuột trái PC
       hasDraggedFarRef.current = false;
+    } else if (count >= 2) {
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const dx = t2.clientX - t1.clientX;
+      const dy = t2.clientY - t1.clientY;
+      const dist = Math.hypot(dx, dy);
+      const angle = Math.atan2(dy, dx);
+      const midX = (t1.clientX + t2.clientX) / 2;
+      const midY = (t1.clientY + t2.clientY) / 2;
+
+      touchStateRef.current = {
+        mode: 'pinch_pitch',
+        count: 2,
+        startX: midX,
+        startY: midY,
+        lastX: midX,
+        lastY: midY,
+        prevDist: dist,
+        prevAngle: angle,
+        prevMidX: midX,
+        prevMidY: midY,
+        totalMoved: 12,
+      };
+      isDraggingRef.current = true;
+      dragButtonRef.current = 2; // Kích hoạt UI 3D (mũi tên ↕ và dial compass la bàn xoay) như chuột phải PC
+      hasDraggedFarRef.current = true;
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    if (e.touches.length === 1) {
-      // 1 Finger: Tilt 3D
+    const count = e.touches.length;
+
+    if (count === 1 && touchStateRef.current.mode === 'pan') {
       const t = e.touches[0];
-      const dy = t.clientY - dragStartPosRef.current.y;
-      if (Math.abs(dy) > 4) hasDraggedFarRef.current = true;
-      const pitchDelta = -dy * 0.4;
-      const newPitch = Math.max(0, Math.min(80, cameraRef.current.pitch + pitchDelta));
-      cameraRef.current.pitch = newPitch;
-      cameraRef.current.targetPitch = newPitch;
-      dragStartPosRef.current = { x: t.clientX, y: t.clientY };
+      const dx = t.clientX - touchStateRef.current.lastX;
+      const dy = t.clientY - touchStateRef.current.lastY;
+      touchStateRef.current.totalMoved += Math.hypot(dx, dy);
+
+      if (touchStateRef.current.totalMoved > 6) {
+        hasDraggedFarRef.current = true;
+      }
+
+      // Pan map 2D taking camera yaw into account (chuẩn như chuột trái PC)
+      const baseScale = 75 * cameraRef.current.zoom;
+      const radYaw = (-cameraRef.current.yaw * Math.PI) / 180;
+      const cosY = Math.cos(radYaw);
+      const sinY = Math.sin(radYaw);
+
+      const dLonRot = -dx / baseScale;
+      const dLatRot = dy / baseScale;
+
+      const dLon = dLonRot * cosY - dLatRot * sinY;
+      const dLat = dLonRot * sinY + dLatRot * cosY;
+
+      cameraRef.current.lon += dLon;
+      cameraRef.current.lat += dLat;
+      cameraRef.current.targetLon = cameraRef.current.lon;
+      cameraRef.current.targetLat = cameraRef.current.lat;
+
+      touchStateRef.current.lastX = t.clientX;
+      touchStateRef.current.lastY = t.clientY;
+
+      isDraggingRef.current = true;
+      dragButtonRef.current = 0; // Giữ UI crosshair luôn hiện rõ khi đang kéo
+    } else if (count >= 2) {
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const dx = t2.clientX - t1.clientX;
+      const dy = t2.clientY - t1.clientY;
+      const curDist = Math.hypot(dx, dy);
+      const curAngle = Math.atan2(dy, dx);
+      const curMidX = (t1.clientX + t2.clientX) / 2;
+      const curMidY = (t1.clientY + t2.clientY) / 2;
+
+      const prevDist = touchStateRef.current.prevDist || curDist;
+      const prevAngle = touchStateRef.current.prevAngle || curAngle;
+      const prevMidY = touchStateRef.current.prevMidY || curMidY;
+
+      hasDraggedFarRef.current = true;
+      isDraggingRef.current = true;
+      dragButtonRef.current = 2; // Giữ UI 3D (mũi tên ↕ & dial compass la bàn xoay) luôn hiện rõ
+
+      // 1. Zoom (Pinch 2 ngón)
+      if (prevDist > 10 && curDist > 10) {
+        const zoomRatio = curDist / prevDist;
+        if (Math.abs(zoomRatio - 1) > 0.002) {
+          const newZoom = Math.max(0.5, Math.min(50.0, cameraRef.current.targetZoom * zoomRatio));
+          cameraRef.current.targetZoom = newZoom;
+        }
+      }
+
+      // 2. Rotate (Twist 2 ngón xoay góc yaw)
+      let dAngle = curAngle - prevAngle;
+      while (dAngle > Math.PI) dAngle -= 2 * Math.PI;
+      while (dAngle < -Math.PI) dAngle += 2 * Math.PI;
+      const yawDelta = (dAngle * 180) / Math.PI;
+      if (Math.abs(yawDelta) > 0.12) {
+        let newYaw = (cameraRef.current.targetYaw + yawDelta) % 360;
+        if (newYaw < 0) newYaw += 360;
+        cameraRef.current.yaw = newYaw;
+        cameraRef.current.targetYaw = newYaw;
+      }
+
+      // 3. Pitch (2 ngón kéo thẳng trên dưới chỉnh 2D <-> 3D)
+      const midDy = curMidY - prevMidY;
+      if (Math.abs(midDy) > 0.4) {
+        const pitchDelta = -midDy * 0.28;
+        const newPitch = Math.max(0, Math.min(80, cameraRef.current.pitch + pitchDelta));
+        cameraRef.current.pitch = newPitch;
+        cameraRef.current.targetPitch = newPitch;
+      }
+
+      touchStateRef.current.prevDist = curDist;
+      touchStateRef.current.prevAngle = curAngle;
+      touchStateRef.current.prevMidX = curMidX;
+      touchStateRef.current.prevMidY = curMidY;
+      touchStateRef.current.lastX = curMidX;
+      touchStateRef.current.lastY = curMidY;
     }
   };
 
   const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    isDraggingRef.current = false;
-    if (!hasDraggedFarRef.current && e.changedTouches.length === 1) {
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const rect = canvas.getBoundingClientRect();
-        const t = e.changedTouches[0];
-        const sx = t.clientX - rect.left;
-        const sy = t.clientY - rect.top;
-        const clickedProvince = getProvinceAtScreenPos(sx, sy);
-        if (clickedProvince) {
-          onSelectProvince(clickedProvince);
-        } else {
-          onSelectProvince(null);
+    const remaining = e.touches.length;
+    if (remaining === 0) {
+      isDraggingRef.current = false;
+      touchStateRef.current.mode = 'none';
+
+      // Tap chọn tỉnh trên mobile nếu không kéo
+      if (!hasDraggedFarRef.current && e.changedTouches.length === 1) {
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const rect = canvas.getBoundingClientRect();
+          const t = e.changedTouches[0];
+          const sx = t.clientX - rect.left;
+          const sy = t.clientY - rect.top;
+          const clickedProvince = getProvinceAtScreenPos(sx, sy);
+          if (clickedProvince) {
+            onSelectProvince(clickedProvince);
+          } else {
+            onSelectProvince(null);
+          }
         }
       }
+    } else if (remaining === 1) {
+      // Khi nhả 1 trong 2 ngón, chuyển về chế độ 1 ngón nhưng không kích hoạt click tỉnh
+      const t = e.touches[0];
+      touchStateRef.current = {
+        mode: 'pan',
+        count: 1,
+        startX: t.clientX,
+        startY: t.clientY,
+        lastX: t.clientX,
+        lastY: t.clientY,
+        prevDist: 0,
+        prevAngle: 0,
+        prevMidX: t.clientX,
+        prevMidY: t.clientY,
+        totalMoved: 20,
+      };
+      hasDraggedFarRef.current = true;
+      isDraggingRef.current = true;
+      dragButtonRef.current = 0;
     }
+  };
+
+  const handleTouchCancel = () => {
+    isDraggingRef.current = false;
+    touchStateRef.current.mode = 'none';
   };
 
   return (
@@ -2243,6 +2438,7 @@ function VietnamMapCanvasComponent({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchCancel}
       onContextMenu={(e) => e.preventDefault()}
       className="w-full h-full block cursor-grab active:cursor-grabbing touch-none select-none"
     />

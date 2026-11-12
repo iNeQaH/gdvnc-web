@@ -514,6 +514,21 @@ export default function VietnamMapPage() {
           </button>
         ) : (
           <>
+            {/* Toggle Ẩn Toàn Bộ UI (Icon Mắt) - Đặt lên trên cùng */}
+            <button
+              type="button"
+              onClick={() => setIsUiHidden(true)}
+              className="flex items-center justify-center w-10 h-10 rounded-xl border backdrop-blur-xl shadow-xl transition-all active:scale-95 cursor-pointer group"
+              style={{
+                backgroundColor: 'var(--bg-card)',
+                borderColor: 'var(--border-ui)',
+                color: 'var(--text-title)',
+              }}
+              title={isEn ? 'Hide UI' : 'Ẩn giao diện'}
+            >
+              <Eye className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            </button>
+
             {/* "2D" / "3D" Toggle Button (Không có icon) */}
             <button
               type="button"
@@ -570,7 +585,7 @@ export default function VietnamMapPage() {
               <RotateCcw className="w-4 h-4 group-hover:-rotate-90 transition-transform duration-300" />
             </button>
 
-            {/* NÚT MỚI: Hiện Tên Tỉnh Thành (Icon chữ A) */}
+            {/* Hiện Tên Tỉnh Thành (Icon chữ A) */}
             <button
               type="button"
               onClick={() => setShowProvinceNames((p) => !p)}
@@ -621,21 +636,6 @@ export default function VietnamMapPage() {
               title={isEn ? 'Zoom out' : 'Thu nhỏ'}
             >
               <Minus className="w-4 h-4" />
-            </button>
-
-            {/* NÚT MỚI: Toggle Ẩn Toàn Bộ UI (Icon Mắt) */}
-            <button
-              type="button"
-              onClick={() => setIsUiHidden(true)}
-              className="flex items-center justify-center w-10 h-10 rounded-xl border backdrop-blur-xl shadow-xl transition-all active:scale-95 cursor-pointer group"
-              style={{
-                backgroundColor: 'var(--bg-card)',
-                borderColor: 'var(--border-ui)',
-                color: 'var(--text-title)',
-              }}
-              title={isEn ? 'Hide UI' : 'Ẩn giao diện'}
-            >
-              <Eye className="w-4 h-4 group-hover:scale-110 transition-transform" />
             </button>
           </>
         )}
