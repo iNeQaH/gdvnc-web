@@ -9,6 +9,7 @@
  * - Mỗi Moon cao hơn: +1 điểm.
  * - Mỗi Demon cao hơn: +10 điểm.
  * - Nếu điểm thấp hơn hoặc bằng: 0 điểm (không tính).
+ * - Nhảy từ 0 lên số khác 0 (lần đầu đồng bộ stat) không tính điểm tuần, chốt baseline bằng stat hiện tại; các lần đồng bộ sau đó sẽ tính bình thường.
  * - Điểm chỉ được cập nhật khi người dùng xem profile của chính mình.
  */
 
@@ -95,95 +96,66 @@ export function computeActivityPoints(
   let baselineMoons: number;
   let baselineDemons: number;
 
-  const hasPreviousBaseline =
-    Boolean(userState.activityPrevStars && userState.activityPrevStars > 0) ||
-    Boolean(userState.gdStars && userState.gdStars > 0);
-
-  if (!hasPreviousBaseline && (currentStats.stars > 0 || currentStats.moons > 0 || currentStats.demons > 0)) {
-    // Trường hợp 1: Tài khoản mới xác minh / lần đầu nhận stats từ Geometry Dash:
-    // Toàn bộ stats là lifetime history, baseline = currentStats, điểm hoạt động tuần = 0.
-    baselineStars = currentStats.stars;
-    baselineMoons = currentStats.moons;
-    baselineDemons = currentStats.demons;
-  } else if (userState.activityDate === currentWeekVn) {
-    // Trường hợp 2: Đang trong tuần hiện tại:
-    // Giữ nguyên baseline đã lưu từ đầu tuần để tích lũy điểm tăng trưởng trong suốt cả tuần.
-    const prevS =
+  if (userState.activityDate === currentWeekVn) {
+    // Trường hợp đang trong tuần hiện tại: giữ nguyên baseline đã lưu từ đầu tuần
+    baselineStars =
       typeof userState.activityPrevStars === 'number' && userState.activityPrevStars >= 0
         ? userState.activityPrevStars
         : typeof userState.gdStars === 'number' && userState.gdStars >= 0
         ? userState.gdStars
-        : currentStats.stars;
-    const prevM =
+        : 0;
+    baselineMoons =
       typeof userState.activityPrevMoons === 'number' && userState.activityPrevMoons >= 0
         ? userState.activityPrevMoons
         : typeof userState.gdMoons === 'number' && userState.gdMoons >= 0
         ? userState.gdMoons
-        : currentStats.moons;
-    const prevD =
+        : 0;
+    baselineDemons =
       typeof userState.activityPrevDemons === 'number' && userState.activityPrevDemons >= 0
         ? userState.activityPrevDemons
         : typeof userState.gdDemons === 'number' && userState.gdDemons >= 0
         ? userState.gdDemons
-        : currentStats.demons;
-
-    baselineStars = prevS;
-    baselineMoons = prevM;
-    baselineDemons = prevD;
-  } else if (userState.activityDate === prevWeekVn) {
-    // Trường hợp 3: Tuần mới liền kề (tuần trước có hoạt động):
-    // Chỉ số chốt sổ cuối tuần trước (gdStars cũ trong DB) chính là baseline cho tuần mới.
-    const prevS =
-      typeof userState.gdStars === 'number' && userState.gdStars >= 0
-        ? userState.gdStars
-        : currentStats.stars;
-    const prevM =
-      typeof userState.gdMoons === 'number' && userState.gdMoons >= 0
-        ? userState.gdMoons
-        : currentStats.moons;
-    const prevD =
-      typeof userState.gdDemons === 'number' && userState.gdDemons >= 0
-        ? userState.gdDemons
-        : currentStats.demons;
-
-    baselineStars = prevS;
-    baselineMoons = prevM;
-    baselineDemons = prevD;
+        : 0;
   } else {
-    // Trường hợp 4: Tuần mới sau thời gian vắng mặt (hoặc chuyển đổi format):
-    // Ưu tiên lấy chỉ số cuối cùng đã lưu trong DB (gdStars) làm baseline,
-    // để bất kỳ stars/demons nào người chơi cày thêm từ lần sync trước đều được tính điểm tuần!
-    const prevS =
+    // Trường hợp tuần mới: lấy chỉ số cuối cùng đã lưu trong DB (gdStars cũ) làm baseline tuần mới
+    baselineStars =
       typeof userState.gdStars === 'number' && userState.gdStars >= 0
         ? userState.gdStars
-        : currentStats.stars;
-    const prevM =
+        : 0;
+    baselineMoons =
       typeof userState.gdMoons === 'number' && userState.gdMoons >= 0
         ? userState.gdMoons
-        : currentStats.moons;
-    const prevD =
+        : 0;
+    baselineDemons =
       typeof userState.gdDemons === 'number' && userState.gdDemons >= 0
         ? userState.gdDemons
-        : currentStats.demons;
-
-    baselineStars = prevS;
-    baselineMoons = prevM;
-    baselineDemons = prevD;
+        : 0;
   }
 
-  let deltaStars = Math.max(0, currentStats.stars - baselineStars);
-  let deltaMoons = Math.max(0, currentStats.moons - baselineMoons);
-  let deltaDemons = Math.max(0, currentStats.demons - baselineDemons);
-
-  // Safeguard: Phát hiện và triệt tiêu bước nhảy đột biến bất thường trong 1 tuần
-  // (ví dụ: đổi tên tài khoản GD, gắn nick mới, hoặc gian lận stats)
-  if (deltaStars > 2500 || deltaMoons > 1500 || deltaDemons > 200) {
+  // Quy tắc nghiệp vụ: Miễn là từ 0 lên số khác 0 thì không tính điểm tuần (lần đầu đồng bộ stat),
+  // chốt baseline bằng stat hiện tại để lần đồng bộ sau đó sẽ bắt đầu tính điểm.
+  let deltaStars = 0;
+  if (baselineStars <= 0 && currentStats.stars > 0) {
     baselineStars = currentStats.stars;
-    baselineMoons = currentStats.moons;
-    baselineDemons = currentStats.demons;
     deltaStars = 0;
+  } else if (baselineStars > 0) {
+    deltaStars = Math.max(0, currentStats.stars - baselineStars);
+  }
+
+  let deltaMoons = 0;
+  if (baselineMoons <= 0 && currentStats.moons > 0) {
+    baselineMoons = currentStats.moons;
     deltaMoons = 0;
+  } else if (baselineMoons > 0) {
+    deltaMoons = Math.max(0, currentStats.moons - baselineMoons);
+  }
+
+  let deltaDemons = 0;
+  if (baselineDemons <= 0 && currentStats.demons > 0) {
+    baselineDemons = currentStats.demons;
     deltaDemons = 0;
+  } else if (baselineDemons > 0) {
+    deltaDemons = Math.max(0, currentStats.demons - baselineDemons);
   }
 
   const points = deltaStars * 1 + deltaMoons * 1 + deltaDemons * 10;
