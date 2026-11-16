@@ -75,7 +75,7 @@ export default function GdIconSetDisplay({
       <div className="grid grid-cols-3 sm:grid-cols-9 gap-2.5">
         {FORMS.map(({ key, label, form }) => {
           const iconId = (iconSet as any)[key] ?? 1;
-          const iconUrl = `/api/gd/icon?form=${form}&icon=${iconId}&col1=${col1}&col2=${col2}${glow ? `&glow=1&colG=${colG}` : ''}&size=128&v=3`;
+          const iconUrl = `/api/gd/icon?form=${form}&icon=${iconId}&col1=${col1}&col2=${col2}${glow ? `&glow=1&colG=${colG}` : ''}&size=128&v=4`;
 
           return (
             <div
@@ -94,7 +94,7 @@ export default function GdIconSetDisplay({
                     const target = e.currentTarget;
                     if (!target.dataset.triedFallback) {
                       target.dataset.triedFallback = 'true';
-                      target.src = `/api/gd/icon?form=${form}&icon=1&col1=${col1}&col2=${col2}&size=128&v=3`;
+                      target.src = `/api/gd/icon?form=${form}&icon=1&col1=${col1}&col2=${col2}&size=128&v=4`;
                     }
                   }}
                 />

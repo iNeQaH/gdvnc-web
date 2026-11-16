@@ -170,6 +170,19 @@ async function renderLayer(
     .extract({ left: x, top: y, width: extractW, height: extractH })
     .toBuffer();
 
+  // Fast check: if the extracted sprite slice is completely transparent (all alpha === 0), skip it
+  const { data: rawCropped, info: rawInfo } = await sharp(cropped).raw().toBuffer({ resolveWithObject: true });
+  if (rawInfo.channels === 4) {
+    let isVisible = false;
+    for (let i = 3; i < rawCropped.length; i += 4) {
+      if (rawCropped[i] > 0) {
+        isVisible = true;
+        break;
+      }
+    }
+    if (!isVisible) return null;
+  }
+
   let unrotated = sharp(cropped);
   if (frame.rotated) {
     unrotated = unrotated.rotate(270);
@@ -259,7 +272,7 @@ export async function renderGdPlayerIcon({
   colG,
   size = 128,
 }: RenderIconOptions): Promise<Buffer> {
-  const cacheKey = `v3_${form}_${icon}_${col1}_${col2}_${glow ? 1 : 0}_${colG ?? 'x'}_${size}`;
+  const cacheKey = `v4_${form}_${icon}_${col1}_${col2}_${glow ? 1 : 0}_${colG ?? 'x'}_${size}`;
   if (renderedIconCache.has(cacheKey)) {
     return renderedIconCache.get(cacheKey)!;
   }
@@ -298,9 +311,9 @@ export async function renderGdPlayerIcon({
 
   const shouldGlow = Boolean(glow) || isAllBlack;
 
-  const canvasW = 160;
-  const canvasH = 160;
   const composites: Array<{ input: Buffer; left: number; top: number }> = [];
+  let canvasW = 160;
+  let canvasH = 160;
 
   if (cleanForm === 'robot' || cleanForm === 'spider') {
     const animFile = cleanForm === 'robot' ? 'Robot_AnimDesc.plist' : 'Spider_AnimDesc.plist';
@@ -363,6 +376,14 @@ export async function renderGdPlayerIcon({
       return a.z - b.z;
     });
 
+    const renderedParts: Array<{
+      buffer: Buffer;
+      width: number;
+      height: number;
+      posX: number;
+      posY: number;
+    }> = [];
+
     for (const item of layersToDraw) {
       const rendered = await renderLayer(pngPath, item.frame, item.color, item.scale, item.rot);
       if (!rendered) continue;
@@ -370,9 +391,30 @@ export async function renderGdPlayerIcon({
       // In screen coordinates: +Y is DOWN.
       const posX = Math.round(item.pos[0] * 2);
       const posY = Math.round(-item.pos[1] * 2);
-      const left = Math.round((canvasW - rendered.width) / 2 + posX);
-      const top = Math.round((canvasH - rendered.height) / 2 + posY);
-      composites.push({ input: rendered.buffer, left, top });
+      renderedParts.push({
+        buffer: rendered.buffer,
+        width: rendered.width,
+        height: rendered.height,
+        posX,
+        posY,
+      });
+    }
+
+    let maxHalfW = 80;
+    let maxHalfH = 80;
+    for (const p of renderedParts) {
+      const hw = Math.ceil(p.width / 2 + Math.abs(p.posX));
+      const hh = Math.ceil(p.height / 2 + Math.abs(p.posY));
+      if (hw > maxHalfW) maxHalfW = hw;
+      if (hh > maxHalfH) maxHalfH = hh;
+    }
+    canvasW = maxHalfW * 2 + 10;
+    canvasH = maxHalfH * 2 + 10;
+
+    for (const p of renderedParts) {
+      const left = Math.round((canvasW - p.width) / 2 + p.posX);
+      const top = Math.round((canvasH - p.height) / 2 + p.posY);
+      composites.push({ input: p.buffer, left, top });
     }
   } else {
     // Normal single-sheet icon
@@ -393,6 +435,12 @@ export async function renderGdPlayerIcon({
       layerNames.push({ name: `${basename}_extra_001.png`, col: null });
     }
 
+    const renderedLayers: Array<{
+      buffer: Buffer;
+      width: number;
+      height: number;
+    }> = [];
+
     for (const l of layerNames) {
       const f = frames[l.name];
       if (!f) continue;
@@ -400,10 +448,29 @@ export async function renderGdPlayerIcon({
       if (!rendered) continue;
       // renderLayer already aligns sprite at the exact center including offset.
       // Do NOT add ox, -oy again (which caused double offset detachment bugs).
-      const left = Math.round((canvasW - rendered.width) / 2);
-      const top = Math.round((canvasH - rendered.height) / 2);
-      composites.push({ input: rendered.buffer, left, top });
+      renderedLayers.push(rendered);
     }
+
+    let maxHalfW = 80;
+    let maxHalfH = 80;
+    for (const l of renderedLayers) {
+      const hw = Math.ceil(l.width / 2);
+      const hh = Math.ceil(l.height / 2);
+      if (hw > maxHalfW) maxHalfW = hw;
+      if (hh > maxHalfH) maxHalfH = hh;
+    }
+    canvasW = maxHalfW * 2 + 10;
+    canvasH = maxHalfH * 2 + 10;
+
+    for (const l of renderedLayers) {
+      const left = Math.round((canvasW - l.width) / 2);
+      const top = Math.round((canvasH - l.height) / 2);
+      composites.push({ input: l.buffer, left, top });
+    }
+  }
+
+  if (composites.length === 0) {
+    throw new Error(`Failed to render any layer for ${cleanForm} #${icon}`);
   }
 
   // Composite layers and auto-trim transparent border
