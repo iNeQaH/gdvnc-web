@@ -10,7 +10,7 @@ import {
 import { useLanguage } from '@/components/LanguageContext';
 import LevelFormModal from '@/components/LevelFormModal';
 import LevelFiltersModal from '@/components/LevelFiltersModal';
-import FloatingNav from '@/components/FloatingNav';
+import Pagination from '@/components/Pagination';
 import { AnimatedTabs } from '@/components/AnimatedTabs';
 import { useToast } from '@/components/GlobalToast';
 import { isDemonDifficultyFace, matchesDifficultyFilter } from '@/lib/gdDifficulty';
@@ -332,8 +332,20 @@ export default function LevelsListPage({
         </div>
       </div>
 
+      {/* Top Pagination */}
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onJumpToRank={jumpToRank}
+          showRankJump={true}
+          scrollTargetId="levels-list"
+        />
+      )}
+
       {/* Level List */}
-      <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'ui-zebra-list flex flex-col'}>
+      <div id="levels-list" className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'ui-zebra-list flex flex-col'}>
         {loading ? (
           <div className="col-span-full p-16 text-center ui-dim text-xs font-medium">{t('levelslist.loading')}</div>
         ) : levels.length === 0 ? (
@@ -559,83 +571,17 @@ export default function LevelsListPage({
         )}
       </div>
 
-      {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex flex-col items-center gap-4 pt-6">
-            <div className="flex flex-wrap justify-center gap-1.5">
-              {Array.from({ length: totalPages }).map((_, i) => {
-                const p = i + 1;
-                if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => setCurrentPage(p)}
-                      className={'w-8 h-8 rounded-xl text-xs font-bold transition-colors cursor-pointer ' + (
-                        currentPage === p
-                          ? 'shadow-md'
-                          : 'hover:bg-black/5 dark:hover:bg-white/5 ui-dim'
-                      )}
-                      style={
-                        currentPage === p
-                          ? { backgroundColor: 'var(--accent)', color: 'var(--accent-fg)' }
-                          : {}
-                      }
-                    >
-                      {p}
-                    </button>
-                  );
-                } else if (p === currentPage - 3 || p === currentPage + 3) {
-                  return <span key={i} className="ui-dim px-1 font-bold">...</span>;
-                }
-                return null;
-              })}
-            </div>
-            
-            <div className="flex flex-wrap items-center justify-center gap-3 bg-[var(--bg-subtle)] border border-[var(--border-ui)] px-4 py-2 rounded-2xl shadow-sm text-xs">
-              <div className="flex items-center gap-2">
-                <span className="font-bold ui-title">Sang trang:</span>
-                <input 
-                  type="text" 
-                  placeholder="Trang..." 
-                  className="w-16 h-7 text-center rounded-lg border focus:outline-none"
-                  style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const p = parseInt(e.currentTarget.value);
-                      if (!isNaN(p) && p >= 1 && p <= totalPages) setCurrentPage(p);
-                      e.currentTarget.value = '';
-                    }
-                  }}
-                />
-              </div>
-              <div className="w-px h-4 bg-[var(--border-ui)] hidden sm:block" />
-              <div className="flex items-center gap-2">
-                <span className="font-bold ui-title">Tới hạng (Rank):</span>
-                <input 
-                  type="text" 
-                  placeholder="#1..." 
-                  className="w-16 h-7 text-center rounded-lg border focus:outline-none"
-                  style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)', color: 'var(--text-title)' }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const val = e.currentTarget.value.replace('#', '');
-                      const rank = parseInt(val);
-                      if (!isNaN(rank)) jumpToRank(rank);
-                      e.currentTarget.value = '';
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        <FloatingNav 
-          currentPage={currentPage} 
-          totalPages={totalPages} 
-          onPageChange={setCurrentPage} 
+      {/* Bottom Pagination */}
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
           onJumpToRank={jumpToRank}
+          showRankJump={true}
+          scrollTargetId="levels-list"
         />
+      )}
 
       {/* Modals */}
       <LevelFormModal

@@ -27,6 +27,7 @@ export function HomeTopStats({
   const pMoon = highlights?.topMoonPlayer;
   const pDemon = highlights?.topDemonPlayer;
   const clanActivity = highlights?.topActivityClan;
+  const pWeekly = highlights?.topWeeklyPlayer;
   const clanSp = highlights?.topSpClan;
   const creator = highlights?.topCreator;
   const supporter = highlights?.topSupporter;
@@ -209,23 +210,23 @@ export function HomeTopStats({
       href: clanActivity?.slug ? `/clan/${clanActivity.slug}` : '#',
     },
     {
-      title: 'Clan SP cao nhất',
-      icon: <Coins className="w-3.5 h-3.5 shrink-0" />,
-      borderClass: 'border-indigo-400/80 dark:border-indigo-500/35 hover:border-indigo-500',
-      bgClass: 'bg-gradient-to-br from-indigo-500/10 via-card to-card dark:from-indigo-500/20 dark:via-card/90 dark:to-card/60',
-      badgeClass: 'bg-indigo-100 text-indigo-900 border-indigo-300 dark:bg-indigo-500/25 dark:text-indigo-300 dark:border-indigo-500/40',
-      hoverText: 'group-hover:text-indigo-500 dark:group-hover:text-indigo-300',
-      detailClass: 'text-indigo-800 dark:text-indigo-200/90',
-      glowColor: 'rgba(99, 102, 241, 0.55)',
-      glowBorder: 'rgba(99, 102, 241, 0.7)',
-      glowRadius: '15px',
-      breatheDuration: '4.4s',
-      breatheDelay: '2.2s',
-      hueDuration: '9.2s',
-      hueDelay: '0.3s',
-      name: clanSp ? `[${clanSp.tag}] ${clanSp.name}` : '—',
-      detail: clanSp ? `${clanSp.totalSp || 0} SP Coin` : '—',
-      href: clanSp?.slug ? `/clan/${clanSp.slug}` : '#',
+      title: 'TOP 1 WEEKLY',
+      icon: <Flame className="w-3.5 h-3.5 shrink-0 fill-current" />,
+      borderClass: 'border-amber-400/80 dark:border-amber-500/35 hover:border-amber-500',
+      bgClass: 'bg-gradient-to-br from-amber-500/10 via-card to-card dark:from-amber-500/20 dark:via-card/90 dark:to-card/60',
+      badgeClass: 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-500/25 dark:text-amber-300 dark:border-amber-500/40',
+      hoverText: 'group-hover:text-amber-500 dark:group-hover:text-amber-300',
+      detailClass: 'text-amber-800 dark:text-amber-200/90',
+      glowColor: 'rgba(245, 158, 11, 0.85)',
+      glowBorder: 'rgba(245, 158, 11, 0.85)',
+      glowRadius: '24px',
+      breatheDuration: '3.6s',
+      breatheDelay: '1.2s',
+      hueDuration: '8.5s',
+      hueDelay: '0.5s',
+      name: pWeekly ? (pWeekly.clanTag ? `[${pWeekly.clanTag}] ${pWeekly.displayName || pWeekly.username}` : (pWeekly.displayName || pWeekly.username)) : '—',
+      detail: pWeekly?.activityPoints ? `${Number(pWeekly.activityPoints).toLocaleString()} Điểm hoạt động` : '—',
+      href: pWeekly?.username ? `/profile/${pWeekly.username}` : '#',
     },
     {
       title: 'Top 1 Creator',

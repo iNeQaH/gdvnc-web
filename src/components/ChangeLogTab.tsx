@@ -17,6 +17,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
+import Pagination from '@/components/Pagination';
 
 export type ChangeLogListType = 'DEMON' | 'PEMON' | 'CHALLENGE';
 
@@ -183,7 +184,15 @@ export default function ChangeLogTab() {
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div id="changelog-list" className="space-y-6">
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              scrollTargetId="changelog-list"
+            />
+          )}
           {Object.entries(groupedLogs).map(([dateStr, items]) => (
             <div key={dateStr} className="space-y-3">
               {/* Date Header Badge */}
@@ -339,33 +348,12 @@ export default function ChangeLogTab() {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-4">
-              <button
-                type="button"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
-                style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
-              >
-                <ChevronLeft className="w-4 h-4" />
-                {t('admin.prev')}
-              </button>
-
-              <span className="text-xs font-bold ui-dim px-2">
-                {t('admin.page_of', { n: page, total: totalPages })}
-              </span>
-
-              <button
-                type="button"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
-                style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-ui)' }}
-              >
-                {t('admin.next')}
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              scrollTargetId="changelog-list"
+            />
           )}
         </div>
       )}

@@ -60,6 +60,7 @@ export async function GET() {
           topMoonPlayerRow,
           topDemonPlayerRow,
           topCreatorRow,
+          topWeeklyPlayerRow,
           clans,
           levelLogs,
         ] = await Promise.all([
@@ -218,6 +219,27 @@ export async function GET() {
             select: userHighlightSelect,
           }),
 
+          // 13b. Highlights: Top 1 Weekly Player (activityPoints)
+          prisma.user.findFirst({
+            where: {
+              isBanned: false,
+              activityDate: currentWeekVn,
+              activityPoints: { gt: 0 },
+            },
+            orderBy: { activityPoints: 'desc' },
+            select: {
+              ...userHighlightSelect,
+              activityPoints: true,
+              clanMember: {
+                select: {
+                  clan: {
+                    select: { tag: true, name: true, color: true, colorGradient: true },
+                  },
+                },
+              },
+            },
+          }),
+
           // 14. Highlights: Clan query
           prisma.clan.findMany({
             where: { isSuspended: false },
@@ -316,6 +338,27 @@ export async function GET() {
           supporterTotalMonths: s.supporterTotalMonths || 1,
         }));
 
+        const resolvedWeeklyPlayer =
+          topWeeklyPlayerRow ||
+          (await prisma.user.findFirst({
+            where: {
+              isBanned: false,
+              activityPoints: { gt: 0 },
+            },
+            orderBy: { activityPoints: 'desc' },
+            select: {
+              ...userHighlightSelect,
+              activityPoints: true,
+              clanMember: {
+                select: {
+                  clan: {
+                    select: { tag: true, name: true, color: true, colorGradient: true },
+                  },
+                },
+              },
+            },
+          }));
+
         return {
           success: true,
           announcements,
@@ -333,6 +376,13 @@ export async function GET() {
             topDemonPlayer: topDemonPlayerRow ? { ...topDemonPlayerRow, displayName: playerDisplayName(topDemonPlayerRow) } : null,
             topActivityClan,
             topSpClan,
+            topWeeklyPlayer: resolvedWeeklyPlayer
+              ? {
+                  ...resolvedWeeklyPlayer,
+                  displayName: playerDisplayName(resolvedWeeklyPlayer),
+                  clanTag: resolvedWeeklyPlayer.clanMember?.clan?.tag || null,
+                }
+              : null,
             topCreator: topCreatorRow ? { ...topCreatorRow, displayName: playerDisplayName(topCreatorRow) } : null,
             topSupporter: mappedTopSupporters.length > 0 ? { ...mappedTopSupporters[0], displayName: playerDisplayName(mappedTopSupporters[0]) } : null,
           },
@@ -350,7 +400,7 @@ export async function GET() {
           ],
         },
         orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
-        take: 10,
+        take: 3,
         include: {
           author: {
             select: {

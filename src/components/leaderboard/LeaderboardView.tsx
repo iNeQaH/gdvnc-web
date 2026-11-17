@@ -14,7 +14,7 @@ import { UserDisplayName } from '@/components/UserDisplayName';
 import { useTheme } from '@/components/ThemeProvider';
 import { getUserListRowStyle } from '@/lib/userListRowStyle';
 
-import FloatingNav from '@/components/FloatingNav';
+import Pagination from '@/components/Pagination';
 import { AnimatedTabs } from '@/components/AnimatedTabs';
 import { getCachedPageState, setCachedPageState, clearCachedPageState } from '@/lib/pageCache';
 import { LeaderboardClockBanner } from '@/components/leaderboard/LeaderboardClockBanner';
@@ -804,6 +804,17 @@ export default function HomePage({
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginatedData = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
+  const jumpToRank = (rank: number) => {
+    const targetPage = Math.max(1, Math.min(totalPages, Math.ceil(rank / pageSize)));
+    setCurrentPage(targetPage);
+    const el = document.getElementById('leaderboard-table');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="space-y-6 pb-24">
       {/* Clock Banner with 3D rotating Earth leading to /map */}
@@ -900,8 +911,20 @@ export default function HomePage({
         </div>
       </div>
 
+      {/* Top Pagination */}
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onJumpToRank={jumpToRank}
+          showRankJump={true}
+          scrollTargetId="leaderboard-table"
+        />
+      )}
+
       {/* Leaderboard Table Card (Hiển thị toàn bộ thứ hạng) */}
-      <div className="ui-card overflow-hidden">
+      <div id="leaderboard-table" className="ui-card overflow-hidden">
           {loading ? (
             <div className="p-12 text-center ui-dim text-xs font-medium">{t('leaderboard.loading')}</div>
           ) : filtered.length === 0 ? (
@@ -1177,11 +1200,15 @@ export default function HomePage({
           )}
         </div>
 
-      {filtered.length > pageSize && (
-        <FloatingNav 
+      {/* Bottom Pagination */}
+      {totalPages > 1 && (
+        <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
+          onJumpToRank={jumpToRank}
+          showRankJump={true}
+          scrollTargetId="leaderboard-table"
         />
       )}
       </div>

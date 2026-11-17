@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { 
   Sparkles, Megaphone, Heart, Crown, History, Plus, 
   ExternalLink, Trophy, ArrowRight, ArrowDownRight,
-  Pin, Trash2
+  Pin, Trash2, Pencil
 } from 'lucide-react';
 import { HomeTopStats } from '@/components/home/HomeTopStats';
 import { HomePostModal } from '@/components/home/HomePostModal';
@@ -79,6 +79,7 @@ export default function HomePage() {
   const [changelogs, setChangelogs] = useState<LevelChangeLog[]>([]);
   const [highlights, setHighlights] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState<HomePost | null>(null);
 
   useEffect(() => {
     try {
@@ -206,7 +207,10 @@ export default function HomePage() {
 
           {isAdminOrHigher && (
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => {
+                setEditingPost(null);
+                setIsModalOpen(true);
+              }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow hover:opacity-90 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
@@ -215,10 +219,10 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* SPOTLIGHT POSTS */}
+        {/* SPOTLIGHT POSTS: TỐI ĐA 3 BÀI ĐĂNG, CŨ HƠN THÌ ẨN ĐI */}
         {posts.length > 0 ? (
           <div className="space-y-4">
-            {posts.map((post) => {
+            {posts.slice(0, 3).map((post) => {
               const embedUrl = post.videoUrl ? getYoutubeEmbed(post.videoUrl) : null;
               return (
                 <div
@@ -242,13 +246,25 @@ export default function HomePage() {
                         <span>•</span>
                         <span>{new Date(post.createdAt).toLocaleDateString('vi-VN')}</span>
                         {isAdminOrHigher && (
-                          <button
-                            onClick={() => handleDeletePost(post.id)}
-                            className="p-1 hover:text-red-400 text-muted-foreground transition-colors ml-2 cursor-pointer"
-                            title="Xóa bài viết"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center gap-1 ml-2">
+                            <button
+                              onClick={() => {
+                                setEditingPost(post);
+                                setIsModalOpen(true);
+                              }}
+                              className="p-1 hover:text-sky-400 text-muted-foreground transition-colors cursor-pointer"
+                              title="Sửa bài viết"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeletePost(post.id)}
+                              className="p-1 hover:text-red-400 text-muted-foreground transition-colors cursor-pointer"
+                              title="Xóa bài viết"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -566,14 +582,24 @@ export default function HomePage() {
 
       </div>
 
-      {/* POST CREATION MODAL */}
+      {/* POST CREATION / EDIT MODAL */}
       {isModalOpen && (
         <HomePostModal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          editingPost={editingPost}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingPost(null);
+          }}
           onCreated={(newPost: any) => {
             setPosts((prev) => [newPost, ...prev]);
             setIsModalOpen(false);
+            setEditingPost(null);
+          }}
+          onUpdated={(updatedPost: any) => {
+            setPosts((prev) => prev.map((p) => (p.id === updatedPost.id ? updatedPost : p)));
+            setIsModalOpen(false);
+            setEditingPost(null);
           }}
         />
       )}

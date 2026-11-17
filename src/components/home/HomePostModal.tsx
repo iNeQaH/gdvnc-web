@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { X, Send, Link as LinkIcon, Video, Hash, HelpCircle, Check, Loader2, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Send, Link as LinkIcon, Video, Hash, HelpCircle, Check, Loader2, Sparkles, Pencil } from 'lucide-react';
 import { useToast } from '@/components/GlobalToast';
 import { handleMarkdownKeyDown, handleMarkdownPaste } from '@/lib/markdownShortcuts';
 
@@ -9,9 +9,17 @@ interface HomePostModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreated: (post: any) => void;
+  onUpdated?: (post: any) => void;
+  editingPost?: any | null;
 }
 
-export default function HomePostModal({ isOpen, onClose, onCreated }: HomePostModalProps) {
+export default function HomePostModal({
+  isOpen,
+  onClose,
+  onCreated,
+  onUpdated,
+  editingPost,
+}: HomePostModalProps) {
   const { showToast } = useToast();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -26,6 +34,38 @@ export default function HomePostModal({ isOpen, onClose, onCreated }: HomePostMo
   const [pollOptions, setPollOptions] = useState<string[]>(['', '']);
 
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (editingPost) {
+      setTitle(editingPost.title || '');
+      setBody(editingPost.body || '');
+      setLinkUrl(editingPost.linkUrl || '');
+      setLevelGdId(editingPost.levelGdId || '');
+      setVideoUrl(editingPost.videoUrl || '');
+      setIsPinned(Boolean(editingPost.isPinned));
+      if (editingPost.poll && Array.isArray(editingPost.poll.options)) {
+        setEnablePoll(true);
+        setPollQuestion(editingPost.poll.question || '');
+        setPollOptions(
+          editingPost.poll.options.map((o: any) => (typeof o === 'string' ? o : o.text || ''))
+        );
+      } else {
+        setEnablePoll(false);
+        setPollQuestion('');
+        setPollOptions(['', '']);
+      }
+    } else {
+      setTitle('');
+      setBody('');
+      setLinkUrl('');
+      setLevelGdId('');
+      setVideoUrl('');
+      setIsPinned(false);
+      setEnablePoll(false);
+      setPollQuestion('');
+      setPollOptions(['', '']);
+    }
+  }, [editingPost, isOpen]);
 
   if (!isOpen) return null;
 
@@ -69,28 +109,37 @@ export default function HomePostModal({ isOpen, onClose, onCreated }: HomePostMo
 
     setSubmitting(true);
     try {
-      const res = await fetch('/api/home-posts', {
-        method: 'POST',
+      const isEditing = Boolean(editingPost?.id);
+      const url = isEditing ? `/api/home-posts/${editingPost.id}` : '/api/home-posts';
+      const method = isEditing ? 'PATCH' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: title.trim(),
           body: body.trim(),
-          linkUrl: linkUrl.trim() || undefined,
-          levelGdId: levelGdId.trim() || undefined,
-          videoUrl: videoUrl.trim() || undefined,
-          poll: pollPayload || undefined,
+          linkUrl: linkUrl.trim() || null,
+          levelGdId: levelGdId.trim() || null,
+          videoUrl: videoUrl.trim() || null,
+          poll: enablePoll ? pollPayload : null,
           isPinned,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        showToast(data.error || 'Lỗi khi tạo bài viết.', 'error');
+        showToast(data.error || (isEditing ? 'Lỗi khi cập nhật bài viết.' : 'Lỗi khi tạo bài viết.'), 'error');
         return;
       }
 
-      showToast('Tạo bài viết trang chủ thành công!', 'success');
-      onCreated(data.post);
+      if (isEditing) {
+        showToast('Cập nhật bài viết trang chủ thành công!', 'success');
+        onUpdated?.(data.post);
+      } else {
+        showToast('Tạo bài viết trang chủ thành công!', 'success');
+        onCreated(data.post);
+      }
       onClose();
     } catch {
       showToast('Đã xảy ra lỗi mạng.', 'error');
@@ -98,6 +147,8 @@ export default function HomePostModal({ isOpen, onClose, onCreated }: HomePostMo
       setSubmitting(false);
     }
   };
+
+  const isEditing = Boolean(editingPost?.id);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
@@ -107,13 +158,22 @@ export default function HomePostModal({ isOpen, onClose, onCreated }: HomePostMo
       >
         <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border-subtle)' }}>
           <div className="flex items-center gap-2 ui-title font-bold text-sm">
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            <span>Tạo Bài Viết Trang Chủ (Spotlight Post)</span>
+            {isEditing ? (
+              <>
+                <Pencil className="w-4 h-4 text-sky-400" />
+                <span>Chỉnh Sửa Bài Viết Trang Chủ</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span>Tạo Bài Viết Trang Chủ (Spotlight Post)</span>
+              </>
+            )}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg ui-dim hover:text-white hover:bg-slate-500/20 transition-colors"
+            className="p-1.5 rounded-lg ui-dim hover:text-white hover:bg-slate-500/20 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -240,7 +300,7 @@ export default function HomePostModal({ isOpen, onClose, onCreated }: HomePostMo
                         <button
                           type="button"
                           onClick={() => handleRemoveOption(idx)}
-                          className="p-1.5 rounded-md text-red-400 hover:bg-red-500/10"
+                          className="p-1.5 rounded-md text-red-400 hover:bg-red-500/10 cursor-pointer"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -251,7 +311,7 @@ export default function HomePostModal({ isOpen, onClose, onCreated }: HomePostMo
                     <button
                       type="button"
                       onClick={handleAddPollOption}
-                      className="text-xs text-sky-400 hover:underline pt-1 font-semibold"
+                      className="text-xs text-sky-400 hover:underline pt-1 font-semibold cursor-pointer"
                     >
                       + Thêm lựa chọn
                     </button>
@@ -280,7 +340,7 @@ export default function HomePostModal({ isOpen, onClose, onCreated }: HomePostMo
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="px-4 py-2 rounded-xl ui-dim border hover:bg-slate-500/10 transition-colors"
+              className="px-4 py-2 rounded-xl ui-dim border hover:bg-slate-500/10 transition-colors cursor-pointer"
             >
               Hủy
             </button>
@@ -289,8 +349,14 @@ export default function HomePostModal({ isOpen, onClose, onCreated }: HomePostMo
               disabled={submitting}
               className="px-5 py-2 rounded-xl font-bold text-white bg-sky-500 hover:bg-sky-600 flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-sm"
             >
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              <span>Đăng Bài Viết</span>
+              {submitting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : isEditing ? (
+                <Check className="w-4 h-4" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+              <span>{isEditing ? 'Lưu Thay Đổi' : 'Đăng Bài Viết'}</span>
             </button>
           </div>
         </form>
