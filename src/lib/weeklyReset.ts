@@ -52,17 +52,17 @@ export function formatWeeklyRecapPost(
   }
 
   const weekTitle = weekNumber === 1 ? 'Tuần đầu tiên' : `Tuần thứ ${weekNumber}`;
-  const title = `# ${weekTitle} đã kết thúc! Chúc mừng top 5 của tuần này!`;
+  const title = `# ${weekTitle} đã kết thúc! Chúc mừng top 10 của tuần này!`;
   const resultHeader = weekNumber === 1 ? '# **Kết quả tuần đầu tiên:**' : `# **Kết quả của tuần thứ ${weekNumber}:**`;
 
-  const playerLines = activePlayers.map((p, idx) => {
+  const playerLines = activePlayers.slice(0, 10).map((p, idx) => {
     const rankNum = idx + 1;
     const clanPrefix = p.clanTag ? `[${p.clanTag}] ` : '';
     const itemText = `${clanPrefix}[${p.displayName}](https://geodat.vn/profile/${encodeURIComponent(p.username)}) - ${p.points.toLocaleString('en-US')} điểm (${p.streak}🔥)`;
     return rankNum === 1 ? `- **1. ${itemText}**` : `- ${rankNum}. ${itemText}`;
   });
 
-  const clanLines = activeClans.map((c, idx) => {
+  const clanLines = activeClans.slice(0, 3).map((c, idx) => {
     const rankNum = idx + 1;
     const clanPrefix = c.tag ? `[${c.tag}] ` : '';
     const itemText = `${clanPrefix}[${c.name}](https://geodat.vn/clan/${encodeURIComponent(c.slug)}) - ${c.points.toLocaleString('en-US')} điểm (${c.streak}🔥)`;
@@ -72,7 +72,7 @@ export function formatWeeklyRecapPost(
   const bodyParts: string[] = [resultHeader];
 
   if (playerLines.length > 0) {
-    bodyParts.push('> Top 5 người chơi mạnh nhất:');
+    bodyParts.push('> Top 10 người chơi mạnh nhất:');
     bodyParts.push(...playerLines);
   }
 
@@ -81,7 +81,7 @@ export function formatWeeklyRecapPost(
   }
 
   if (clanLines.length > 0) {
-    bodyParts.push('> Top 5 Clan mạnh nhất:');
+    bodyParts.push('> Top 3 Clan mạnh nhất:');
     bodyParts.push(...clanLines);
   }
 
@@ -181,12 +181,14 @@ export async function runWeeklyRecapForWeek(targetWeek: string, explicitData?: {
 
   let finalTopPlayers: RecapPlayer[] = [];
   let finalTopClans: RecapClan[] = [];
+  let timelineTopClans: RecapClan[] = [];
 
   if (explicitData) {
-    finalTopPlayers = explicitData.topPlayers;
-    finalTopClans = explicitData.topClans;
+    finalTopPlayers = explicitData.topPlayers.slice(0, 10);
+    finalTopClans = explicitData.topClans.slice(0, 3);
+    timelineTopClans = explicitData.topClans.slice(0, 5);
   } else {
-    // 3. Truy vấn Top 5 cá nhân của tuần targetWeek
+    // 3. Truy vấn Top 10 cá nhân của tuần targetWeek
     const players = await prisma.user.findMany({
       where: {
         activityDate: targetWeek,
@@ -209,7 +211,7 @@ export async function runWeeklyRecapForWeek(targetWeek: string, explicitData?: {
         { gdStars: 'desc' },
         { username: 'asc' }
       ],
-      take: 5,
+      take: 10,
     });
 
     finalTopPlayers = players.map((p) => {
@@ -224,7 +226,7 @@ export async function runWeeklyRecapForWeek(targetWeek: string, explicitData?: {
       };
     });
 
-    // 4. Truy vấn Top 5 Clan (tổng điểm top 5 thành viên trong tuần targetWeek)
+    // 4. Truy vấn Top 3 Clan (tổng điểm top 5 thành viên trong tuần targetWeek)
     const clans = await prisma.clan.findMany({
       where: { isSuspended: false },
       select: {
@@ -268,12 +270,14 @@ export async function runWeeklyRecapForWeek(targetWeek: string, explicitData?: {
       }
     }
     clanScoreList.sort((a, b) => b.points - a.points);
-    finalTopClans = clanScoreList.slice(0, 5);
+    finalTopClans = clanScoreList.slice(0, 3);
+    timelineTopClans = clanScoreList.slice(0, 5);
   }
 
   // Lọc chỉ giữ lại người chơi và clan có điểm > 0
   finalTopPlayers = finalTopPlayers.filter((p) => p.points > 0);
   finalTopClans = finalTopClans.filter((c) => c.points > 0);
+  timelineTopClans = timelineTopClans.filter((c) => c.points > 0);
 
   // Thu thập danh sách toàn bộ người chơi có điểm hoạt động trong tuần để lưu allPlayers
   const allActiveUsers = await prisma.user.findMany({
@@ -382,7 +386,7 @@ export async function runWeeklyRecapForWeek(targetWeek: string, explicitData?: {
         sourceKey: `weekly-recap:${targetWeek}`,
         title: `${weekNumber === 1 ? 'Tuần đầu tiên' : `Tuần thứ ${weekNumber}`} đã kết thúc!`,
         shortDescription: notifExcerpt,
-        fullDescription: formatTimelineHtml(weekNumber, finalTopPlayers, finalTopClans),
+        fullDescription: formatTimelineHtml(weekNumber, finalTopPlayers.slice(0, 5), timelineTopClans),
         startAt: new Date(),
         endAt: new Date(),
         tier: 'week',
@@ -392,7 +396,7 @@ export async function runWeeklyRecapForWeek(targetWeek: string, explicitData?: {
       update: {
         title: `${weekNumber === 1 ? 'Tuần đầu tiên' : `Tuần thứ ${weekNumber}`} đã kết thúc!`,
         shortDescription: notifExcerpt,
-        fullDescription: formatTimelineHtml(weekNumber, finalTopPlayers, finalTopClans),
+        fullDescription: formatTimelineHtml(weekNumber, finalTopPlayers.slice(0, 5), timelineTopClans),
       },
     });
 
